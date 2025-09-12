@@ -6,12 +6,14 @@ const Product = () => {
             <div className="container bloc-md bloc-lg-md">
                 <div className="row">
                     {/* Title */}
-                    <div className="text-start offset-lg-1 col-lg-10 mb-4 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1">
+                    <div
+                        className="text-start offset-lg-1 col-lg-10 mb-4 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1">
                         <h1 className="tc-6533 mb-0">Tablet Air</h1>
                     </div>
 
                     {/* Large product image */}
-                    <div className="text-start offset-lg-1 mb-4 col-lg-6 mb-md-4 mb-lg-0 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1">
+                    <div
+                        className="text-start offset-lg-1 mb-4 col-lg-6 mb-md-4 mb-lg-0 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1">
                         <div className="store-card outline-card fill-card">
                             <picture>
                                 <source
@@ -32,7 +34,8 @@ const Product = () => {
                     </div>
 
                     {/* Product details */}
-                    <div className="text-start col-lg-4 col-md-10 offset-md-1 offset-lg-0 col-sm-10 offset-sm-1 col-10 offset-1">
+                    <div
+                        className="text-start col-lg-4 col-md-10 offset-md-1 offset-lg-0 col-sm-10 offset-sm-1 col-10 offset-1">
                         <div className="store-card outline-card fill-card">
                             <p className="sm-product-title tc-2101 mb-0">Free Delivery</p>
                             <h3 className="tc-6533">Buy Tablet Air</h3>
