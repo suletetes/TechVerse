@@ -1,3 +1,4 @@
+import React  from "react";
 const LatestProductCard = ({ link, imgWebp, imgJpg, title, price }) => {
     return (
         <div className="store-card">
