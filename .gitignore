@@ -243,3 +243,6 @@ sketch
 # Built Visual Studio Code Extensions
 *.vsix
 
+/.idea/copilot.data.migration.agent.xml
+/.idea/copilot.data.migration.edit.xml
+/.vscode/settings.json
