@@ -1,20 +1,7 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import LatestProductCard from './LatestProductCard';
 
 const LatestProducts = () => {
-    const scrollRef = useRef(null);
-
-    const scrollLeft = () => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollBy({ left: -300, behavior: 'smooth' });
-        }
-    };
-
-    const scrollRight = () => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollBy({ left: 300, behavior: 'smooth' });
-        }
-    };
     const products = [
         {
             title: 'Ultra HD QLED',
@@ -78,14 +65,14 @@ const LatestProducts = () => {
                     </div>
                     <div className="text-start offset-lg-0 col-lg-12 col">
                         <div className="blocs-horizontal-scroll-container">
-                            <div className="blocs-horizontal-scroll-control blocs-scroll-control-prev" onClick={scrollLeft}>
+                            <div className="blocs-horizontal-scroll-control blocs-scroll-control-prev">
                                 <span className="blocs-round-btn">
                                     <svg width="26" height="26" viewBox="0 0 32 32">
                                         <path className="horizontal-scroll-icon" d="M22,2L9,16,22,30" />
                                     </svg>
                                 </span>
                             </div>
-                            <div className="blocs-horizontal-scroll-area row-offset" ref={scrollRef}>
+                            <div className="blocs-horizontal-scroll-area row-offset">
                                 {products.map((product, index) => (
                                     <LatestProductCard
                                         key={index}
@@ -97,7 +84,7 @@ const LatestProducts = () => {
                                     />
                                 ))}
                             </div>
-                            <div className="blocs-horizontal-scroll-control blocs-scroll-control-next" onClick={scrollRight}>
+                            <div className="blocs-horizontal-scroll-control blocs-scroll-control-next">
                                 <span className="blocs-round-btn">
                                     <svg width="26" height="26" viewBox="0 0 32 32">
                                         <path className="horizontal-scroll-icon" d="M10.344,2l13,14-13,14" />

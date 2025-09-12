@@ -1,9 +1,7 @@
-import React, { useRef } from "react";
+import React  from "react";
 import CategoryItem from './CategoryItem';
 
 const CategoryScroll = () => {
-    const scrollRef = useRef(null);
-    
     const categories = [
         { title: 'Phones', imgSrc: 'img/phone.svg', link: './category/' },
         { title: 'Tablets', imgSrc: 'img/tablet.svg', link: './category/' },
@@ -17,28 +15,16 @@ const CategoryScroll = () => {
         { title: 'Gift Card', imgSrc: 'img/gift-card.svg', link: './category/' }
     ];
 
-    const scrollLeft = () => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
-        }
-    };
-
-    const scrollRight = () => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollBy({ left: 200, behavior: 'smooth' });
-        }
-    };
-
     return (
         <div className="blocs-horizontal-scroll-container compact-blocs-controls">
-            <div className="blocs-horizontal-scroll-control blocs-scroll-control-prev" onClick={scrollLeft}>
+            <div className="blocs-horizontal-scroll-control blocs-scroll-control-prev">
                 <span className="blocs-round-btn">
                     <svg width="26" height="26" viewBox="0 0 32 32">
                         <path className="horizontal-scroll-icon" d="M22,2L9,16,22,30" />
                     </svg>
                 </span>
             </div>
-            <div className="blocs-horizontal-scroll-area row-offset" ref={scrollRef}>
+            <div className="blocs-horizontal-scroll-area row-offset">
                 {categories.map((category, index) => (
                     <CategoryItem
                         key={index}
@@ -48,7 +34,7 @@ const CategoryScroll = () => {
                     />
                 ))}
             </div>
-            <div className="blocs-horizontal-scroll-control blocs-scroll-control-next" onClick={scrollRight}>
+            <div className="blocs-horizontal-scroll-control blocs-scroll-control-next">
                 <span className="blocs-round-btn">
                     <svg width="26" height="26" viewBox="0 0 32 32">
                         <path className="horizontal-scroll-icon" d="M10.344,2l13,14-13,14" />
