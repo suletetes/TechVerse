@@ -1,14 +1,28 @@
 // Horizontal Scroll Controls JavaScript
-document.addEventListener('DOMContentLoaded', function() {
+function initHorizontalScroll() {
+    console.log('Initializing horizontal scroll controls...');
+    
     // Initialize all horizontal scroll containers
     const scrollContainers = document.querySelectorAll('.blocs-horizontal-scroll-container');
+    console.log('Found', scrollContainers.length, 'scroll containers');
     
-    scrollContainers.forEach(container => {
+    scrollContainers.forEach((container, index) => {
+        console.log('Processing container', index + 1);
+        
         const scrollArea = container.querySelector('.blocs-horizontal-scroll-area');
         const prevBtn = container.querySelector('.blocs-scroll-control-prev');
         const nextBtn = container.querySelector('.blocs-scroll-control-next');
         
-        if (!scrollArea || !prevBtn || !nextBtn) return;
+        console.log('Container elements:', {
+            scrollArea: !!scrollArea,
+            prevBtn: !!prevBtn,
+            nextBtn: !!nextBtn
+        });
+        
+        if (!scrollArea || !prevBtn || !nextBtn) {
+            console.log('Missing elements in container', index + 1);
+            return;
+        }
         
         // Scroll amount (adjust as needed)
         const scrollAmount = 300;
@@ -16,6 +30,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Previous button click handler
         prevBtn.addEventListener('click', function(e) {
             e.preventDefault();
+            e.stopPropagation();
+            console.log('Previous button clicked');
+            
             scrollArea.scrollBy({
                 left: -scrollAmount,
                 behavior: 'smooth'
@@ -25,6 +42,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Next button click handler
         nextBtn.addEventListener('click', function(e) {
             e.preventDefault();
+            e.stopPropagation();
+            console.log('Next button clicked');
+            
             scrollArea.scrollBy({
                 left: scrollAmount,
                 behavior: 'smooth'
@@ -66,35 +86,87 @@ document.addEventListener('DOMContentLoaded', function() {
                 container.classList.remove('show-controls');
             });
         }
-    });
-});
-
-// Alternative jQuery version (if jQuery is available)
-if (typeof jQuery !== 'undefined') {
-    jQuery(document).ready(function($) {
-        $('.blocs-horizontal-scroll-container').each(function() {
-            const $container = $(this);
-            const $scrollArea = $container.find('.blocs-horizontal-scroll-area');
-            const $prevBtn = $container.find('.blocs-scroll-control-prev');
-            const $nextBtn = $container.find('.blocs-scroll-control-next');
-            
-            if (!$scrollArea.length || !$prevBtn.length || !$nextBtn.length) return;
-            
-            const scrollAmount = 300;
-            
-            $prevBtn.on('click', function(e) {
-                e.preventDefault();
-                $scrollArea.animate({
-                    scrollLeft: $scrollArea.scrollLeft() - scrollAmount
-                }, 300);
-            });
-            
-            $nextBtn.on('click', function(e) {
-                e.preventDefault();
-                $scrollArea.animate({
-                    scrollLeft: $scrollArea.scrollLeft() + scrollAmount
-                }, 300);
-            });
-        });
+        
+        console.log('Container', index + 1, 'initialized successfully');
     });
 }
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHorizontalScroll);
+} else {
+    initHorizontalScroll();
+}
+
+// Also initialize after a short delay to catch dynamically loaded content
+setTimeout(initHorizontalScroll, 1000);
+
+// Alternative jQuery version (if jQuery is available)
+function initJQueryHorizontalScroll() {
+    if (typeof jQuery !== 'undefined') {
+        console.log('Initializing jQuery horizontal scroll...');
+        
+        jQuery(document).ready(function($) {
+            $('.blocs-horizontal-scroll-container').each(function(index) {
+                console.log('Processing jQuery container', index + 1);
+                
+                const $container = $(this);
+                const $scrollArea = $container.find('.blocs-horizontal-scroll-area');
+                const $prevBtn = $container.find('.blocs-scroll-control-prev');
+                const $nextBtn = $container.find('.blocs-scroll-control-next');
+                
+                if (!$scrollArea.length || !$prevBtn.length || !$nextBtn.length) {
+                    console.log('Missing jQuery elements in container', index + 1);
+                    return;
+                }
+                
+                const scrollAmount = 300;
+                
+                // Remove any existing click handlers
+                $prevBtn.off('click.horizontalScroll');
+                $nextBtn.off('click.horizontalScroll');
+                
+                $prevBtn.on('click.horizontalScroll', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('jQuery Previous button clicked');
+                    
+                    $scrollArea.animate({
+                        scrollLeft: $scrollArea.scrollLeft() - scrollAmount
+                    }, 300);
+                });
+                
+                $nextBtn.on('click.horizontalScroll', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('jQuery Next button clicked');
+                    
+                    $scrollArea.animate({
+                        scrollLeft: $scrollArea.scrollLeft() + scrollAmount
+                    }, 300);
+                });
+                
+                console.log('jQuery container', index + 1, 'initialized successfully');
+            });
+        });
+        
+        // Also try after a delay
+        setTimeout(function() {
+            jQuery(function($) {
+                $('.blocs-horizontal-scroll-container').each(function() {
+                    const $container = $(this);
+                    const $prevBtn = $container.find('.blocs-scroll-control-prev');
+                    const $nextBtn = $container.find('.blocs-scroll-control-next');
+                    
+                    if ($prevBtn.length && !$prevBtn.data('scroll-initialized')) {
+                        $prevBtn.data('scroll-initialized', true);
+                        console.log('Re-initializing button handlers');
+                    }
+                });
+            });
+        }, 2000);
+    }
+}
+
+// Initialize jQuery version
+initJQueryHorizontalScroll();
