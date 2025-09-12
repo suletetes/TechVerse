@@ -1,3 +1,4 @@
+import React from 'react';
 import CategoryScroll from "./CategoryScroll";
 
 const Header = () => {
