@@ -1,3 +1,4 @@
+import React  from "react";
 const CategoryItem = ({ link, imgSrc, title }) => {
     return (
         <div className="ms-1 me-1 me-sm-2 ms-sm-2 ms-md-3 me-md-3 ms-lg-5 me-lg-5">
