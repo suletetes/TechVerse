@@ -10,7 +10,7 @@ import {
     ReturnsPolicy,
     ShippingPolicy,
     Login,
-    Signup, Faq, OrderConfirmation, PaymentPage, Wishlist, Cart, UserProfile, AdminProfile
+    Signup, Faq, OrderConfirmation, PaymentPage, Wishlist, Cart, UserProfile, AdminProfile, Home
 } from "./pages"
 import Warranty from "./pages/Warranty.jsx";
 import Stores from "./pages/Stores.jsx";
@@ -23,7 +23,7 @@ const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: <Contact/>,
+                element: <Home/>,
             },
 
             {

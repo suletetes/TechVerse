@@ -5,6 +5,7 @@ export { default as Privacy } from './Privacy';
 export { default as Category } from './Category';
 export { default as Product } from './Product';
 export { default as Warranty } from './Warranty';
+export { default as Home } from './Home.jsx';
 export { default as ReturnsPolicy } from './ReturnsPolicy';
 export { default as ShippingPolicy } from './ShippingPolicy';
 export { default as Faq } from './Faq.jsx';
