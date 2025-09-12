@@ -1,3 +1,4 @@
+import React  from "react";
 export default function QuickPickCard({ imageWebp, imageJpg, title, price, link }) {
     return (
         <div className="store-card xs-card text-center">
