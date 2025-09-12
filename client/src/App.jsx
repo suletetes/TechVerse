@@ -10,10 +10,10 @@ import {
     ReturnsPolicy,
     ShippingPolicy,
     Login,
+    Warranty,
+    Stores,
     Signup, Faq, OrderConfirmation, PaymentPage, Wishlist, Cart, UserProfile, AdminProfile, Home
 } from "./pages"
-import Warranty from "./pages/Warranty.jsx";
-import Stores from "./pages/Stores.jsx";
 
 
 const router = createBrowserRouter([
@@ -50,14 +50,14 @@ const router = createBrowserRouter([
             {
                 path: 'order-confirmation',
                 element: <OrderConfirmation/>,
-            },{
+            }, {
                 path: 'payment',
                 element: <PaymentPage/>,
             },
             {
                 path: 'wishlist',
                 element: <Wishlist/>,
-            },{
+            }, {
                 path: 'cart',
                 element: <Cart/>,
             },
