@@ -9,12 +9,14 @@ const Footer = () => {
                     <div className="col-12 ps-lg-0 col-lg-3 col-sm-6 mb-3 mb-lg-0">
                         <h6 className="mg-md text-center text-sm-start tc-2175">About</h6>
                         <Link to="/stores" className="a-btn a-block footer-link ltc-654 mb-3">Stores</Link>
-                        <Link to="/" className="a-btn a-block footer-link ltc-654 mb-3">Deals</Link>
-                        <Link to="/" className="a-btn a-block footer-link ltc-654 mb-3">Careers</Link>
+                        <Link to="/faq" className="a-btn a-block footer-link ltc-654 mb-3">faq</Link>
+                        <Link to="/faq" className="a-btn a-block footer-link ltc-654 mb-3">faq</Link>
+                        <Link to="/Stores" className="a-btn a-block footer-link ltc-654 mb-3">Stores</Link>
                     </div>
                     <div className="col-12 col-lg-3 col-sm-6 mb-3 mb-lg-0">
                         <h6 className="mg-md text-center text-sm-start tc-2175">Site Information</h6>
                         <Link to="/privacy" className="a-btn a-block footer-link ltc-654 mb-3">Privacy Policy</Link>
+                        <Link to="/delivery" className="a-btn a-block footer-link ltc-654 mb-3">Delivery</Link>
                         <Link to="/shipping" className="a-btn a-block footer-link ltc-654 mb-3">Cookie Policy</Link>
                         <Link to="/faq" className="a-btn a-block footer-link ltc-654">Terms & Conditions</Link>
                     </div>
@@ -22,7 +24,8 @@ const Footer = () => {
                         <h6 className="mg-md text-center text-sm-start tc-2175">Customer Service</h6>
                         <Link to="/contact" className="a-btn a-block footer-link ltc-654 mb-3">Contact</Link>
                         <Link to="/delivery" className="a-btn a-block footer-link ltc-654 mb-3">Delivery</Link>
-                        <Link to="/returns" className="a-btn a-block footer-link ltc-654">Returns</Link>
+                        <Link to="/ReturnsPolicy" className="a-btn a-block footer-link ltc-654 mb-3">Returns Policy</Link>
+                        <Link to="/ShippingPolicy" className="a-btn a-block footer-link ltc-654">Shipping Policy</Link>
                     </div>
                     <div className="col-12 pe-lg-0 col-lg-3 col-sm-6 text-center text-sm-start">
                         <h6 className="mg-md text-center text-sm-start tc-2175">Follow Us</h6>

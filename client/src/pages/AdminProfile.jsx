@@ -143,95 +143,96 @@ const AdminProfile = () => {
     const renderDashboard = () => (
         <div>
             {/* Stats Cards */}
-            <div className="row mb-4">
-                <div className="col-lg-3 col-md-6 mb-4">
-                    <div className="store-card fill-card stats-card">
-                        <div className="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h3 className="mb-1">{formatCurrency(dashboardStats.totalRevenue)}</h3>
-                                <p className="mb-0">Total Revenue</p>
+            <div className="row g-3 mb-4">
+                <div className="col-xl-3 col-lg-6 col-md-6">
+                    <div className="store-card fill-card h-100">
+                        <div className="d-flex justify-content-between align-items-start mb-3">
+                            <div className="flex-grow-1">
+                                <h4 className="mb-1 tc-6533 fw-bold">{formatCurrency(dashboardStats.totalRevenue)}</h4>
+                                <p className="mb-0 text-muted small">Total Revenue</p>
                             </div>
-                            <div className="stats-icon bg-success">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                            <div className="stats-icon bg-success rounded-3 p-2">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
                                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                                 </svg>
                             </div>
                         </div>
-                        <div className="mt-2">
-                            <span className="text-success">+{dashboardStats.revenueGrowth}%</span>
-                            <small className="text-muted ms-1">vs last period</small>
+                        <div className="d-flex align-items-center">
+                            <span className="badge bg-success bg-opacity-10 text-success me-2">+{dashboardStats.revenueGrowth}%</span>
+                            <small className="text-muted">vs last period</small>
                         </div>
                     </div>
                 </div>
-                <div className="col-lg-3 col-md-6 mb-4">
-                    <div className="store-card fill-card stats-card">
-                        <div className="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h3 className="mb-1">{dashboardStats.totalOrders.toLocaleString()}</h3>
-                                <p className="mb-0">Total Orders</p>
+                <div className="col-xl-3 col-lg-6 col-md-6">
+                    <div className="store-card fill-card h-100">
+                        <div className="d-flex justify-content-between align-items-start mb-3">
+                            <div className="flex-grow-1">
+                                <h4 className="mb-1 tc-6533 fw-bold">{dashboardStats.totalOrders.toLocaleString()}</h4>
+                                <p className="mb-0 text-muted small">Total Orders</p>
                             </div>
-                            <div className="stats-icon bg-info">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                            <div className="stats-icon bg-info rounded-3 p-2">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
                                     <path d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1zM10 6a2 2 0 0 1 4 0v1h-4V6zm8 13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V9h2v1a1 1 0 0 0 2 0V9h4v1a1 1 0 0 0 2 0V9h2v10z"/>
                                 </svg>
                             </div>
                         </div>
-                        <div className="mt-2">
-                            <span className="text-success">+{dashboardStats.ordersGrowth}%</span>
-                            <small className="text-muted ms-1">vs last period</small>
+                        <div className="d-flex align-items-center">
+                            <span className="badge bg-success bg-opacity-10 text-success me-2">+{dashboardStats.ordersGrowth}%</span>
+                            <small className="text-muted">vs last period</small>
                         </div>
                     </div>
                 </div>
-                <div className="col-lg-3 col-md-6 mb-4">
-                    <div className="store-card fill-card stats-card">
-                        <div className="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h3 className="mb-1">{dashboardStats.totalUsers.toLocaleString()}</h3>
-                                <p className="mb-0">Total Users</p>
+                <div className="col-xl-3 col-lg-6 col-md-6">
+                    <div className="store-card fill-card h-100">
+                        <div className="d-flex justify-content-between align-items-start mb-3">
+                            <div className="flex-grow-1">
+                                <h4 className="mb-1 tc-6533 fw-bold">{dashboardStats.totalUsers.toLocaleString()}</h4>
+                                <p className="mb-0 text-muted small">Total Users</p>
                             </div>
-                            <div className="stats-icon bg-primary">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                            <div className="stats-icon bg-primary rounded-3 p-2">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
                                     <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A1.5 1.5 0 0 0 18.54 8H16c-.8 0-1.54.37-2 1l-3 4v2h2l2.54-3.4L16.5 18H20z"/>
                                 </svg>
                             </div>
                         </div>
-                        <div className="mt-2">
-                            <span className="text-success">+{dashboardStats.usersGrowth}%</span>
-                            <small className="text-muted ms-1">vs last period</small>
+                        <div className="d-flex align-items-center">
+                            <span className="badge bg-success bg-opacity-10 text-success me-2">+{dashboardStats.usersGrowth}%</span>
+                            <small className="text-muted">vs last period</small>
                         </div>
                     </div>
                 </div>
-                <div className="col-lg-3 col-md-6 mb-4">
-                    <div className="store-card fill-card stats-card">
-                        <div className="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h3 className="mb-1">{dashboardStats.totalProducts}</h3>
-                                <p className="mb-0">Total Products</p>
+                <div className="col-xl-3 col-lg-6 col-md-6">
+                    <div className="store-card fill-card h-100">
+                        <div className="d-flex justify-content-between align-items-start mb-3">
+                            <div className="flex-grow-1">
+                                <h4 className="mb-1 tc-6533 fw-bold">{dashboardStats.totalProducts}</h4>
+                                <p className="mb-0 text-muted small">Total Products</p>
                             </div>
-                            <div className="stats-icon bg-warning">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                            <div className="stats-icon bg-warning rounded-3 p-2">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
                                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                                 </svg>
                             </div>
                         </div>
-                        <div className="mt-2">
-                            <span className="text-success">+{dashboardStats.productsGrowth}%</span>
-                            <small className="text-muted ms-1">vs last period</small>
+                        <div className="d-flex align-items-center">
+                            <span className="badge bg-success bg-opacity-10 text-success me-2">+{dashboardStats.productsGrowth}%</span>
+                            <small className="text-muted">vs last period</small>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Charts and Recent Activity */}
-            <div className="row">
-                <div className="col-lg-8 mb-4">
-                    <div className="store-card fill-card">
-                        <div className="d-flex justify-content-between align-items-center mb-4">
-                            <h4 className="tc-6533 bold-text mb-0">Revenue Overview</h4>
+            <div className="row g-3 mb-4">
+                <div className="col-lg-8">
+                    <div className="store-card fill-card h-100">
+                        <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
+                            <h5 className="tc-6533 fw-bold mb-2 mb-sm-0">Revenue Overview</h5>
                             <select 
                                 className="form-select w-auto"
                                 value={dateRange}
                                 onChange={(e) => setDateRange(e.target.value)}
+                                style={{ minWidth: '150px' }}
                             >
                                 <option value="7days">Last 7 days</option>
                                 <option value="30days">Last 30 days</option>
@@ -239,44 +240,46 @@ const AdminProfile = () => {
                                 <option value="1year">Last year</option>
                             </select>
                         </div>
-                        <div className="chart-placeholder bg-light rounded d-flex align-items-center justify-content-center" style={{height: '300px'}}>
-                            <div className="text-center">
-                                <svg width="64" height="64" viewBox="0 0 24 24" fill="#6c757d">
-                                    <path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/>
-                                </svg>
-                                <p className="tc-6533 mt-2">Revenue Chart Placeholder</p>
-                                <small className="text-muted">Chart integration would go here</small>
+                        <div className="chart-placeholder bg-light rounded-3 d-flex align-items-center justify-content-center border" style={{height: '320px'}}>
+                            <div className="text-center p-4">
+                                <div className="mb-3">
+                                    <svg width="64" height="64" viewBox="0 0 24 24" fill="#6c757d" className="opacity-50">
+                                        <path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/>
+                                    </svg>
+                                </div>
+                                <h6 className="tc-6533 mb-2">Revenue Chart</h6>
+                                <p className="text-muted small mb-0">Chart integration would go here</p>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div className="col-lg-4 mb-4">
-                    <div className="store-card fill-card">
-                        <h4 className="tc-6533 bold-text mb-4">Quick Actions</h4>
-                        <div className="d-grid gap-2">
-                            <button className="btn btn-c-2101 btn-rd" onClick={() => setActiveTab('products')}>
+                <div className="col-lg-4">
+                    <div className="store-card fill-card h-100">
+                        <h5 className="tc-6533 fw-bold mb-4">Quick Actions</h5>
+                        <div className="d-grid gap-3">
+                            <button className="btn btn-c-2101 btn-rd py-3 d-flex align-items-center justify-content-center" onClick={() => setActiveTab('products')}>
                                 <svg width="20" height="20" viewBox="0 0 24 24" className="me-2" fill="white">
                                     <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                                 </svg>
-                                Add New Product
+                                <span className="fw-medium">Add New Product</span>
                             </button>
-                            <button className="btn btn-outline-primary btn-rd" onClick={() => setActiveTab('orders')}>
+                            <button className="btn btn-outline-primary btn-rd py-3 d-flex align-items-center justify-content-center" onClick={() => setActiveTab('orders')}>
                                 <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
-                                    <path d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1z"/>
+                                    <path fill="currentColor" d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1z"/>
                                 </svg>
-                                Manage Orders
+                                <span className="fw-medium">Manage Orders</span>
                             </button>
-                            <button className="btn btn-outline-secondary btn-rd" onClick={() => setActiveTab('users')}>
+                            <button className="btn btn-outline-secondary btn-rd py-3 d-flex align-items-center justify-content-center" onClick={() => setActiveTab('users')}>
                                 <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
-                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                    <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                                 </svg>
-                                View Users
+                                <span className="fw-medium">View Users</span>
                             </button>
-                            <button className="btn btn-outline-info btn-rd">
+                            <button className="btn btn-outline-info btn-rd py-3 d-flex align-items-center justify-content-center" onClick={() => setActiveTab('settings')}>
                                 <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
-                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                                    <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                                 </svg>
-                                Site Settings
+                                <span className="fw-medium">Site Settings</span>
                             </button>
                         </div>
                     </div>
@@ -287,41 +290,61 @@ const AdminProfile = () => {
             <div className="row">
                 <div className="col-12">
                     <div className="store-card fill-card">
-                        <div className="d-flex justify-content-between align-items-center mb-4">
-                            <h4 className="tc-6533 bold-text mb-0">Recent Orders</h4>
+                        <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
+                            <h5 className="tc-6533 fw-bold mb-2 mb-sm-0">Recent Orders</h5>
                             <Link to="/admin/orders" className="btn btn-outline-primary btn-rd btn-sm">
+                                <svg width="16" height="16" viewBox="0 0 24 24" className="me-1">
+                                    <path fill="currentColor" d="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z"/>
+                                </svg>
                                 View All Orders
                             </Link>
                         </div>
                         <div className="table-responsive">
-                            <table className="table table-hover">
-                                <thead>
+                            <table className="table table-hover align-middle">
+                                <thead className="table-light">
                                     <tr>
-                                        <th>Order ID</th>
-                                        <th>Customer</th>
-                                        <th>Date</th>
-                                        <th>Status</th>
-                                        <th>Items</th>
-                                        <th>Total</th>
-                                        <th>Actions</th>
+                                        <th className="border-0 fw-semibold">Order ID</th>
+                                        <th className="border-0 fw-semibold">Customer</th>
+                                        <th className="border-0 fw-semibold">Date</th>
+                                        <th className="border-0 fw-semibold">Status</th>
+                                        <th className="border-0 fw-semibold text-center">Items</th>
+                                        <th className="border-0 fw-semibold text-end">Total</th>
+                                        <th className="border-0 fw-semibold text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {recentOrders.map((order) => (
-                                        <tr key={order.id}>
-                                            <td className="bold-text">{order.id}</td>
-                                            <td>{order.customer}</td>
-                                            <td>{order.date}</td>
+                                        <tr key={order.id} className="border-bottom">
+                                            <td className="fw-medium tc-6533">{order.id}</td>
                                             <td>
-                                                <span className={`badge bg-${getStatusColor(order.status)}`}>
+                                                <div className="d-flex align-items-center">
+                                                    <div className="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style={{width: '32px', height: '32px', minWidth: '32px'}}>
+                                                        <span className="text-muted small">{order.customer.split(' ').map(n => n[0]).join('')}</span>
+                                                    </div>
+                                                    <span>{order.customer}</span>
+                                                </div>
+                                            </td>
+                                            <td className="text-muted">{order.date}</td>
+                                            <td>
+                                                <span className={`badge bg-${getStatusColor(order.status)} bg-opacity-10 text-${getStatusColor(order.status)} border border-${getStatusColor(order.status)} border-opacity-25`}>
                                                     {order.status}
                                                 </span>
                                             </td>
-                                            <td>{order.items}</td>
-                                            <td className="bold-text">{formatCurrency(order.total)}</td>
-                                            <td>
-                                                <button className="btn btn-sm btn-outline-primary me-1">View</button>
-                                                <button className="btn btn-sm btn-outline-secondary">Edit</button>
+                                            <td className="text-center">{order.items}</td>
+                                            <td className="fw-semibold text-end">{formatCurrency(order.total)}</td>
+                                            <td className="text-center">
+                                                <div className="btn-group btn-group-sm">
+                                                    <button className="btn btn-outline-primary btn-sm">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24">
+                                                            <path fill="currentColor" d="M12 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5 5 5 0 0 1 5-5 5 5 0 0 1 5 5 5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5Z"/>
+                                                        </svg>
+                                                    </button>
+                                                    <button className="btn btn-outline-secondary btn-sm">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24">
+                                                            <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/>
+                                                        </svg>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -651,83 +674,87 @@ const AdminProfile = () => {
 
     return (
         <div className="bloc bgc-5700 full-width-bloc l-bloc" id="admin-profile-bloc">
-            <div className="container-fluid bloc-md bloc-lg-md">
-                <div className="row">
-                    {/* Admin Header */}
-                    <div className="col-12 mb-4">
-                        <div className="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h1 className="tc-6533 bold-text mb-1">Admin Dashboard</h1>
-                                <p className="tc-6533 mb-0">Welcome back, {adminData.name}</p>
-                            </div>
-                            <div className="d-flex align-items-center gap-3">
-                                <div className="text-end">
-                                    <p className="mb-0 bold-text tc-6533">{adminData.name}</p>
-                                    <small className="tc-6533">{adminData.role}</small>
+            <div className="container-fluid bloc-md bloc-lg-md" style={{ maxWidth: '1400px' }}>
+                {/* Admin Header */}
+                <div className="row mb-4">
+                    <div className="col-12">
+                        <div className="store-card fill-card">
+                            <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                                <div className="mb-3 mb-md-0">
+                                    <h1 className="tc-6533 bold-text mb-1 h3">Admin Dashboard</h1>
+                                    <p className="tc-6533 mb-0 opacity-75">Welcome back, {adminData.name}</p>
                                 </div>
-                                <div className="rounded-circle bg-primary d-flex align-items-center justify-content-center" style={{width: '48px', height: '48px'}}>
-                                    <span className="text-white h5 mb-0">{adminData.name.split(' ').map(n => n[0]).join('')}</span>
+                                <div className="d-flex align-items-center">
+                                    <div className="text-end me-3 d-none d-sm-block">
+                                        <p className="mb-0 bold-text tc-6533 small">{adminData.name}</p>
+                                        <small className="tc-6533 opacity-75">{adminData.role}</small>
+                                    </div>
+                                    <div className="rounded-circle bg-primary d-flex align-items-center justify-content-center" style={{width: '48px', height: '48px', minWidth: '48px'}}>
+                                        <span className="text-white fw-bold">{adminData.name.split(' ').map(n => n[0]).join('')}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div className="row">
-                        {/* Sidebar Navigation */}
-                        <div className="col-lg-2 mb-4 mb-lg-0">
-                            <div className="store-card fill-card">
-                                <div className="list-group list-group-flush">
-                                    <button
-                                        className={`list-group-item list-group-item-action border-0 ${activeTab === 'dashboard' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('dashboard')}
-                                    >
-                                        <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
-                                            <path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
-                                        </svg>
-                                        Dashboard
-                                    </button>
-                                    <button
-                                        className={`list-group-item list-group-item-action border-0 ${activeTab === 'products' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('products')}
-                                    >
-                                        <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
-                                            <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        Products
-                                    </button>
-                                    <button
-                                        className={`list-group-item list-group-item-action border-0 ${activeTab === 'orders' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('orders')}
-                                    >
-                                        <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
-                                            <path fill="currentColor" d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1z"/>
-                                        </svg>
-                                        Orders
-                                    </button>
-                                    <button
-                                        className={`list-group-item list-group-item-action border-0 ${activeTab === 'users' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('users')}
-                                    >
-                                        <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
-                                            <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                                        </svg>
-                                        Users
-                                    </button>
-                                    <button
-                                        className={`list-group-item list-group-item-action border-0 ${activeTab === 'settings' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('settings')}
-                                    >
-                                        <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
-                                            <path fill="currentColor" d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1 0 .33.03.65.07.97L2.46 14.6c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.31.61.22l2.49-1c.52.39 1.06.73 1.69.98l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.25 1.17-.59 1.69-.98l2.49 1c.22.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/>
-                                        </svg>
-                                        Settings
-                                    </button>
-                                </div>
+                <div className="row">
+                    {/* Sidebar Navigation */}
+                    <div className="col-lg-3 col-xl-2 mb-4 mb-lg-0">
+                        <div className="store-card fill-card sticky-top" style={{ top: '20px' }}>
+                            <div className="list-group list-group-flush">
+                                <button
+                                    className={`list-group-item list-group-item-action d-flex align-items-center py-3 border-0 ${activeTab === 'dashboard' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('dashboard')}
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" className="me-3 flex-shrink-0">
+                                        <path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+                                    </svg>
+                                    <span className="fw-medium">Dashboard</span>
+                                </button>
+                                <button
+                                    className={`list-group-item list-group-item-action d-flex align-items-center py-3 border-0 ${activeTab === 'products' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('products')}
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" className="me-3 flex-shrink-0">
+                                        <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                    </svg>
+                                    <span className="fw-medium">Products</span>
+                                </button>
+                                <button
+                                    className={`list-group-item list-group-item-action d-flex align-items-center py-3 border-0 ${activeTab === 'orders' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('orders')}
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" className="me-3 flex-shrink-0">
+                                        <path fill="currentColor" d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1z"/>
+                                    </svg>
+                                    <span className="fw-medium">Orders</span>
+                                </button>
+                                <button
+                                    className={`list-group-item list-group-item-action d-flex align-items-center py-3 border-0 ${activeTab === 'users' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('users')}
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" className="me-3 flex-shrink-0">
+                                        <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                    </svg>
+                                    <span className="fw-medium">Users</span>
+                                </button>
+                                <button
+                                    className={`list-group-item list-group-item-action d-flex align-items-center py-3 border-0 ${activeTab === 'settings' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('settings')}
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" className="me-3 flex-shrink-0">
+                                        <path fill="currentColor" d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1 0 .33.03.65.07.97L2.46 14.6c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.31.61.22l2.49-1c.52.39 1.06.73 1.69.98l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.25 1.17-.59 1.69-.98l2.49 1c.22.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/>
+                                    </svg>
+                                    <span className="fw-medium">Settings</span>
+                                </button>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Main Content */}
-                        <div className="col-lg-10">
+                    {/* Main Content */}
+                    <div className="col-lg-9 col-xl-10">
+                        <div className="admin-content">
                             {activeTab === 'dashboard' && renderDashboard()}
                             {activeTab === 'products' && renderProducts()}
                             {activeTab === 'orders' && renderOrders()}
