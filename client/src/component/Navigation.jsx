@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import NavLink from './NavLink';
 
 const Navigation = () => {
     return (
@@ -9,18 +10,18 @@ const Navigation = () => {
                     <div className="col ps-0 pe-0">
                         <nav className="navbar navbar-light row navbar-expand-md" role="navigation">
                             <div className="container-fluid">
-                                <Link 
-                                    className="navbar-brand ltc-2175 bold-text uppercase-text" 
+                                <Link
+                                    className="navbar-brand ltc-2175 bold-text uppercase-text"
                                     to="/"
                                 >
                                     <span className="primary-text">Tech</span>Verse
                                 </Link>
-                                <button 
-                                    id="nav-toggle" 
+                                <button
+                                    id="nav-toggle"
                                     type="button"
-                                    className="ui-navbar-toggler navbar-toggler border-0 p-0 ms-auto" 
+                                    className="ui-navbar-toggler navbar-toggler border-0 p-0 ms-auto"
                                     aria-expanded="false"
-                                    aria-label="Toggle navigation" 
+                                    aria-label="Toggle navigation"
                                     data-bs-toggle="collapse"
                                     data-bs-target=".navbar-44712"
                                 >
@@ -35,24 +36,30 @@ const Navigation = () => {
                                 </button>
                                 <div className="collapse navbar-collapse navbar-35179 navbar-44712">
                                     <ul className="site-navigation nav navbar-nav ms-auto">
-                                        <li className="nav-item">
-                                            <Link to="/" className="nav-link">Home</Link>
-                                        </li>
-                                        <li className="nav-item">
-                                            <Link to="/admin" className="nav-link a-btn">Admin</Link>
-                                        </li>
-                                        <li className="nav-item">
-                                            <Link to="/user" className="nav-link a-btn">User</Link>
-                                        </li>
-                                        <li className="nav-item">
-                                            <Link to="/signup" className="a-btn nav-link">Signup</Link>
-                                        </li>
-                                        <li className="nav-item">
-                                            <Link to="/login" className="a-btn nav-link">Login</Link>
-                                        </li>
-                                        <li className="nav-item">
-                                            <Link to="/signup" className="a-btn nav-link">Signup</Link>
-                                        </li>
+                                        <NavLink to="/" exact>
+                                            Home
+                                        </NavLink>
+                                        <NavLink to="/admin">
+                                            Admin
+                                        </NavLink>
+                                        <NavLink to="/user">
+                                            User
+                                        </NavLink>
+                                        <NavLink to="/profile">
+                                            Account
+                                        </NavLink>
+                                        <NavLink to="/cart">
+                                            Cart
+                                        </NavLink>
+                                        <NavLink to="/wishlist">
+                                            Wishlist
+                                        </NavLink>
+                                        <NavLink to="/signup">
+                                            Signup
+                                        </NavLink>
+                                        <NavLink to="/login">
+                                            Login
+                                        </NavLink>
                                     </ul>
                                 </div>
                             </div>
