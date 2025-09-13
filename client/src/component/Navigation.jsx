@@ -45,13 +45,13 @@ const Navigation = () => {
                                             <Link to="/user" className="nav-link a-btn">User</Link>
                                         </li>
                                         <li className="nav-item">
-                                            <Link to="/profile" className="a-btn nav-link">Account</Link>
-                                        </li>
-                                        <li className="nav-item">
                                             <Link to="/signup" className="a-btn nav-link">Signup</Link>
                                         </li>
                                         <li className="nav-item">
                                             <Link to="/login" className="a-btn nav-link">Login</Link>
+                                        </li>
+                                        <li className="nav-item">
+                                            <Link to="/signup" className="a-btn nav-link">Signup</Link>
                                         </li>
                                     </ul>
                                 </div>
