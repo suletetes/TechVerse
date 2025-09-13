@@ -56,16 +56,20 @@ function initHorizontalScroll() {
             const isAtStart = scrollArea.scrollLeft <= 0;
             const isAtEnd = scrollArea.scrollLeft >= (scrollArea.scrollWidth - scrollArea.clientWidth);
             
-            // Add/remove classes for styling
+            // Hide/show buttons based on scroll position
             if (isAtStart) {
+                prevBtn.style.display = 'none';
                 container.classList.add('hide-left-control');
             } else {
+                prevBtn.style.display = 'flex';
                 container.classList.remove('hide-left-control');
             }
             
             if (isAtEnd) {
+                nextBtn.style.display = 'none';
                 container.classList.add('hide-right-control');
             } else {
+                nextBtn.style.display = 'flex';
                 container.classList.remove('hide-right-control');
             }
         }
@@ -126,6 +130,33 @@ function initJQueryHorizontalScroll() {
                 $prevBtn.off('click.horizontalScroll');
                 $nextBtn.off('click.horizontalScroll');
                 
+                // Update button visibility function for jQuery
+                function updateJQueryButtonVisibility() {
+                    const scrollLeft = $scrollArea.scrollLeft();
+                    const scrollWidth = $scrollArea[0].scrollWidth;
+                    const clientWidth = $scrollArea[0].clientWidth;
+                    
+                    const isAtStart = scrollLeft <= 0;
+                    const isAtEnd = scrollLeft >= (scrollWidth - clientWidth);
+                    
+                    // Hide/show buttons based on scroll position
+                    if (isAtStart) {
+                        $prevBtn.hide();
+                        $container.addClass('hide-left-control');
+                    } else {
+                        $prevBtn.show();
+                        $container.removeClass('hide-left-control');
+                    }
+                    
+                    if (isAtEnd) {
+                        $nextBtn.hide();
+                        $container.addClass('hide-right-control');
+                    } else {
+                        $nextBtn.show();
+                        $container.removeClass('hide-right-control');
+                    }
+                }
+                
                 $prevBtn.on('click.horizontalScroll', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -133,7 +164,7 @@ function initJQueryHorizontalScroll() {
                     
                     $scrollArea.animate({
                         scrollLeft: $scrollArea.scrollLeft() - scrollAmount
-                    }, 300);
+                    }, 300, updateJQueryButtonVisibility);
                 });
                 
                 $nextBtn.on('click.horizontalScroll', function(e) {
@@ -143,8 +174,14 @@ function initJQueryHorizontalScroll() {
                     
                     $scrollArea.animate({
                         scrollLeft: $scrollArea.scrollLeft() + scrollAmount
-                    }, 300);
+                    }, 300, updateJQueryButtonVisibility);
                 });
+                
+                // Listen for scroll events to update button visibility
+                $scrollArea.on('scroll.horizontalScroll', updateJQueryButtonVisibility);
+                
+                // Initial button visibility check
+                updateJQueryButtonVisibility();
                 
                 console.log('jQuery container', index + 1, 'initialized successfully');
             });
