@@ -85,7 +85,7 @@ const Cart = () => {
                             <div className="col-lg-8 mb-4 mb-lg-0">
                                 <div className="store-card fill-card">
                                     <h3 className="tc-6533 mb-4 bold-text">Cart Items ({cartItems.length})</h3>
-                                    
+
                                     {cartItems.map((item, index) => (
                                         <div key={item.id}>
                                             <div className="row align-items-center py-3">
@@ -116,7 +116,7 @@ const Cart = () => {
                                                         <button
                                                             className="btn btn-sm btn-outline-secondary"
                                                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                                            style={{width: '32px', height: '32px'}}
+                                                            style={{ width: '32px', height: '32px' }}
                                                         >
                                                             -
                                                         </button>
@@ -124,7 +124,7 @@ const Cart = () => {
                                                         <button
                                                             className="btn btn-sm btn-outline-secondary"
                                                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                                            style={{width: '32px', height: '32px'}}
+                                                            style={{ width: '32px', height: '32px' }}
                                                         >
                                                             +
                                                         </button>
@@ -164,7 +164,7 @@ const Cart = () => {
                             <div className="col-lg-4">
                                 <div className="store-card fill-card">
                                     <h3 className="tc-6533 mb-4 bold-text">Order Summary</h3>
-                                    
+
                                     <div className="mb-3">
                                         <div className="d-flex justify-content-between mb-2">
                                             <span className="tc-6533">Subtotal:</span>
@@ -189,7 +189,7 @@ const Cart = () => {
 
                                     {/* Shipping Notice */}
                                     {shipping === 0 && (
-                                        <div className="alert alert-success mb-4" style={{backgroundColor: '#d4edda', border: '1px solid #c3e6cb'}}>
+                                        <div className="alert alert-success mb-4" style={{ backgroundColor: '#d4edda', border: '1px solid #c3e6cb' }}>
                                             <small className="tc-6533">🚚 Free shipping on orders over £50!</small>
                                         </div>
                                     )}
