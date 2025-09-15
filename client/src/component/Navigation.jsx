@@ -48,6 +48,9 @@ const Navigation = () => {
                                         <NavLink to="/profile">
                                             Account
                                         </NavLink>
+                                        <NavLink to="/category">
+                                            Category
+                                        </NavLink>
                                         <NavLink to="/cart">
                                             Cart
                                         </NavLink>

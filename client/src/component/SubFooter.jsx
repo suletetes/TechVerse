@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 const SubFooter = () => {
     const messages = [
-        "Trade in your old devices and get credit towards your next purchase.",
+        // "Trade in your old devices and get credit towards your next purchase.",
         "Free shipping on orders over $50 - Fast delivery nationwide.",
         "️2-year warranty on all products - Your satisfaction guaranteed.",
         "24/7 customer support - We're here to help anytime.",
@@ -69,7 +69,7 @@ const SubFooter = () => {
                             </div>
 
                             {/* Next Button */}
-                            <button 
+                            <button
                                 className="btn p-0 ms-3" 
                                 onClick={goToNext}
                                 style={{ 
