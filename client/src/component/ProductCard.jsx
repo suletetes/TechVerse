@@ -1,36 +1,58 @@
-import React  from "react";
-const ProductCard = ({ link, imgWebp, imgJpg, title, price }) => {
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+const ProductCard = ({ product }) => {
     return (
-        <div className="store-card sm-card">
-            <a href={link}>
-                <picture>
-                    <source type="image/webp" srcSet="img/lazyload-ph.png" data-srcset={imgWebp} />
-                    <img
-                        src="img/lazyload-ph.png"
-                        data-src={imgJpg}
-                        className="img-fluid mx-auto d-block lazyload"
-                        alt={title}
-                        width="240"
-                        height="240"
-                    />
-                </picture>
-            </a>
-            <div className="card-content">
-                <h5 className="sm-product-title tc-6533">{title}</h5>
-                <p className="tc-6533 mb-0">{price}</p>
-                <a href={link}>
-                    <img
-                        className="img-fluid float-lg-end arrow-btn sm-arrow-btn lazyload"
-                        src="img/lazyload-ph.png"
-                        data-src="img/arrow.svg"
-                        alt="arrow dark"
-                        data-bs-placement="top"
-                        data-bs-toggle="tooltip"
-                        title="View Product"
-                        width="26"
-                        height="26"
-                    />
-                </a>
+        <div className="text-start d-flex col-md-6 col-lg-4 mb-4">
+            <div className="store-card fill-card position-relative">
+                {/* Rating Badge */}
+                <div className="position-absolute top-0 end-0 m-2">
+                    <span className="badge bg-warning text-dark">
+                        <i className="fa fa-star"></i> {product.rating}
+                    </span>
+                </div>
+                
+                {/* Category Badge */}
+                <div className="position-absolute top-0 start-0 m-2">
+                    <span className="badge bg-primary">
+                        {product.category.charAt(0).toUpperCase() + product.category.slice(1)}
+                    </span>
+                </div>
+                
+                <Link to={product.link}>
+                    <picture>
+                        <source type="image/webp" srcSet={product.webp} />
+                        <img
+                            src={product.image}
+                            alt={product.name}
+                            className="img-fluid mx-auto d-block"
+                            width="360"
+                            height="360"
+                            style={{transition: 'transform 0.3s ease'}}
+                            onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+                            onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+                        />
+                    </picture>
+                </Link>
+                
+                <div className="row g-0 p-3">
+                    <div className="col-12 mb-2">
+                        <h5 className="tc-6533 mb-1 lg-sub-title">{product.name}</h5>
+                        <small className="text-muted">{product.brand}</small>
+                    </div>
+                    <div className="col-lg-8">
+                        <p className="tc-6533 float-lg-none mb-2 fw-bold">{product.price}</p>
+                    </div>
+                    <div className="col-lg-4 align-self-end">
+                        <Link
+                            to={product.link}
+                            className="btn btn-sm btn-rd btn-c-2101 float-lg-end buy-btn w-100"
+                            style={{transition: 'all 0.3s ease'}}
+                        >
+                            Buy Now
+                        </Link>
+                    </div>
+                </div>
             </div>
         </div>
     );
