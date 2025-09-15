@@ -4,67 +4,94 @@ import ProductCard from './ProductCard';
 const TopSellerProducts = () => {
     const products = [
         {
-            title: '8K QLED',
+            name: '8K QLED',
             price: 'From £2999',
             link: './product/',
-            imgWebp: 'img/tv-product.webp',
-            imgJpg: 'img/tv-product.jpg'
+            webp: 'img/tv-product.webp',
+            image: 'img/tv-product.jpg',
+            brand: 'TechVerse',
+            category: 'premium',
+            rating: 4.8
         },
         {
-            title: 'Tablet Ultra',
+            name: 'Tablet Ultra',
             price: 'From £1099',
             link: './product/',
-            imgWebp: 'img/tablet-product.webp',
-            imgJpg: 'img/tablet-product.jpg'
+            webp: 'img/tablet-product.webp',
+            image: 'img/tablet-product.jpg',
+            brand: 'TechVerse',
+            category: 'premium',
+            rating: 4.7
         },
         {
-            title: 'Phone Air',
+            name: 'Phone Air',
             price: 'From £699',
             link: './product/',
-            imgWebp: 'img/phone-product.webp',
-            imgJpg: 'img/phone-product.jpg'
+            webp: 'img/phone-product.webp',
+            image: 'img/phone-product.jpg',
+            brand: 'TechVerse',
+            category: 'mid-range',
+            rating: 4.5
         },
         {
-            title: 'Laptop Pro',
+            name: 'Laptop Pro',
             price: 'From £2599',
             link: './product/',
-            imgWebp: 'img/laptop-product.webp',
-            imgJpg: 'img/laptop-product.jpg'
+            webp: 'img/laptop-product.webp',
+            image: 'img/laptop-product.jpg',
+            brand: 'TechVerse',
+            category: 'premium',
+            rating: 4.9
         },
         {
-            title: 'Ultra HD QLED',
+            name: 'Ultra HD QLED',
             price: 'From £2999',
             link: './product/',
-            imgWebp: 'img/tv-product.webp',
-            imgJpg: 'img/tv-product.jpg'
+            webp: 'img/tv-product.webp',
+            image: 'img/tv-product.jpg',
+            brand: 'TechVerse',
+            category: 'premium',
+            rating: 4.6
         },
         {
-            title: 'Phone Pro',
+            name: 'Phone Pro',
             price: 'From £999',
             link: './product/',
-            imgWebp: 'img/phone-product.webp',
-            imgJpg: 'img/phone-product.jpg'
+            webp: 'img/phone-product.webp',
+            image: 'img/phone-product.jpg',
+            brand: 'TechVerse',
+            category: 'premium',
+            rating: 4.8
         },
         {
-            title: 'Tablet Air',
+            name: 'Tablet Air',
             price: 'From £699',
             link: './product/',
-            imgWebp: 'img/tablet-product.webp',
-            imgJpg: 'img/tablet-product.jpg'
+            webp: 'img/tablet-product.webp',
+            image: 'img/tablet-product.jpg',
+            brand: 'TechVerse',
+            category: 'mid-range',
+            rating: 4.4
         },
         {
-            title: 'Laptop Air',
+            name: 'Laptop Air',
             price: 'From £999',
             link: './product/',
-            imgWebp: 'img/laptop-product.webp',
-            imgJpg: 'img/laptop-product.jpg'
+            webp: 'img/laptop-product.webp',
+            image: 'img/laptop-product.jpg',
+            brand: 'TechVerse',
+            category: 'mid-range',
+            rating: 4.3
         },
         {
-            title: 'Ultra HD QLED',
+            name: 'Ultra HD QLED',
             price: 'From £3999',
             link: './product/',
-            imgWebp: 'img/tv-product.webp',
-            imgJpg: 'img/tv-product.jpg'
+            webp: 'img/tv-product.webp',
+            image: 'img/tv-product.jpg',
+            brand: 'TechVerse',
+            category: 'premium',
+            rating: 4.9
         }
     ];
 
@@ -90,11 +117,7 @@ const TopSellerProducts = () => {
                                 {products.map((product, index) => (
                                     <ProductCard
                                         key={index}
-                                        title={product.title}
-                                        price={product.price}
-                                        link={product.link}
-                                        imgWebp={product.imgWebp}
-                                        imgJpg={product.imgJpg}
+                                        product={product}
                                     />
                                 ))}
                             </div>
