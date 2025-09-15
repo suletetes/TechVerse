@@ -8,7 +8,7 @@ import {
     SubFooter,
     Footer, ScrollToTopButton
     // ScrollToTopButton, // Uncomment if needed
-} from "../component";
+} from "../components";
 import {Outlet} from "react-router-dom";
 // import "./assets/css/bootstrap.min.css"
 

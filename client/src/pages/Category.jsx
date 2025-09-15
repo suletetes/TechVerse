@@ -1,10 +1,10 @@
 // src/pages/Category.jsx
 import React, { useState, useMemo } from "react";
-import ProductFilters from "../component/ProductFilters";
-import ProductCard from "../component/ProductCard";
-import ProductCardList from "../component/ProductCardList";
-import Pagination from "../component/Pagination";
-import ViewToggle from "../component/ViewToggle";
+import ProductFilters from "../components/ProductFilters";
+import ProductCard from "../components/ProductCard";
+import ProductCardList from "../components/ProductCardList";
+import Pagination from "../components/Pagination";
+import ViewToggle from "../components/ViewToggle";
 
 // Example product data - expanded for better demonstration
 const phones = [

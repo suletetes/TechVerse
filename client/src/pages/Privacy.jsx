@@ -1,5 +1,5 @@
 import React from 'react';
-import Accordion from "../component/Accordion";
+import Accordion from "../components/Accordion";
 
 const Privacy = () => {
     const privacyItems = [

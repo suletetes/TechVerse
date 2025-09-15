@@ -9,7 +9,7 @@ import {
     Service,
     QuickPicks,
     WeeklyDeals,
-} from "../component";
+} from "../components";
 // import "./assets/css/bootstrap.min.css"
 
 const Home = () => {
