@@ -566,6 +566,254 @@ const Product = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Product Reviews Section */}
+                <div className="row mt-0">
+                    <div className="text-start offset-lg-1 mb-4 col-lg-6 mb-md-4 mb-lg-0 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1">
+                        <div className="store-card outline-card fill-card">
+                            <div className="p-4">
+                                <h3 className="tc-6533 fw-bold mb-4 d-flex align-items-center">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" className="me-2 text-warning">
+                                        <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                    </svg>
+                                    Customer Reviews
+                                </h3>
+
+                                {/* Overall Rating Summary */}
+                                <div className="row mb-4">
+                                    <div className="col-md-4">
+                                        <div className="text-center">
+                                            <div className="display-4 fw-bold text-warning mb-2">4.8</div>
+                                            <div className="d-flex justify-content-center mb-2">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <svg key={star} width="20" height="20" viewBox="0 0 24 24" className="text-warning me-1">
+                                                        <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                                    </svg>
+                                                ))}
+                                            </div>
+                                            <p className="text-muted mb-0">Based on 127 reviews</p>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-8">
+                                        <div className="rating-breakdown">
+                                            {[5, 4, 3, 2, 1].map((rating) => (
+                                                <div key={rating} className="d-flex align-items-center mb-2">
+                                                    <span className="text-muted me-2">{rating}</span>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" className="text-warning me-2">
+                                                        <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                                    </svg>
+                                                    <div className="progress flex-grow-1 me-2" style={{ height: '8px' }}>
+                                                        <div
+                                                            className="progress-bar bg-warning"
+                                                            style={{
+                                                                width: `${rating === 5 ? 85 : rating === 4 ? 12 : rating === 3 ? 2 : rating === 2 ? 1 : 0}%`
+                                                            }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="text-muted small">
+                                                        {rating === 5 ? 108 : rating === 4 ? 15 : rating === 3 ? 3 : rating === 2 ? 1 : 0}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="divider-h mb-4"></div>
+
+                                {/* Individual Reviews */}
+                                <div className="reviews-list">
+                                    {[
+                                        {
+                                            id: 1,
+                                            name: "Sarah Johnson",
+                                            rating: 5,
+                                            date: "2 days ago",
+                                            title: "Excellent tablet, highly recommended!",
+                                            review: "I've been using this tablet for a month now and I'm extremely satisfied. The build quality is outstanding, the display is crisp and vibrant, and the performance is smooth. The battery life is impressive - I can use it all day without worrying about charging.",
+                                            verified: true,
+                                            helpful: 12
+                                        },
+                                        {
+                                            id: 2,
+                                            name: "Michael Chen",
+                                            rating: 5,
+                                            date: "1 week ago",
+                                            title: "Perfect for work and entertainment",
+                                            review: "This tablet has exceeded my expectations. The screen size is perfect for both work presentations and watching movies. The speakers are surprisingly good, and the camera quality is decent for video calls. The design is sleek and modern.",
+                                            verified: true,
+                                            helpful: 8
+                                        },
+                                        {
+                                            id: 3,
+                                            name: "Emily Rodriguez",
+                                            rating: 4,
+                                            date: "2 weeks ago",
+                                            title: "Great value for money",
+                                            review: "Overall a great tablet. The performance is solid and the display is beautiful. The only minor issue I have is that it can get a bit warm during intensive use, but it's not a deal-breaker. Would definitely recommend to others.",
+                                            verified: true,
+                                            helpful: 5
+                                        },
+                                        {
+                                            id: 4,
+                                            name: "David Thompson",
+                                            rating: 5,
+                                            date: "3 weeks ago",
+                                            title: "Amazing build quality and performance",
+                                            review: "I've owned several tablets over the years, and this one stands out. The aluminum body feels premium, the screen is gorgeous, and the battery life is fantastic. The software is smooth and responsive. Worth every penny!",
+                                            verified: true,
+                                            helpful: 15
+                                        },
+                                        {
+                                            id: 5,
+                                            name: "Lisa Wang",
+                                            rating: 4,
+                                            date: "1 month ago",
+                                            title: "Good tablet with minor drawbacks",
+                                            review: "This is a solid tablet with great features. The display is excellent and the performance is smooth. However, I wish the storage options were more flexible and the price point was a bit lower. Still, it's a good purchase overall.",
+                                            verified: true,
+                                            helpful: 3
+                                        }
+                                    ].map((review) => (
+                                        <div key={review.id} className="review-item border-bottom pb-4 mb-4">
+                                            <div className="d-flex justify-content-between align-items-start mb-2">
+                                                <div className="d-flex align-items-center">
+                                                    <div className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-3" style={{ width: '40px', height: '40px' }}>
+                                                        <span className="text-primary fw-bold">{review.name.split(' ').map(n => n[0]).join('')}</span>
+                                                    </div>
+                                                    <div>
+                                                        <div className="d-flex align-items-center mb-1">
+                                                            <h6 className="tc-6533 mb-0 me-2">{review.name}</h6>
+                                                            {review.verified && (
+                                                                <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 small">
+                                                                    <svg width="12" height="12" viewBox="0 0 24 24" className="me-1">
+                                                                        <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                                                    </svg>
+                                                                    Verified Purchase
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="d-flex align-items-center">
+                                                            <div className="d-flex me-2">
+                                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                                    <svg key={star} width="16" height="16" viewBox="0 0 24 24" className={star <= review.rating ? 'text-warning' : 'text-muted'}>
+                                                                        <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                                                    </svg>
+                                                                ))}
+                                                            </div>
+                                                            <span className="text-muted small">{review.date}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <h6 className="tc-6533 fw-semibold mb-2">{review.title}</h6>
+                                            <p className="text-muted mb-3">{review.review}</p>
+
+                                            <div className="d-flex justify-content-between align-items-center">
+                                                <div className="d-flex align-items-center">
+                                                    <button className="btn btn-sm btn-outline-secondary me-2">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" className="me-1">
+                                                            <path fill="currentColor" d="M7 14l5-5 5 5z"/>
+                                                        </svg>
+                                                        Helpful ({review.helpful})
+                                                    </button>
+                                                    <button className="btn btn-sm btn-outline-secondary">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" className="me-1">
+                                                            <path fill="currentColor" d="M7 14l5 5 5-5z"/>
+                                                        </svg>
+                                                        Not helpful
+                                                    </button>
+                                                </div>
+                                                <button className="btn btn-sm btn-outline-primary">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" className="me-1">
+                                                        <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                                    </svg>
+                                                    Report
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Load More Reviews Button */}
+                                <div className="text-center mt-4">
+                                    <button className="btn btn-outline-primary btn-rd px-4">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                                            <path fill="currentColor" d="M7 14l5-5 5 5z"/>
+                                        </svg>
+                                        Load More Reviews
+                                    </button>
+                                </div>
+
+                                <div className="divider-h my-4"></div>
+
+                                {/* Write a Review Section */}
+                                <div className="write-review">
+                                    <h5 className="tc-6533 fw-bold mb-4">Write a Review</h5>
+                                    <form>
+                                        <div className="row">
+                                            <div className="col-md-6 mb-3">
+                                                <label className="form-label fw-semibold">Your Name</label>
+                                                <input type="text" className="form-control" placeholder="Enter your name" />
+                                            </div>
+                                            <div className="col-md-6 mb-3">
+                                                <label className="form-label fw-semibold">Email Address</label>
+                                                <input type="email" className="form-control" placeholder="Enter your email" />
+                                            </div>
+                                        </div>
+
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">Rating</label>
+                                            <div className="rating-input d-flex">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <button
+                                                        key={star}
+                                                        type="button"
+                                                        className="btn btn-link p-1"
+                                                        style={{ fontSize: '24px', color: '#ffc107' }}
+                                                    >
+                                                        <svg width="24" height="24" viewBox="0 0 24 24">
+                                                            <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                                        </svg>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">Review Title</label>
+                                            <input type="text" className="form-control" placeholder="Summarize your review" />
+                                        </div>
+
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">Your Review</label>
+                                            <textarea
+                                                className="form-control"
+                                                rows="4"
+                                                placeholder="Tell us about your experience with this product..."
+                                            ></textarea>
+                                        </div>
+
+                                        <div className="form-check mb-3">
+                                            <input className="form-check-input" type="checkbox" id="verifiedPurchase" />
+                                            <label className="form-check-label" htmlFor="verifiedPurchase">
+                                                I confirm this is a verified purchase
+                                            </label>
+                                        </div>
+
+                                        <button type="submit" className="btn btn-primary btn-rd px-4">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                                                <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                            </svg>
+                                            Submit Review
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     );
