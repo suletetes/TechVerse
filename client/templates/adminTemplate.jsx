@@ -1,3 +1,4 @@
+/*
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -405,7 +406,7 @@ const AdminProfile = () => {
     </div>
 </div>
 
-    {/* Charts and Recent Activity */}
+    {/!* Charts and Recent Activity *!/}
     <div className="row g-3 mb-4">
         <div className="col-lg-8">
             <div className="store-card fill-card h-100">
@@ -469,7 +470,7 @@ const AdminProfile = () => {
         </div>
     </div>
 
-    {/* Recent Orders */}
+    {/!* Recent Orders *!/}
     <div className="row">
         <div className="col-12">
             <div className="store-card fill-card">
@@ -804,7 +805,7 @@ const AdminProfile = () => {
 
     const renderAddProduct = () => (
         <div className="container-fluid px-0">
-            {/* Hero Header */}
+            {/!* Hero Header *!/}
             <div className="row g-0 mb-4">
                 <div className="col-12">
                     <div className="position-relative overflow-hidden rounded-4 shadow-lg" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
@@ -843,7 +844,7 @@ const AdminProfile = () => {
 
             <form onSubmit={handleAddProduct}>
                 <div className="row g-4">
-                    {/* Product Image Section */}
+                    {/!* Product Image Section *!/}
                     <div className="col-lg-5">
                         <div className="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
                             <div className="card-header bg-gradient text-white border-0 p-4" style={{ background: 'linear-gradient(45deg, #28a745, #20c997)' }}>
@@ -905,7 +906,7 @@ const AdminProfile = () => {
                                     {newProduct.image ? 'Change Image' : 'Choose Image'}
                                     <input
                                         type="file"
-                                        accept="image/*"
+                                        accept="image/!*"
                                         onChange={handleProductImageChange}
                                         className="d-none"
                                     />
@@ -914,7 +915,7 @@ const AdminProfile = () => {
                         </div>
                     </div>
 
-                    {/* Product Details Section */}
+                    {/!* Product Details Section *!/}
                     <div className="col-lg-7">
                         <div className="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
                             <div className="card-header bg-gradient text-white border-0 p-4" style={{ background: 'linear-gradient(45deg, #007bff, #6610f2)' }}>
@@ -1033,7 +1034,7 @@ const AdminProfile = () => {
                                     </div>
                                 </div>
 
-                                {/* Action Buttons */}
+                                {/!* Action Buttons *!/}
                                 <div className="d-flex gap-3 pt-4 mt-4 border-top">
                                     <button
                                         type="button"
@@ -1083,7 +1084,7 @@ const AdminProfile = () => {
         <div className="store-card fill-card">
             <h3 className="tc-6533 bold-text mb-4">Admin Settings</h3>
 
-            {/* Admin Profile */}
+            {/!* Admin Profile *!/}
             <div className="mb-4">
                 <h5 className="tc-6533 mb-3">Admin Profile</h5>
                 <div className="row">
@@ -1106,7 +1107,7 @@ const AdminProfile = () => {
                 </div>
             </div>
 
-            {/* Permissions */}
+            {/!* Permissions *!/}
             <div className="mb-4">
                 <h5 className="tc-6533 mb-3">Permissions</h5>
                 <div className="row">
@@ -1123,7 +1124,7 @@ const AdminProfile = () => {
                 </div>
             </div>
 
-            {/* Password Management */}
+            {/!* Password Management *!/}
             <div className="mb-4">
                 <h5 className="tc-6533 mb-3 d-flex align-items-center">
                     <svg width="20" height="20" viewBox="0 0 24 24" className="me-2 text-warning">
@@ -1207,7 +1208,7 @@ const AdminProfile = () => {
                 </div>
             </div>
 
-            {/* System Settings */}
+            {/!* System Settings *!/}
             <div className="mb-4">
                 <h5 className="tc-6533 mb-3 d-flex align-items-center">
                     <svg width="20" height="20" viewBox="0 0 24 24" className="me-2 text-primary">
@@ -1249,7 +1250,7 @@ const AdminProfile = () => {
     return (
         <div className="min-vh-100 bg-light">
             <div className="container-fluid p-0">
-                {/* Mobile Overlay */}
+                {/!* Mobile Overlay *!/}
                 {sidebarOpen && (
                     <div
                         className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-lg-none"
@@ -1259,10 +1260,10 @@ const AdminProfile = () => {
                 )}
 
                 <div className="row g-0 min-vh-100">
-                    {/* Sidebar Navigation */}
+                    {/!* Sidebar Navigation *!/}
                     <div className={`col-lg-3 col-xl-2 ${sidebarOpen ? 'position-fixed start-0 top-0 h-100 bg-white d-lg-block shadow-lg' : 'd-none d-lg-block'}`} style={{ zIndex: 1050, width: sidebarOpen ? '280px' : 'auto' }}>
                         <div className="bg-white h-100 border-end">
-                            {/* Mobile Close Button */}
+                            {/!* Mobile Close Button *!/}
                             <div className="d-flex justify-content-between align-items-center p-3 d-lg-none border-bottom">
                                 <div className="d-flex align-items-center">
                                     <div className="rounded-circle bg-primary d-flex align-items-center justify-content-center me-2" style={{ width: '32px', height: '32px' }}>
@@ -1281,7 +1282,7 @@ const AdminProfile = () => {
                                 </button>
                             </div>
 
-                            {/* Admin Profile Section */}
+                            {/!* Admin Profile Section *!/}
                             <div className="p-4 border-bottom d-none d-lg-block">
                                 <div className="d-flex align-items-center">
                                     <div className="position-relative me-3">
@@ -1297,7 +1298,7 @@ const AdminProfile = () => {
                                 </div>
                             </div>
 
-                            {/* Navigation Menu */}
+                            {/!* Navigation Menu *!/}
                             <div className="py-3">
                                 <nav className="nav flex-column">
                                     <button
@@ -1413,9 +1414,9 @@ const AdminProfile = () => {
                         </div>
                     </div>
 
-                    {/* Main Content */}
+                    {/!* Main Content *!/}
                     <div className="col-lg-9 col-xl-10">
-                        {/* Top Header */}
+                        {/!* Top Header *!/}
                         <div className="bg-white border-bottom px-4 py-3">
                             <div className="d-flex align-items-center justify-content-between">
                                 <div className="d-flex align-items-center">
@@ -1461,7 +1462,7 @@ const AdminProfile = () => {
                             </div>
                         </div>
 
-                        {/* Content Area */}
+                        {/!* Content Area *!/}
                         <div className="p-4">
                             {activeTab === 'dashboard' && renderDashboard()}
                             {activeTab === 'products' && renderProducts()}
@@ -1480,3 +1481,4 @@ const AdminProfile = () => {
 };
 
 export default AdminProfile;
+*/

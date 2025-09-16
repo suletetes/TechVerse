@@ -1,3 +1,4 @@
+/*
 // src/main.jsx
 import React from "react";
 
@@ -19,47 +20,48 @@ import {
 const HomeTemplate = () => {
     return (
         <>
-            {/* navigation */}
+            {/!* navigation *!/}
             <Navigation />
-            {/* navigation END */}
+            {/!* navigation END *!/}
 
-            {/* header */}
+            {/!* header *!/}
             <Header />
-            {/* header END */}
+            {/!* header END *!/}
 
-            {/* latest-products */}
+            {/!* latest-products *!/}
             <LatestProducts />
-            {/* latest-products END */}
+            {/!* latest-products END *!/}
 
-            {/* top-seller-products */}
+            {/!* top-seller-products *!/}
             <TopSellerProducts />
-            {/* top-seller-products END */}
+            {/!* top-seller-products END *!/}
 
-            {/* service */}
+            {/!* service *!/}
             <Service />
-            {/* service END */}
+            {/!* service END *!/}
 
-            {/* quick-picks */}
+            {/!* quick-picks *!/}
             <QuickPicks />
-            {/* quick-picks END */}
+            {/!* quick-picks END *!/}
 
-            {/* weekly-deals */}
+            {/!* weekly-deals *!/}
             <WeeklyDeals />
-            {/* weekly-deals END */}
+            {/!* weekly-deals END *!/}
 
-            {/* ScrollToTop Button */}
+            {/!* ScrollToTop Button *!/}
             <ScrollToTopButton />
-            {/* ScrollToTop Button END */}
+            {/!* ScrollToTop Button END *!/}
 
-            {/* sub-footer */}
+            {/!* sub-footer *!/}
             <SubFooter />
-            {/* sub-footer END */}
+            {/!* sub-footer END *!/}
 
-            {/* footer */}
+            {/!* footer *!/}
             <Footer />
-            {/* footer END */}
+            {/!* footer END *!/}
         </>
     );
 };
 
 export default HomeTemplate;
+*/
