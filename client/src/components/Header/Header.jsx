@@ -1,6 +1,6 @@
 import React from 'react';
-import CategoryScroll from "./CategoryScroll";
-
+// import CategoryScroll from "./CategoryScroll";
+import {CategoryScroll} from "../Category";
 const Header = () => {
     return (
         <div className="bloc full-width-bloc l-bloc" id="header">
