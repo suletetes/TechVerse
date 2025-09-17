@@ -1,17 +1,8 @@
-export { default as Delivery } from './Delivery';
 export { default as HomeLayout } from './HomeLayout';
 export { default as Contact } from './Contact';
-export { default as Privacy } from './Privacy';
 export { default as Category } from './Category';
 export { default as Product } from './Product';
-export { default as Warranty } from './Warranty';
 export { default as Home } from './Home.jsx';
-export { default as ReturnsPolicy } from './ReturnsPolicy';
-export { default as ShippingPolicy } from './ShippingPolicy';
-export { default as Faq } from './Faq.jsx';
-export { default as Stores } from './Stores';
-export { default as Login } from './Login';
-export { default as Signup } from './Signup';
 export { default as Cart } from './Cart';
 export { default as Wishlist } from './Wishlist';
 export { default as OrderConfirmation } from './OrderConfirmation';
