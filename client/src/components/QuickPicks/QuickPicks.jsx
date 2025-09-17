@@ -1,5 +1,5 @@
 import React from 'react';
-import QuickPickCard from './QuickPickCard';
+import {QuickPickCard} from '../Cards';
 
 const QuickPicks = () => {
     const products = [
