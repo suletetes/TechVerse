@@ -1,5 +1,5 @@
 import React from "react";
-import Accordion from "../components/Accordion";
+import {Accordion} from "../../components";
 
 const ReturnsPolicy = () => {
     const returnsItems = [
@@ -73,7 +73,7 @@ const ReturnsPolicy = () => {
                             or exchange, provided it meets the conditions below.
                         </p>
 
-                        <Accordion items={returnsItems} allowMultiple={true} />
+                        <Accordion items={returnsItems} allowMultiple={true}/>
 
                         <p className="mt-4">
                             If you have any questions regarding our Returns Policy, please contact
