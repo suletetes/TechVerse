@@ -10,13 +10,15 @@ const AdminDashboard = ({ dashboardStats, dateRange, setDateRange, recentOrders,
                     <div className="position-absolute top-0 start-0 w-100" style={{ height: '4px', background: 'linear-gradient(90deg, #28a745, #20c997)' }}></div>
                     <div className="p-4">
                         <div className="d-flex align-items-center justify-content-between mb-3">
-                            <div className="stats-icon bg-success bg-opacity-15 rounded-3 p-3 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
+                            {/*<div className="stats-icon bg-success bg-opacity-15 rounded-3 p-3 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>*/}
+                            <div className="stats-icon  bg-opacity-15 rounded-3 p-3 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-success">
                                     <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z" fill="currentColor" />
                                 </svg>
                             </div>
                             <div className="text-end">
-                                <span className="badge bg-success bg-opacity-15 text-success px-3 py-2 rounded-pill">
+                                {/*<span className="badge bg-success bg-opacity-15 text-success px-3 py-2 rounded-pill">*/}
+                                <span className="badge  bg-opacity-15 text-success px-3 py-2 rounded-pill">
                                     <svg width="12" height="12" viewBox="0 0 24 24" className="me-1">
                                         <path fill="currentColor" d="M7 14l5-5 5 5z" />
                                     </svg>
@@ -37,13 +39,15 @@ const AdminDashboard = ({ dashboardStats, dateRange, setDateRange, recentOrders,
                     <div className="position-absolute top-0 start-0 w-100" style={{ height: '4px', background: 'linear-gradient(90deg, #007bff, #0056b3)' }}></div>
                     <div className="p-4">
                         <div className="d-flex align-items-center justify-content-between mb-3">
-                            <div className="stats-icon bg-primary bg-opacity-15 rounded-3 p-3 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
+                            {/*<div className="stats-icon bg-primary bg-opacity-15 rounded-3 p-3 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>*/}
+                            <div className="stats-icon  bg-opacity-15 rounded-3 p-3 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-primary">
                                     <path d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1zM10 6a2 2 0 0 1 4 0v1h-4V6zm8 13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V9h2v1a1 1 0 0 0 2 0V9h4v1a1 1 0 0 0 2 0V9h2v10z" fill="currentColor" />
                                 </svg>
                             </div>
                             <div className="text-end">
-                                <span className="badge bg-primary bg-opacity-15 text-primary px-3 py-2 rounded-pill">
+                                {/*<span className="badge bg-primary bg-opacity-15 text-primary px-3 py-2 rounded-pill">*/}
+                                <span className="badge bg-opacity-15 text-primary px-3 py-2 rounded-pill">
                                     <svg width="12" height="12" viewBox="0 0 24 24" className="me-1">
                                         <path fill="currentColor" d="M7 14l5-5 5 5z" />
                                     </svg>
@@ -64,13 +68,13 @@ const AdminDashboard = ({ dashboardStats, dateRange, setDateRange, recentOrders,
                     <div className="position-absolute top-0 start-0 w-100" style={{ height: '4px', background: 'linear-gradient(90deg, #17a2b8, #6f42c1)' }}></div>
                     <div className="p-4">
                         <div className="d-flex align-items-center justify-content-between mb-3">
-                            <div className="stats-icon bg-info bg-opacity-15 rounded-3 p-3 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
+                            <div className="stats-icon bg-info text-white bg-opacity-15 rounded-3 p-3 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-info">
                                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor" />
                                 </svg>
                             </div>
                             <div className="text-end">
-                                <span className="badge bg-info bg-opacity-15 text-info px-3 py-2 rounded-pill">
+                                <span className="badge bg-info bg-opacity-15 text-white px-3 py-2 rounded-pill">
                                     <svg width="12" height="12" viewBox="0 0 24 24" className="me-1">
                                         <path fill="currentColor" d="M7 14l5-5 5 5z" />
                                     </svg>
@@ -97,7 +101,7 @@ const AdminDashboard = ({ dashboardStats, dateRange, setDateRange, recentOrders,
                                 </svg>
                             </div>
                             <div className="text-end">
-                                <span className="badge bg-warning bg-opacity-15 text-warning px-3 py-2 rounded-pill">
+                                <span className="badge bg-warning bg-opacity-15 text-white px-3 py-2 rounded-pill">
                                     <svg width="12" height="12" viewBox="0 0 24 24" className="me-1">
                                         <path fill="currentColor" d="M7 14l5-5 5 5z" />
                                     </svg>

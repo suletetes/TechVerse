@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
-// import { Link } from 'react-router-dom';
-import AdminSidebar from '../components/admin/AdminSidebar';
-import AdminHeader from '../components/admin/AdminHeader';
-import AdminDashboard from '../components/admin/AdminDashboard';
-import AdminProducts from '../components/admin/AdminProducts';
-import AdminOrders from '../components/admin/AdminOrders';
-import AdminUsers from '../components/admin/AdminUsers';
-import AdminAddProduct from '../components/admin/AdminAddProduct';
-import AdminSettings from '../components/admin/AdminSettings';
+import React, {useState} from 'react';
+
+import {
+    AdminSidebar,
+    AdminHeader,
+    AdminDashboard,
+    AdminProducts,
+    AdminOrders,
+    AdminUsers,
+    AdminAddProduct,
+    AdminSettings
+} from "../components"
 
 const AdminProfile = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -153,18 +155,28 @@ const AdminProfile = () => {
 
     const getStatusColor = (status) => {
         switch (status.toLowerCase()) {
-            case 'delivered': case 'active': case 'vip': return 'success';
-            case 'shipped': case 'processing': return 'info';
-            case 'low stock': case 'new': return 'warning';
-            case 'cancelled': case 'out of stock': return 'danger';
-            default: return 'secondary';
+            case 'delivered':
+            case 'active':
+            case 'vip':
+                return 'success';
+            case 'shipped':
+            case 'processing':
+                return 'info';
+            case 'low stock':
+            case 'new':
+                return 'warning';
+            case 'cancelled':
+            case 'out of stock':
+                return 'danger';
+            default:
+                return 'secondary';
         }
     };
 
-    const formatCurrency = (amount) => `£${amount.toLocaleString('en-GB', { minimumFractionDigits: 2 })}`;
+    const formatCurrency = (amount) => `£${amount.toLocaleString('en-GB', {minimumFractionDigits: 2})}`;
 
     const handleProductInputChange = (e) => {
-        const { name, value } = e.target;
+        const {name, value} = e.target;
 
         // Handle description character limit
         if (name === 'description' && value.length > 500) {
@@ -263,7 +275,7 @@ const AdminProfile = () => {
     };
 
     const handlePasswordInputChange = (e) => {
-        const { name, value } = e.target;
+        const {name, value} = e.target;
         setPasswordData(prev => ({
             ...prev,
             [name]: value
@@ -310,13 +322,15 @@ const AdminProfile = () => {
                 {sidebarOpen && (
                     <div
                         className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-lg-none"
-                        style={{ zIndex: 1040 }}
+                        style={{zIndex: 1040}}
                         onClick={() => setSidebarOpen(false)}
                     ></div>
                 )}
                 <div className="row g-0 min-vh-100">
                     {/* Sidebar Navigation */}
-                    <div className={`col-lg-3 col-xl-2 ${sidebarOpen ? 'position-fixed start-0 top-0 h-100 bg-white d-lg-block shadow-lg' : 'd-none d-lg-block'}`} style={{ zIndex: 1050, width: sidebarOpen ? '280px' : 'auto' }}>
+                    <div
+                        className={`col-lg-3 col-xl-2 ${sidebarOpen ? 'position-fixed start-0 top-0 h-100 bg-white d-lg-block shadow-lg' : 'd-none d-lg-block'}`}
+                        style={{zIndex: 1050, width: sidebarOpen ? '280px' : 'auto'}}>
                         <AdminSidebar
                             activeTab={activeTab}
                             setActiveTab={setActiveTab}
