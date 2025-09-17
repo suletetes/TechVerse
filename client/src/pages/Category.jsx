@@ -1,10 +1,5 @@
-// src/pages/Category.jsx
-import React, { useState, useMemo } from "react";
-import ProductFilters from "../components/ProductFilters";
-import ProductCard from "../components/ProductCard";
-import ProductCardList from "../components/ProductCardList";
-import Pagination from "../components/Pagination";
-import ViewToggle from "../components/ViewToggle";
+import React, {useState, useMemo} from "react";
+import {ProductFilters, ProductCard, ProductCardList, Pagination, ViewToggle} from "../components";
 
 // Example product data - expanded for better demonstration
 const phones = [
@@ -128,7 +123,7 @@ const Category = () => {
             const matchesBrand = !filterBrand || phone.brand === filterBrand;
             const matchesCategory = !filterCategory || phone.category === filterCategory;
             const matchesPrice = phone.numericPrice >= priceRange[0] && phone.numericPrice <= priceRange[1];
-            
+
             return matchesSearch && matchesBrand && matchesCategory && matchesPrice;
         });
 
@@ -177,7 +172,7 @@ const Category = () => {
                     <div className="col-lg-12 ps-0 pe-0 mb-4">
                         <div className="d-flex justify-content-between align-items-center">
                             <h1 className="tc-6533 mb-0">Phones</h1>
-                            <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+                            <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode}/>
                         </div>
                     </div>
 
@@ -213,11 +208,11 @@ const Category = () => {
                         </div>
                     ) : viewMode === 'grid' ? (
                         currentPhones.map((phone) => (
-                            <ProductCard key={phone.id} product={phone} />
+                            <ProductCard key={phone.id} product={phone}/>
                         ))
                     ) : (
                         currentPhones.map((phone) => (
-                            <ProductCardList key={phone.id} product={phone} />
+                            <ProductCardList key={phone.id} product={phone}/>
                         ))
                     )}
 
