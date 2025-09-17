@@ -71,7 +71,8 @@ const OrderConfirmation = () => {
                                     
                                     <div className="row justify-content-center">
                                         <div className="col-md-8">
-                                            <div className="d-flex justify-content-between align-items-center bg-white bg-opacity-20 rounded p-3">
+                                            {/*<div className="d-flex justify-content-between align-items-center bg-white bg-opacity-20 rounded p-3">*/}
+                                            <div className="d-flex justify-content-between align-items-center  bg-opacity-20 rounded p-3">
                                                 <div>
                                                     <p className="tc-2175 bold-text mb-1">Order Number</p>
                                                     <p className="tc-654 mb-0">{orderData.orderNumber}</p>

@@ -1,16 +1,13 @@
-// src/main.jsx
 import React from "react";
-
-// import components from barrel file
-import {
-    Navigation,
-    Header,
-    SubFooter,
-    Footer, ScrollToTopButton
-    // ScrollToTopButton, // Uncomment if needed
-} from "../components";
 import {Outlet} from "react-router-dom";
-// import "./assets/css/bootstrap.min.css"
+
+import {
+    SubFooter,
+    Footer,
+    Navigation,
+    ScrollToTopButton
+} from "../components";
+
 
 const HomeLayout = () => {
     return (
@@ -19,9 +16,7 @@ const HomeLayout = () => {
             <Navigation/>
             {/* navigation END */}
 
-
             <Outlet/>
-
 
             {/* ScrollToTop Button */}
             <ScrollToTopButton/>

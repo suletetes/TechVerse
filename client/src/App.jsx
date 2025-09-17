@@ -1,19 +1,10 @@
 import React from 'react';
-import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+import {RouterProvider, createBrowserRouter} from 'react-router-dom';
 import {
     Contact,
-    Delivery,
     HomeLayout,
-    Privacy,
     Category,
     Product,
-    ReturnsPolicy,
-    ShippingPolicy,
-    Login,
-    Warranty,
-    Stores,
-    Signup,
-    Faq,
     OrderConfirmation,
     PaymentPage,
     Wishlist,
@@ -25,93 +16,109 @@ import {
 } from "./pages"
 
 
+import {
+    Privacy,
+    Delivery,
+    ReturnsPolicy,
+    ShippingPolicy,
+    Warranty,
+    Stores,
+    Faq
+} from "./pages/info"
+
+
+import {
+    Signup,
+    Login
+} from "./pages/auth"
+
 const router = createBrowserRouter([
     {
         path: '/',
-        element: <HomeLayout />,
-        errorElement: <NotFound />,
+        element: <HomeLayout/>,
+        errorElement: <NotFound/>,
         children: [
             {
                 index: true,
-                element: <Home />,
+                element: <Home/>,
             },
             {
                 path: 'category',
-                element: <Category />,
+                element: <Category/>,
             },
             {
                 path: 'product',
-                element: <Product />,
+                element: <Product/>,
             },
             {
                 path: 'admin',
-                element: <AdminProfile />,
+                element: <AdminProfile/>,
             },
             {
                 path: 'user',
-                element: <UserProfile />,
+                element: <UserProfile/>,
             },
             {
                 path: 'order-confirmation',
-                element: <OrderConfirmation />,
+                element: <OrderConfirmation/>,
             }, {
                 path: 'payment',
-                element: <PaymentPage />,
+                element: <PaymentPage/>,
             },
             {
                 path: 'wishlist',
-                element: <Wishlist />,
+                element: <Wishlist/>,
             }, {
                 path: 'cart',
-                element: <Cart />,
+                element: <Cart/>,
             },
             {
                 path: 'login',
-                element: <Login />,
+                element: <Login/>,
             }, {
                 path: 'signup',
-                element: <Signup />,
+                element: <Signup/>,
             },
             {
                 path: 'contact',
-                element: <Contact />,
+                element: <Contact/>,
             },
             {
                 path: 'delivery',
-                element: <Delivery />,
+                element: <Delivery/>,
             },
             {
                 path: 'warranty',
-                element: <Warranty />,
+                element: <Warranty/>,
             },
             {
                 path: 'privacy',
-                element: <Privacy />,
+                element: <Privacy/>,
             },
             {
                 path: 'ReturnsPolicy',
-                element: <ReturnsPolicy />,
+                element: <ReturnsPolicy/>,
             },
             {
                 path: 'ShippingPolicy',
-                element: <ShippingPolicy />,
+                element: <ShippingPolicy/>,
             }, {
                 path: 'faq',
-                element: <Faq />,
+                element: <Faq/>,
             },
             {
                 path: 'Stores',
-                element: <Stores />,
+                element: <Stores/>,
             },
             {
                 path: '*',
-                element: <NotFound />,
+                element: <NotFound/>,
             },
         ],
     },
 ]);
 
 const App = () => {
-    return <RouterProvider router={router} />;
+    return <RouterProvider router={router}/>;
 };
 export default App;

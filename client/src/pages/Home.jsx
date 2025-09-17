@@ -1,7 +1,5 @@
-// src/main.jsx
 import React from "react";
 
-// import components from barrel file
 import {
     Header,
     LatestProducts,
@@ -10,7 +8,6 @@ import {
     QuickPicks,
     WeeklyDeals,
 } from "../components";
-// import "./assets/css/bootstrap.min.css"
 
 const Home = () => {
     return (
