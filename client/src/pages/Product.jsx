@@ -1056,6 +1056,222 @@ const Product = () => {
                         </div>
                     </div>
 
+                    {/* Related Products Section */}
+                    <div className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
+                        <div className="store-card outline-card fill-card">
+                            <div className="p-4">
+                                <h3 className="tc-6533 fw-bold mb-4 d-flex align-items-center">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" className="me-2 text-primary">
+                                        <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                    </svg>
+                                    You Might Also Like
+                                </h3>
+
+                                <div className="row g-4">
+                                    {[
+                                        {
+                                            id: 1,
+                                            name: "Phone Pro Max",
+                                            price: "From £1,199",
+                                            originalPrice: "£1,299",
+                                            image: "../img/phone-product.jpg",
+                                            webp: "../img/phone-product.webp",
+                                            rating: 4.9,
+                                            reviews: 89,
+                                            badge: "Best Seller"
+                                        },
+                                        {
+                                            id: 2,
+                                            name: "Laptop Ultra",
+                                            price: "From £2,499",
+                                            originalPrice: null,
+                                            image: "../img/laptop-product.jpg",
+                                            webp: "../img/laptop-product.webp",
+                                            rating: 4.7,
+                                            reviews: 156,
+                                            badge: "New"
+                                        },
+                                        {
+                                            id: 3,
+                                            name: "Watch Series 9",
+                                            price: "From £399",
+                                            originalPrice: "£449",
+                                            image: "../img/watch-product.jpg",
+                                            webp: "../img/watch-product.webp",
+                                            rating: 4.8,
+                                            reviews: 234,
+                                            badge: "Sale"
+                                        },
+                                        {
+                                            id: 4,
+                                            name: "AirPods Pro",
+                                            price: "From £249",
+                                            originalPrice: null,
+                                            image: "../img/airpods-product.jpg",
+                                            webp: "../img/airpods-product.webp",
+                                            rating: 4.6,
+                                            reviews: 312,
+                                            badge: null
+                                        }
+                                    ].map((product) => (
+                                        <div key={product.id} className="col-lg-3 col-md-6 col-sm-6">
+                                            <div className="store-card outline-card fill-card h-100 position-relative overflow-hidden">
+                                                {product.badge && (
+                                                    <div className="position-absolute top-0 start-0 z-index-1 m-3">
+                                                        <span className={`badge ${product.badge === 'Sale' ? 'bg-danger' :
+                                                                product.badge === 'New' ? 'bg-success' :
+                                                                    'bg-primary'
+                                                            } px-3 py-2 rounded-pill shadow-sm`}>
+                                                            {product.badge}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                <div className="position-relative overflow-hidden rounded-top">
+                                                    <picture>
+                                                        <source type="image/webp" srcSet={product.webp} />
+                                                        <img
+                                                            src={product.image}
+                                                            alt={product.name}
+                                                            className="img-fluid w-100"
+                                                            style={{ height: '200px', objectFit: 'cover' }}
+                                                        />
+                                                    </picture>
+                                                    <div className="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-0 d-flex align-items-center justify-content-center opacity-0 transition-all hover-overlay">
+                                                        <button className="btn btn-light btn-sm rounded-pill px-3">
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" className="me-1">
+                                                                <path fill="currentColor" d="M12 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5 5 5 0 0 1 5-5 5 5 0 0 1 5 5 5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5Z" />
+                                                            </svg>
+                                                            Quick View
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-3">
+                                                    <div className="d-flex align-items-center mb-2">
+                                                        <div className="d-flex me-2">
+                                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                                <svg key={star} width="14" height="14" viewBox="0 0 24 24"
+                                                                    className={star <= Math.floor(product.rating) ? 'text-warning' : 'text-muted'}>
+                                                                    <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                                                </svg>
+                                                            ))}
+                                                        </div>
+                                                        <span className="text-muted small">({product.reviews})</span>
+                                                    </div>
+
+                                                    <h6 className="tc-6533 fw-semibold mb-2">{product.name}</h6>
+
+                                                    <div className="d-flex align-items-center justify-content-between">
+                                                        <div>
+                                                            <span className="h6 tc-6533 fw-bold mb-0">{product.price}</span>
+                                                            {product.originalPrice && (
+                                                                <span className="text-muted text-decoration-line-through ms-2 small">{product.originalPrice}</span>
+                                                            )}
+                                                        </div>
+                                                        <button className="btn btn-outline-primary btn-sm rounded-circle p-2">
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                <circle cx="9" cy="21" r="1" />
+                                                                <circle cx="20" cy="21" r="1" />
+                                                                <path d="m1 1 4 4 7 13h7l4-8H6" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="text-center mt-4">
+                                    <Link to="/category" className="btn btn-outline-primary btn-rd px-4">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                                            <path fill="currentColor" d="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z" />
+                                        </svg>
+                                        View All Products
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* FAQ Section */}
+                    <div className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-4">
+                        <div className="store-card outline-card fill-card">
+                            <div className="p-4">
+                                <h3 className="tc-6533 fw-bold mb-4 d-flex align-items-center">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" className="me-2 text-info">
+                                        <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z" />
+                                    </svg>
+                                    Frequently Asked Questions
+                                </h3>
+
+                                <div className="accordion" id="faqAccordion">
+                                    {[
+                                        {
+                                            id: 1,
+                                            question: "What's included in the box?",
+                                            answer: "Your Tablet Air comes with the device, USB-C charging cable, 20W USB-C power adapter, and documentation. Apple Pencil and keyboard are sold separately."
+                                        },
+                                        {
+                                            id: 2,
+                                            question: "Is this compatible with Apple Pencil?",
+                                            answer: "Yes, Tablet Air is compatible with Apple Pencil (2nd generation) which attaches magnetically to the side of your tablet for wireless charging and pairing."
+                                        },
+                                        {
+                                            id: 3,
+                                            question: "What's the return policy?",
+                                            answer: "We offer a 30-day return policy for unopened items in original packaging. Opened items can be returned within 14 days. All returns must be in like-new condition."
+                                        },
+                                        {
+                                            id: 4,
+                                            question: "Do you offer international shipping?",
+                                            answer: "Yes, we ship to most countries worldwide. Shipping costs and delivery times vary by location. Free shipping is available for orders over £50 within the UK."
+                                        },
+                                        {
+                                            id: 5,
+                                            question: "What warranty is included?",
+                                            answer: "All our products come with a 2-year manufacturer warranty covering defects in materials and workmanship. Extended warranty options are available at checkout."
+                                        }
+                                    ].map((faq, index) => (
+                                        <div key={faq.id} className="accordion-item border-0 mb-3">
+                                            <h2 className="accordion-header">
+                                                <button
+                                                    className="accordion-button collapsed bg-light rounded-3 fw-semibold"
+                                                    type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target={`#faq${faq.id}`}
+                                                    aria-expanded="false"
+                                                    aria-controls={`faq${faq.id}`}
+                                                >
+                                                    {faq.question}
+                                                </button>
+                                            </h2>
+                                            <div
+                                                id={`faq${faq.id}`}
+                                                className="accordion-collapse collapse"
+                                                data-bs-parent="#faqAccordion"
+                                            >
+                                                <div className="accordion-body pt-3 pb-0">
+                                                    <p className="text-muted mb-0">{faq.answer}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="text-center mt-4">
+                                    <Link to="/faq" className="btn btn-outline-info btn-rd px-4">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                                            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z" />
+                                        </svg>
+                                        View All FAQs
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
 
                 </div>
 
