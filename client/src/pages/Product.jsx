@@ -414,6 +414,117 @@ const Product = () => {
                             </div>
                         </div>
 
+                        {/* Product Specifications */}
+                        <div className="store-card outline-card fill-card mt-3">
+                            <div className="p-4">
+                                <h5 className="tc-6533 fw-bold mb-4 d-flex align-items-center">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" className="me-2 text-primary">
+                                        <path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 2 2h12c1.11 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" />
+                                    </svg>
+                                    Technical Specifications
+                                </h5>
+
+                                <div className="row g-3">
+                                    <div className="col-12">
+                                        <div className="spec-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                                            <span className="text-muted">Display</span>
+                                            <span className="fw-medium">11-inch Liquid Retina</span>
+                                        </div>
+                                        <div className="spec-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                                            <span className="text-muted">Resolution</span>
+                                            <span className="fw-medium">2388 x 1668 pixels</span>
+                                        </div>
+                                        <div className="spec-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                                            <span className="text-muted">Processor</span>
+                                            <span className="fw-medium">M2 Chip</span>
+                                        </div>
+                                        <div className="spec-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                                            <span className="text-muted">RAM</span>
+                                            <span className="fw-medium">8GB</span>
+                                        </div>
+                                        <div className="spec-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                                            <span className="text-muted">Camera</span>
+                                            <span className="fw-medium">12MP Wide + 10MP Ultra Wide</span>
+                                        </div>
+                                        <div className="spec-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                                            <span className="text-muted">Battery Life</span>
+                                            <span className="fw-medium">Up to 10 hours</span>
+                                        </div>
+                                        <div className="spec-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                                            <span className="text-muted">Weight</span>
+                                            <span className="fw-medium">466g</span>
+                                        </div>
+                                        <div className="spec-item d-flex justify-content-between align-items-center py-2">
+                                            <span className="text-muted">Connectivity</span>
+                                            <span className="fw-medium">Wi-Fi 6E, Bluetooth 5.3</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Key Features */}
+                        <div className="store-card outline-card fill-card mt-3">
+                            <div className="p-4">
+                                <h5 className="tc-6533 fw-bold mb-4 d-flex align-items-center">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" className="me-2 text-success">
+                                        <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                    </svg>
+                                    Key Features
+                                </h5>
+
+                                <div className="features-list">
+                                    <div className="feature-item d-flex align-items-start mb-3">
+                                        <div className="feature-icon bg-primary bg-opacity-10 rounded-circle p-2 me-3 flex-shrink-0">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" className="text-primary">
+                                                <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h6 className="mb-1 fw-semibold">All-Day Battery Life</h6>
+                                            <p className="text-muted small mb-0">Up to 10 hours of surfing the web on Wi-Fi, watching video, or listening to music</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="feature-item d-flex align-items-start mb-3">
+                                        <div className="feature-icon bg-success bg-opacity-10 rounded-circle p-2 me-3 flex-shrink-0">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" className="text-success">
+                                                <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h6 className="mb-1 fw-semibold">Advanced Camera System</h6>
+                                            <p className="text-muted small mb-0">12MP Wide camera with Smart HDR 4 and 4K video recording</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="feature-item d-flex align-items-start mb-3">
+                                        <div className="feature-icon bg-info bg-opacity-10 rounded-circle p-2 me-3 flex-shrink-0">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" className="text-info">
+                                                <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h6 className="mb-1 fw-semibold">Ultra-Fast Performance</h6>
+                                            <p className="text-muted small mb-0">M2 chip delivers incredible performance for demanding apps and multitasking</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="feature-item d-flex align-items-start">
+                                        <div className="feature-icon bg-warning bg-opacity-10 rounded-circle p-2 me-3 flex-shrink-0">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" className="text-warning">
+                                                <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h6 className="mb-1 fw-semibold">Versatile Connectivity</h6>
+                                            <p className="text-muted small mb-0">USB-C connector for charging and accessories, plus support for Apple Pencil</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     {/* Right Column - Product Details and Customer Reviews */}
