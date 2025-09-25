@@ -722,66 +722,96 @@ const Product = () => {
                             </div>
                         </div>
 
-                        {/* Customer Reviews Summary - Compact Version */}
+                        {/* Product Highlights */}
+                        {/*#todo center the icons*/}
                         <div className="text-start">
-                            <div className="store-card outline-card fill-card">
-                                <div className="p-3">
-                                    <h5 className="tc-6533 fw-bold mb-3 d-flex align-items-center">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" className="me-2 text-warning">
-                                            <path fill="currentColor"
-                                                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            <div className="store-card outline-card fill-card h-100 d-flex flex-column">
+                                <div className="p-4 flex-grow-1 d-flex flex-column">
+                                    <h5 className="tc-6533 fw-bold mb-4 d-flex align-items-center">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" className="me-2 text-primary">
+                                            <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                                         </svg>
-                                        Reviews
+                                        Why Choose This Product
                                     </h5>
 
-                                    {/* Compact Rating Summary */}
-                                    <div className="d-flex align-items-center justify-content-between mb-3">
-                                        <div className="d-flex align-items-center">
-                                            <span className="h4 fw-bold text-warning me-2">4.8</span>
-                                            <div className="d-flex me-2">
-                                                {[1, 2, 3, 4, 5].map((star) => (
-                                                    <svg key={star} width="16" height="16" viewBox="0 0 24 24"
-                                                        className="text-warning">
-                                                        <path fill="currentColor"
-                                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                    <div className="flex-grow-1 d-flex flex-column justify-content-between">
+                                        <div className="highlights-list">
+                                            <div className="highlight-item d-flex align-items-start mb-4">
+                                                <div className="rounded-3 p-3 me-3 flex-shrink-0 border border-success border-opacity-25" style={{ width: '50px', height: '50px', backgroundColor: 'rgba(25, 135, 84, 0.1)' }}>
+                                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#198754" strokeWidth="2.5">
+                                                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
                                                     </svg>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <small className="text-muted">127 reviews</small>
-                                    </div>
-
-                                    {/* Recent Review Preview */}
-                                    <div className="border-top pt-3">
-                                        <div className="d-flex align-items-start mb-2">
-                                            <div
-                                                className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-2 flex-shrink-0"
-                                                style={{ width: '32px', height: '32px' }}>
-                                                <span className="text-primary fw-bold small">SJ</span>
-                                            </div>
-                                            <div className="flex-grow-1">
-                                                <div className="d-flex align-items-center mb-1">
-                                                    <h6 className="mb-0 me-2 small">Sarah Johnson</h6>
-                                                    <div className="d-flex">
-                                                        {[1, 2, 3, 4, 5].map((star) => (
-                                                            <svg key={star} width="12" height="12" viewBox="0 0 24 24"
-                                                                className="text-warning">
-                                                                <path fill="currentColor"
-                                                                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                                            </svg>
-                                                        ))}
-                                                    </div>
                                                 </div>
-                                                <p className="text-muted small mb-0">"Excellent tablet, highly recommended! Great build quality and performance."</p>
+                                                <div>
+                                                    <h6 className="fw-semibold mb-1">Premium Quality</h6>
+                                                    <p className="text-muted small mb-0">Built with high-grade materials and precision engineering for lasting durability.</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="highlight-item d-flex align-items-start mb-4">
+                                                <div className="rounded-3 p-3 me-3 flex-shrink-0 border border-primary border-opacity-25" style={{ width: '50px', height: '50px', backgroundColor: 'rgba(13, 110, 253, 0.1)' }}>
+                                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0d6efd" strokeWidth="2.5">
+                                                        <circle cx="12" cy="12" r="3" />
+                                                        <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <h6 className="fw-semibold mb-1">Fast Performance</h6>
+                                                    <p className="text-muted small mb-0">Lightning-fast processing power for smooth multitasking and productivity.</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="highlight-item d-flex align-items-start mb-4">
+                                                <div className="rounded-3 p-3 me-3 flex-shrink-0 border border-warning border-opacity-25" style={{ width: '50px', height: '50px', backgroundColor: 'rgba(255, 193, 7, 0.1)' }}>
+                                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffc107" strokeWidth="2.5">
+                                                        <path d="M6 9l6 6 6-6" />
+                                                        <path d="M12 3v12" />
+                                                        <rect x="8" y="21" width="8" height="1" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <h6 className="fw-semibold mb-1">Award Winning</h6>
+                                                    <p className="text-muted small mb-0">Recognized by industry experts for innovation and design excellence.</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="highlight-item d-flex align-items-start mb-4">
+                                                <div className="rounded-3 p-3 me-3 flex-shrink-0 border border-info border-opacity-25" style={{ width: '50px', height: '50px', backgroundColor: 'rgba(13, 202, 240, 0.1)' }}>
+                                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0dcaf0" strokeWidth="2.5">
+                                                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <h6 className="fw-semibold mb-1">Trusted Brand</h6>
+                                                    <p className="text-muted small mb-0">From a company with over 20 years of innovation and customer satisfaction.</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="highlight-item d-flex align-items-start mb-4">
+                                                <div className="rounded-3 p-3 me-3 flex-shrink-0 border border-success border-opacity-25" style={{ width: '50px', height: '50px', backgroundColor: 'rgba(25, 135, 84, 0.1)' }}>
+                                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#198754" strokeWidth="2.5">
+                                                        <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                                                        <polyline points="22,4 12,14.01 9,11.01" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <h6 className="fw-semibold mb-1">Eco-Friendly</h6>
+                                                    <p className="text-muted small mb-0">Manufactured using sustainable practices and recyclable materials.</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* View All Reviews Button */}
-                                    <div className="text-center mt-3">
-                                        <button className="btn btn-outline-primary btn-sm btn-rd w-100">
-                                            View All Reviews
-                                        </button>
+                                        <div className="mt-auto pt-3">
+                                            <div className="bg-light rounded-3 p-3 text-center">
+                                                <div className="d-flex align-items-center justify-content-center mb-2">
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" className="text-success me-2">
+                                                        <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                                    </svg>
+                                                    <span className="fw-bold text-success">4.8/5 Customer Rating</span>
+                                                </div>
+                                                <small className="text-muted">Based on 127 verified reviews</small>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1119,8 +1149,8 @@ const Product = () => {
                                                 {product.badge && (
                                                     <div className="position-absolute top-0 start-0 z-index-1 m-3">
                                                         <span className={`badge ${product.badge === 'Sale' ? 'bg-danger' :
-                                                                product.badge === 'New' ? 'bg-success' :
-                                                                    'bg-primary'
+                                                            product.badge === 'New' ? 'bg-success' :
+                                                                'bg-primary'
                                                             } px-3 py-2 rounded-pill shadow-sm`}>
                                                             {product.badge}
                                                         </span>
@@ -1259,7 +1289,6 @@ const Product = () => {
                                         </div>
                                     ))}
                                 </div>
-
                                 <div className="text-center mt-4">
                                     <Link to="/faq" className="btn btn-outline-info btn-rd px-4">
                                         <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
@@ -1271,8 +1300,6 @@ const Product = () => {
                             </div>
                         </div>
                     </div>
-
-
                 </div>
 
             </div>
