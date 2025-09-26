@@ -724,7 +724,6 @@ const Product = () => {
                         </div>
 
                         {/* Product Highlights */}
-                        {/*#todo center the icons*/}
                         <div className="text-start">
                             <div className="store-card outline-card fill-card h-100 d-flex flex-column">
                                 <div className="p-4 flex-grow-1 d-flex flex-column">
@@ -738,8 +737,8 @@ const Product = () => {
                                     <div className="flex-grow-1 d-flex flex-column justify-content-between">
                                         <div className="highlights-list">
                                             <div className="highlight-item d-flex align-items-start mb-4">
-                                                <div className="rounded-3 p-3 me-3 flex-shrink-0 border border-success border-opacity-25" style={{ width: '50px', height: '50px', backgroundColor: 'rgba(25, 135, 84, 0.1)' }}>
-                                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#198754" strokeWidth="2.5">
+                                                <div className="rounded-3 me-3 flex-shrink-0 border border-success border-opacity-25 d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px', backgroundColor: 'rgba(25, 135, 84, 0.1)' }}>
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#198754" strokeWidth="2.5">
                                                         <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
                                                     </svg>
                                                 </div>
@@ -750,8 +749,8 @@ const Product = () => {
                                             </div>
 
                                             <div className="highlight-item d-flex align-items-start mb-4">
-                                                <div className="rounded-3 p-3 me-3 flex-shrink-0 border border-primary border-opacity-25" style={{ width: '50px', height: '50px', backgroundColor: 'rgba(13, 110, 253, 0.1)' }}>
-                                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0d6efd" strokeWidth="2.5">
+                                                <div className="rounded-3 me-3 flex-shrink-0 border border-primary border-opacity-25 d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px', backgroundColor: 'rgba(13, 110, 253, 0.1)' }}>
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0d6efd" strokeWidth="2.5">
                                                         <circle cx="12" cy="12" r="3" />
                                                         <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" />
                                                     </svg>
@@ -763,8 +762,8 @@ const Product = () => {
                                             </div>
 
                                             <div className="highlight-item d-flex align-items-start mb-4">
-                                                <div className="rounded-3 p-3 me-3 flex-shrink-0 border border-warning border-opacity-25" style={{ width: '50px', height: '50px', backgroundColor: 'rgba(255, 193, 7, 0.1)' }}>
-                                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffc107" strokeWidth="2.5">
+                                                <div className="rounded-3 me-3 flex-shrink-0 border border-warning border-opacity-25 d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px', backgroundColor: 'rgba(255, 193, 7, 0.1)' }}>
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffc107" strokeWidth="2.5">
                                                         <path d="M6 9l6 6 6-6" />
                                                         <path d="M12 3v12" />
                                                         <rect x="8" y="21" width="8" height="1" />
@@ -777,8 +776,8 @@ const Product = () => {
                                             </div>
 
                                             <div className="highlight-item d-flex align-items-start mb-4">
-                                                <div className="rounded-3 p-3 me-3 flex-shrink-0 border border-info border-opacity-25" style={{ width: '50px', height: '50px', backgroundColor: 'rgba(13, 202, 240, 0.1)' }}>
-                                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0dcaf0" strokeWidth="2.5">
+                                                <div className="rounded-3 me-3 flex-shrink-0 border border-info border-opacity-25 d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px', backgroundColor: 'rgba(13, 202, 240, 0.1)' }}>
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0dcaf0" strokeWidth="2.5">
                                                         <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                     </svg>
                                                 </div>
@@ -789,8 +788,8 @@ const Product = () => {
                                             </div>
 
                                             <div className="highlight-item d-flex align-items-start mb-4">
-                                                <div className="rounded-3 p-3 me-3 flex-shrink-0 border border-success border-opacity-25" style={{ width: '50px', height: '50px', backgroundColor: 'rgba(25, 135, 84, 0.1)' }}>
-                                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#198754" strokeWidth="2.5">
+                                                <div className="rounded-3 me-3 flex-shrink-0 border border-success border-opacity-25 d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px', backgroundColor: 'rgba(25, 135, 84, 0.1)' }}>
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#198754" strokeWidth="2.5">
                                                         <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
                                                         <polyline points="22,4 12,14.01 9,11.01" />
                                                     </svg>
