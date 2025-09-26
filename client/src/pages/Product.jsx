@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import Accordion from "../components/Accordion/Accordion";
 
 const Product = () => {
     const [selectedColor, setSelectedColor] = useState('silver');
@@ -1236,59 +1237,52 @@ const Product = () => {
                                     Frequently Asked Questions
                                 </h3>
 
-                                <div className="accordion" id="faqAccordion">
-                                    {[
+                                <Accordion
+                                    items={[
                                         {
-                                            id: 1,
-                                            question: "What's included in the box?",
-                                            answer: "Your Tablet Air comes with the device, USB-C charging cable, 20W USB-C power adapter, and documentation. Apple Pencil and keyboard are sold separately."
+                                            title: "What's included in the box?",
+                                            content: (
+                                                <p className="text-muted mb-0">
+                                                    Your Tablet Air comes with the device, USB-C charging cable, 20W USB-C power adapter, and documentation. Apple Pencil and keyboard are sold separately.
+                                                </p>
+                                            )
                                         },
                                         {
-                                            id: 2,
-                                            question: "Is this compatible with Apple Pencil?",
-                                            answer: "Yes, Tablet Air is compatible with Apple Pencil (2nd generation) which attaches magnetically to the side of your tablet for wireless charging and pairing."
+                                            title: "Is this compatible with Apple Pencil?",
+                                            content: (
+                                                <p className="text-muted mb-0">
+                                                    Yes, Tablet Air is compatible with Apple Pencil (2nd generation) which attaches magnetically to the side of your tablet for wireless charging and pairing.
+                                                </p>
+                                            )
                                         },
                                         {
-                                            id: 3,
-                                            question: "What's the return policy?",
-                                            answer: "We offer a 30-day return policy for unopened items in original packaging. Opened items can be returned within 14 days. All returns must be in like-new condition."
+                                            title: "What's the return policy?",
+                                            content: (
+                                                <p className="text-muted mb-0">
+                                                    We offer a 30-day return policy for unopened items in original packaging. Opened items can be returned within 14 days. All returns must be in like-new condition.
+                                                </p>
+                                            )
                                         },
                                         {
-                                            id: 4,
-                                            question: "Do you offer international shipping?",
-                                            answer: "Yes, we ship to most countries worldwide. Shipping costs and delivery times vary by location. Free shipping is available for orders over £50 within the UK."
+                                            title: "Do you offer international shipping?",
+                                            content: (
+                                                <p className="text-muted mb-0">
+                                                    Yes, we ship to most countries worldwide. Shipping costs and delivery times vary by location. Free shipping is available for orders over £50 within the UK.
+                                                </p>
+                                            )
                                         },
                                         {
-                                            id: 5,
-                                            question: "What warranty is included?",
-                                            answer: "All our products come with a 2-year manufacturer warranty covering defects in materials and workmanship. Extended warranty options are available at checkout."
+                                            title: "What warranty is included?",
+                                            content: (
+                                                <p className="text-muted mb-0">
+                                                    All our products come with a 2-year manufacturer warranty covering defects in materials and workmanship. Extended warranty options are available at checkout.
+                                                </p>
+                                            )
                                         }
-                                    ].map((faq, index) => (
-                                        <div key={faq.id} className="accordion-item border-0 mb-3">
-                                            <h2 className="accordion-header">
-                                                <button
-                                                    className="accordion-button collapsed bg-light rounded-3 fw-semibold"
-                                                    type="button"
-                                                    data-bs-toggle="collapse"
-                                                    data-bs-target={`#faq${faq.id}`}
-                                                    aria-expanded="false"
-                                                    aria-controls={`faq${faq.id}`}
-                                                >
-                                                    {faq.question}
-                                                </button>
-                                            </h2>
-                                            <div
-                                                id={`faq${faq.id}`}
-                                                className="accordion-collapse collapse"
-                                                data-bs-parent="#faqAccordion"
-                                            >
-                                                <div className="accordion-body pt-3 pb-0">
-                                                    <p className="text-muted mb-0">{faq.answer}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                    ]}
+                                    allowMultiple={false}
+                                />
+
                                 <div className="text-center mt-4">
                                     <Link to="/faq" className="btn btn-outline-info btn-rd px-4">
                                         <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
