@@ -1,0 +1,349 @@
+/* Admin Product Management Enhancements */
+
+/* Color dots for product options */
+.color-dot {
+    border: 2px solid #dee2e6;
+    transition: all 0.2s ease;
+}
+
+.color-dot.silver-dot {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.color-dot.blue-dot {
+    background: linear-gradient(135deg, #0d6efd 0%, #084298 100%);
+}
+
+.color-dot.white-dot {
+    background: #ffffff;
+    border-color: #adb5bd;
+}
+
+.color-dot.red-dot {
+    background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%);
+}
+
+.color-dot.green-dot {
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+}
+
+/* Enhanced table styling */
+.table-hover tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Product image hover effects */
+.table img {
+    transition: transform 0.2s ease;
+}
+
+.table tr:hover img {
+    transform: scale(1.05);
+}
+
+/* Status badges */
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.025em;
+}
+
+/* Progress steps */
+.progress-bar {
+    transition: width 0.3s ease;
+}
+
+/* Form enhancements */
+.form-control:focus,
+.form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+
+/* Card hover effects */
+.card {
+    transition: all 0.2s ease;
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+/* Dropdown menu enhancements */
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border-radius: 0.5rem;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+}
+
+/* Image upload areas */
+.image-upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.image-upload-area:hover {
+    border-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.image-upload-area.dragover {
+    border-color: #198754;
+    background-color: rgba(25, 135, 84, 0.05);
+}
+
+/* Tag and feature badges */
+.badge .btn-close {
+    font-size: 0.65em;
+    opacity: 0.8;
+}
+
+.badge .btn-close:hover {
+    opacity: 1;
+}
+
+/* Pagination enhancements */
+.pagination .page-link {
+    border-radius: 0.375rem;
+    margin: 0 0.125rem;
+    border: 1px solid #dee2e6;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Search and filter enhancements */
+.input-group-text {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+/* Empty state styling */
+.empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+.empty-state svg {
+    opacity: 0.5;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .table-responsive {
+        border: none;
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+    
+    .progress-steps {
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    .progress-steps .step {
+        display: inline-block;
+        min-width: 80px;
+    }
+}
+
+/* Loading states */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Success/Error states */
+.alert-success {
+    border-color: #b3d7ff;
+    background-color: #e7f3ff;
+    color: #004085;
+}
+
+.alert-danger {
+    border-color: #f5c2c7;
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Form validation enhancements */
+.is-invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.15);
+}
+
+.invalid-feedback {
+    font-size: 0.875em;
+    margin-top: 0.25rem;
+}
+
+/* Profit margin display */
+.profit-display {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border: 1px solid #b3d7ca;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.profit-negative {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c2c7 100%);
+    border-color: #f1aeb5;
+}
+
+/* Step navigation */
+.step-nav {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    border-top: 1px solid #dee2e6;
+    padding: 1rem 0;
+    margin-top: 2rem;
+}
+
+/* Media gallery grid */
+.media-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.media-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.media-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.media-item .remove-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: rgba(220, 53, 69, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.media-item:hover .remove-btn {
+    opacity: 1;
+}
+
+/* Specification inputs */
+.spec-group {
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.spec-group h6 {
+    color: #495057;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+/* Advanced filters */
+.filter-section {
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.filter-section .form-control,
+.filter-section .form-select {
+    background: white;
+}
+
+/* Bulk actions */
+.bulk-actions {
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.bulk-actions.show {
+    display: block;
+}
+
+.bulk-actions.hide {
+    display: none;
+}
+
+/* Product status indicators */
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.status-indicator.active {
+    background-color: #198754;
+}
+
+.status-indicator.inactive {
+    background-color: #6c757d;
+}
+
+.status-indicator.draft {
+    background-color: #ffc107;
+}
+
+.status-indicator.low-stock {
+    background-color: #fd7e14;
+}
+
+.status-indicator.out-of-stock {
+    background-color: #dc3545;
+}

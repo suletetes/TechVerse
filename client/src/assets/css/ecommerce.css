@@ -726,3 +726,129 @@ r Profile Styles */
 .accordion-item {
     border: 1px solid #dee2e6 !important;
 }
+
+/* Horizontal Scroll Button Fixes */
+.blocs-horizontal-scroll-control {
+    background: transparent !important;
+    border: 0 !important;
+    padding: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    cursor: pointer !important;
+    /* Preserve the original positioning styles */
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 1 !important;
+    display: flex !important;
+    text-align: center !important;
+    margin: 0 30px !important;
+}
+
+.blocs-horizontal-scroll-control:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.blocs-horizontal-scroll-control:active {
+    background: none !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.blocs-horizontal-scroll-control:hover {
+    background: none !important;
+    border: none !important;
+}
+
+.blocs-horizontal-scroll-control.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Ensure the round button styling is preserved */
+.blocs-horizontal-scroll-control .blocs-round-btn {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-radius: 50% !important;
+    width: 50px !important;
+    height: 50px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.blocs-horizontal-scroll-control:hover .blocs-round-btn {
+    background: rgba(255, 255, 255, 1) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    transform: scale(1.05) !important;
+}
+
+.blocs-horizontal-scroll-control:active .blocs-round-btn {
+    transform: scale(0.95) !important;
+}
+
+/* Fix for button focus states */
+.blocs-horizontal-scroll-control:focus .blocs-round-btn {
+    outline: 2px solid #007bff !important;
+    outline-offset: 2px !important;
+}
+
+/* Ensure SVG icons are properly styled */
+.blocs-horizontal-scroll-control svg {
+    pointer-events: none !important;
+}
+
+.blocs-horizontal-scroll-control .horizontal-scroll-icon {
+    fill: #333 !important;
+    stroke: none !important;
+}
+
+.blocs-horizontal-scroll-control:hover .horizontal-scroll-icon {
+    fill: #007bff !important;
+}
+
+/* Compact controls specific fixes */
+.compact-blocs-controls .blocs-horizontal-scroll-control {
+    margin: 0 20px !important;
+}
+
+.compact-blocs-controls .blocs-round-btn {
+    padding: 2px !important;
+    width: 30px !important;
+    height: 30px !important;
+}
+
+.compact-blocs-controls .blocs-round-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+}
+
+/* Additional button reset for all browsers */
+button.blocs-horizontal-scroll-control {
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    color: inherit !important;
+    text-transform: none !important;
+    margin: 0 30px !important;
+}
+
+button.blocs-horizontal-scroll-control::-moz-focus-inner {
+    border: 0 !important;
+    padding: 0 !important;
+}
+
+/* Webkit specific button resets */
+button.blocs-horizontal-scroll-control::-webkit-search-decoration,
+button.blocs-horizontal-scroll-control::-webkit-search-cancel-button,
+button.blocs-horizontal-scroll-control::-webkit-search-results-button,
+button.blocs-horizontal-scroll-control::-webkit-search-results-decoration {
+    -webkit-appearance: none !important;
+}
