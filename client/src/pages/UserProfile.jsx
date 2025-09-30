@@ -34,6 +34,55 @@ const UserProfile = () => {
             holderName: 'John Smith'
         }
     ]);
+    const [recentlyViewed, setRecentlyViewed] = useState([
+        {
+            id: 1,
+            name: 'Tablet Air',
+            price: 1999,
+            image: 'img/tablet-product.jpg',
+            viewedAt: '2024-01-15T10:30:00Z',
+            category: 'Tablets'
+        },
+        {
+            id: 2,
+            name: 'Phone Pro Max',
+            price: 1199,
+            image: 'img/phone-product.jpg',
+            viewedAt: '2024-01-14T15:45:00Z',
+            category: 'Phones'
+        },
+        {
+            id: 3,
+            name: 'Laptop Ultra',
+            price: 2499,
+            image: 'img/laptop-product.jpg',
+            viewedAt: '2024-01-13T09:20:00Z',
+            category: 'Laptops'
+        }
+    ]);
+    const [wishlistCategories, setWishlistCategories] = useState([
+        { id: 'default', name: 'My Wishlist', count: 5, isDefault: true },
+        { id: 'gifts', name: 'Gift Ideas', count: 3, isDefault: false },
+        { id: 'price-watch', name: 'Price Watch', count: 2, isDefault: false }
+    ]);
+    const [priceAlerts, setPriceAlerts] = useState([
+        {
+            id: 1,
+            productName: 'Tablet Air',
+            currentPrice: 1999,
+            targetPrice: 1800,
+            isActive: true,
+            createdAt: '2024-01-10'
+        },
+        {
+            id: 2,
+            productName: 'Watch Series 9',
+            currentPrice: 399,
+            targetPrice: 350,
+            isActive: true,
+            createdAt: '2024-01-08'
+        }
+    ]);
     const [passwordData, setPasswordData] = useState({
         currentPassword: '',
         newPassword: '',
@@ -357,6 +406,70 @@ const UserProfile = () => {
             case 'delete':
                 if (confirm('Are you sure you want to remove this payment method?')) {
                     setPaymentMethods(paymentMethods.filter(pm => pm.id !== methodId));
+                }
+                break;
+            default:
+                break;
+        }
+    };
+
+    // Handle recently viewed actions
+    const handleRecentlyViewedAction = (productId, action) => {
+        switch (action) {
+            case 'remove':
+                setRecentlyViewed(recentlyViewed.filter(p => p.id !== productId));
+                break;
+            case 'addToWishlist':
+                alert('Added to wishlist!');
+                break;
+            case 'view':
+                alert(`Viewing product ${productId}`);
+                break;
+            default:
+                break;
+        }
+    };
+
+    // Handle wishlist category actions
+    const handleWishlistCategoryAction = (categoryId, action) => {
+        switch (action) {
+            case 'rename':
+                const newName = prompt('Enter new category name:');
+                if (newName) {
+                    setWishlistCategories(wishlistCategories.map(cat =>
+                        cat.id === categoryId ? { ...cat, name: newName } : cat
+                    ));
+                }
+                break;
+            case 'delete':
+                if (confirm('Are you sure you want to delete this category? Items will be moved to the default wishlist.')) {
+                    setWishlistCategories(wishlistCategories.filter(cat => cat.id !== categoryId));
+                }
+                break;
+            default:
+                break;
+        }
+    };
+
+    // Handle price alert actions
+    const handlePriceAlertAction = (alertId, action) => {
+        switch (action) {
+            case 'edit':
+                const newTarget = prompt('Enter new target price:');
+                if (newTarget && !isNaN(newTarget)) {
+                    setPriceAlerts(priceAlerts.map(alert =>
+                        alert.id === alertId ? { ...alert, targetPrice: parseFloat(newTarget) } : alert
+                    ));
+                }
+                break;
+            case 'toggle':
+                setPriceAlerts(priceAlerts.map(alert =>
+                    alert.id === alertId ? { ...alert, isActive: !alert.isActive } : alert
+                ));
+                break;
+            case 'delete':
+                if (confirm('Are you sure you want to delete this price alert?')) {
+                    setPriceAlerts(priceAlerts.filter(alert => alert.id !== alertId));
                 }
                 break;
             default:
@@ -855,6 +968,216 @@ const UserProfile = () => {
         </div>
     );
 
+    const renderActivityTab = () => (
+        <div className="store-card fill-card">
+            <h3 className="tc-6533 bold-text mb-4">Activity & Alerts</h3>
+
+            {/* Recently Viewed Products */}
+            <div className="mb-5">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h5 className="tc-6533 mb-0">Recently Viewed Products</h5>
+                    <button
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => setRecentlyViewed([])}
+                    >
+                        Clear All
+                    </button>
+                </div>
+
+                {recentlyViewed.length === 0 ? (
+                    <div className="text-center py-4 bg-light rounded">
+                        <svg width="48" height="48" viewBox="0 0 24 24" className="text-muted mb-3">
+                            <path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
+                        </svg>
+                        <p className="text-muted mb-0">No recently viewed products</p>
+                    </div>
+                ) : (
+                    <div className="row">
+                        {recentlyViewed.map((product) => (
+                            <div key={product.id} className="col-md-4 mb-3">
+                                <div className="border rounded p-3 h-100">
+                                    <div className="d-flex align-items-center mb-2">
+                                        <img
+                                            src={product.image}
+                                            alt={product.name}
+                                            className="rounded me-3"
+                                            width="50"
+                                            height="50"
+                                            style={{ objectFit: 'cover' }}
+                                        />
+                                        <div className="flex-grow-1">
+                                            <h6 className="tc-6533 mb-1">{product.name}</h6>
+                                            <p className="text-muted small mb-0">£{product.price}</p>
+                                        </div>
+                                    </div>
+                                    <div className="d-flex justify-content-between align-items-center">
+                                        <small className="text-muted">
+                                            {new Date(product.viewedAt).toLocaleDateString()}
+                                        </small>
+                                        <div className="d-flex gap-1">
+                                            <button className="btn btn-sm btn-outline-primary">
+                                                View
+                                            </button>
+                                            <button className="btn btn-sm btn-outline-secondary">
+                                                <svg width="14" height="14" viewBox="0 0 24 24">
+                                                    <path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Wishlist Categories */}
+            <div className="mb-5">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h5 className="tc-6533 mb-0">Wishlist Categories</h5>
+                    <button className="btn btn-sm btn-c-2101">
+                        <svg width="14" height="14" viewBox="0 0 24 24" className="me-1">
+                            <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                        </svg>
+                        New Category
+                    </button>
+                </div>
+
+                <div className="row">
+                    {wishlistCategories.map((category) => (
+                        <div key={category.id} className="col-md-4 mb-3">
+                            <div className="border rounded p-3 h-100">
+                                <div className="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 className="tc-6533 mb-1">{category.name}</h6>
+                                        <p className="text-muted small mb-0">{category.count} items</p>
+                                        {category.isDefault && (
+                                            <span className="badge bg-primary mt-1">Default</span>
+                                        )}
+                                    </div>
+                                    {!category.isDefault && (
+                                        <div className="dropdown">
+                                            <button className="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown">
+                                                ⋮
+                                            </button>
+                                            <ul className="dropdown-menu">
+                                                <li><button className="dropdown-item">Rename</button></li>
+                                                <li><button className="dropdown-item text-danger">Delete</button></li>
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                                <Link to="/wishlist" className="btn btn-sm btn-outline-primary w-100">
+                                    View Items
+                                </Link>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Price Alerts */}
+            <div className="mb-5">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h5 className="tc-6533 mb-0">Price Alerts</h5>
+                    <span className="badge bg-info">{priceAlerts.filter(alert => alert.isActive).length} active</span>
+                </div>
+
+                {priceAlerts.length === 0 ? (
+                    <div className="text-center py-4 bg-light rounded">
+                        <svg width="48" height="48" viewBox="0 0 24 24" className="text-muted mb-3">
+                            <path fill="currentColor" d="M16,6L18.29,8.29L13.41,13.17L9.41,9.17L2,16.59L3.41,18L9.41,12L13.41,16L19.71,9.71L22,12V6H16Z" />
+                        </svg>
+                        <p className="text-muted mb-2">No price alerts set</p>
+                        <small className="text-muted">Add products to your wishlist and set price alerts to get notified when prices drop!</small>
+                    </div>
+                ) : (
+                    <div className="row">
+                        {priceAlerts.map((alert) => (
+                            <div key={alert.id} className="col-12 mb-3">
+                                <div className="border rounded p-3">
+                                    <div className="row align-items-center">
+                                        <div className="col-md-6">
+                                            <h6 className="tc-6533 mb-1">{alert.productName}</h6>
+                                            <div className="d-flex align-items-center gap-3">
+                                                <span className="text-muted small">Current: £{alert.currentPrice}</span>
+                                                <span className="text-success small">Target: £{alert.targetPrice}</span>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-3">
+                                            <div className="progress" style={{ height: '8px' }}>
+                                                <div
+                                                    className="progress-bar bg-success"
+                                                    style={{ width: `${Math.min((alert.currentPrice / alert.targetPrice) * 100, 100)}%` }}
+                                                ></div>
+                                            </div>
+                                            <small className="text-muted">
+                                                {alert.currentPrice <= alert.targetPrice ? 'Target reached!' : `£${alert.currentPrice - alert.targetPrice} to go`}
+                                            </small>
+                                        </div>
+                                        <div className="col-md-3 text-end">
+                                            <div className="d-flex gap-1 justify-content-end">
+                                                <button className="btn btn-sm btn-outline-primary">Edit</button>
+                                                <button
+                                                    className="btn btn-sm btn-outline-secondary"
+                                                    onClick={() => setPriceAlerts(priceAlerts.map(a =>
+                                                        a.id === alert.id ? { ...a, isActive: !a.isActive } : a
+                                                    ))}
+                                                >
+                                                    {alert.isActive ? 'Pause' : 'Resume'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Notification Settings */}
+            <div className="border-top pt-4">
+                <h5 className="tc-6533 mb-3">Notification Preferences</h5>
+                <div className="row">
+                    <div className="col-md-6">
+                        <div className="form-check mb-3">
+                            <input className="form-check-input" type="checkbox" id="priceDropNotifications" defaultChecked />
+                            <label className="form-check-label tc-6533" htmlFor="priceDropNotifications">
+                                <strong>Price Drop Alerts</strong><br />
+                                <small className="text-muted">Get notified when wishlist items go on sale</small>
+                            </label>
+                        </div>
+                        <div className="form-check mb-3">
+                            <input className="form-check-input" type="checkbox" id="stockNotifications" defaultChecked />
+                            <label className="form-check-label tc-6533" htmlFor="stockNotifications">
+                                <strong>Stock Alerts</strong><br />
+                                <small className="text-muted">Know when out-of-stock items are available</small>
+                            </label>
+                        </div>
+                    </div>
+                    <div className="col-md-6">
+                        <div className="form-check mb-3">
+                            <input className="form-check-input" type="checkbox" id="newProductNotifications" />
+                            <label className="form-check-label tc-6533" htmlFor="newProductNotifications">
+                                <strong>New Product Alerts</strong><br />
+                                <small className="text-muted">Discover new products in your favorite categories</small>
+                            </label>
+                        </div>
+                        <div className="form-check mb-3">
+                            <input className="form-check-input" type="checkbox" id="reviewNotifications" />
+                            <label className="form-check-label tc-6533" htmlFor="reviewNotifications">
+                                <strong>Review Reminders</strong><br />
+                                <small className="text-muted">Remind me to review purchased products</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
     const renderPreferencesTab = () => (
         <div className="store-card fill-card">
             <h3 className="tc-6533 bold-text mb-4">Preferences & Settings</h3>
@@ -963,15 +1286,128 @@ const UserProfile = () => {
                 </div>
             </div>
 
+            {/* Subscription Management */}
+            <div className="mb-4">
+                <h5 className="tc-6533 mb-3">Subscription Management</h5>
+                <div className="border rounded p-3">
+                    <div className="row align-items-center">
+                        <div className="col-md-8">
+                            <h6 className="tc-6533 mb-1">TechVerse Premium</h6>
+                            <p className="text-muted mb-2">Free shipping, exclusive deals, and early access to new products</p>
+                            <div className="d-flex align-items-center gap-3">
+                                <span className="badge bg-success">Active</span>
+                                <small className="text-muted">Next billing: February 15, 2024</small>
+                            </div>
+                        </div>
+                        <div className="col-md-4 text-end">
+                            <p className="tc-6533 h5 mb-1">£9.99/month</p>
+                            <div className="d-flex gap-2 justify-content-end">
+                                <button className="btn btn-sm btn-outline-secondary">Manage</button>
+                                <button className="btn btn-sm btn-outline-danger">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-3">
+                    <h6 className="tc-6533 mb-2">Auto-Reorder Subscriptions</h6>
+                    <div className="form-check mb-2">
+                        <input className="form-check-input" type="checkbox" id="autoReorderEnabled" />
+                        <label className="form-check-label tc-6533" htmlFor="autoReorderEnabled">
+                            Enable auto-reorder for frequently purchased items
+                        </label>
+                    </div>
+                    <small className="text-muted">We'll automatically reorder items you buy regularly and notify you before each order.</small>
+                </div>
+            </div>
+
+            {/* Transaction History */}
+            <div className="mb-4">
+                <h5 className="tc-6533 mb-3">Recent Transactions</h5>
+                <div className="table-responsive">
+                    <table className="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Jan 15, 2024</td>
+                                <td>Order #TV-2024-001234</td>
+                                <td>£3,597.60</td>
+                                <td><span className="badge bg-success">Completed</span></td>
+                            </tr>
+                            <tr>
+                                <td>Jan 15, 2024</td>
+                                <td>TechVerse Premium</td>
+                                <td>£9.99</td>
+                                <td><span className="badge bg-success">Completed</span></td>
+                            </tr>
+                            <tr>
+                                <td>Jan 10, 2024</td>
+                                <td>Order #TV-2024-001233</td>
+                                <td>£999.00</td>
+                                <td><span className="badge bg-warning">Processing</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div className="text-center mt-3">
+                    <button className="btn btn-sm btn-outline-primary">View All Transactions</button>
+                </div>
+            </div>
+
+            {/* Address Validation */}
+            <div className="mb-4">
+                <h5 className="tc-6533 mb-3">Delivery Preferences</h5>
+                <div className="form-check mb-2">
+                    <input className="form-check-input" type="checkbox" id="addressValidation" defaultChecked />
+                    <label className="form-check-label tc-6533" htmlFor="addressValidation">
+                        Automatically validate and suggest address corrections
+                    </label>
+                </div>
+                <div className="form-check mb-2">
+                    <input className="form-check-input" type="checkbox" id="deliveryInstructions" defaultChecked />
+                    <label className="form-check-label tc-6533" htmlFor="deliveryInstructions">
+                        Save delivery instructions for future orders
+                    </label>
+                </div>
+                <div className="form-check mb-2">
+                    <input className="form-check-input" type="checkbox" id="safePlaceDelivery" />
+                    <label className="form-check-label tc-6533" htmlFor="safePlaceDelivery">
+                        Allow safe place delivery when I'm not home
+                    </label>
+                </div>
+
+                <div className="mt-3">
+                    <label className="form-label tc-6533 bold-text">Preferred Delivery Time</label>
+                    <select className="form-select">
+                        <option value="any">Any time</option>
+                        <option value="morning">Morning (9AM - 12PM)</option>
+                        <option value="afternoon">Afternoon (12PM - 6PM)</option>
+                        <option value="evening">Evening (6PM - 9PM)</option>
+                    </select>
+                </div>
+            </div>
+
             {/* Danger Zone */}
             <div className="border border-danger rounded p-3">
                 <h6 className="text-danger mb-3">Danger Zone</h6>
                 <p className="tc-6533 mb-3">
                     Once you delete your account, there is no going back. Please be certain.
                 </p>
-                <button className="btn btn-outline-danger btn-rd">
-                    Delete Account
-                </button>
+                <div className="d-flex gap-2">
+                    <button className="btn btn-outline-danger btn-rd">
+                        Download My Data
+                    </button>
+                    <button className="btn btn-outline-danger btn-rd">
+                        Delete Account
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -1037,6 +1473,15 @@ const UserProfile = () => {
                                         Payment Methods
                                     </button>
                                     <button
+                                        className={`list-group-item list-group-item-action border-0 ${activeTab === 'activity' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('activity')}
+                                    >
+                                        <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
+                                            <path fill="currentColor" d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z" />
+                                        </svg>
+                                        Activity & Alerts
+                                    </button>
+                                    <button
                                         className={`list-group-item list-group-item-action border-0 ${activeTab === 'preferences' ? 'active' : ''}`}
                                         onClick={() => setActiveTab('preferences')}
                                     >
@@ -1065,6 +1510,7 @@ const UserProfile = () => {
                             {activeTab === 'orders' && renderOrdersTab()}
                             {activeTab === 'addresses' && renderAddressesTab()}
                             {activeTab === 'payments' && renderPaymentMethodsTab()}
+                            {activeTab === 'activity' && renderActivityTab()}
                             {activeTab === 'preferences' && renderPreferencesTab()}
                         </div>
                     </div>
