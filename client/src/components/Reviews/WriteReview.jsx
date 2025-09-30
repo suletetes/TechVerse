@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 
-const WriteReview = ({ onSubmit }) => {
+const WriteReview = ({ onSubmit, initialValues = {}, context }) => {
     const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        rating: 0,
-        title: '',
-        review: '',
-        verifiedPurchase: false
+        name: initialValues.name || '',
+        email: initialValues.email || '',
+        rating: initialValues.rating || 0,
+        title: initialValues.title || '',
+        review: initialValues.review || '',
+        verifiedPurchase: initialValues.verifiedPurchase ?? false
     });
 
     const handleInputChange = (e) => {
@@ -25,22 +25,33 @@ const WriteReview = ({ onSubmit }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (onSubmit) {
-            onSubmit(formData);
+            onSubmit({ ...formData, context });
         }
         // Reset form
         setFormData({
-            name: '',
-            email: '',
-            rating: 0,
+            name: initialValues.name || '',
+            email: initialValues.email || '',
+            rating: initialValues.rating || 0,
             title: '',
             review: '',
-            verifiedPurchase: false
+            verifiedPurchase: initialValues.verifiedPurchase ?? false
         });
     };
 
     return (
         <div className="write-review">
             <h5 className="tc-6533 fw-bold mb-4">Write a Review</h5>
+            {context && (
+                <div className="alert alert-light d-flex align-items-center" role="note">
+                    {context.image && (
+                        <img src={context.image} alt={context.productName} width="40" height="40" className="rounded me-2" style={{objectFit:'cover'}} />
+                    )}
+                    <div>
+                        <div className="fw-semibold">{context.productName || 'Product'}</div>
+                        {context.variant && <small className="text-muted">{context.variant}</small>}
+                    </div>
+                </div>
+            )}
             <form onSubmit={handleSubmit}>
                 <div className="row">
                     <div className="col-md-6 mb-3">
