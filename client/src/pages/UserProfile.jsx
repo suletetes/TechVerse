@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ReviewsSection } from '../components';
 
 const UserProfile = () => {
     const [activeTab, setActiveTab] = useState('profile');
@@ -186,6 +187,9 @@ const UserProfile = () => {
         }
     ]);
 
+    const [showReviewModal, setShowReviewModal] = useState(false);
+    const [reviewOrder, setReviewOrder] = useState(null);
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setProfileData(prev => ({
@@ -365,6 +369,10 @@ const UserProfile = () => {
                 break;
             case 'reorder':
                 alert(`Adding items from order ${orderId} to cart`);
+                break;
+            case 'review':
+                setReviewOrder(order);
+                setShowReviewModal(true);
                 break;
             default:
                 break;
@@ -791,6 +799,14 @@ const UserProfile = () => {
                                                     Reorder
                                                 </button>
                                             )}
+                                    {order.status === 'Delivered' && (
+                                        <button
+                                            className="btn btn-sm btn-c-2101 btn-rd"
+                                            onClick={() => handleOrderAction(order.id, 'review')}
+                                        >
+                                            Write Review
+                                        </button>
+                                    )}
                                         </div>
                                     </div>
                                 </div>
@@ -1733,6 +1749,43 @@ const UserProfile = () => {
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Write Review Modal */}
+            {showReviewModal && (
+                <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-lg modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title tc-6533 fw-bold">
+                                    Write a Review {reviewOrder ? `for Order #${reviewOrder.id}` : ''}
+                                </h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => {
+                                        setShowReviewModal(false);
+                                        setReviewOrder(null);
+                                    }}
+                                ></button>
+                            </div>
+                            <div className="modal-body">
+                                <ReviewsSection
+                                    onSubmitReview={(data) => {
+                                        console.log('Review submitted for order:', reviewOrder, data);
+                                        alert('Thank you for your review!');
+                                        setShowReviewModal(false);
+                                        setReviewOrder(null);
+                                    }}
+                                    showSummary={false}
+                                    showReviews={false}
+                                    showLoadMore={false}
+                                    showWriteReview={true}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
