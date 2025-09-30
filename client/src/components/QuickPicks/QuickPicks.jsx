@@ -1,11 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import {QuickPickCard} from '../Cards';
+import { HorizontalScroll } from '../Common';
 
 const QuickPicks = () => {
-    const scrollAreaRef = useRef(null);
-    const [canScrollLeft, setCanScrollLeft] = useState(false);
-    const [canScrollRight, setCanScrollRight] = useState(true);
-    
     const products = [
         {
             title: 'Ultra HD QLED',
