@@ -1,9 +1,10 @@
-export { default as AdminAddProduct } from './AdminAddProduct';
-export { default as AdminDashboard } from './AdminDashboard';
-export { default as AdminHeader } from './AdminHeader';
-export { default as AdminLayout } from './AdminLayout';
-export { default as AdminOrders } from './AdminOrders';
 export { default as AdminProducts } from './AdminProducts';
-export { default as AdminSettings } from './AdminSettings';
+export { default as AdminAddProduct } from './AdminAddProduct';
+export { default as AdminCategories } from './AdminCategories';
 export { default as AdminSidebar } from './AdminSidebar';
+export { default as AdminHeader } from './AdminHeader';
+export { default as AdminDashboard } from './AdminDashboard';
+export { default as AdminOrders } from './AdminOrders';
 export { default as AdminUsers } from './AdminUsers';
+export { default as AdminSettings } from './AdminSettings';
+export { default as AdminLayout } from './AdminLayout';
