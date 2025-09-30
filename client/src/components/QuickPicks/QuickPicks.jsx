@@ -68,7 +68,6 @@ const QuickPicks = () => {
             imageJpg: 'img/phone-product.jpg'
         }
     ];
-    }, []);
 
     return (
         <div className="bloc full-width-bloc bgc-5700 l-bloc" id="quick-picks">
