@@ -80,47 +80,18 @@ const QuickPicks = () => {
                         </h3>
                     </div>
                     <div className="text-start offset-lg-0 col-lg-12 col">
-                        <div className="blocs-horizontal-scroll-container show-controls">
-                            <button 
-                                className={`blocs-horizontal-scroll-control blocs-scroll-control-prev ${!canScrollLeft ? 'disabled' : ''}`}
-                                onClick={scrollLeft}
-                                disabled={!canScrollLeft}
-                                style={{ display: canScrollLeft ? 'flex' : 'none' }}
-                            >
-                                <span className="blocs-round-btn">
-                                    <svg width="26" height="26" viewBox="0 0 32 32">
-                                        <path className="horizontal-scroll-icon" d="M22,2L9,16,22,30" />
-                                    </svg>
-                                </span>
-                            </button>
-                            <div 
-                                className="blocs-horizontal-scroll-area row-offset"
-                                ref={scrollAreaRef}
-                            >
-                                {products.map((product, index) => (
-                                    <QuickPickCard
-                                        key={index}
-                                        title={product.title}
-                                        price={product.price}
-                                        link={product.link}
-                                        imageWebp={product.imageWebp}
-                                        imageJpg={product.imageJpg}
-                                    />
-                                ))}
-                            </div>
-                            <button 
-                                className={`blocs-horizontal-scroll-control blocs-scroll-control-next ${!canScrollRight ? 'disabled' : ''}`}
-                                onClick={scrollRight}
-                                disabled={!canScrollRight}
-                                style={{ display: canScrollRight ? 'flex' : 'none' }}
-                            >
-                                <span className="blocs-round-btn">
-                                    <svg width="26" height="26" viewBox="0 0 32 32">
-                                        <path className="horizontal-scroll-icon" d="M10.344,2l13,14-13,14" />
-                                    </svg>
-                                </span>
-                            </button>
-                        </div>
+                        <HorizontalScroll>
+                            {products.map((product, index) => (
+                                <QuickPickCard
+                                    key={index}
+                                    title={product.title}
+                                    price={product.price}
+                                    link={product.link}
+                                    imageWebp={product.imageWebp}
+                                    imageJpg={product.imageJpg}
+                                />
+                            ))}
+                        </HorizontalScroll>
                     </div>
                 </div>
             </div>
