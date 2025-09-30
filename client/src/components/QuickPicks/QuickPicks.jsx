@@ -68,56 +68,6 @@ const QuickPicks = () => {
             imageJpg: 'img/phone-product.jpg'
         }
     ];
-
-    const scrollAmount = 300;
-
-    const updateScrollButtons = () => {
-        if (scrollAreaRef.current) {
-            const { scrollLeft, scrollWidth, clientWidth } = scrollAreaRef.current;
-            setCanScrollLeft(scrollLeft > 0);
-            setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
-        }
-    };
-
-    const scrollLeft = () => {
-        if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollBy({
-                left: -scrollAmount,
-                behavior: 'smooth'
-            });
-        }
-    };
-
-    const scrollRight = () => {
-        if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollBy({
-                left: scrollAmount,
-                behavior: 'smooth'
-            });
-        }
-    };
-
-    useEffect(() => {
-        const scrollArea = scrollAreaRef.current;
-        if (scrollArea) {
-            updateScrollButtons();
-            scrollArea.addEventListener('scroll', updateScrollButtons);
-            const timer = setTimeout(updateScrollButtons, 100);
-            
-            return () => {
-                scrollArea.removeEventListener('scroll', updateScrollButtons);
-                clearTimeout(timer);
-            };
-        }
-    }, []);
-
-    useEffect(() => {
-        const handleResize = () => {
-            setTimeout(updateScrollButtons, 100);
-        };
-        
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     return (
