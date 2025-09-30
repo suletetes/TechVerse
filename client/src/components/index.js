@@ -2,6 +2,7 @@ export * from './Accordion';
 export * from './Admin';
 export * from './Cards';
 export * from './Category';
+export * from './Common';
 export * from './Filters';
 export * from './QuickPicks';
 export * from './Service';
