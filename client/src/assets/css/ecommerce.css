@@ -851,4 +851,122 @@ button.blocs-horizontal-scroll-control::-webkit-search-cancel-button,
 button.blocs-horizontal-scroll-control::-webkit-search-results-button,
 button.blocs-horizontal-scroll-control::-webkit-search-results-decoration {
     -webkit-appearance: none !important;
+}/* Order
+ Tracking Timeline Styles */
+.timeline {
+    position: relative;
+    padding-left: 0;
+}
+
+.timeline-item {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-marker {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-right: 1rem;
+    z-index: 1;
+}
+
+.timeline-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.timeline-pending {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #6c757d;
+}
+
+.timeline-line {
+    width: 2px;
+    height: 40px;
+    margin-top: 4px;
+}
+
+.timeline-content {
+    flex: 1;
+    padding-top: 2px;
+}
+
+.timeline-item.completed .timeline-content h6 {
+    color: var(--bs-dark);
+}
+
+.timeline-item.pending .timeline-content h6 {
+    color: var(--bs-secondary);
+}
+
+/* Modal enhancements */
+.modal-lg .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Order status badges */
+.badge.fs-6 {
+    font-size: 0.875rem !important;
+    padding: 0.5rem 1rem;
+}
+
+/* Form radio button enhancements */
+.form-check-input:checked[type="radio"] {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.form-check-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+/* Alert enhancements */
+.alert-info {
+    background-color: rgba(13, 202, 240, 0.1);
+    border-color: rgba(13, 202, 240, 0.2);
+    color: #055160;
+}
+
+/* Button group spacing */
+.d-flex.gap-1 > .btn {
+    margin-right: 0.25rem;
+}
+
+.d-flex.gap-2 > .btn {
+    margin-right: 0.5rem;
+}
+
+/* Responsive timeline */
+@media (max-width: 768px) {
+    .timeline-item {
+        margin-bottom: 1rem;
+    }
+    
+    .timeline-marker {
+        margin-right: 0.75rem;
+    }
+    
+    .timeline-dot {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .timeline-line {
+        height: 30px;
+    }
 }
