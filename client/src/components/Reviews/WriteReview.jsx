@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 
-const WriteReview = ({ onSubmit, initialValues = {}, context }) => {
+const WriteReview = ({ onSubmit, initialValues = {}, context, productInfo }) => {
     const [formData, setFormData] = useState({
         name: initialValues.name || '',
         email: initialValues.email || '',
         rating: initialValues.rating || 0,
         title: initialValues.title || '',
         review: initialValues.review || '',
-        verifiedPurchase: initialValues.verifiedPurchase ?? false
+        verifiedPurchase: initialValues.verifiedPurchase ?? false,
+        productId: productInfo?.id || context?.productId || null,
+        productName: productInfo?.name || context?.productName || 'Tablet Air'
     });
 
     const handleInputChange = (e) => {
@@ -25,7 +27,12 @@ const WriteReview = ({ onSubmit, initialValues = {}, context }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (onSubmit) {
-            onSubmit({ ...formData, context });
+            onSubmit({ 
+                ...formData, 
+                context,
+                timestamp: new Date().toISOString(),
+                id: Date.now() // Simple ID generation for demo
+            });
         }
         // Reset form
         setFormData({
@@ -34,24 +41,28 @@ const WriteReview = ({ onSubmit, initialValues = {}, context }) => {
             rating: initialValues.rating || 0,
             title: '',
             review: '',
-            verifiedPurchase: initialValues.verifiedPurchase ?? false
+            verifiedPurchase: initialValues.verifiedPurchase ?? false,
+            productId: productInfo?.id || context?.productId || null,
+            productName: productInfo?.name || context?.productName || 'Tablet Air'
         });
     };
 
     return (
         <div className="write-review">
             <h5 className="tc-6533 fw-bold mb-4">Write a Review</h5>
-            {context && (
-                <div className="alert alert-light d-flex align-items-center" role="note">
-                    {context.image && (
-                        <img src={context.image} alt={context.productName} width="40" height="40" className="rounded me-2" style={{objectFit:'cover'}} />
-                    )}
-                    <div>
-                        <div className="fw-semibold">{context.productName || 'Product'}</div>
-                        {context.variant && <small className="text-muted">{context.variant}</small>}
-                    </div>
+            
+            {/* Product Context Display */}
+            <div className="alert alert-light d-flex align-items-center mb-4" role="note">
+                <div className="d-flex align-items-center justify-content-center bg-primary bg-opacity-10 rounded me-3" style={{width: '48px', height: '48px', minWidth: '48px'}}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" className="text-primary">
+                        <path fill="currentColor" d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z"/>
+                    </svg>
                 </div>
-            )}
+                <div>
+                    <div className="fw-semibold">{formData.productName}</div>
+                    <small className="text-muted">Share your experience with this product</small>
+                </div>
+            </div>
             <form onSubmit={handleSubmit}>
                 <div className="row">
                     <div className="col-md-6 mb-3">
@@ -81,8 +92,8 @@ const WriteReview = ({ onSubmit, initialValues = {}, context }) => {
                 </div>
 
                 <div className="mb-3">
-                    <label className="form-label fw-semibold">Rating</label>
-                    <div className="rating-input d-flex">
+                    <label className="form-label fw-semibold">Rating *</label>
+                    <div className="rating-input d-flex align-items-center">
                         {[1, 2, 3, 4, 5].map((star) => (
                             <button
                                 key={star}
@@ -90,6 +101,7 @@ const WriteReview = ({ onSubmit, initialValues = {}, context }) => {
                                 className="btn btn-link p-1"
                                 style={{fontSize: '24px', color: star <= formData.rating ? '#ffc107' : '#dee2e6'}}
                                 onClick={() => handleRatingClick(star)}
+                                title={`${star} star${star > 1 ? 's' : ''}`}
                             >
                                 <svg width="24" height="24" viewBox="0 0 24 24">
                                     <path fill="currentColor"
@@ -97,7 +109,15 @@ const WriteReview = ({ onSubmit, initialValues = {}, context }) => {
                                 </svg>
                             </button>
                         ))}
+                        {formData.rating > 0 && (
+                            <span className="ms-2 text-muted small">
+                                {formData.rating} out of 5 stars
+                            </span>
+                        )}
                     </div>
+                    {formData.rating === 0 && (
+                        <small className="text-danger">Please select a rating</small>
+                    )}
                 </div>
 
                 <div className="mb-3">
@@ -140,13 +160,35 @@ const WriteReview = ({ onSubmit, initialValues = {}, context }) => {
                     </label>
                 </div>
 
-                <button type="submit" className="btn btn-primary btn-rd px-4">
-                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                        <path fill="currentColor"
-                              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                    Submit Review
-                </button>
+                <div className="d-flex gap-2">
+                    <button 
+                        type="submit" 
+                        className="btn btn-primary btn-rd px-4"
+                        disabled={formData.rating === 0}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                            <path fill="currentColor"
+                                  d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        Submit Review
+                    </button>
+                    <button 
+                        type="button" 
+                        className="btn btn-outline-secondary btn-rd px-3"
+                        onClick={() => setFormData({
+                            name: initialValues.name || '',
+                            email: initialValues.email || '',
+                            rating: initialValues.rating || 0,
+                            title: '',
+                            review: '',
+                            verifiedPurchase: initialValues.verifiedPurchase ?? false,
+                            productId: productInfo?.id || context?.productId || null,
+                            productName: productInfo?.name || context?.productName || 'Tablet Air'
+                        })}
+                    >
+                        Clear
+                    </button>
+                </div>
             </form>
         </div>
     );
