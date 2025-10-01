@@ -10,6 +10,7 @@ const ReviewsSection = ({
                             showLoadMore = true,
                             showWriteReview = true,
                             showHeader = true,
+                            showDividers = true,
                             title = 'Customer Reviews',
                             writeReviewInitialValues = {},
                             writeReviewContext,
@@ -62,7 +63,7 @@ const ReviewsSection = ({
 
                 {showSummary && <ReviewsSummary/>}
 
-                <div className="divider-h mb-4"></div>
+                {showDividers && <div className="divider-h mb-4"></div>}
 
                 {showReviews && (
                     <div className="reviews-list">
@@ -85,7 +86,7 @@ const ReviewsSection = ({
 
                 {showWriteReview && (
                     <>
-                        <div className="divider-h my-4"></div>
+                        {showDividers && <div className="divider-h my-4"></div>}
                         <WriteReview onSubmit={onSubmitReview} initialValues={writeReviewInitialValues} context={writeReviewContext}/>
                     </>
                 )}
