@@ -1197,3 +1197,80 @@ eline styles for order tracking */
 .timeline-item:last-child .timeline-line {
     display: none;
 }
+/* Pa
+yment Page Enhancements */
+.payment-option {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.payment-option:hover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.payment-option.selected {
+    border-color: #007bff;
+    background-color: #e7f3ff;
+}
+
+.payment-option input[type="radio"] {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.payment-option label {
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+}
+
+/* Import data panel */
+.import-panel {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-left: 4px solid #007bff;
+}
+
+/* Form enhancements */
+.form-control:focus,
+.form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Security badge */
+.security-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    background-color: #d4edda;
+    color: #155724;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+/* Quick import buttons */
+.quick-import-btn {
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.quick-import-btn:hover {
+    opacity: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .payment-option {
+        margin-bottom: 1rem;
+    }
+    
+    .import-panel {
+        margin-bottom: 1rem;
+    }
+}
