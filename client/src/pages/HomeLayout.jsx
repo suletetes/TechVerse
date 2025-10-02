@@ -5,7 +5,8 @@ import {
     SubFooter,
     Footer,
     Navigation,
-    ScrollToTopButton
+    ScrollToTopButton,
+    ErrorTestComponent
 } from "../components";
 
 
@@ -29,6 +30,10 @@ const HomeLayout = () => {
             {/* footer */}
             <Footer/>
             {/* footer END */}
+
+            {/* Error Test Component (Development Only) */}
+            <ErrorTestComponent/>
+            {/* Error Test Component END */}
         </>
     );
 };
