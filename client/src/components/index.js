@@ -15,3 +15,4 @@ export * from './Reviews';
 export * from './RelatedProducts';
 export * from './FAQ';
 export * from './UserProfile';
+export * from './ErrorBoundary';
