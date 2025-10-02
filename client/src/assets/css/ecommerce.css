@@ -970,3 +970,178 @@ button.blocs-horizontal-scroll-control::-webkit-search-results-decoration {
         height: 30px;
     }
 }
+/*
+ Enhanced Order Tracking Timeline Styles */
+.tracking-timeline-enhanced {
+    position: relative;
+    padding-left: 0;
+}
+
+.tracking-step-enhanced {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+}
+
+.tracking-step-marker-enhanced {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-right: 1.5rem;
+    z-index: 1;
+}
+
+.tracking-step-icon-enhanced {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #fff;
+    transition: all 0.3s ease;
+}
+
+.tracking-step-icon-enhanced.bg-success {
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.tracking-step-icon-enhanced.bg-light {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.tracking-step-dot-enhanced {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #6c757d;
+}
+
+.tracking-step-line-enhanced {
+    width: 3px;
+    height: 50px;
+    margin-top: 8px;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+.tracking-step-line-enhanced.completed {
+    background: linear-gradient(180deg, #28a745 0%, #20c997 100%);
+}
+
+.tracking-step-line-enhanced.pending {
+    background-color: #e9ecef;
+}
+
+.tracking-step-content-enhanced {
+    flex: 1;
+    padding-top: 4px;
+}
+
+.tracking-step-enhanced.completed .card {
+    border-left: 4px solid #28a745;
+    transform: translateX(0);
+    transition: all 0.3s ease;
+}
+
+.tracking-step-enhanced.pending .card {
+    border-left: 4px solid #e9ecef;
+}
+
+.tracking-step-enhanced:hover .card {
+    transform: translateX(4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+
+/* Enhanced Modal Styles */
+.modal-xl .modal-content {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.modal-header.bg-gradient {
+    border-radius: 16px 16px 0 0;
+}
+
+/* Progress bar enhancements */
+.progress {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.progress-bar.bg-gradient {
+    border-radius: 8px;
+}
+
+/* Badge enhancements */
+.badge.rounded-pill {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* Card hover effects */
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+/* Alert enhancements */
+.alert {
+    border-radius: 12px;
+    border: none;
+}
+
+.alert-primary {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(13, 202, 240, 0.1) 100%);
+}
+
+.alert-success {
+    background: linear-gradient(135deg, rgba(25, 135, 84, 0.1) 0%, rgba(32, 201, 151, 0.1) 100%);
+}
+
+/* Button enhancements */
+.btn {
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn.shadow-sm:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+/* Responsive enhancements */
+@media (max-width: 768px) {
+    .tracking-step-enhanced {
+        margin-bottom: 1.5rem;
+    }
+    
+    .tracking-step-marker-enhanced {
+        margin-right: 1rem;
+    }
+    
+    .tracking-step-icon-enhanced {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .tracking-step-line-enhanced {
+        height: 40px;
+    }
+    
+    .modal-xl {
+        margin: 0.5rem;
+    }
+    
+    .modal-xl .modal-content {
+        border-radius: 12px;
+    }
+}
