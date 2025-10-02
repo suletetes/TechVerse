@@ -143,9 +143,19 @@ const Product = () => {
     };
 
     const handleSubmitReview = (reviewData) => {
-        console.log('Review submitted:', reviewData);
+        console.log('Review submitted for Tablet Air:', reviewData);
         // Handle review submission logic here
-        alert('Thank you for your review!');
+        // You could send this to your backend API
+        const reviewWithProduct = {
+            ...reviewData,
+            productId: 'tablet-air-001',
+            productName: 'Tablet Air',
+            selectedColor,
+            selectedStorage,
+            submittedAt: new Date().toISOString()
+        };
+        console.log('Complete review data:', reviewWithProduct);
+        alert(`Thank you for your ${reviewData.rating}-star review of the Tablet Air!`);
     };
 
     return (
@@ -239,7 +249,18 @@ const Product = () => {
                     {/* Customer Reviews Section - Full Width Below */}
                     <div
                         className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
-                        <ReviewsSection onSubmitReview={handleSubmitReview} />
+                        <ReviewsSection 
+                            showWriteReview={false} 
+                            // showHeader={false}
+                            // showDividers={false}
+                            onSubmitReview={handleSubmitReview}
+                            productInfo={{
+                                id: 'tablet-air-001',
+                                name: 'Tablet Air',
+                                variant: `${selectedColor} - ${selectedStorage}`,
+                                image: '../img/tablet-thumb.jpg'
+                            }}
+                        />
                     </div>
 
                     {/* Related Products Section */}
