@@ -1,5 +1,5 @@
-import React from 'react';
-import {RouterProvider, createBrowserRouter} from 'react-router-dom';
+import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+import { ErrorBoundary, RouterErrorBoundary } from './components';
 import {
     Contact,
     HomeLayout,
@@ -35,90 +35,94 @@ import {
 const router = createBrowserRouter([
     {
         path: '/',
-        element: <HomeLayout/>,
-        errorElement: <NotFound/>,
+        element: <HomeLayout />,
+        errorElement: <RouterErrorBoundary />,
         children: [
             {
                 index: true,
-                element: <Home/>,
+                element: <Home />,
             },
             {
                 path: 'category',
-                element: <Category/>,
+                element: <Category />,
             },
             {
                 path: 'product',
-                element: <Product/>,
+                element: <Product />,
             },
             {
                 path: 'admin',
-                element: <AdminProfile/>,
+                element: <AdminProfile />,
             },
             {
                 path: 'user',
-                element: <UserProfile/>,
+                element: <UserProfile />,
             },
             {
                 path: 'order-confirmation',
-                element: <OrderConfirmation/>,
+                element: <OrderConfirmation />,
             }, {
                 path: 'payment',
-                element: <PaymentPage/>,
+                element: <PaymentPage />,
             },
             {
                 path: 'wishlist',
-                element: <Wishlist/>,
+                element: <Wishlist />,
             }, {
                 path: 'cart',
-                element: <Cart/>,
+                element: <Cart />,
             },
             {
                 path: 'login',
-                element: <Login/>,
+                element: <Login />,
             }, {
                 path: 'signup',
-                element: <Signup/>,
+                element: <Signup />,
             },
             {
                 path: 'contact',
-                element: <Contact/>,
+                element: <Contact />,
             },
             {
                 path: 'delivery',
-                element: <Delivery/>,
+                element: <Delivery />,
             },
             {
                 path: 'warranty',
-                element: <Warranty/>,
+                element: <Warranty />,
             },
             {
                 path: 'privacy',
-                element: <Privacy/>,
+                element: <Privacy />,
             },
             {
                 path: 'ReturnsPolicy',
-                element: <ReturnsPolicy/>,
+                element: <ReturnsPolicy />,
             },
             {
                 path: 'ShippingPolicy',
-                element: <ShippingPolicy/>,
+                element: <ShippingPolicy />,
             }, {
                 path: 'faq',
-                element: <Faq/>,
+                element: <Faq />,
             },
             {
                 path: 'Stores',
-                element: <Stores/>,
+                element: <Stores />,
             },
             {
                 path: '*',
-                element: <NotFound/>,
+                element: <NotFound />,
             },
         ],
     },
 ]);
 
 const App = () => {
-    return <RouterProvider router={router}/>;
+    return (
+        <ErrorBoundary>
+            <RouterProvider router={router} />
+        </ErrorBoundary>
+    );
 };
 export default App;
