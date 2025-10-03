@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { ReorderModal } from '../components/UserProfile/Modals';
 
 const OrderTracking = () => {
     const { orderId } = useParams();
+    const [showReorderModal, setShowReorderModal] = useState(false);
 
     // Mock order data - in real app, fetch based on orderId
     const order = {
@@ -26,12 +28,13 @@ const OrderTracking = () => {
     };
 
     const getTrackingTimeline = () => {
-        return [
+        const timeline = [
             {
                 status: 'Order Placed',
                 date: order.date,
                 time: '14:30',
                 completed: true,
+                current: false,
                 description: 'Your order has been confirmed and is being prepared'
             },
             {
@@ -39,6 +42,7 @@ const OrderTracking = () => {
                 date: order.date,
                 time: '14:32',
                 completed: true,
+                current: false,
                 description: 'Payment has been successfully processed'
             },
             {
@@ -46,6 +50,7 @@ const OrderTracking = () => {
                 date: order.date,
                 time: '15:45',
                 completed: order.status !== 'Processing',
+                current: order.status === 'Processing',
                 description: 'Your items are being picked and packed'
             },
             {
@@ -53,6 +58,7 @@ const OrderTracking = () => {
                 date: new Date(new Date(order.date).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                 time: '09:15',
                 completed: order.status === 'Shipped' || order.status === 'Delivered',
+                current: order.status === 'Shipped',
                 description: `Package dispatched via courier. Tracking: ${order.trackingNumber}`
             },
             {
@@ -60,6 +66,7 @@ const OrderTracking = () => {
                 date: new Date(new Date(order.date).getTime() + 48 * 60 * 60 * 1000).toISOString().split('T')[0],
                 time: '08:30',
                 completed: order.status === 'Delivered',
+                current: order.status === 'Out for Delivery',
                 description: 'Package is out for delivery in your area'
             },
             {
@@ -67,9 +74,12 @@ const OrderTracking = () => {
                 date: new Date(new Date(order.date).getTime() + 48 * 60 * 60 * 1000).toISOString().split('T')[0],
                 time: '16:45',
                 completed: order.status === 'Delivered',
+                current: false,
                 description: 'Package delivered successfully'
             }
         ];
+
+        return timeline;
     };
 
     return (
@@ -94,16 +104,15 @@ const OrderTracking = () => {
                         <div className="col-lg-8 mb-4">
                             <div className="store-card fill-card">
                                 {/* Order Summary */}
-                                <div className="row mb-4 pb-4 border-bottom">
+                                <div className="order-status-header mb-4">
                                     <div className="col-md-8">
                                         <h5 className="tc-6533 mb-2">Order Details</h5>
                                         <p className="mb-1"><strong>Order ID:</strong> {order.id}</p>
                                         <p className="mb-1"><strong>Order Date:</strong> {new Date(order.date).toLocaleDateString()}</p>
                                         <p className="mb-1"><strong>Total:</strong> £{order.total.toFixed(2)}</p>
                                         <p className="mb-1"><strong>Items:</strong> {order.items} item(s)</p>
-                                        <p className="mb-1"><strong>Tracking Number:</strong>
-                                            <span className="badge bg-info ms-2">{order.trackingNumber}</span>
-                                        </p>
+                                        <p className="mb-1"><strong>Tracking Number:</strong></p>
+                                        <div className="tracking-number-display">{order.trackingNumber}</div>
                                     </div>
                                     <div className="col-md-4 text-center">
                                         <img
@@ -120,35 +129,39 @@ const OrderTracking = () => {
 
                                 {/* Tracking Timeline */}
                                 <h5 className="tc-6533 mb-4">Tracking Timeline</h5>
-                                <div className="timeline">
+                                <div className="tracking-timeline">
                                     {getTrackingTimeline().map((event, index) => (
-                                        <div key={index} className={`timeline-item ${event.completed ? 'completed' : 'pending'}`}>
-                                            <div className="timeline-marker">
-                                                <div className={`timeline-dot ${event.completed ? 'bg-success' : 'bg-secondary'}`}>
+                                        <div key={index} className={`tracking-step ${event.completed ? 'completed' : 'pending'} ${event.current ? 'current' : ''}`}>
+                                            <div className="tracking-step-indicator">
+                                                <div className="tracking-step-icon">
                                                     {event.completed ? (
-                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
-                                                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <polyline points="20,6 9,17 4,12" />
                                                         </svg>
                                                     ) : (
-                                                        <div className="timeline-pending"></div>
+                                                        <div className="tracking-step-number">{index + 1}</div>
                                                     )}
                                                 </div>
                                                 {index < getTrackingTimeline().length - 1 && (
-                                                    <div className={`timeline-line ${event.completed ? 'bg-success' : 'bg-light'}`}></div>
+                                                    <div className="tracking-step-connector"></div>
                                                 )}
                                             </div>
-                                            <div className="timeline-content">
-                                                <div className="d-flex justify-content-between align-items-start mb-1">
-                                                    <h6 className={`mb-0 ${event.completed ? 'tc-6533' : 'text-muted'}`}>
-                                                        {event.status}
-                                                    </h6>
-                                                    <small className="text-muted">
-                                                        {new Date(event.date).toLocaleDateString()} at {event.time}
-                                                    </small>
+                                            <div className="tracking-step-content">
+                                                <div className="tracking-step-header">
+                                                    <h6 className="tracking-step-title">{event.status}</h6>
+                                                    <span className="tracking-step-time">
+                                                        {new Date(event.date).toLocaleDateString()} • {event.time}
+                                                    </span>
                                                 </div>
-                                                <p className={`mb-0 small ${event.completed ? 'tc-6533' : 'text-muted'}`}>
-                                                    {event.description}
-                                                </p>
+                                                <p className="tracking-step-description">{event.description}</p>
+                                                {event.completed && (
+                                                    <div className="tracking-step-badge">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                                                        </svg>
+                                                        Completed
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -156,19 +169,30 @@ const OrderTracking = () => {
 
                                 {/* Estimated Delivery */}
                                 {order.status !== 'Delivered' && (
-                                    <div className="alert alert-info mt-4">
+                                    <div className="delivery-estimate-card mt-4">
                                         <div className="d-flex align-items-center">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
-                                                <path fill="currentColor" d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
-                                            </svg>
-                                            <div>
-                                                <h6 className="alert-heading mb-1">Estimated Delivery</h6>
-                                                <small className="mb-0">
+                                            <div className="delivery-estimate-icon">
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <rect x="1" y="3" width="15" height="13" />
+                                                    <polygon points="16,6 16,16 21,16 21,11" />
+                                                    <circle cx="5.5" cy="18.5" r="2.5" />
+                                                    <circle cx="18.5" cy="18.5" r="2.5" />
+                                                </svg>
+                                            </div>
+                                            <div className="flex-grow-1">
+                                                <h6 className="delivery-estimate-title">Estimated Delivery</h6>
+                                                <p className="delivery-estimate-text mb-0">
                                                     {order.status === 'Processing' ?
                                                         'Your order will be shipped within 1-2 business days' :
-                                                        'Expected delivery by tomorrow, 6:00 PM'
+                                                        order.status === 'Shipped' ?
+                                                        'Expected delivery by tomorrow, 6:00 PM' :
+                                                        'Your package is on the way!'
                                                     }
-                                                </small>
+                                                </p>
+                                            </div>
+                                            <div className="delivery-estimate-badge">
+                                                {order.status === 'Processing' ? '1-2 Days' : 
+                                                 order.status === 'Shipped' ? 'Tomorrow' : 'Today'}
                                             </div>
                                         </div>
                                     </div>
@@ -179,7 +203,7 @@ const OrderTracking = () => {
                         {/* Sidebar */}
                         <div className="col-lg-4">
                             {/* Quick Actions */}
-                            <div className="store-card fill-card mb-4">
+                            <div className="tracking-sidebar-card mb-4">
                                 <h5 className="tc-6533 bold-text mb-3">Quick Actions</h5>
                                 <div className="d-grid gap-2">
                                     <Link
@@ -203,7 +227,10 @@ const OrderTracking = () => {
                                             Write Review
                                         </Link>
                                     )}
-                                    <button className="btn btn-outline-secondary btn-rd">
+                                    <button 
+                                        className="btn btn-outline-secondary btn-rd"
+                                        onClick={() => setShowReorderModal(true)}
+                                    >
                                         <svg width="16" height="16" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
                                             <polyline points="23 4 23 10 17 10" />
                                             <polyline points="1 20 1 14 7 14" />
@@ -215,7 +242,7 @@ const OrderTracking = () => {
                             </div>
 
                             {/* Delivery Information */}
-                            <div className="store-card fill-card mb-4">
+                            <div className="tracking-sidebar-card mb-4">
                                 <h5 className="tc-6533 bold-text mb-3">Delivery Information</h5>
                                 <div className="mb-3">
                                     <small className="text-muted d-block">Courier:</small>
@@ -232,7 +259,7 @@ const OrderTracking = () => {
                             </div>
 
                             {/* Contact Support */}
-                            <div className="store-card fill-card">
+                            <div className="tracking-sidebar-card support-card">
                                 <h5 className="tc-6533 bold-text mb-3">Need Help?</h5>
                                 <p className="text-muted mb-3 small">
                                     Having issues with your delivery? Our support team is here to help.
@@ -257,6 +284,19 @@ const OrderTracking = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Reorder Modal */}
+            {showReorderModal && (
+                <ReorderModal 
+                    onClose={() => setShowReorderModal(false)}
+                    order={order}
+                    onReorder={(selectedItems, quantities) => {
+                        console.log('Reorder completed:', selectedItems, quantities);
+                        alert('Items added to cart successfully!');
+                        setShowReorderModal(false);
+                    }}
+                />
+            )}
         </div>
     );
 };
