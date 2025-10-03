@@ -15,7 +15,7 @@ class ErrorBoundary extends React.Component {
     componentDidCatch(error, errorInfo) {
         // Log error details for debugging
         console.error('ErrorBoundary caught an error:', error, errorInfo);
-        
+
         this.setState({
             error: error,
             errorInfo: errorInfo
@@ -30,7 +30,7 @@ class ErrorBoundary extends React.Component {
     render() {
         if (this.state.hasError) {
             const isDevelopment = import.meta.env.DEV;
-            
+
             if (isDevelopment) {
                 return <DevelopmentErrorUI error={this.state.error} errorInfo={this.state.errorInfo} />;
             } else {
@@ -69,7 +69,7 @@ const DevelopmentErrorUI = ({ error, errorInfo }) => {
                                     <h5 className="text-danger mb-3">Error Details:</h5>
                                     <div className="bg-light p-3 rounded border">
                                         <pre className="mb-0 text-danger" style={{ fontSize: '14px', whiteSpace: 'pre-wrap' }}>
-                                            {error && error.toString()}
+                                            {this.state.error && this.state.error.toString()}
                                         </pre>
                                     </div>
                                 </div>
@@ -88,7 +88,7 @@ const DevelopmentErrorUI = ({ error, errorInfo }) => {
 
                                 {/* Development Actions */}
                                 <div className="d-flex gap-3">
-                                    <button 
+                                    <button
                                         className="btn btn-outline-primary btn-rd"
                                         onClick={() => window.location.reload()}
                                     >

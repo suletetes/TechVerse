@@ -10,7 +10,8 @@ import {
     PasswordChangeModal,
     OrderTrackingModal,
     OrderConfirmModal,
-    ReviewModal
+    ReviewModal,
+    ReorderModal
 } from './';
 
 const UserProfileLayout = () => {
@@ -204,6 +205,8 @@ const UserProfileLayout = () => {
     const [trackingOrder, setTrackingOrder] = useState(null);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [confirmOrder, setConfirmOrder] = useState(null);
+    const [showReorderModal, setShowReorderModal] = useState(false);
+    const [reorderOrder, setReorderOrder] = useState(null);
 
     // Handler functions
     const handleInputChange = (e) => {
@@ -360,68 +363,15 @@ const UserProfileLayout = () => {
         });
     };
 
-    const handleReorder = async (order) => {
-        try {
-            // Mock order items data (in real app, this would come from API)
-            const orderItems = [
-                { id: 1, name: 'Tablet Air', price: 1999, quantity: 1, image: 'img/tablet-product.jpg', available: true },
-                { id: 2, name: 'Tablet Case', price: 49.99, quantity: 1, image: 'img/case-product.jpg', available: true },
-                { id: 3, name: 'Screen Protector', price: 19.99, quantity: 2, image: 'img/protector-product.jpg', available: false }
-            ];
+    const handleReorder = (order) => {
+        setReorderOrder(order);
+        setShowReorderModal(true);
+    };
 
-            // Check item availability
-            const availableItems = orderItems.filter(item => item.available);
-            const unavailableItems = orderItems.filter(item => !item.available);
-
-            if (availableItems.length === 0) {
-                alert('Sorry, none of the items from this order are currently available.');
-                return;
-            }
-
-            let confirmMessage = `Reorder from Order #${order.id}?\n\n`;
-            confirmMessage += `Available items (${availableItems.length}):\n`;
-            availableItems.forEach(item => {
-                confirmMessage += `• ${item.name} - £${item.price} (Qty: ${item.quantity})\n`;
-            });
-
-            if (unavailableItems.length > 0) {
-                confirmMessage += `\nUnavailable items (${unavailableItems.length}):\n`;
-                unavailableItems.forEach(item => {
-                    confirmMessage += `• ${item.name} - Currently out of stock\n`;
-                });
-            }
-
-            const totalAmount = availableItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            confirmMessage += `\nTotal: £${totalAmount.toFixed(2)}`;
-
-            if (confirm(confirmMessage)) {
-                // Show loading state (in real app)
-                console.log('Adding items to cart...');
-                
-                // Simulate API call delay
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                // Success feedback
-                const itemCount = availableItems.reduce((sum, item) => sum + item.quantity, 0);
-                let successMessage = `✅ Successfully added ${itemCount} item${itemCount > 1 ? 's' : ''} to your cart!\n\n`;
-                
-                if (unavailableItems.length > 0) {
-                    successMessage += `⚠️ ${unavailableItems.length} item${unavailableItems.length > 1 ? 's were' : ' was'} not available and skipped.\n\n`;
-                }
-                
-                successMessage += 'Would you like to view your cart now?';
-
-                if (confirm(successMessage)) {
-                    // In real app: navigate to cart page
-                    console.log('Redirecting to cart...');
-                    // window.location.href = '/cart';
-                    alert('🛒 Redirecting to cart page...');
-                }
-            }
-        } catch (error) {
-            console.error('Reorder failed:', error);
-            alert('Sorry, there was an error processing your reorder. Please try again.');
-        }
+    const handleReorderComplete = (selectedItems, quantities) => {
+        console.log('Reorder completed:', selectedItems, quantities);
+        // In real app: Add items to cart and optionally redirect
+        // This could also trigger a cart update or show a success toast
     };
 
     const handleOrderAction = (orderId, action) => {
