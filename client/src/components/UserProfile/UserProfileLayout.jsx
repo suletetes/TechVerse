@@ -360,26 +360,91 @@ const UserProfileLayout = () => {
         });
     };
 
+    const handleReorder = async (order) => {
+        try {
+            // Mock order items data (in real app, this would come from API)
+            const orderItems = [
+                { id: 1, name: 'Tablet Air', price: 1999, quantity: 1, image: 'img/tablet-product.jpg', available: true },
+                { id: 2, name: 'Tablet Case', price: 49.99, quantity: 1, image: 'img/case-product.jpg', available: true },
+                { id: 3, name: 'Screen Protector', price: 19.99, quantity: 2, image: 'img/protector-product.jpg', available: false }
+            ];
+
+            // Check item availability
+            const availableItems = orderItems.filter(item => item.available);
+            const unavailableItems = orderItems.filter(item => !item.available);
+
+            if (availableItems.length === 0) {
+                alert('Sorry, none of the items from this order are currently available.');
+                return;
+            }
+
+            let confirmMessage = `Reorder from Order #${order.id}?\n\n`;
+            confirmMessage += `Available items (${availableItems.length}):\n`;
+            availableItems.forEach(item => {
+                confirmMessage += `• ${item.name} - £${item.price} (Qty: ${item.quantity})\n`;
+            });
+
+            if (unavailableItems.length > 0) {
+                confirmMessage += `\nUnavailable items (${unavailableItems.length}):\n`;
+                unavailableItems.forEach(item => {
+                    confirmMessage += `• ${item.name} - Currently out of stock\n`;
+                });
+            }
+
+            const totalAmount = availableItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            confirmMessage += `\nTotal: £${totalAmount.toFixed(2)}`;
+
+            if (confirm(confirmMessage)) {
+                // Show loading state (in real app)
+                console.log('Adding items to cart...');
+                
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Success feedback
+                const itemCount = availableItems.reduce((sum, item) => sum + item.quantity, 0);
+                let successMessage = `✅ Successfully added ${itemCount} item${itemCount > 1 ? 's' : ''} to your cart!\n\n`;
+                
+                if (unavailableItems.length > 0) {
+                    successMessage += `⚠️ ${unavailableItems.length} item${unavailableItems.length > 1 ? 's were' : ' was'} not available and skipped.\n\n`;
+                }
+                
+                successMessage += 'Would you like to view your cart now?';
+
+                if (confirm(successMessage)) {
+                    // In real app: navigate to cart page
+                    console.log('Redirecting to cart...');
+                    // window.location.href = '/cart';
+                    alert('🛒 Redirecting to cart page...');
+                }
+            }
+        } catch (error) {
+            console.error('Reorder failed:', error);
+            alert('Sorry, there was an error processing your reorder. Please try again.');
+        }
+    };
+
     const handleOrderAction = (orderId, action) => {
         const order = orders.find(o => o.id === orderId);
         switch (action) {
             case 'track':
-                setTrackingOrder(order);
-                setShowTrackingModal(true);
+                // Now handled by Link to /user/order/:id/tracking
                 break;
             case 'confirm':
                 setConfirmOrder(order);
                 setShowConfirmModal(true);
                 break;
             case 'return':
-                alert(`Initiating return for order ${orderId}`);
+                if (confirm(`Are you sure you want to initiate a return for order ${orderId}?`)) {
+                    alert(`Return request submitted for order ${orderId}. You will receive an email with return instructions.`);
+                    // In real app: API call to initiate return
+                }
                 break;
             case 'reorder':
-                alert(`Adding items from order ${orderId} to cart`);
+                handleReorder(order);
                 break;
             case 'review':
-                setReviewOrder(order);
-                setShowReviewModal(true);
+                // Now handled by Link to /user/order/:id/review
                 break;
             default:
                 break;
