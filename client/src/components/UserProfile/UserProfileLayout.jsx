@@ -17,17 +17,19 @@ import {
 } from './';
 
 const UserProfileLayout = ({ initialTab }) => {
-    const [activeTab, setActiveTab] = useState('profile');
+    // Set initial state based on initialTab prop
+    const [activeTab, setActiveTab] = useState(() => {
+        if (initialTab && ['profile', 'orders', 'addresses', 'payments', 'activity', 'preferences'].includes(initialTab)) {
+            return initialTab;
+        }
+        return 'profile';
+    });
     const [isEditing, setIsEditing] = useState(false);
 
-    // Update active tab when initialTab prop changes
+    // Update active tab when initialTab prop changes (for navigation)
     useEffect(() => {
-        console.log('UserProfileLayout: initialTab changed to:', initialTab);
         if (initialTab && ['profile', 'orders', 'addresses', 'payments', 'activity', 'preferences'].includes(initialTab)) {
-            console.log('UserProfileLayout: Setting activeTab to:', initialTab);
             setActiveTab(initialTab);
-        } else if (!initialTab) {
-            setActiveTab('profile');
         }
     }, [initialTab]);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -684,6 +686,7 @@ const UserProfileLayout = ({ initialTab }) => {
                     </div>
 
                     <div className="row">
+
                         {/* Sidebar Navigation */}
                         <div className="col-lg-3 mb-4 mb-lg-0">
                             <ProfileSidebar activeTab={activeTab} onTabChange={setActiveTab} />
