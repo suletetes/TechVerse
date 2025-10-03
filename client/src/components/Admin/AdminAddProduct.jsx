@@ -1,275 +1,1087 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
-const AdminAddProduct = ({ newProduct, setNewProduct, handleProductInputChange, handleProductImageChange, handleAddProduct, setActiveTab }) => (
-    <div className="container-fluid px-0">
-        {/* Hero Header */}
-        <div className="row g-0 mb-4">
-            <div className="col-12">
-                <div className="position-relative overflow-hidden rounded-4 shadow-lg" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-                    <div className="position-absolute top-0 end-0 opacity-10">
-                        <svg width="200" height="200" viewBox="0 0 24 24" fill="white">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                        </svg>
-                    </div>
-                    <div className="p-5 text-white position-relative">
-                        <div className="d-flex align-items-center justify-content-between">
-                            <div className="d-flex align-items-center">
-                                <div className="bg-white bg-opacity-20 rounded-4 p-4 me-4 backdrop-blur">
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
-                                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h1 className="mb-2 fw-bold display-6">Create New Product</h1>
-                                    <p className="mb-0 opacity-90 fs-5">Build your inventory with amazing products</p>
-                                </div>
-                            </div>
-                            <button
-                                className="btn btn-light btn-lg rounded-3 shadow-sm"
-                                onClick={() => setActiveTab('products')}
+const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = [] }) => {
+    const [currentStep, setCurrentStep] = useState(1);
+    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [formData, setFormData] = useState({
+        // Basic Information
+        name: editProduct?.name || '',
+        category: editProduct?.category || '',
+        brand: editProduct?.brand || '',
+        model: editProduct?.model || '',
+        sku: editProduct?.sku || '',
+        shortDescription: editProduct?.shortDescription || '',
+        longDescription: editProduct?.longDescription || '',
+        
+        // Pricing & Inventory
+        price: editProduct?.price || '',
+        originalPrice: editProduct?.originalPrice || '',
+        costPrice: editProduct?.costPrice || '',
+        stock: editProduct?.stock || '',
+        minOrderQuantity: editProduct?.minOrderQuantity || 1,
+        maxOrderQuantity: editProduct?.maxOrderQuantity || 10,
+        
+        // Dynamic Product Options based on category
+        productOptions: editProduct?.productOptions || {},
+        
+        // Media Gallery (matching Product.jsx structure) - now supports videos
+        mediaGallery: editProduct?.mediaGallery || [],
+        mainImage: editProduct?.mainImage || '',
+        videos: editProduct?.videos || [], // New video support
+        
+        // Dynamic Technical Specifications based on category
+        technicalSpecs: editProduct?.technicalSpecs || {},
+        dynamicSpecs: editProduct?.dynamicSpecs || {}, // New dynamic specs based on category template
+        
+        // Key Features
+        keyFeatures: editProduct?.keyFeatures || [],
+        
+        // Physical Properties
+        weight: editProduct?.weight || '',
+        dimensions: editProduct?.dimensions || {
+            length: '',
+            width: '',
+            height: ''
+        },
+        
+        // SEO & Marketing
+        seoTitle: editProduct?.seoTitle || '',
+        seoDescription: editProduct?.seoDescription || '',
+        tags: editProduct?.tags || [],
+        featured: editProduct?.featured || false,
+        
+        // Status & Shipping
+        status: editProduct?.status || 'draft',
+        shippingRequired: editProduct?.shippingRequired || true,
+        shippingWeight: editProduct?.shippingWeight || '',
+        shippingClass: editProduct?.shippingClass || 'standard'
+    });
+
+    const [errors, setErrors] = useState({});
+    const [newFeature, setNewFeature] = useState('');
+    const [newTag, setNewTag] = useState('');
+
+    // Initialize category and dynamic specs
+    useEffect(() => {
+        if (formData.category && categories.length > 0) {
+            const category = categories.find(c => c.slug === formData.category || c.name === formData.category);
+            setSelectedCategory(category);
+            
+            if (category && !editProduct) {
+                // Initialize dynamic specs based on category template
+                const initialSpecs = {};
+                category.specificationTemplate?.groups?.forEach(group => {
+                    group.fields.forEach(field => {
+                        initialSpecs[field.id] = '';
+                    });
+                });
+                
+                // Initialize product options based on category template
+                const initialOptions = {};
+                category.optionsTemplate?.forEach(optionGroup => {
+                    if (optionGroup.enabled) {
+                        initialOptions[optionGroup.id] = {
+                            ...optionGroup,
+                            selectedValue: optionGroup.required ? optionGroup.options[0]?.id : null,
+                            availableOptions: optionGroup.options.map(opt => ({
+                                ...opt,
+                                available: true
+                            }))
+                        };
+                    }
+                });
+                
+                setFormData(prev => ({
+                    ...prev,
+                    dynamicSpecs: initialSpecs,
+                    productOptions: initialOptions
+                }));
+            }
+        }
+    }, [formData.category, categories, editProduct]);
+
+    const steps = [
+        { id: 1, title: 'Basic Info', icon: '📝' },
+        { id: 2, title: 'Pricing', icon: '💰' },
+        { id: 3, title: 'Options', icon: '🎨' },
+        { id: 4, title: 'Media', icon: '📸' },
+        { id: 5, title: 'Specs', icon: '⚙️' },
+        { id: 6, title: 'SEO', icon: '🔍' },
+        { id: 7, title: 'Review', icon: '✅' }
+    ];
+
+    // Categories are now passed as props and dynamic
+
+    const handleInputChange = (field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+        
+        // Clear error when user starts typing
+        if (errors[field]) {
+            setErrors(prev => ({
+                ...prev,
+                [field]: null
+            }));
+        }
+    };
+
+    const handleNestedInputChange = (parent, field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [parent]: {
+                ...prev[parent],
+                [field]: value
+            }
+        }));
+    };
+
+    const handleSpecChange = (category, field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            technicalSpecs: {
+                ...prev.technicalSpecs,
+                [category]: {
+                    ...prev.technicalSpecs[category],
+                    [field]: value
+                }
+            }
+        }));
+    };
+
+    const handleDynamicSpecChange = (fieldId, value) => {
+        setFormData(prev => ({
+            ...prev,
+            dynamicSpecs: {
+                ...prev.dynamicSpecs,
+                [fieldId]: value
+            }
+        }));
+    };
+
+    const addFeature = () => {
+        if (newFeature.trim()) {
+            setFormData(prev => ({
+                ...prev,
+                keyFeatures: [...prev.keyFeatures, newFeature.trim()]
+            }));
+            setNewFeature('');
+        }
+    };
+
+    const removeFeature = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            keyFeatures: prev.keyFeatures.filter((_, i) => i !== index)
+        }));
+    };
+
+    const addTag = () => {
+        if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
+            setFormData(prev => ({
+                ...prev,
+                tags: [...prev.tags, newTag.trim()]
+            }));
+            setNewTag('');
+        }
+    };
+
+    const removeTag = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            tags: prev.tags.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handleImageUpload = (e, type = 'main') => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                if (type === 'main') {
+                    handleInputChange('mainImage', event.target.result);
+                } else {
+                    // Handle additional images for media gallery
+                    const newMedia = {
+                        id: `image-${Date.now()}`,
+                        type: 'image',
+                        src: event.target.result,
+                        thumbnail: event.target.result,
+                        alt: formData.name || 'Product Image',
+                        title: file.name
+                    };
+                    setFormData(prev => ({
+                        ...prev,
+                        mediaGallery: [...prev.mediaGallery, newMedia]
+                    }));
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleVideoUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Check if it's a video file
+            if (!file.type.startsWith('video/')) {
+                alert('Please select a video file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const newVideo = {
+                    id: `video-${Date.now()}`,
+                    type: 'video',
+                    src: event.target.result,
+                    poster: '', // Can be set later
+                    thumbnail: '', // Can be generated
+                    alt: formData.name || 'Product Video',
+                    title: file.name,
+                    fileName: file.name,
+                    fileSize: file.size
+                };
+                
+                // Add to both videos array and media gallery
+                setFormData(prev => ({
+                    ...prev,
+                    videos: [...prev.videos, newVideo],
+                    mediaGallery: [...prev.mediaGallery, newVideo]
+                }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const removeMediaItem = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            mediaGallery: prev.mediaGallery.filter((_, i) => i !== index)
+        }));
+    };
+
+    const validateStep = (step) => {
+        const newErrors = {};
+        
+        switch (step) {
+            case 1:
+                if (!formData.name) newErrors.name = 'Product name is required';
+                if (!formData.category) newErrors.category = 'Category is required';
+                if (!formData.shortDescription) newErrors.shortDescription = 'Short description is required';
+                break;
+            case 2:
+                if (!formData.price) newErrors.price = 'Price is required';
+                if (!formData.stock) newErrors.stock = 'Stock quantity is required';
+                if (formData.originalPrice && parseFloat(formData.originalPrice) <= parseFloat(formData.price)) {
+                    newErrors.originalPrice = 'Original price must be higher than current price';
+                }
+                break;
+            case 6:
+                if (formData.seoTitle && formData.seoTitle.length > 60) {
+                    newErrors.seoTitle = 'SEO title should be under 60 characters';
+                }
+                if (formData.seoDescription && formData.seoDescription.length > 160) {
+                    newErrors.seoDescription = 'SEO description should be under 160 characters';
+                }
+                break;
+        }
+        
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const nextStep = () => {
+        if (validateStep(currentStep)) {
+            setCurrentStep(prev => Math.min(prev + 1, steps.length));
+        }
+    };
+
+    const prevStep = () => {
+        setCurrentStep(prev => Math.max(prev - 1, 1));
+    };
+
+    const handleSave = (isDraft = false) => {
+        const productData = {
+            ...formData,
+            status: isDraft ? 'draft' : 'active',
+            id: editProduct?.id || Date.now(),
+            createdAt: editProduct?.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        
+        onSave(productData);
+    };
+
+    const calculateProfitMargin = () => {
+        const price = parseFloat(formData.price) || 0;
+        const cost = parseFloat(formData.costPrice) || 0;
+        if (price && cost) {
+            return (((price - cost) / price) * 100).toFixed(1);
+        }
+        return 0;
+    };
+
+    const renderStepContent = () => {
+        switch (currentStep) {
+            case 1:
+                return (
+                    <div className="row">
+                        <div className="col-md-6 mb-3">
+                            <label className="form-label">Product Name *</label>
+                            <input
+                                type="text"
+                                className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                                value={formData.name}
+                                onChange={(e) => handleInputChange('name', e.target.value)}
+                                placeholder="Enter product name"
+                            />
+                            {errors.name && <div className="invalid-feedback">{errors.name}</div>}
+                        </div>
+                        <div className="col-md-6 mb-3">
+                            <label className="form-label">Category *</label>
+                            <select
+                                className={`form-select ${errors.category ? 'is-invalid' : ''}`}
+                                value={formData.category}
+                                onChange={(e) => handleInputChange('category', e.target.value)}
                             >
-                                <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
-                                    <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-                                </svg>
-                                Back to Products
-                            </button>
+                                <option value="">Select category</option>
+                                {categories.filter(cat => cat.isActive).map(cat => (
+                                    <option key={cat.id} value={cat.slug}>{cat.name}</option>
+                                ))}
+                            </select>
+                            {errors.category && <div className="invalid-feedback">{errors.category}</div>}
+                            {selectedCategory && (
+                                <div className="form-text">
+                                    {selectedCategory.description}
+                                </div>
+                            )}
+                        </div>
+                        <div className="col-md-6 mb-3">
+                            <label className="form-label">Brand</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={formData.brand}
+                                onChange={(e) => handleInputChange('brand', e.target.value)}
+                                placeholder="Enter brand name"
+                            />
+                        </div>
+                        <div className="col-md-6 mb-3">
+                            <label className="form-label">Model</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={formData.model}
+                                onChange={(e) => handleInputChange('model', e.target.value)}
+                                placeholder="Enter model number"
+                            />
+                        </div>
+                        <div className="col-12 mb-3">
+                            <label className="form-label">SKU</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={formData.sku}
+                                onChange={(e) => handleInputChange('sku', e.target.value)}
+                                placeholder="Enter SKU (Stock Keeping Unit)"
+                            />
+                        </div>
+                        <div className="col-12 mb-3">
+                            <label className="form-label">Short Description *</label>
+                            <textarea
+                                className={`form-control ${errors.shortDescription ? 'is-invalid' : ''}`}
+                                rows="3"
+                                value={formData.shortDescription}
+                                onChange={(e) => handleInputChange('shortDescription', e.target.value)}
+                                placeholder="Brief product description for listings"
+                            />
+                            {errors.shortDescription && <div className="invalid-feedback">{errors.shortDescription}</div>}
+                        </div>
+                        <div className="col-12 mb-3">
+                            <label className="form-label">Long Description</label>
+                            <textarea
+                                className="form-control"
+                                rows="5"
+                                value={formData.longDescription}
+                                onChange={(e) => handleInputChange('longDescription', e.target.value)}
+                                placeholder="Detailed product description"
+                            />
                         </div>
                     </div>
+                );
+
+            case 2:
+                return (
+                    <div className="row">
+                        <div className="col-md-4 mb-3">
+                            <label className="form-label">Current Price * (£)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                className={`form-control ${errors.price ? 'is-invalid' : ''}`}
+                                value={formData.price}
+                                onChange={(e) => handleInputChange('price', e.target.value)}
+                                placeholder="0.00"
+                            />
+                            {errors.price && <div className="invalid-feedback">{errors.price}</div>}
+                        </div>
+                        <div className="col-md-4 mb-3">
+                            <label className="form-label">Original Price (£)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                className={`form-control ${errors.originalPrice ? 'is-invalid' : ''}`}
+                                value={formData.originalPrice}
+                                onChange={(e) => handleInputChange('originalPrice', e.target.value)}
+                                placeholder="0.00"
+                            />
+                            {errors.originalPrice && <div className="invalid-feedback">{errors.originalPrice}</div>}
+                        </div>
+                        <div className="col-md-4 mb-3">
+                            <label className="form-label">Cost Price (£)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                className="form-control"
+                                value={formData.costPrice}
+                                onChange={(e) => handleInputChange('costPrice', e.target.value)}
+                                placeholder="0.00"
+                            />
+                        </div>
+                        {formData.price && formData.costPrice && (
+                            <div className="col-12 mb-3">
+                                <div className="alert alert-info">
+                                    <strong>Profit Margin: {calculateProfitMargin()}%</strong>
+                                    <br />
+                                    Profit per unit: £{(parseFloat(formData.price) - parseFloat(formData.costPrice)).toFixed(2)}
+                                </div>
+                            </div>
+                        )}
+                        <div className="col-md-4 mb-3">
+                            <label className="form-label">Stock Quantity *</label>
+                            <input
+                                type="number"
+                                className={`form-control ${errors.stock ? 'is-invalid' : ''}`}
+                                value={formData.stock}
+                                onChange={(e) => handleInputChange('stock', e.target.value)}
+                                placeholder="0"
+                            />
+                            {errors.stock && <div className="invalid-feedback">{errors.stock}</div>}
+                        </div>
+                        <div className="col-md-4 mb-3">
+                            <label className="form-label">Min Order Quantity</label>
+                            <input
+                                type="number"
+                                className="form-control"
+                                value={formData.minOrderQuantity}
+                                onChange={(e) => handleInputChange('minOrderQuantity', e.target.value)}
+                                placeholder="1"
+                            />
+                        </div>
+                        <div className="col-md-4 mb-3">
+                            <label className="form-label">Max Order Quantity</label>
+                            <input
+                                type="number"
+                                className="form-control"
+                                value={formData.maxOrderQuantity}
+                                onChange={(e) => handleInputChange('maxOrderQuantity', e.target.value)}
+                                placeholder="10"
+                            />
+                        </div>
+                    </div>
+                );
+
+            case 3:
+                return (
+                    <div className="row">
+                        {selectedCategory && selectedCategory.optionsTemplate && selectedCategory.optionsTemplate.length > 0 ? (
+                            <>
+                                <div className="col-12 mb-3">
+                                    <h5>Product Options</h5>
+                                    <p className="text-muted">Configure available options for {selectedCategory.name}</p>
+                                </div>
+                                
+                                {selectedCategory.optionsTemplate.filter(opt => opt.enabled).map((optionGroup) => (
+                                    <div key={optionGroup.id} className="col-12 mb-4">
+                                        <div className="card">
+                                            <div className="card-header">
+                                                <h6 className="mb-0">
+                                                    {optionGroup.name}
+                                                    {optionGroup.required && <span className="text-danger ms-1">*</span>}
+                                                </h6>
+                                                <small className="text-muted">
+                                                    {optionGroup.type === 'color' && 'Color variants for this product'}
+                                                    {optionGroup.type === 'select' && 'Selection options for this product'}
+                                                    {optionGroup.type === 'size' && 'Size variants for this product'}
+                                                    {optionGroup.type === 'text' && 'Custom text option'}
+                                                </small>
+                                            </div>
+                                            <div className="card-body">
+                                                <div className="row">
+                                                    {optionGroup.options.map((option, optionIndex) => (
+                                                        <div key={option.id} className="col-md-6 col-lg-4 mb-3">
+                                                            <div className="card border">
+                                                                <div className="card-body p-3">
+                                                                    <div className="d-flex align-items-center justify-content-between">
+                                                                        <div className="d-flex align-items-center">
+                                                                            {optionGroup.type === 'color' && (
+                                                                                <div 
+                                                                                    className="me-2 border rounded-circle" 
+                                                                                    style={{
+                                                                                        width: '24px',
+                                                                                        height: '24px',
+                                                                                        backgroundColor: option.value
+                                                                                    }}
+                                                                                ></div>
+                                                                            )}
+                                                                            <div>
+                                                                                <div className="fw-medium">{option.name}</div>
+                                                                                {optionGroup.type !== 'color' && (
+                                                                                    <small className="text-muted">{option.value}</small>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="form-check">
+                                                                            <input
+                                                                                className="form-check-input"
+                                                                                type="checkbox"
+                                                                                checked={formData.productOptions[optionGroup.id]?.availableOptions?.find(opt => opt.id === option.id)?.available || false}
+                                                                                onChange={(e) => {
+                                                                                    const newOptions = { ...formData.productOptions };
+                                                                                    if (!newOptions[optionGroup.id]) {
+                                                                                        newOptions[optionGroup.id] = {
+                                                                                            ...optionGroup,
+                                                                                            availableOptions: optionGroup.options.map(opt => ({
+                                                                                                ...opt,
+                                                                                                available: opt.id === option.id ? e.target.checked : false
+                                                                                            }))
+                                                                                        };
+                                                                                    } else {
+                                                                                        newOptions[optionGroup.id].availableOptions = newOptions[optionGroup.id].availableOptions.map(opt =>
+                                                                                            opt.id === option.id ? { ...opt, available: e.target.checked } : opt
+                                                                                        );
+                                                                                    }
+                                                                                    handleInputChange('productOptions', newOptions);
+                                                                                }}
+                                                                            />
+                                                                            <label className="form-check-label">
+                                                                                <small>Available</small>
+                                                                            </label>
+                                                                        </div>
+                                                                    </div>
+                                                                    
+                                                                    {optionGroup.type === 'select' && optionGroup.id === 'storage' && (
+                                                                        <div className="mt-2">
+                                                                            <label className="form-label">
+                                                                                <small>Price Difference (£)</small>
+                                                                            </label>
+                                                                            <input
+                                                                                type="number"
+                                                                                step="0.01"
+                                                                                className="form-control form-control-sm"
+                                                                                placeholder="0.00"
+                                                                                onChange={(e) => {
+                                                                                    const newOptions = { ...formData.productOptions };
+                                                                                    if (newOptions[optionGroup.id]) {
+                                                                                        newOptions[optionGroup.id].availableOptions = newOptions[optionGroup.id].availableOptions.map(opt =>
+                                                                                            opt.id === option.id ? { ...opt, priceDifference: parseFloat(e.target.value) || 0 } : opt
+                                                                                        );
+                                                                                        handleInputChange('productOptions', newOptions);
+                                                                                    }
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                
+                                                {optionGroup.options.length === 0 && (
+                                                    <div className="text-center py-3 text-muted">
+                                                        <p>No {optionGroup.name.toLowerCase()} defined for this category.</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </>
+                        ) : (
+                            <div className="col-12">
+                                <div className="alert alert-info">
+                                    <h6>No Product Options</h6>
+                                    <p className="mb-0">
+                                        {selectedCategory 
+                                            ? `The ${selectedCategory.name} category doesn't have any product options configured.`
+                                            : 'Please select a category in step 1 to see available product options.'
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+
+            case 4:
+                return (
+                    <div className="row">
+                        <div className="col-12 mb-4">
+                            <h5>Main Product Image</h5>
+                            <div className="mb-3">
+                                <input
+                                    type="file"
+                                    className="form-control"
+                                    accept="image/*"
+                                    onChange={(e) => handleImageUpload(e, 'main')}
+                                />
+                            </div>
+                            {formData.mainImage && (
+                                <div className="mb-3">
+                                    <img
+                                        src={formData.mainImage}
+                                        alt="Main product"
+                                        className="img-thumbnail"
+                                        style={{ maxWidth: '200px', maxHeight: '200px' }}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="col-md-6 mb-4">
+                            <h5>Additional Images</h5>
+                            <div className="mb-3">
+                                <input
+                                    type="file"
+                                    className="form-control"
+                                    accept="image/*"
+                                    onChange={(e) => handleImageUpload(e, 'additional')}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="col-md-6 mb-4">
+                            <h5>Product Videos</h5>
+                            <div className="mb-3">
+                                <input
+                                    type="file"
+                                    className="form-control"
+                                    accept="video/*"
+                                    onChange={handleVideoUpload}
+                                />
+                                <div className="form-text">
+                                    Supported formats: MP4, WebM, AVI (Max 50MB)
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="col-12">
+                            <h5>Media Gallery</h5>
+                            <div className="row">
+                                {formData.mediaGallery.map((media, index) => (
+                                    <div key={media.id} className="col-md-3 mb-3">
+                                        <div className="card">
+                                            {media.type === 'image' ? (
+                                                <img
+                                                    src={media.src}
+                                                    alt={media.alt}
+                                                    className="card-img-top"
+                                                    style={{ height: '150px', objectFit: 'cover' }}
+                                                />
+                                            ) : (
+                                                <div className="position-relative">
+                                                    <video
+                                                        src={media.src}
+                                                        className="card-img-top"
+                                                        style={{ height: '150px', objectFit: 'cover' }}
+                                                        controls={false}
+                                                    />
+                                                    <div className="position-absolute top-50 start-50 translate-middle">
+                                                        <div className="bg-dark bg-opacity-75 rounded-circle p-2">
+                                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                                                                <path d="M8 5v14l11-7z"/>
+                                                            </svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className="card-body p-2">
+                                                <small className="text-muted d-block mb-1">
+                                                    {media.type === 'video' ? '🎥 Video' : '🖼️ Image'}
+                                                </small>
+                                                <button
+                                                    className="btn btn-danger btn-sm w-100"
+                                                    onClick={() => removeMediaItem(index)}
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {formData.mediaGallery.length === 0 && (
+                                <div className="text-center py-4 text-muted">
+                                    <p>No media uploaded yet. Add images and videos to showcase your product.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+
+            case 5:
+                return (
+                    <div className="row">
+                        {selectedCategory && selectedCategory.specificationTemplate ? (
+                            <div className="col-12 mb-4">
+                                <h5>Product Specifications</h5>
+                                <p className="text-muted">Fill in the specifications for {selectedCategory.name}</p>
+                                
+                                {selectedCategory.specificationTemplate.groups.map((group) => (
+                                    <div key={group.id} className="card mb-3">
+                                        <div className="card-header">
+                                            <h6 className="mb-0">{group.name}</h6>
+                                        </div>
+                                        <div className="card-body">
+                                            <div className="row">
+                                                {group.fields.map((field) => (
+                                                    <div key={field.id} className="col-md-6 mb-3">
+                                                        <label className="form-label">
+                                                            {field.name}
+                                                            {field.required && <span className="text-danger">*</span>}
+                                                        </label>
+                                                        {field.type === 'text' && (
+                                                            <input
+                                                                type="text"
+                                                                className="form-control"
+                                                                value={formData.dynamicSpecs[field.id] || ''}
+                                                                onChange={(e) => handleDynamicSpecChange(field.id, e.target.value)}
+                                                                placeholder={`Enter ${field.name.toLowerCase()}`}
+                                                                required={field.required}
+                                                            />
+                                                        )}
+                                                        {field.type === 'number' && (
+                                                            <input
+                                                                type="number"
+                                                                className="form-control"
+                                                                value={formData.dynamicSpecs[field.id] || ''}
+                                                                onChange={(e) => handleDynamicSpecChange(field.id, e.target.value)}
+                                                                placeholder={`Enter ${field.name.toLowerCase()}`}
+                                                                required={field.required}
+                                                            />
+                                                        )}
+                                                        {field.type === 'select' && (
+                                                            <select
+                                                                className="form-select"
+                                                                value={formData.dynamicSpecs[field.id] || ''}
+                                                                onChange={(e) => handleDynamicSpecChange(field.id, e.target.value)}
+                                                                required={field.required}
+                                                            >
+                                                                <option value="">Select {field.name}</option>
+                                                                {field.options?.map((option, index) => (
+                                                                    <option key={index} value={option}>{option}</option>
+                                                                ))}
+                                                            </select>
+                                                        )}
+                                                        {field.type === 'textarea' && (
+                                                            <textarea
+                                                                className="form-control"
+                                                                rows="3"
+                                                                value={formData.dynamicSpecs[field.id] || ''}
+                                                                onChange={(e) => handleDynamicSpecChange(field.id, e.target.value)}
+                                                                placeholder={`Enter ${field.name.toLowerCase()}`}
+                                                                required={field.required}
+                                                            />
+                                                        )}
+                                                        {field.type === 'boolean' && (
+                                                            <select
+                                                                className="form-select"
+                                                                value={formData.dynamicSpecs[field.id] || ''}
+                                                                onChange={(e) => handleDynamicSpecChange(field.id, e.target.value)}
+                                                                required={field.required}
+                                                            >
+                                                                <option value="">Select</option>
+                                                                <option value="yes">Yes</option>
+                                                                <option value="no">No</option>
+                                                            </select>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="col-12 mb-4">
+                                <div className="alert alert-info">
+                                    <h6>No Category Selected</h6>
+                                    <p className="mb-0">Please select a category in step 1 to see the specification fields for this product type.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="col-12">
+                            <h5>Key Features</h5>
+                            <div className="mb-3">
+                                <div className="input-group">
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        value={newFeature}
+                                        onChange={(e) => setNewFeature(e.target.value)}
+                                        placeholder="Add a key feature"
+                                        onKeyPress={(e) => e.key === 'Enter' && addFeature()}
+                                    />
+                                    <button className="btn btn-outline-secondary" onClick={addFeature}>
+                                        Add
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="d-flex flex-wrap gap-2">
+                                {formData.keyFeatures.map((feature, index) => (
+                                    <span key={index} className="badge bg-primary d-flex align-items-center">
+                                        {feature}
+                                        <button
+                                            className="btn-close btn-close-white ms-2"
+                                            onClick={() => removeFeature(index)}
+                                        ></button>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            case 6:
+                return (
+                    <div className="row">
+                        <div className="col-12 mb-3">
+                            <label className="form-label">SEO Title</label>
+                            <input
+                                type="text"
+                                className={`form-control ${errors.seoTitle ? 'is-invalid' : ''}`}
+                                value={formData.seoTitle}
+                                onChange={(e) => handleInputChange('seoTitle', e.target.value)}
+                                placeholder="SEO optimized title (max 60 characters)"
+                                maxLength="60"
+                            />
+                            <div className="form-text">{formData.seoTitle.length}/60 characters</div>
+                            {errors.seoTitle && <div className="invalid-feedback">{errors.seoTitle}</div>}
+                        </div>
+                        <div className="col-12 mb-3">
+                            <label className="form-label">SEO Description</label>
+                            <textarea
+                                className={`form-control ${errors.seoDescription ? 'is-invalid' : ''}`}
+                                rows="3"
+                                value={formData.seoDescription}
+                                onChange={(e) => handleInputChange('seoDescription', e.target.value)}
+                                placeholder="SEO meta description (max 160 characters)"
+                                maxLength="160"
+                            />
+                            <div className="form-text">{formData.seoDescription.length}/160 characters</div>
+                            {errors.seoDescription && <div className="invalid-feedback">{errors.seoDescription}</div>}
+                        </div>
+                        <div className="col-12 mb-3">
+                            <label className="form-label">Tags</label>
+                            <div className="input-group mb-2">
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    value={newTag}
+                                    onChange={(e) => setNewTag(e.target.value)}
+                                    placeholder="Add a tag"
+                                    onKeyPress={(e) => e.key === 'Enter' && addTag()}
+                                />
+                                <button className="btn btn-outline-secondary" onClick={addTag}>
+                                    Add Tag
+                                </button>
+                            </div>
+                            <div className="d-flex flex-wrap gap-2">
+                                {formData.tags.map((tag, index) => (
+                                    <span key={index} className="badge bg-secondary d-flex align-items-center">
+                                        {tag}
+                                        <button
+                                            className="btn-close btn-close-white ms-2"
+                                            onClick={() => removeTag(index)}
+                                        ></button>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="col-12 mb-3">
+                            <div className="form-check">
+                                <input
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    checked={formData.featured}
+                                    onChange={(e) => handleInputChange('featured', e.target.checked)}
+                                />
+                                <label className="form-check-label">
+                                    Featured Product
+                                </label>
+                            </div>
+                        </div>
+                        <div className="col-md-6 mb-3">
+                            <label className="form-label">Status</label>
+                            <select
+                                className="form-select"
+                                value={formData.status}
+                                onChange={(e) => handleInputChange('status', e.target.value)}
+                            >
+                                <option value="draft">Draft</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                );
+
+            case 7:
+                return (
+                    <div className="row">
+                        <div className="col-12">
+                            <h5>Product Review</h5>
+                            <div className="card">
+                                <div className="card-body">
+                                    <div className="row">
+                                        <div className="col-md-4">
+                                            {formData.mainImage && (
+                                                <img
+                                                    src={formData.mainImage}
+                                                    alt={formData.name}
+                                                    className="img-fluid rounded"
+                                                />
+                                            )}
+                                        </div>
+                                        <div className="col-md-8">
+                                            <h4>{formData.name}</h4>
+                                            <p className="text-muted">{formData.category} • {formData.brand}</p>
+                                            <p>{formData.shortDescription}</p>
+                                            <div className="row">
+                                                <div className="col-6">
+                                                    <strong>Price: £{formData.price}</strong>
+                                                    {formData.originalPrice && (
+                                                        <span className="text-muted text-decoration-line-through ms-2">
+                                                            £{formData.originalPrice}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="col-6">
+                                                    <strong>Stock: {formData.stock}</strong>
+                                                </div>
+                                            </div>
+                                            <div className="mt-2">
+                                                <span className={`badge bg-${formData.status === 'active' ? 'success' : 'secondary'}`}>
+                                                    {formData.status}
+                                                </span>
+                                                {formData.featured && (
+                                                    <span className="badge bg-warning ms-2">Featured</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <div className="store-card fill-card">
+            {/* Header */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <h3 className="tc-6533 bold-text mb-0">
+                    {editProduct ? 'Edit Product' : 'Add New Product'}
+                </h3>
+                <button className="btn btn-outline-secondary" onClick={onCancel}>
+                    Cancel
+                </button>
+            </div>
+
+            {/* Progress Steps */}
+            <div className="mb-4">
+                <div className="d-flex justify-content-between align-items-center">
+                    {steps.map((step) => (
+                        <div
+                            key={step.id}
+                            className={`d-flex flex-column align-items-center ${
+                                step.id === currentStep ? 'text-primary' : 
+                                step.id < currentStep ? 'text-success' : 'text-muted'
+                            }`}
+                        >
+                            <div
+                                className={`rounded-circle d-flex align-items-center justify-content-center mb-2 ${
+                                    step.id === currentStep ? 'bg-primary text-white' :
+                                    step.id < currentStep ? 'bg-success text-white' : 'bg-light'
+                                }`}
+                                style={{ width: '40px', height: '40px' }}
+                            >
+                                {step.id < currentStep ? '✓' : step.icon}
+                            </div>
+                            <small className="text-center">{step.title}</small>
+                        </div>
+                    ))}
+                </div>
+                <div className="progress mt-3" style={{ height: '4px' }}>
+                    <div
+                        className="progress-bar"
+                        style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
+                    ></div>
+                </div>
+            </div>
+
+            {/* Step Content */}
+            <div className="mb-4">
+                {renderStepContent()}
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="d-flex justify-content-between">
+                <button
+                    className="btn btn-outline-secondary"
+                    onClick={prevStep}
+                    disabled={currentStep === 1}
+                >
+                    Previous
+                </button>
+                
+                <div className="d-flex gap-2">
+                    {currentStep === steps.length ? (
+                        <>
+                            <button
+                                className="btn btn-outline-primary"
+                                onClick={() => handleSave(true)}
+                            >
+                                Save as Draft
+                            </button>
+                            <button
+                                className="btn btn-success"
+                                onClick={() => handleSave(false)}
+                            >
+                                Publish Product
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            className="btn btn-primary"
+                            onClick={nextStep}
+                        >
+                            Next
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
-        <form onSubmit={handleAddProduct}>
-            <div className="row g-4">
-                {/* Product Image Section */}
-                <div className="col-lg-5">
-                    <div className="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
-                        <div className="card-header bg-gradient text-white border-0 p-4" style={{ background: 'linear-gradient(45deg, #28a745, #20c997)' }}>
-                            <div className="d-flex align-items-center">
-                                <div className="bg-white bg-opacity-20 rounded-3 p-2 me-3">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-                                        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-                                    </svg>
-                                </div>
-                                <h4 className="mb-0 fw-bold">Product Gallery</h4>
-                            </div>
-                        </div>
-                        <div className="card-body p-4 text-center">
-                            {newProduct.image ? (
-                                <div className="position-relative mb-4">
-                                    <img
-                                        src={newProduct.image}
-                                        alt="Product preview"
-                                        className="img-fluid rounded-4 shadow-lg border"
-                                        style={{ maxHeight: '350px', width: '100%', objectFit: 'cover' }}
-                                    />
-                                    <button
-                                        type="button"
-                                        className="btn btn-danger position-absolute top-0 end-0 m-3 rounded-circle shadow-lg"
-                                        onClick={() => setNewProduct(prev => ({ ...prev, image: null }))}
-                                        style={{ width: '44px', height: '44px' }}
-                                    >
-                                        <svg width="18" height="18" viewBox="0 0 24 24">
-                                            <path fill="white" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                                        </svg>
-                                    </button>
-                                    <div className="position-absolute bottom-0 start-0 end-0 bg-dark bg-opacity-75 text-white p-3 rounded-bottom-4">
-                                        <small className="fw-medium">✓ Image uploaded successfully</small>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="border border-3 border-dashed rounded-4 p-5 mb-4 bg-light position-relative" style={{ borderColor: '#dee2e6', minHeight: '350px' }}>
-                                    <div className="d-flex flex-column align-items-center justify-content-center h-100">
-                                        <div className="bg-primary bg-opacity-10 rounded-circle p-4 mb-4">
-                                            <svg width="48" height="48" viewBox="0 0 24 24" className="text-primary">
-                                                <path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-                                            </svg>
-                                        </div>
-                                        <h5 className="text-muted mb-3 fw-bold">Upload Product Image</h5>
-                                        <p className="text-muted mb-4">Drag and drop your image here or click to browse</p>
-                                        <div className="d-flex gap-2 text-muted small">
-                                            <span className="badge bg-light text-dark">JPG</span>
-                                            <span className="badge bg-light text-dark">PNG</span>
-                                            <span className="badge bg-light text-dark">GIF</span>
-                                            <span className="badge bg-light text-dark">Max 5MB</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            <label className="btn btn-primary btn-lg w-100 rounded-3 shadow-sm">
-                                <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
-                                    <path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z" />
-                                </svg>
-                                {newProduct.image ? 'Change Image' : 'Choose Image'}
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleProductImageChange}
-                                    className="d-none"
-                                />
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                {/* Product Details Section */}
-                <div className="col-lg-7">
-                    <div className="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
-                        <div className="card-header bg-gradient text-white border-0 p-4" style={{ background: 'linear-gradient(45deg, #007bff, #6610f2)' }}>
-                            <div className="d-flex align-items-center">
-                                <div className="bg-white bg-opacity-20 rounded-3 p-2 me-3">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-                                        <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 2 2h12c1.11 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
-                                    </svg>
-                                </div>
-                                <h4 className="mb-0 fw-bold">Product Information</h4>
-                            </div>
-                        </div>
-                        <div className="card-body p-4">
-                            <div className="row g-4">
-                                <div className="col-md-6">
-                                    <label className="form-label fw-bold text-dark mb-2">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2 text-primary">
-                                            <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        Product Name *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        className="form-control form-control-lg rounded-3 border-2"
-                                        value={newProduct.name}
-                                        onChange={handleProductInputChange}
-                                        placeholder="Enter product name"
-                                        required
-                                    />
-                                </div>
-                                <div className="col-md-6">
-                                    <label className="form-label fw-bold text-dark mb-2">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2 text-primary">
-                                            <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                        Category *
-                                    </label>
-                                    <select
-                                        name="category"
-                                        className="form-select form-select-lg rounded-3 border-2"
-                                        value={newProduct.category}
-                                        onChange={handleProductInputChange}
-                                        required
-                                    >
-                                        <option value="">Select category</option>
-                                        <option value="phones">📱 Phones</option>
-                                        <option value="tablets">📱 Tablets</option>
-                                        <option value="laptops">💻 Laptops</option>
-                                        <option value="accessories">🎧 Accessories</option>
-                                    </select>
-                                </div>
-                                <div className="col-md-6">
-                                    <label className="form-label fw-bold text-dark mb-2">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2 text-success">
-                                            <path fill="currentColor" d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
-                                        </svg>
-                                        Price (£) *
-                                    </label>
-                                    <div className="input-group input-group-lg">
-                                        <span className="input-group-text bg-success text-white border-2 border-success fw-bold">£</span>
-                                        <input
-                                            type="number"
-                                            name="price"
-                                            className="form-control border-2 border-start-0"
-                                            value={newProduct.price}
-                                            onChange={handleProductInputChange}
-                                            placeholder="0.00"
-                                            min="0"
-                                            step="0.01"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                                <div className="col-md-6">
-                                    <label className="form-label fw-bold text-dark mb-2">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2 text-warning">
-                                            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                                        </svg>
-                                        Stock Quantity *
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="stock"
-                                        className="form-control form-control-lg rounded-3 border-2"
-                                        value={newProduct.stock}
-                                        onChange={handleProductInputChange}
-                                        placeholder="0"
-                                        min="0"
-                                        required
-                                    />
-                                </div>
-                                <div className="col-12">
-                                    <label className="form-label fw-bold text-dark mb-2">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2 text-info">
-                                            <path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 2 2h12c1.11 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
-                                        </svg>
-                                        Product Description *
-                                    </label>
-                                    <textarea
-                                        name="description"
-                                        className="form-control rounded-3 border-2"
-                                        rows="5"
-                                        value={newProduct.description}
-                                        onChange={handleProductInputChange}
-                                        placeholder="Enter detailed product description, features, specifications..."
-                                        required
-                                        style={{ resize: 'vertical' }}
-                                    ></textarea>
-                                    <div className="d-flex justify-content-between mt-2">
-                                        <small className="text-muted">💡 Provide detailed information about the product</small>
-                                        <small className={`fw-medium ${newProduct.description.length > 450 ? 'text-warning' : newProduct.description.length > 0 ? 'text-success' : 'text-muted'}`}>{newProduct.description.length}/500 characters</small>
-                                    </div>
-                                </div>
-                            </div>
-                            {/* Action Buttons */}
-                            <div className="d-flex gap-3 pt-4 mt-4 border-top">
-                                <button
-                                    type="button"
-                                    className="btn btn-outline-secondary btn-lg px-4 rounded-3"
-                                    onClick={() => {
-                                        setNewProduct({
-                                            name: '',
-                                            category: '',
-                                            price: '',
-                                            stock: '',
-                                            description: '',
-                                            image: null
-                                        });
-                                    }}
-                                >
-                                    <svg width="18" height="18" viewBox="0 0 24 24" className="me-2">
-                                        <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                                    </svg>
-                                    Clear Form
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="btn btn-success btn-lg px-5 flex-grow-1 rounded-3 shadow-sm"
-                                    disabled={
-                                        !newProduct.name ||
-                                        !newProduct.category ||
-                                        !newProduct.price ||
-                                        !newProduct.stock ||
-                                        !newProduct.description
-                                    }
-                                >
-                                    <svg width="20" height="20" viewBox="0 0 24 24" className="me-2" fill="white">
-                                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                                    </svg>
-                                    Create Product
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </form>
-    </div>
-);
+    );
+};
 
 export default AdminAddProduct;
