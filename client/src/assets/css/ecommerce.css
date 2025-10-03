@@ -1273,4 +1273,241 @@ yment Page Enhancements */
     .import-panel {
         margin-bottom: 1rem;
     }
+}/
+* Orders Tab Styling Improvements */
+.order-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef !important;
+}
+
+.order-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #007bff !important;
+}
+
+.order-status-badge {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    font-weight: 600;
+}
+
+.order-actions {
+    gap: 0.5rem;
+}
+
+.order-actions .btn {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    font-weight: 500;
+}
+
+.order-image {
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #e9ecef;
+}
+
+.order-meta {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.order-price {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #007bff;
+}
+
+/* Responsive order cards */
+@media (max-width: 768px) {
+    .order-actions {
+        justify-content: flex-start !important;
+        margin-top: 1rem;
+    }
+    
+    .order-actions .btn {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+/* Order filters styling */
+.order-filters .form-control,
+.order-filters .form-select {
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.order-filters .form-control:focus,
+.order-filters .form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Enhanced Order Card Styles */
+.order-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef !important;
+    background: white;
+}
+
+.order-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    border-color: #007bff !important;
+}
+
+.order-image {
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #e9ecef;
+}
+
+.order-meta {
+    color: #6c757d;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+}
+
+.order-meta svg {
+    color: #007bff;
+    opacity: 0.7;
+}
+
+.order-price {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #28a745;
+}
+
+.order-status-badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Order Actions */
+.order-actions {
+    gap: 0.5rem;
+}
+
+.order-actions .btn {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.order-actions .btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Order Search */
+.order-search-container {
+    position: relative;
+}
+
+.order-search-container .form-control {
+    padding-left: 2.5rem;
+    border-radius: 25px;
+    border: 1px solid #e9ecef;
+}
+
+.order-search-container .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.order-search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    z-index: 5;
+}
+
+/* Order Filter Buttons */
+.order-filters {
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.order-filters .btn {
+    border-radius: 20px;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #e9ecef;
+    background: white;
+    color: #6c757d;
+    transition: all 0.2s ease;
+}
+
+.order-filters .btn.active,
+.order-filters .btn:hover {
+    background: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+/* Order Details Page Styles */
+.order-details-header {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.order-status-timeline {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.order-items-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.order-summary-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 2rem;
+}
+
+/* Responsive Order Cards */
+@media (max-width: 768px) {
+    .order-card {
+        margin-bottom: 1rem;
+    }
+    
+    .order-card .row > div {
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    
+    .order-actions {
+        justify-content: center;
+    }
+    
+    .order-filters {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .order-details-header {
+        padding: 1.5rem;
+        text-align: center;
+    }
 }
