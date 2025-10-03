@@ -346,4 +346,657 @@
 
 .status-indicator.out-of-stock {
     background-color: #dc3545;
+}/* Enhan
+ced Admin UI Fixes */
+
+/* Fix Dropdown Menu Issues */
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    padding: 0.5rem 0;
+    min-width: 160px;
+    z-index: 1055;
+    position: absolute !important;
+    transform: translate3d(0, 0, 0) !important;
+    will-change: transform;
+}
+
+/* Ensure dropdown parent has proper stacking */
+.dropdown {
+    position: relative;
+    z-index: 1000;
+}
+
+.dropdown.show {
+    z-index: 1060;
+}
+
+/* Fix dropdown positioning issues */
+.table .dropdown-menu {
+    margin-top: 0.25rem;
+}
+
+.table tbody tr:hover .dropdown {
+    z-index: 1060;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #495057;
+}
+
+.dropdown-item svg {
+    opacity: 0.7;
+}
+
+.dropdown-item:hover svg {
+    opacity: 1;
+}
+
+/* Enhanced Status Badges */
+.badge {
+    font-weight: 500;
+    font-size: 0.75rem;
+    padding: 0.5em 0.75em;
+    border-radius: 20px;
+}
+
+.badge.bg-success {
+    background-color: rgba(40, 167, 69, 0.1) !important;
+    color: #28a745 !important;
+    border: 1px solid rgba(40, 167, 69, 0.25);
+}
+
+.badge.bg-warning {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+    color: #ffc107 !important;
+    border: 1px solid rgba(255, 193, 7, 0.25);
+}
+
+.badge.bg-danger {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+    color: #dc3545 !important;
+    border: 1px solid rgba(220, 53, 69, 0.25);
+}
+
+.badge.bg-info {
+    background-color: rgba(23, 162, 184, 0.1) !important;
+    color: #17a2b8 !important;
+    border: 1px solid rgba(23, 162, 184, 0.25);
+}
+
+.badge.bg-primary {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+    color: #007bff !important;
+    border: 1px solid rgba(0, 123, 255, 0.25);
+}
+
+/* Enhanced Table Styling */
+.table {
+    border-collapse: separate;
+    border-spacing: 0;
+    position: relative;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+    padding: 1rem 0.75rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    z-index: 5;
+}
+
+/* Remove transform that causes stacking issues */
+.table tbody tr:hover td {
+    position: relative;
+}
+
+.table td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+/* Enhanced Form Controls */
+.form-control, .form-select {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px 0 0 8px;
+    color: #6c757d;
+}
+
+/* Enhanced Button Styling */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+}
+
+.btn-outline-secondary {
+    border-color: #e0e0e0;
+    color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #f8f9fa;
+    border-color: #007bff;
+    color: #007bff;
+}
+
+/* Enhanced Card Styling */
+.store-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.store-card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Product Image Enhancements */
+.product-image {
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    border: 1px solid #f0f0f0;
+}
+
+.product-image:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* User Avatar Enhancements */
+.user-avatar {
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.user-avatar:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Status Indicator Dots */
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced Pagination */
+.pagination {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.page-link {
+    border: none;
+    color: #6c757d;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.page-link:hover {
+    background-color: #f8f9fa;
+    color: #007bff;
+}
+
+.page-item.active .page-link {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+}
+
+/* Search and Filter Enhancements */
+.search-container {
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    z-index: 5;
+}
+
+.search-input {
+    padding-left: 2.5rem;
+}
+
+/* Summary Stats Cards */
+.stats-card {
+    border: none;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stats-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--stats-color, #007bff), transparent);
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card h4 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+/* Action Button Groups */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.action-buttons .btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* Enhanced Loading States */
+.loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Empty State Styling */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+.empty-state svg {
+    opacity: 0.5;
+    margin-bottom: 1rem;
+}
+
+.empty-state h5 {
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive Improvements */
+@media (max-width: 768px) {
+    .table-responsive {
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-group-vertical .btn {
+        margin-bottom: 0.5rem;
+    }
+    
+    .stats-card {
+        margin-bottom: 1rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .dropdown-menu {
+        position: static !important;
+        transform: none !important;
+        box-shadow: none;
+        border: 1px solid #dee2e6;
+        margin-top: 0.5rem;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .store-card {
+        background-color: #2d3748;
+        color: #e2e8f0;
+    }
+    
+    .table thead th {
+        background-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .form-control, .form-select {
+        background-color: #4a5568;
+        border-color: #718096;
+        color: #e2e8f0;
+    }
+    
+    .input-group-text {
+        background-color: #4a5568;
+        border-color: #718096;
+        color: #a0aec0;
+    }
+}
+
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.slide-up {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Enhanced Tooltips */
+.tooltip {
+    font-size: 0.75rem;
+}
+
+.tooltip-inner {
+    background-color: #2d3748;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+}
+
+/* Print Styles */
+@media print {
+    .btn, .dropdown, .pagination {
+        display: none !important;
+    }
+    
+    .table {
+        border-collapse: collapse !important;
+    }
+    
+    .table td, .table th {
+        border: 1px solid #dee2e6 !important;
+    }
+}/* Admin
+ Table Specific Fixes */
+.admin-table-container {
+    position: relative;
+    overflow: visible;
+}
+
+.admin-table-container .table {
+    margin-bottom: 0;
+}
+
+.admin-table-container .table tbody tr {
+    isolation: isolate;
+}
+
+.admin-table-container .table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    /* Remove transform to prevent stacking context issues */
+    transform: none;
+    box-shadow: inset 0 0 0 1px rgba(0, 123, 255, 0.2);
+}
+
+/* Specific dropdown fixes for admin tables */
+.admin-table-container .dropdown-toggle {
+    border: 1px solid #dee2e6;
+    background-color: white;
+    color: #6c757d;
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.admin-table-container .dropdown-toggle:hover {
+    border-color: #007bff;
+    color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.admin-table-container .dropdown-toggle:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    border-color: #007bff;
+}
+
+/* Ensure proper stacking for expanded rows */
+.admin-table-container .table tbody tr.expanded-row {
+    z-index: 1;
+}
+
+.admin-table-container .table tbody tr.expanded-row + tr {
+    z-index: 2;
+}
+
+/* Fix for table row hover conflicts */
+.admin-table-container .table tbody tr:hover + tr.expanded-details {
+    background-color: transparent;
+}
+
+.expanded-details {
+    background-color: #f8f9fa !important;
+}
+
+.expanded-details:hover {
+    background-color: #f8f9fa !important;
+}
+
+/* Prevent dropdown from being cut off */
+.table-responsive {
+    overflow: visible;
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        overflow-x: auto;
+        overflow-y: visible;
+    }
+}
+
+/* Action column specific styling */
+.actions-column {
+    width: 120px;
+    text-align: center;
+    position: relative;
+}
+
+.actions-column .dropdown {
+    display: inline-block;
+}
+
+/* Status badge improvements */
+.status-badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.375rem 0.75rem;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid transparent;
+}
+
+.status-badge.processing {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #856404;
+    border-color: rgba(255, 193, 7, 0.2);
+}
+
+.status-badge.shipped {
+    background-color: rgba(23, 162, 184, 0.1);
+    color: #0c5460;
+    border-color: rgba(23, 162, 184, 0.2);
+}
+
+.status-badge.delivered {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #155724;
+    border-color: rgba(40, 167, 69, 0.2);
+}
+
+.status-badge.cancelled {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #721c24;
+    border-color: rgba(220, 53, 69, 0.2);
+}/* Fin
+al dropdown positioning fixes */
+.admin-table-container .dropdown-menu {
+    position: absolute !important;
+    inset: 0px auto auto 0px !important;
+    margin: 0px !important;
+    transform: translate(-50%, 0px) !important;
+    z-index: 1055 !important;
+    min-width: 140px;
+}
+
+/* Ensure dropdown appears on the right side for actions column */
+.actions-column .dropdown-menu {
+    right: 0 !important;
+    left: auto !important;
+    transform: none !important;
+}
+
+/* Fix for last column dropdown positioning */
+.admin-table-container .table td:last-child .dropdown-menu {
+    right: 0;
+    left: auto;
+    transform: translateX(-10px);
+}
+
+/* Prevent table overflow issues */
+.admin-table-container {
+    position: relative;
+    z-index: 1;
+}
+
+.admin-table-container .table {
+    position: relative;
+    z-index: 1;
+}
+
+/* Ensure proper layering for dropdowns */
+.admin-table-container .dropdown.show {
+    z-index: 1060;
+    position: relative;
+}
+
+.admin-table-container .dropdown.show .dropdown-menu {
+    z-index: 1061;
+}
+
+/* Fix hover state conflicts */
+.admin-table-container .table tbody tr:hover {
+    position: relative;
+    z-index: 5;
+}
+
+.admin-table-container .table tbody tr:hover .dropdown {
+    z-index: 1060;
+}
+
+.admin-table-container .table tbody tr:hover .dropdown.show {
+    z-index: 1065;
+}
+
+/* Responsive dropdown fixes */
+@media (max-width: 768px) {
+    .admin-table-container .dropdown-menu {
+        position: fixed !important;
+        top: auto !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        margin-top: 0.5rem;
+        z-index: 1070;
+    }
+    
+    .actions-column .dropdown-menu {
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+    }
 }
