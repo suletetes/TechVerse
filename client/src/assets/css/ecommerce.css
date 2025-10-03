@@ -2165,4 +2165,134 @@ ed Breadcrumb Styling */
     .breadcrumb-item + .breadcrumb-item::before {
         margin: 0 0.25rem;
     }
+}/* A
+dd Address/Payment Method Modal Styles */
+.modal-content {
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+}
+
+.modal-header {
+    border-radius: 12px 12px 0 0;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.modal-footer {
+    border-radius: 0 0 12px 12px;
+    background: #f8f9fa;
+}
+
+/* Form Enhancements */
+.form-label {
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.invalid-feedback {
+    display: block;
+    font-size: 0.875rem;
+    color: #dc3545;
+    margin-top: 0.25rem;
+}
+
+/* Card Brand Indicators */
+.input-group-text .badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Address Type Badges */
+.address-type-badge {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Payment Method Security Icons */
+.security-icon {
+    color: #28a745;
+    margin-right: 0.5rem;
+}
+
+/* Form Validation States */
+.form-control.is-valid {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.valid-feedback {
+    display: block;
+    font-size: 0.875rem;
+    color: #28a745;
+    margin-top: 0.25rem;
+}
+
+/* Loading States */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Card Number Formatting */
+.card-number-input {
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+}
+
+/* Postcode Formatting */
+.postcode-input {
+    text-transform: uppercase;
+}
+
+/* Modal Animation */
+.modal.show .modal-dialog {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive Modal */
+@media (max-width: 768px) {
+    .modal-dialog {
+        margin: 1rem;
+        max-width: calc(100% - 2rem);
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    .modal-header,
+    .modal-footer {
+        padding: 1rem;
+    }
 }

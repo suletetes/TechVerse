@@ -11,17 +11,23 @@ import {
     OrderTrackingModal,
     OrderConfirmModal,
     ReviewModal,
-    ReorderModal
+    ReorderModal,
+    AddAddressModal,
+    AddPaymentMethodModal
 } from './';
 
 const UserProfileLayout = ({ initialTab }) => {
-    const [activeTab, setActiveTab] = useState(initialTab || 'profile');
+    const [activeTab, setActiveTab] = useState('profile');
     const [isEditing, setIsEditing] = useState(false);
 
     // Update active tab when initialTab prop changes
     useEffect(() => {
+        console.log('UserProfileLayout: initialTab changed to:', initialTab);
         if (initialTab && ['profile', 'orders', 'addresses', 'payments', 'activity', 'preferences'].includes(initialTab)) {
+            console.log('UserProfileLayout: Setting activeTab to:', initialTab);
             setActiveTab(initialTab);
+        } else if (!initialTab) {
+            setActiveTab('profile');
         }
     }, [initialTab]);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -31,7 +37,6 @@ const UserProfileLayout = ({ initialTab }) => {
         searchTerm: ''
     });
     const [showAddressModal, setShowAddressModal] = useState(false);
-    const [editingAddress, setEditingAddress] = useState(null);
     const [paymentMethods, setPaymentMethods] = useState([
         {
             id: 1,
@@ -214,6 +219,9 @@ const UserProfileLayout = ({ initialTab }) => {
     const [confirmOrder, setConfirmOrder] = useState(null);
     const [showReorderModal, setShowReorderModal] = useState(false);
     const [reorderOrder, setReorderOrder] = useState(null);
+    const [showAddAddressModal, setShowAddAddressModal] = useState(false);
+    const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
+    const [editingAddress, setEditingAddress] = useState(null);
 
     // Handler functions
     const handleInputChange = (e) => {
@@ -465,9 +473,13 @@ const UserProfileLayout = ({ initialTab }) => {
 
     const handleAddressAction = (addressId, action) => {
         switch (action) {
+            case 'add':
+                setEditingAddress(null);
+                setShowAddAddressModal(true);
+                break;
             case 'edit':
                 setEditingAddress(addresses.find(a => a.id === addressId));
-                setShowAddressModal(true);
+                setShowAddAddressModal(true);
                 break;
             case 'delete':
                 if (confirm('Are you sure you want to delete this address?')) {
@@ -485,8 +497,32 @@ const UserProfileLayout = ({ initialTab }) => {
         }
     };
 
+    const handleSaveAddress = (addressData) => {
+        if (editingAddress) {
+            // Update existing address
+            setAddresses(addresses.map(a => 
+                a.id === editingAddress.id ? addressData : a
+            ));
+        } else {
+            // Add new address
+            if (addressData.isDefault) {
+                // Remove default from other addresses
+                setAddresses([
+                    ...addresses.map(a => ({ ...a, isDefault: false })),
+                    addressData
+                ]);
+            } else {
+                setAddresses([...addresses, addressData]);
+            }
+        }
+        setEditingAddress(null);
+    };
+
     const handlePaymentMethodAction = (methodId, action) => {
         switch (action) {
+            case 'add':
+                setShowAddPaymentModal(true);
+                break;
             case 'setDefault':
                 setPaymentMethods(paymentMethods.map(pm => ({
                     ...pm,
@@ -500,6 +536,18 @@ const UserProfileLayout = ({ initialTab }) => {
                 break;
             default:
                 break;
+        }
+    };
+
+    const handleSavePaymentMethod = (paymentMethodData) => {
+        if (paymentMethodData.isDefault) {
+            // Remove default from other payment methods
+            setPaymentMethods([
+                ...paymentMethods.map(pm => ({ ...pm, isDefault: false })),
+                paymentMethodData
+            ]);
+        } else {
+            setPaymentMethods([...paymentMethods, paymentMethodData]);
         }
     };
 
@@ -709,6 +757,22 @@ const UserProfileLayout = ({ initialTab }) => {
                     }}
                     order={reorderOrder}
                     onReorder={handleReorderComplete}
+                />
+            )}
+            {showAddAddressModal && (
+                <AddAddressModal 
+                    onClose={() => {
+                        setShowAddAddressModal(false);
+                        setEditingAddress(null);
+                    }}
+                    onSave={handleSaveAddress}
+                    editingAddress={editingAddress}
+                />
+            )}
+            {showAddPaymentModal && (
+                <AddPaymentMethodModal 
+                    onClose={() => setShowAddPaymentModal(false)}
+                    onSave={handleSavePaymentMethod}
                 />
             )}
         </div>

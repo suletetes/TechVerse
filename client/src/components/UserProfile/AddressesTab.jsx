@@ -5,7 +5,14 @@ const AddressesTab = ({ addresses, handleAddressAction }) => {
         <div className="store-card fill-card">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h3 className="tc-6533 bold-text mb-0">Saved Addresses</h3>
-                <button className="btn btn-c-2101 btn-rd">
+                <button 
+                    className="btn btn-c-2101 btn-rd"
+                    onClick={() => handleAddressAction(null, 'add')}
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
                     Add New Address
                 </button>
             </div>

@@ -5,9 +5,13 @@ const PaymentMethodsTab = ({ paymentMethods, handlePaymentMethodAction }) => {
         <div className="store-card fill-card">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h3 className="tc-6533 bold-text mb-0">Payment Methods</h3>
-                <button className="btn btn-c-2101 btn-rd">
-                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                        <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                <button 
+                    className="btn btn-c-2101 btn-rd"
+                    onClick={() => handlePaymentMethodAction(null, 'add')}
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
                     </svg>
                     Add Payment Method
                 </button>
