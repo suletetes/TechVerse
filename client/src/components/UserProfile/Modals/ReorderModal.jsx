@@ -19,7 +19,7 @@ const ReorderModal = ({ onClose, order, onReorder }) => {
                     name: 'Tablet Air', 
                     price: 1999, 
                     quantity: 1, 
-                    image: 'img/tablet-product.jpg', 
+                    image: '/img/tablet-product.jpg', 
                     available: true,
                     currentPrice: 1999,
                     priceChanged: false
@@ -29,7 +29,7 @@ const ReorderModal = ({ onClose, order, onReorder }) => {
                     name: 'Tablet Case', 
                     price: 49.99, 
                     quantity: 1, 
-                    image: 'img/case-product.jpg', 
+                    image: '/img/phone-product.jpg', 
                     available: true,
                     currentPrice: 39.99,
                     priceChanged: true
@@ -39,7 +39,7 @@ const ReorderModal = ({ onClose, order, onReorder }) => {
                     name: 'Screen Protector', 
                     price: 19.99, 
                     quantity: 2, 
-                    image: 'img/protector-product.jpg', 
+                    image: '/img/laptop-product.jpg', 
                     available: false,
                     currentPrice: 19.99,
                     priceChanged: false

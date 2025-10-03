@@ -52,7 +52,7 @@ const UserProfileLayout = () => {
             id: 1,
             name: 'Tablet Air',
             price: 1999,
-            image: 'img/tablet-product.jpg',
+            image: '/img/tablet-product.jpg',
             viewedAt: '2024-01-15T10:30:00Z',
             category: 'Tablets'
         },
@@ -60,7 +60,7 @@ const UserProfileLayout = () => {
             id: 2,
             name: 'Phone Pro Max',
             price: 1199,
-            image: 'img/phone-product.jpg',
+            image: '/img/phone-product.jpg',
             viewedAt: '2024-01-14T15:45:00Z',
             category: 'Phones'
         },
@@ -68,7 +68,7 @@ const UserProfileLayout = () => {
             id: 3,
             name: 'Laptop Ultra',
             price: 2499,
-            image: 'img/laptop-product.jpg',
+            image: '/img/laptop-product.jpg',
             viewedAt: '2024-01-13T09:20:00Z',
             category: 'Laptops'
         }
@@ -148,7 +148,7 @@ const UserProfileLayout = () => {
             status: 'Delivered',
             total: 3597.60,
             items: 3,
-            image: 'img/tablet-product.jpg',
+            image: '/img/tablet-product.jpg',
             trackingNumber: 'TRK123456789',
             canReturn: true,
             canReorder: true
@@ -159,7 +159,7 @@ const UserProfileLayout = () => {
             status: 'Processing',
             total: 999.00,
             items: 1,
-            image: 'img/phone-product.jpg',
+            image: '/img/phone-product.jpg',
             trackingNumber: null,
             canReturn: false,
             canReorder: false
@@ -170,7 +170,7 @@ const UserProfileLayout = () => {
             status: 'Shipped',
             total: 2599.00,
             items: 2,
-            image: 'img/laptop-product.jpg',
+            image: '/img/laptop-product.jpg',
             trackingNumber: 'TRK987654321',
             canReturn: false,
             canReorder: false
@@ -181,7 +181,7 @@ const UserProfileLayout = () => {
             status: 'Delivered',
             total: 1299.00,
             items: 1,
-            image: 'img/watch-product.jpg',
+            image: '/img/phone-product.jpg',
             trackingNumber: 'TRK555666777',
             canReturn: false,
             canReorder: true
@@ -192,7 +192,7 @@ const UserProfileLayout = () => {
             status: 'Cancelled',
             total: 799.00,
             items: 1,
-            image: 'img/headphones-product.jpg',
+            image: '/img/tablet-product.jpg',
             trackingNumber: null,
             canReturn: false,
             canReorder: true

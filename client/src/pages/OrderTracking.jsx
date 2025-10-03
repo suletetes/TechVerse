@@ -13,7 +13,7 @@ const OrderTracking = () => {
         status: 'Delivered',
         total: 3597.60,
         items: 3,
-        image: 'img/tablet-product.jpg',
+        image: '/img/tablet-product.jpg',
         trackingNumber: 'TRK123456789'
     };
 

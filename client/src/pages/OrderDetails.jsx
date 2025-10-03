@@ -42,7 +42,7 @@ const OrderDetails = () => {
                 storage: '128GB',
                 price: 1999,
                 quantity: 1,
-                image: 'img/tablet-product.jpg'
+                image: '/img/tablet-product.jpg'
             },
             {
                 id: 2,
@@ -51,7 +51,7 @@ const OrderDetails = () => {
                 storage: '256GB',
                 price: 999,
                 quantity: 1,
-                image: 'img/phone-product.jpg'
+                image: '/img/phone-product.jpg'
             }
         ]
     };
