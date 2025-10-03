@@ -134,6 +134,44 @@ const AdminSidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, ad
                         <small className="text-muted">Customer Management</small>
                     </div>
                 </button>
+                {/* Activity Log */}
+                <button
+                    className={`nav-link d-flex align-items-center px-4 py-3 border-0 text-start position-relative ${activeTab === 'activity' ? 'active bg-info bg-opacity-10 text-info' : 'text-dark'}`}
+                    onClick={() => {
+                        setActiveTab('activity');
+                        setSidebarOpen(false);
+                    }}
+                >
+                    {activeTab === 'activity' && <div className="position-absolute start-0 top-0 bottom-0 bg-info" style={{ width: '3px' }}></div>}
+                    <div className={`rounded-2 p-2 me-3 ${activeTab === 'activity' ? 'bg-info' : 'bg-light'}`}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" className={`flex-shrink-0 ${activeTab === 'activity' ? 'text-white' : 'text-muted'}`}>
+                            <path fill="currentColor" d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div className="fw-semibold">Activity Log</div>
+                        <small className="text-muted">System Activities</small>
+                    </div>
+                </button>
+                {/* Security */}
+                <button
+                    className={`nav-link d-flex align-items-center px-4 py-3 border-0 text-start position-relative ${activeTab === 'security' ? 'active bg-warning bg-opacity-10 text-warning' : 'text-dark'}`}
+                    onClick={() => {
+                        setActiveTab('security');
+                        setSidebarOpen(false);
+                    }}
+                >
+                    {activeTab === 'security' && <div className="position-absolute start-0 top-0 bottom-0 bg-warning" style={{ width: '3px' }}></div>}
+                    <div className={`rounded-2 p-2 me-3 ${activeTab === 'security' ? 'bg-warning' : 'bg-light'}`}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" className={`flex-shrink-0 ${activeTab === 'security' ? 'text-white' : 'text-muted'}`}>
+                            <path fill="currentColor" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11.5C15.4,11.5 16,12.4 16,13V16C16,16.6 15.6,17 15,17H9C8.4,17 8,16.6 8,16V13C8,12.4 8.4,11.5 9,11.5V10C9,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.2,8.7 10.2,10V11.5H13.8V10C13.8,8.7 12.8,8.2 12,8.2Z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div className="fw-semibold">Security</div>
+                        <small className="text-muted">Sessions & Logs</small>
+                    </div>
+                </button>
                 {/* Settings */}
                 <button
                     className={`nav-link d-flex align-items-center px-4 py-3 border-0 text-start position-relative ${activeTab === 'settings' ? 'active bg-primary bg-opacity-10 text-primary' : 'text-dark'}`}
