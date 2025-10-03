@@ -74,8 +74,12 @@ const OrderDetails = () => {
                     <div className="col-12 mb-4">
                         <nav aria-label="breadcrumb">
                             <ol className="breadcrumb">
-                                <li className="breadcrumb-item"><Link to="/user">My Account</Link></li>
-                                <li className="breadcrumb-item"><Link to="/user?tab=orders">Orders</Link></li>
+                                <li className="breadcrumb-item">
+                                    <Link to="/user" title="Go to My Account">My Account</Link>
+                                </li>
+                                <li className="breadcrumb-item">
+                                    <Link to="/user?tab=orders" title="View all orders">Orders</Link>
+                                </li>
                                 <li className="breadcrumb-item active" aria-current="page">Order Details</li>
                             </ol>
                         </nav>

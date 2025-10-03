@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     ProfileSidebar,
     ProfileTab,
@@ -14,9 +14,16 @@ import {
     ReorderModal
 } from './';
 
-const UserProfileLayout = () => {
-    const [activeTab, setActiveTab] = useState('profile');
+const UserProfileLayout = ({ initialTab }) => {
+    const [activeTab, setActiveTab] = useState(initialTab || 'profile');
     const [isEditing, setIsEditing] = useState(false);
+
+    // Update active tab when initialTab prop changes
+    useEffect(() => {
+        if (initialTab && ['profile', 'orders', 'addresses', 'payments', 'activity', 'preferences'].includes(initialTab)) {
+            setActiveTab(initialTab);
+        }
+    }, [initialTab]);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [orderFilters, setOrderFilters] = useState({
         status: 'all',
