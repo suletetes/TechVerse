@@ -13,7 +13,10 @@ import {
     UserProfile,
     AdminProfile,
     Home,
-    NotFound
+    NotFound,
+    OrderDetails,
+    OrderTracking,
+    OrderReview
 } from "./pages"
 
 
@@ -58,6 +61,18 @@ const router = createBrowserRouter([
             {
                 path: 'user',
                 element: <UserProfile />,
+            },
+            {
+                path: 'user/order/:orderId',
+                element: <OrderDetails />,
+            },
+            {
+                path: 'user/order/:orderId/tracking',
+                element: <OrderTracking />,
+            },
+            {
+                path: 'user/order/:orderId/review',
+                element: <OrderReview />,
             },
             {
                 path: 'order-confirmation',
