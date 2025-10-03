@@ -315,61 +315,43 @@ const AdminProducts = ({ products, setActiveTab, getStatusColor, formatCurrency 
                                         </span>
                                     </td>
                                     <td className="text-center">
-                                        <div className="dropdown">
+                                        <div className="btn-group btn-group-sm">
                                             <button
-                                                className="btn btn-outline-secondary btn-sm dropdown-toggle"
-                                                type="button"
-                                                data-bs-toggle="dropdown"
+                                                className="btn btn-outline-primary btn-sm"
+                                                onClick={() => handleEdit(product.id)}
+                                                title="Edit Product"
                                             >
-                                                Actions
+                                                <svg width="14" height="14" viewBox="0 0 24 24">
+                                                    <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
+                                                </svg>
                                             </button>
-                                            <ul className="dropdown-menu">
-                                                <li>
-                                                    <button
-                                                        className="dropdown-item d-flex align-items-center"
-                                                        onClick={() => handleEdit(product.id)}
-                                                    >
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                                                            <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
-                                                        </svg>
-                                                        Edit
-                                                    </button>
-                                                </li>
-                                                <li>
-                                                    <button
-                                                        className="dropdown-item d-flex align-items-center"
-                                                        onClick={() => handleDuplicate(product.id)}
-                                                    >
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                                                            <path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />
-                                                        </svg>
-                                                        Duplicate
-                                                    </button>
-                                                </li>
-                                                <li>
-                                                    <button
-                                                        className="dropdown-item d-flex align-items-center"
-                                                        onClick={() => handleToggleStatus(product.id, product.status)}
-                                                    >
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                                                            <path fill="currentColor" d="M17,7H22V17H17V19A1,1 0 0,0 18,20H20V22H17.5C16.95,22 16,21.55 16,21C16,21.55 15.05,22 14.5,22H12V20H14A1,1 0 0,0 15,19V5A1,1 0 0,0 14,4H12V2H14.5C15.05,2 16,2.45 16,3C16,2.45 16.95,2 17.5,2H20V4H18A1,1 0 0,0 17,5V7Z" />
-                                                        </svg>
-                                                        {product.status === 'active' ? 'Deactivate' : 'Activate'}
-                                                    </button>
-                                                </li>
-                                                <li><hr className="dropdown-divider" /></li>
-                                                <li>
-                                                    <button
-                                                        className="dropdown-item d-flex align-items-center text-danger"
-                                                        onClick={() => handleDelete(product.id)}
-                                                    >
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                                                            <path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
-                                                        </svg>
-                                                        Delete
-                                                    </button>
-                                                </li>
-                                            </ul>
+                                            <button
+                                                className="btn btn-outline-secondary btn-sm"
+                                                onClick={() => handleDuplicate(product.id)}
+                                                title="Duplicate Product"
+                                            >
+                                                <svg width="14" height="14" viewBox="0 0 24 24">
+                                                    <path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                className={`btn btn-outline-${product.status === 'active' ? 'warning' : 'success'} btn-sm`}
+                                                onClick={() => handleToggleStatus(product.id, product.status)}
+                                                title={product.status === 'active' ? 'Deactivate' : 'Activate'}
+                                            >
+                                                <svg width="14" height="14" viewBox="0 0 24 24">
+                                                    <path fill="currentColor" d="M17,7H22V17H17V19A1,1 0 0,0 18,20H20V22H17.5C16.95,22 16,21.55 16,21C16,21.55 15.05,22 14.5,22H12V20H14A1,1 0 0,0 15,19V5A1,1 0 0,0 14,4H12V2H14.5C15.05,2 16,2.45 16,3C16,2.45 16.95,2 17.5,2H20V4H18A1,1 0 0,0 17,5V7Z" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                className="btn btn-outline-danger btn-sm"
+                                                onClick={() => handleDelete(product.id)}
+                                                title="Delete Product"
+                                            >
+                                                <svg width="14" height="14" viewBox="0 0 24 24">
+                                                    <path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
+                                                </svg>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>

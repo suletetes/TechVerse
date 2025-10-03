@@ -79,7 +79,7 @@ const AdminProductManagement = () => {
         }
     };
 
-    const formatCurrency = (amount) => `£${amount.toLocaleString('en-GB', {minimumFractionDigits: 2})}`;
+    const formatCurrency = (amount) => `£${amount.toLocaleString('en-GB', { minimumFractionDigits: 2 })}`;
 
     const filteredProducts = products.filter(product => {
         if (filters.category !== 'all' && product.category.toLowerCase() !== filters.category.toLowerCase()) return false;
@@ -91,12 +91,12 @@ const AdminProductManagement = () => {
     }).sort((a, b) => {
         let aValue = a[sortBy];
         let bValue = b[sortBy];
-        
+
         if (typeof aValue === 'string') {
             aValue = aValue.toLowerCase();
             bValue = bValue.toLowerCase();
         }
-        
+
         if (sortOrder === 'asc') {
             return aValue > bValue ? 1 : -1;
         } else {
@@ -115,13 +115,13 @@ const AdminProductManagement = () => {
 
     return (
         <div className="min-vh-100 bg-light">
-            <AdminHeader 
+            <AdminHeader
                 activeTab="products"
                 adminData={adminData}
                 sidebarOpen={false}
-                setSidebarOpen={() => {}}
+                setSidebarOpen={() => { }}
             />
-            
+
             <div className="container-fluid p-4">
                 {/* Page Header */}
                 <div className="row mb-4">
@@ -227,20 +227,20 @@ const AdminProductManagement = () => {
                         <div className="row g-3">
                             <div className="col-md-3">
                                 <label className="form-label">Search Products</label>
-                                <input 
+                                <input
                                     type="text"
                                     className="form-control"
                                     placeholder="Search by name or SKU..."
                                     value={filters.search}
-                                    onChange={(e) => setFilters({...filters, search: e.target.value})}
+                                    onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                                 />
                             </div>
                             <div className="col-md-2">
                                 <label className="form-label">Category</label>
-                                <select 
+                                <select
                                     className="form-select"
                                     value={filters.category}
-                                    onChange={(e) => setFilters({...filters, category: e.target.value})}
+                                    onChange={(e) => setFilters({ ...filters, category: e.target.value })}
                                 >
                                     <option value="all">All Categories</option>
                                     {categories.map(cat => (
@@ -250,10 +250,10 @@ const AdminProductManagement = () => {
                             </div>
                             <div className="col-md-2">
                                 <label className="form-label">Status</label>
-                                <select 
+                                <select
                                     className="form-select"
                                     value={filters.status}
-                                    onChange={(e) => setFilters({...filters, status: e.target.value})}
+                                    onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                                 >
                                     <option value="all">All Status</option>
                                     <option value="active">Active</option>
@@ -264,29 +264,29 @@ const AdminProductManagement = () => {
                             </div>
                             <div className="col-md-2">
                                 <label className="form-label">Min Price</label>
-                                <input 
+                                <input
                                     type="number"
                                     className="form-control"
                                     placeholder="£0"
                                     value={filters.priceMin}
-                                    onChange={(e) => setFilters({...filters, priceMin: e.target.value})}
+                                    onChange={(e) => setFilters({ ...filters, priceMin: e.target.value })}
                                 />
                             </div>
                             <div className="col-md-2">
                                 <label className="form-label">Max Price</label>
-                                <input 
+                                <input
                                     type="number"
                                     className="form-control"
                                     placeholder="£9999"
                                     value={filters.priceMax}
-                                    onChange={(e) => setFilters({...filters, priceMax: e.target.value})}
+                                    onChange={(e) => setFilters({ ...filters, priceMax: e.target.value })}
                                 />
                             </div>
                             <div className="col-md-1">
                                 <label className="form-label">&nbsp;</label>
-                                <button 
+                                <button
                                     className="btn btn-outline-secondary w-100"
-                                    onClick={() => setFilters({category: 'all', status: 'all', priceMin: '', priceMax: '', search: ''})}
+                                    onClick={() => setFilters({ category: 'all', status: 'all', priceMin: '', priceMax: '', search: '' })}
                                 >
                                     Clear
                                 </button>
@@ -302,18 +302,18 @@ const AdminProductManagement = () => {
                         <div className="d-flex gap-2 align-items-center">
                             <div className="d-flex align-items-center gap-2">
                                 <label className="form-label mb-0 small">Sort by:</label>
-                                <select 
+                                <select
                                     className="form-select form-select-sm"
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value)}
-                                    style={{width: 'auto'}}
+                                    style={{ width: 'auto' }}
                                 >
                                     <option value="name">Name</option>
                                     <option value="price">Price</option>
                                     <option value="stock">Stock</option>
                                     <option value="sales">Sales</option>
                                 </select>
-                                <button 
+                                <button
                                     className="btn btn-outline-secondary btn-sm"
                                     onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                                 >
@@ -349,7 +349,7 @@ const AdminProductManagement = () => {
                                             <th className="border-0 fw-semibold">Stock</th>
                                             <th className="border-0 fw-semibold">Status</th>
                                             <th className="border-0 fw-semibold">Sales</th>
-                                            <th className="border-0 fw-semibold actions-column">Actions</th>
+                                            <th className="border-0 fw-semibold text-center">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -358,8 +358,8 @@ const AdminProductManagement = () => {
                                                 <td>
                                                     <div className="d-flex align-items-center">
                                                         <div className="product-image-container me-3">
-                                                            <img 
-                                                                src={product.image} 
+                                                            <img
+                                                                src={product.image}
                                                                 alt={product.name}
                                                                 className="product-table-image"
                                                                 onError={(e) => {
@@ -407,59 +407,28 @@ const AdminProductManagement = () => {
                                                     </span>
                                                 </td>
                                                 <td className="fw-semibold">{product.sales}</td>
-                                                <td className="actions-column">
-                                                    <div className="dropdown">
-                                                        <button
-                                                            className="btn btn-outline-secondary btn-sm dropdown-toggle"
-                                                            type="button"
-                                                            data-bs-toggle="dropdown"
-                                                            aria-expanded="false"
-                                                        >
-                                                            Actions
+                                                <td className="text-center">
+                                                    <div className="btn-group btn-group-sm">
+                                                        <button className="btn btn-outline-primary btn-sm" title="View Product">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24">
+                                                                <path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
+                                                            </svg>
                                                         </button>
-                                                        <ul className="dropdown-menu dropdown-menu-end">
-                                                            <li>
-                                                                <button className="dropdown-item d-flex align-items-center">
-                                                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                                                                        <path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
-                                                                    </svg>
-                                                                    View Product
-                                                                </button>
-                                                            </li>
-                                                            <li>
-                                                                <button className="dropdown-item d-flex align-items-center">
-                                                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                                                                        <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
-                                                                    </svg>
-                                                                    Edit Product
-                                                                </button>
-                                                            </li>
-                                                            <li>
-                                                                <button className="dropdown-item d-flex align-items-center">
-                                                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                                                                        <path fill="currentColor" d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
-                                                                    </svg>
-                                                                    Duplicate
-                                                                </button>
-                                                            </li>
-                                                            <li>
-                                                                <button className="dropdown-item d-flex align-items-center">
-                                                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                                                                        <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                                                    </svg>
-                                                                    {product.featured ? 'Remove from Featured' : 'Add to Featured'}
-                                                                </button>
-                                                            </li>
-                                                            <li><hr className="dropdown-divider" /></li>
-                                                            <li>
-                                                                <button className="dropdown-item d-flex align-items-center text-danger">
-                                                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                                                                        <path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
-                                                                    </svg>
-                                                                    Delete
-                                                                </button>
-                                                            </li>
-                                                        </ul>
+                                                        <button className="btn btn-outline-secondary btn-sm" title="Edit Product">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24">
+                                                                <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
+                                                            </svg>
+                                                        </button>
+                                                        <button className="btn btn-outline-warning btn-sm" title={product.featured ? 'Remove from Featured' : 'Add to Featured'}>
+                                                            <svg width="14" height="14" viewBox="0 0 24 24">
+                                                                <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                                            </svg>
+                                                        </button>
+                                                        <button className="btn btn-outline-danger btn-sm" title="Delete Product">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24">
+                                                                <path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
+                                                            </svg>
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>

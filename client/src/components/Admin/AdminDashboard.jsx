@@ -60,29 +60,28 @@ const AdminDashboard = ({ dashboardStats, dateRange, setDateRange, recentOrders,
                 </Link>
             </div>
             <div className="col-xl-3 col-lg-6 col-md-6 col-sm-6">
-                <div className="store-card fill-card h-100 position-relative overflow-hidden shadow-sm border-0">
-                    <div className="position-absolute top-0 start-0 w-100" style={{ height: '4px', background: 'linear-gradient(90deg, #17a2b8, #6f42c1)' }}></div>
-                    <div className="p-4">
-                        <div className="d-flex align-items-center justify-content-between mb-3">
-                            <div className="stats-icon bg-info text-white bg-opacity-15 rounded-3 p-3 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-info">
-                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor" />
+                <div className="dashboard-stats-card users-card">
+                    <div className="stats-card-header">
+                        <div className="stats-icon-container">
+                            <div className="stats-icon bg-info">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
+                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                                 </svg>
                             </div>
-                            <div className="text-end">
-                                <span className="badge bg-info bg-opacity-15 text-white px-3 py-2 rounded-pill">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" className="me-1">
-                                        <path fill="currentColor" d="M7 14l5-5 5 5z" />
-                                    </svg>
-                                    +{dashboardStats.usersGrowth}%
-                                </span>
-                            </div>
                         </div>
-                        <div>
-                            <h3 className="mb-1 tc-6533 fw-bold">{dashboardStats.totalUsers.toLocaleString()}</h3>
-                            <p className="mb-0 text-muted fw-medium">Total Users</p>
-                            <small className="text-muted">vs last period</small>
+                        <div className="stats-growth">
+                            <span className="growth-badge positive">
+                                <svg width="14" height="14" viewBox="0 0 24 24" className="me-1">
+                                    <path fill="currentColor" d="M7 14l5-5 5 5z" />
+                                </svg>
+                                +{dashboardStats.usersGrowth}%
+                            </span>
                         </div>
+                    </div>
+                    <div className="stats-content">
+                        <h2 className="stats-value">{dashboardStats.totalUsers.toLocaleString()}</h2>
+                        <p className="stats-label">Total Users</p>
+                        <small className="stats-period">vs last period</small>
                     </div>
                 </div>
             </div>
