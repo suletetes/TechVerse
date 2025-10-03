@@ -9,7 +9,7 @@ import UserProfile from '../UserProfile';
 vi.mock('../../components/UserProfile', () => ({
   UserProfileLayout: vi.fn(({ initialTab }) => (
     <div data-testid="user-profile-layout">
-      <span data-testid="initial-tab">{initialTab || 'null'}</span>
+      <span data-testid="initial-tab">{initialTab === null ? 'null' : initialTab}</span>
     </div>
   ))
 }));
@@ -179,16 +179,17 @@ describe('UserProfile Component', () => {
     });
 
     it('should handle navigation state changes', () => {
-      const { rerender } = render(
+      const { unmount } = render(
         <MemoryRouter initialEntries={['/user?tab=orders']}>
           <UserProfile />
         </MemoryRouter>
       );
 
       expect(screen.getByTestId('initial-tab')).toHaveTextContent('orders');
+      unmount();
 
-      // Simulate navigation to different tab
-      rerender(
+      // Simulate navigation to different tab with new render
+      render(
         <MemoryRouter initialEntries={['/user?tab=addresses']}>
           <UserProfile />
         </MemoryRouter>
