@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { ReorderModal } from '../components/UserProfile/Modals';
 
 const OrderDetails = () => {
     const { orderId } = useParams();
+    const [showReorderModal, setShowReorderModal] = useState(false);
 
     // Mock order data - in real app, fetch based on orderId
     const order = {
@@ -207,7 +209,10 @@ const OrderDetails = () => {
                                             Write Review
                                         </Link>
                                     )}
-                                    <button className="btn btn-outline-secondary btn-rd">
+                                    <button 
+                                        className="btn btn-outline-secondary btn-rd"
+                                        onClick={() => setShowReorderModal(true)}
+                                    >
                                         <svg width="16" height="16" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
                                             <polyline points="23 4 23 10 17 10" />
                                             <polyline points="1 20 1 14 7 14" />
@@ -237,6 +242,20 @@ const OrderDetails = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Reorder Modal */}
+            {showReorderModal && (
+                <ReorderModal 
+                    onClose={() => setShowReorderModal(false)}
+                    order={order}
+                    onReorder={(selectedItems, quantities) => {
+                        console.log('Reorder completed:', selectedItems, quantities);
+                        // In real app: Add items to cart and show success message
+                        alert('Items added to cart successfully!');
+                        setShowReorderModal(false);
+                    }}
+                />
+            )}
         </div>
     );
 };
