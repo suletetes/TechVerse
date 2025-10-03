@@ -17,15 +17,23 @@ const OrdersTab = ({
             </div>
 
             {/* Order Filters */}
-            <div className="row mb-4">
+            <div className="order-filters row mb-4">
                 <div className="col-md-4 mb-3">
-                    <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Search by order ID..."
-                        value={orderFilters.searchTerm}
-                        onChange={(e) => setOrderFilters({ ...orderFilters, searchTerm: e.target.value })}
-                    />
+                    <div className="input-group">
+                        <span className="input-group-text">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="11" cy="11" r="8" />
+                                <path d="m21 21-4.35-4.35" />
+                            </svg>
+                        </span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Search by order ID..."
+                            value={orderFilters.searchTerm}
+                            onChange={(e) => setOrderFilters({ ...orderFilters, searchTerm: e.target.value })}
+                        />
+                    </div>
                 </div>
                 <div className="col-md-4 mb-3">
                     <select
@@ -91,23 +99,40 @@ const OrdersTab = ({
                                         <p className="tc-6533 bold-text mb-0">£{order.total.toFixed(2)}</p>
                                     </div>
                                     <div className="col-md-3 col-12">
-                                        <div className="d-flex gap-1 flex-wrap">
-                                            <button className="btn btn-sm btn-outline-primary btn-rd">
-                                                View Details
-                                            </button>
+                                        <div className="d-flex gap-2 flex-wrap justify-content-end">
+                                            <Link 
+                                                to={`/user/order/${order.id}`}
+                                                className="btn btn-sm btn-outline-primary btn-rd"
+                                            >
+                                                <svg width="14" height="14" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                    <circle cx="12" cy="12" r="3" />
+                                                </svg>
+                                                Details
+                                            </Link>
                                             {order.trackingNumber && (
-                                                <button
+                                                <Link
+                                                    to={`/user/order/${order.id}/tracking`}
                                                     className="btn btn-sm btn-outline-info btn-rd"
-                                                    onClick={() => handleOrderAction(order.id, 'track')}
                                                 >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M16 3h5v5" />
+                                                        <path d="M8 3H3v5" />
+                                                        <path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" />
+                                                        <path d="M21 3l-7.828 7.828A4 4 0 0 0 12 13.657V22" />
+                                                    </svg>
                                                     Track
-                                                </button>
+                                                </Link>
                                             )}
                                             {order.canReturn && (
                                                 <button
                                                     className="btn btn-sm btn-outline-warning btn-rd"
                                                     onClick={() => handleOrderAction(order.id, 'return')}
                                                 >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <polyline points="9 11 12 14 22 4" />
+                                                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                                                    </svg>
                                                     Return
                                                 </button>
                                             )}
@@ -116,24 +141,24 @@ const OrdersTab = ({
                                                     className="btn btn-sm btn-outline-secondary btn-rd"
                                                     onClick={() => handleOrderAction(order.id, 'reorder')}
                                                 >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <polyline points="23 4 23 10 17 10" />
+                                                        <polyline points="1 20 1 14 7 14" />
+                                                        <path d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                                                    </svg>
                                                     Reorder
                                                 </button>
                                             )}
                                             {order.status === 'Delivered' && (
-                                                <>
-                                                    <button
-                                                        className="btn btn-sm btn-success btn-rd"
-                                                        onClick={() => handleOrderAction(order.id, 'confirm')}
-                                                    >
-                                                        Confirm Receipt
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-sm btn-c-2101 btn-rd"
-                                                        onClick={() => handleOrderAction(order.id, 'review')}
-                                                    >
-                                                        Write Review
-                                                    </button>
-                                                </>
+                                                <Link
+                                                    to={`/user/order/${order.id}/review`}
+                                                    className="btn btn-sm btn-c-2101 btn-rd"
+                                                >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                                    </svg>
+                                                    Review
+                                                </Link>
                                             )}
                                         </div>
                                     </div>
