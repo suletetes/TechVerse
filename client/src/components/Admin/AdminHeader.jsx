@@ -19,6 +19,8 @@ const AdminHeader = ({ activeTab, adminData, sidebarOpen, setSidebarOpen }) => (
                         {activeTab === 'add-product' && 'Add New Product'}
                         {activeTab === 'orders' && 'Order Management'}
                         {activeTab === 'users' && 'User Management'}
+                        {activeTab === 'activity' && 'Activity Log'}
+                        {activeTab === 'security' && 'Security & Sessions'}
                         {activeTab === 'settings' && 'Admin Settings'}
                     </h1>
                     <p className="mb-0 text-muted small">
@@ -27,6 +29,8 @@ const AdminHeader = ({ activeTab, adminData, sidebarOpen, setSidebarOpen }) => (
                         {activeTab === 'add-product' && 'Create a new product listing'}
                         {activeTab === 'orders' && 'Process and track customer orders'}
                         {activeTab === 'users' && 'Manage customer accounts'}
+                        {activeTab === 'activity' && 'View system activities and changes'}
+                        {activeTab === 'security' && 'Monitor security events and sessions'}
                         {activeTab === 'settings' && 'Configure system settings'}
                     </p>
                 </div>
