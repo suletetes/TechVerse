@@ -2091,4 +2091,78 @@ er Status Header Mobile Responsiveness */
         margin: 0.5rem auto 0;
         max-width: 200px;
     }
+}/* Enhanc
+ed Breadcrumb Styling */
+.breadcrumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.breadcrumb-item a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.breadcrumb-item a:hover {
+    color: #0056b3;
+    background: rgba(0, 123, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+.breadcrumb-item.active {
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "›";
+    color: #6c757d;
+    font-weight: bold;
+    margin: 0 0.5rem;
+}
+
+/* Breadcrumb Icons */
+.breadcrumb-item a::before {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 0.5rem;
+    vertical-align: text-bottom;
+}
+
+.breadcrumb-item:first-child a::before {
+    content: "🏠";
+}
+
+.breadcrumb-item:nth-child(2) a::before {
+    content: "📦";
+}
+
+.breadcrumb-item:nth-child(3) a::before {
+    content: "📋";
+}
+
+/* Mobile Breadcrumb */
+@media (max-width: 768px) {
+    .breadcrumb {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    .breadcrumb-item a::before {
+        display: none;
+    }
+    
+    .breadcrumb-item + .breadcrumb-item::before {
+        margin: 0 0.25rem;
+    }
 }
