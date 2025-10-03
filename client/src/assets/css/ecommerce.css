@@ -1431,27 +1431,39 @@ yment Page Enhancements */
     z-index: 5;
 }
 
-/* Order Filter Buttons */
+/* Order Filter Layout */
 .order-filters {
-    gap: 0.5rem;
     margin-bottom: 1.5rem;
 }
 
-.order-filters .btn {
-    border-radius: 20px;
-    font-size: 0.875rem;
-    padding: 0.5rem 1rem;
+.order-filters .form-select {
+    border-radius: 8px;
     border: 1px solid #e9ecef;
-    background: white;
-    color: #6c757d;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
     transition: all 0.2s ease;
 }
 
-.order-filters .btn.active,
-.order-filters .btn:hover {
-    background: #007bff;
+.order-filters .form-select:focus {
     border-color: #007bff;
-    color: white;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.order-filters .form-select:hover {
+    border-color: #007bff;
+}
+
+/* Responsive Order Filters */
+@media (max-width: 992px) {
+    .order-filters .d-flex {
+        justify-content: center !important;
+        flex-wrap: wrap;
+    }
+    
+    .order-filters .form-select {
+        max-width: none !important;
+        min-width: 120px;
+    }
 }
 
 /* Order Details Page Styles */

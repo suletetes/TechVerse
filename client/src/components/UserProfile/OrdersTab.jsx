@@ -17,48 +17,50 @@ const OrdersTab = ({
             </div>
 
             {/* Order Filters */}
-            <div className="order-filters row mb-4">
-                <div className="col-md-4 mb-3">
-                    <div className="input-group">
-                        <span className="input-group-text">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <div className="order-filters mb-4">
+                <div className="row align-items-center">
+                    <div className="col-lg-6 mb-3 mb-lg-0">
+                        <div className="order-search-container">
+                            <svg width="16" height="16" viewBox="0 0 24 24" className="order-search-icon" fill="none" stroke="currentColor" strokeWidth="2">
                                 <circle cx="11" cy="11" r="8" />
                                 <path d="m21 21-4.35-4.35" />
                             </svg>
-                        </span>
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Search by order ID..."
-                            value={orderFilters.searchTerm}
-                            onChange={(e) => setOrderFilters({ ...orderFilters, searchTerm: e.target.value })}
-                        />
+                            <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Search by order ID..."
+                                value={orderFilters.searchTerm}
+                                onChange={(e) => setOrderFilters({ ...orderFilters, searchTerm: e.target.value })}
+                            />
+                        </div>
                     </div>
-                </div>
-                <div className="col-md-4 mb-3">
-                    <select
-                        className="form-select"
-                        value={orderFilters.status}
-                        onChange={(e) => setOrderFilters({ ...orderFilters, status: e.target.value })}
-                    >
-                        <option value="all">All Status</option>
-                        <option value="processing">Processing</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="cancelled">Cancelled</option>
-                    </select>
-                </div>
-                <div className="col-md-4 mb-3">
-                    <select
-                        className="form-select"
-                        value={orderFilters.dateRange}
-                        onChange={(e) => setOrderFilters({ ...orderFilters, dateRange: e.target.value })}
-                    >
-                        <option value="all">All Time</option>
-                        <option value="30days">Last 30 Days</option>
-                        <option value="90days">Last 90 Days</option>
-                        <option value="1year">Last Year</option>
-                    </select>
+                    <div className="col-lg-6">
+                        <div className="d-flex gap-3 justify-content-lg-end">
+                            <select
+                                className="form-select"
+                                value={orderFilters.status}
+                                onChange={(e) => setOrderFilters({ ...orderFilters, status: e.target.value })}
+                                style={{ maxWidth: '140px' }}
+                            >
+                                <option value="all">All Status</option>
+                                <option value="processing">Processing</option>
+                                <option value="shipped">Shipped</option>
+                                <option value="delivered">Delivered</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                            <select
+                                className="form-select"
+                                value={orderFilters.dateRange}
+                                onChange={(e) => setOrderFilters({ ...orderFilters, dateRange: e.target.value })}
+                                style={{ maxWidth: '140px' }}
+                            >
+                                <option value="all">All Time</option>
+                                <option value="30days">Last 30 Days</option>
+                                <option value="90days">Last 90 Days</option>
+                                <option value="1year">Last Year</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
 
