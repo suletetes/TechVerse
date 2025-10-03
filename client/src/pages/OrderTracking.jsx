@@ -105,25 +105,35 @@ const OrderTracking = () => {
                             <div className="store-card fill-card">
                                 {/* Order Summary */}
                                 <div className="order-status-header mb-4">
-                                    <div className="col-md-8">
-                                        <h5 className="tc-6533 mb-2">Order Details</h5>
-                                        <p className="mb-1"><strong>Order ID:</strong> {order.id}</p>
-                                        <p className="mb-1"><strong>Order Date:</strong> {new Date(order.date).toLocaleDateString()}</p>
-                                        <p className="mb-1"><strong>Total:</strong> £{order.total.toFixed(2)}</p>
-                                        <p className="mb-1"><strong>Items:</strong> {order.items} item(s)</p>
-                                        <p className="mb-1"><strong>Tracking Number:</strong></p>
-                                        <div className="tracking-number-display">{order.trackingNumber}</div>
-                                    </div>
-                                    <div className="col-md-4 text-center">
-                                        <img
-                                            src={order.image}
-                                            alt="Order"
-                                            className="img-fluid rounded mb-2"
-                                            style={{ maxHeight: '100px', objectFit: 'cover' }}
-                                        />
-                                        <span className={`badge bg-${getStatusColor(order.status)} fs-6`}>
-                                            {order.status}
-                                        </span>
+                                    <div className="row align-items-center">
+                                        <div className="col-md-8">
+                                            <h5 className="text-white mb-3">Order Details</h5>
+                                            <div className="row">
+                                                <div className="col-sm-6">
+                                                    <p className="mb-2 text-white-50"><strong className="text-white">Order ID:</strong> {order.id}</p>
+                                                    <p className="mb-2 text-white-50"><strong className="text-white">Order Date:</strong> {new Date(order.date).toLocaleDateString()}</p>
+                                                    <p className="mb-2 text-white-50"><strong className="text-white">Total:</strong> £{order.total.toFixed(2)}</p>
+                                                </div>
+                                                <div className="col-sm-6">
+                                                    <p className="mb-2 text-white-50"><strong className="text-white">Items:</strong> {order.items} item(s)</p>
+                                                    <p className="mb-2 text-white-50"><strong className="text-white">Tracking Number:</strong></p>
+                                                    <div className="tracking-number-display">{order.trackingNumber}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-4 text-center">
+                                            <img
+                                                src={order.image}
+                                                alt="Order"
+                                                className="img-fluid rounded mb-3 order-image"
+                                                style={{ maxHeight: '120px', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.2)' }}
+                                            />
+                                            <div>
+                                                <span className={`badge bg-${getStatusColor(order.status)} px-3 py-2 fs-6 fw-bold`}>
+                                                    {order.status}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 

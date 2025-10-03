@@ -1898,10 +1898,11 @@ nced Delivery Estimate Card */
     background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
     color: white;
     border-radius: 12px;
-    padding: 1.5rem;
+    padding: 2rem;
     margin-bottom: 1.5rem;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 123, 255, 0.3);
 }
 
 .order-status-header::before {
@@ -1915,17 +1916,35 @@ nced Delivery Estimate Card */
     transform: rotate(45deg);
 }
 
+.order-status-header .order-image {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.order-status-header .order-image:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
 /* Tracking Number Styling */
 .tracking-number-display {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 8px;
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1rem;
     font-family: 'Courier New', monospace;
     font-weight: 600;
     letter-spacing: 1px;
     display: inline-block;
-    margin-top: 0.5rem;
+    margin-top: 0.25rem;
+    color: white;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.tracking-number-display:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
 }
 
 /* Enhanced Sidebar Cards */
@@ -1995,5 +2014,81 @@ nced Delivery Estimate Card */
     .tracking-sidebar-card {
         padding: 1rem;
         margin-bottom: 1rem;
+    }
+}/* Imag
+e Fallback Styles */
+.order-item-image,
+.order-image,
+.product-image {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.order-item-image:hover,
+.order-image:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Image loading placeholder */
+.image-placeholder {
+    background: linear-gradient(45deg, #f8f9fa 25%, transparent 25%), 
+                linear-gradient(-45deg, #f8f9fa 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #f8f9fa 75%), 
+                linear-gradient(-45deg, transparent 75%, #f8f9fa 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    animation: loading-shimmer 1.5s infinite linear;
+}
+
+@keyframes loading-shimmer {
+    0% { background-position: 0 0, 0 10px, 10px -10px, -10px 0px; }
+    100% { background-position: 20px 20px, 20px 30px, 30px 10px, 10px 20px; }
+}
+
+/* Error state for broken images */
+.image-error {
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.image-error::before {
+    content: "📷";
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+}/* Ord
+er Status Header Mobile Responsiveness */
+@media (max-width: 768px) {
+    .order-status-header {
+        padding: 1.5rem;
+        text-align: center;
+    }
+    
+    .order-status-header .row {
+        flex-direction: column-reverse;
+    }
+    
+    .order-status-header .col-md-4 {
+        margin-bottom: 1.5rem;
+    }
+    
+    .order-status-header .col-md-8 {
+        text-align: center;
+    }
+    
+    .order-status-header .row .col-sm-6 {
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    
+    .tracking-number-display {
+        display: block;
+        margin: 0.5rem auto 0;
+        max-width: 200px;
     }
 }
