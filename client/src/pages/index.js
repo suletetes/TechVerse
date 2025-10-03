@@ -13,3 +13,5 @@ export { default as NotFound } from './NotFound';
 export { default as OrderDetails } from './OrderDetails';
 export { default as OrderTracking } from './OrderTracking';
 export { default as OrderReview } from './OrderReview';
+export { default as AdminOrderManagement } from './AdminOrderManagement.jsx';
+export { default as AdminProductManagement } from './AdminProductManagement.jsx';

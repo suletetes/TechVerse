@@ -16,7 +16,9 @@ import {
     NotFound,
     OrderDetails,
     OrderTracking,
-    OrderReview
+    OrderReview,
+    AdminOrderManagement,
+    AdminProductManagement
 } from "./pages"
 
 
@@ -57,6 +59,14 @@ const router = createBrowserRouter([
             {
                 path: 'admin',
                 element: <AdminProfile />,
+            },
+            {
+                path: 'admin/orders',
+                element: <AdminOrderManagement />,
+            },
+            {
+                path: 'admin/products',
+                element: <AdminProductManagement />,
             },
             {
                 path: 'user',

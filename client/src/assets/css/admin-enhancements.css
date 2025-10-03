@@ -1000,3 +1000,323 @@ al dropdown positioning fixes */
         transform: translateX(-50%) !important;
     }
 }
+/* 
+Product Management Styles */
+.product-image-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+.product-table-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.featured-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #ffc107;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.category-badge {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 1px solid #bbdefb;
+}
+
+.stock-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.stock-indicator.in-stock {
+    background: #28a745;
+}
+
+.stock-indicator.low-stock {
+    background: #ffc107;
+}
+
+.stock-indicator.out-of-stock {
+    background: #dc3545;
+}
+
+.status-badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 16px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    border: 1px solid;
+}
+
+.status-badge.active {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border-color: rgba(40, 167, 69, 0.2);
+}
+
+.status-badge.low-stock {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+    border-color: rgba(255, 193, 7, 0.2);
+}
+
+.status-badge.out-of-stock {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border-color: rgba(220, 53, 69, 0.2);
+}
+
+.status-badge.inactive {
+    background: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+    border-color: rgba(108, 117, 125, 0.2);
+}
+
+/* Admin Table Enhancements */
+.admin-table-container {
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+}
+
+.admin-table-container .table {
+    margin-bottom: 0;
+}
+
+.admin-table-container .table th {
+    background: #f8f9fa;
+    border-bottom: 2px solid #e9ecef;
+    font-weight: 600;
+    color: #495057;
+    padding: 1rem 0.75rem;
+}
+
+.admin-table-container .table td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.admin-table-container .table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.actions-column {
+    width: 120px;
+    text-align: center;
+}
+
+.dropdown-menu {
+    border: 1px solid #e9ecef;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 0.5rem 0;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.dropdown-item svg {
+    opacity: 0.7;
+}
+
+.dropdown-item:hover svg {
+    opacity: 1;
+}
+
+.dropdown-divider {
+    margin: 0.5rem 0;
+    border-color: #e9ecef;
+}
+
+/* Order Management Styles */
+.expanded-details {
+    background: #f8f9fa !important;
+}
+
+.expanded-details td {
+    border-top: none !important;
+}
+
+.transition-transform {
+    transition: transform 0.2s ease;
+}
+
+.rotate-90 {
+    transform: rotate(90deg);
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .admin-table-container .table th,
+    .admin-table-container .table td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .product-image-container {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .stats-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .dropdown-menu {
+        min-width: 160px;
+    }
+}/* Clicka
+ble Stats Cards */
+a.text-decoration-none .dashboard-stats-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+a.text-decoration-none .dashboard-stats-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+a.text-decoration-none .dashboard-stats-card:hover .stats-icon {
+    transform: scale(1.05);
+}
+
+a.text-decoration-none .dashboard-stats-card:hover .stats-value {
+    color: #1a202c;
+}
+
+a.text-decoration-none .dashboard-stats-card:hover .stats-label {
+    color: #2d3748;
+}
+
+/* Ensure text colors remain consistent in links */
+a.text-decoration-none .stats-value,
+a.text-decoration-none .stats-label,
+a.text-decoration-none .stats-period {
+    color: inherit;
+}
+
+a.text-decoration-none:hover .stats-value,
+a.text-decoration-none:hover .stats-label,
+a.text-decoration-none:hover .stats-period {
+    color: inherit;
+}
+
+/* Add subtle animation to growth badges */
+.growth-badge {
+    transition: all 0.2s ease;
+}
+
+.dashboard-stats-card:hover .growth-badge {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
+}
+
+/* Improve table hover effects */
+.admin-table-container .table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.admin-table-container .table tbody tr:hover {
+    background: #f8f9fa;
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Enhanced dropdown animations */
+.dropdown-menu {
+    animation: fadeInUp 0.2s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Loading states for buttons */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Enhanced form controls */
+.form-control:focus,
+.form-select:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Improved badge styles */
+.badge {
+    font-weight: 600;
+    letter-spacing: 0.025em;
+}
+
+/* Enhanced card headers */
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* Responsive improvements for mobile */
+@media (max-width: 576px) {
+    .dashboard-stats-card {
+        margin-bottom: 1rem;
+    }
+    
+    .stats-card-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .stats-growth {
+        align-self: center;
+    }
+    
+    .admin-table-container .table tbody tr:hover {
+        transform: none;
+    }
+}
