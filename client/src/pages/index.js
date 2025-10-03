@@ -10,3 +10,6 @@ export { default as PaymentPage } from './PaymentPage';
 export { default as UserProfile } from './UserProfile';
 export { default as AdminProfile } from './AdminProfile';
 export { default as NotFound } from './NotFound';
+export { default as OrderDetails } from './OrderDetails';
+export { default as OrderTracking } from './OrderTracking';
+export { default as OrderReview } from './OrderReview';

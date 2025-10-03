@@ -694,6 +694,16 @@ const UserProfileLayout = () => {
                     order={reviewOrder}
                 />
             )}
+            {showReorderModal && reorderOrder && (
+                <ReorderModal 
+                    onClose={() => {
+                        setShowReorderModal(false);
+                        setReorderOrder(null);
+                    }}
+                    order={reorderOrder}
+                    onReorder={handleReorderComplete}
+                />
+            )}
         </div>
     );
 };
