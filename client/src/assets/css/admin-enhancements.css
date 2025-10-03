@@ -1245,7 +1245,28 @@ a.text-decoration-none:hover .stats-period {
 
 /* Add subtle animation to growth badges */
 .growth-badge {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
     transition: all 0.2s ease;
+}
+
+.growth-badge.positive {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border-color: rgba(40, 167, 69, 0.2);
+}
+
+.growth-badge.negative {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border-color: rgba(220, 53, 69, 0.2);
 }
 
 .dashboard-stats-card:hover .growth-badge {
@@ -1318,4 +1339,93 @@ a.text-decoration-none:hover .stats-period {
     .admin-table-container .table tbody tr:hover {
         transform: none;
     }
+}/*
+ Ensure consistent stats card alignment */
+.dashboard-stats-card .stats-card-header {
+    min-height: 80px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.dashboard-stats-card .stats-icon-container {
+    flex-shrink: 0;
+}
+
+.dashboard-stats-card .stats-growth {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.dashboard-stats-card .stats-content {
+    flex-grow: 1;
+}
+
+/* Ensure consistent icon sizing */
+.dashboard-stats-card .stats-icon {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-stats-card .stats-icon svg {
+    width: 32px;
+    height: 32px;
+}
+
+/* Consistent text sizing */
+.dashboard-stats-card .stats-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+}
+
+.dashboard-stats-card .stats-label {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0.25rem;
+}
+
+.dashboard-stats-card .stats-period {
+    color: #718096;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Fix button group alignment */
+.btn-group-sm {
+    display: inline-flex;
+    gap: 0.25rem;
+}
+
+.btn-group-sm .btn {
+    margin: 0;
+    border-radius: 0.375rem;
+}
+
+/* Table action column width */
+.actions-column,
+td.text-center {
+    width: 140px;
+    min-width: 140px;
+}
+
+/* Ensure proper table alignment */
+.admin-table-container .table th,
+.admin-table-container .table td {
+    vertical-align: middle;
+    padding: 1rem 0.75rem;
+}
+
+.admin-table-container .table th.text-center,
+.admin-table-container .table td.text-center {
+    text-align: center;
 }

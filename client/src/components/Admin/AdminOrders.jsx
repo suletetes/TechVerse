@@ -122,7 +122,7 @@ const AdminOrders = ({
                             <th className="border-0 fw-semibold">Status</th>
                             <th className="border-0 fw-semibold">Items</th>
                             <th className="border-0 fw-semibold">Total</th>
-                            <th className="border-0 fw-semibold actions-column">Actions</th>
+                            <th className="border-0 fw-semibold text-center">Actions</th>
                         </tr>
                     </thead>
                 <tbody>
@@ -172,51 +172,23 @@ const AdminOrders = ({
                                     <span className="fw-medium">{order.items}</span> items
                                 </td>
                                 <td className="fw-bold tc-6533">{formatCurrency(order.total)}</td>
-                                <td className="actions-column">
-                                    <div className="dropdown">
-                                        <button
-                                            className="btn btn-outline-secondary btn-sm dropdown-toggle"
-                                            type="button"
-                                            data-bs-toggle="dropdown"
-                                            aria-expanded="false"
-                                        >
-                                            Actions
+                                <td className="text-center">
+                                    <div className="btn-group btn-group-sm">
+                                        <button className="btn btn-outline-primary btn-sm" title="View Details">
+                                            <svg width="14" height="14" viewBox="0 0 24 24">
+                                                <path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
+                                            </svg>
                                         </button>
-                                                        <ul className="dropdown-menu dropdown-menu-end">
-                                            <li>
-                                                <button className="dropdown-item d-flex align-items-center">
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                                                        <path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
-                                                    </svg>
-                                                    View Details
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button className="dropdown-item d-flex align-items-center">
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                                                        <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
-                                                    </svg>
-                                                    Edit Order
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button className="dropdown-item d-flex align-items-center">
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                                                        <path fill="currentColor" d="M17,12H7L12,7L17,12M7,18V16H17V18H7Z" />
-                                                    </svg>
-                                                    Update Status
-                                                </button>
-                                            </li>
-                                            <li><hr className="dropdown-divider" /></li>
-                                            <li>
-                                                <button className="dropdown-item d-flex align-items-center">
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                                                        <path fill="currentColor" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
-                                                    </svg>
-                                                    Print Invoice
-                                                </button>
-                                            </li>
-                                        </ul>
+                                        <button className="btn btn-outline-secondary btn-sm" title="Edit Order">
+                                            <svg width="14" height="14" viewBox="0 0 24 24">
+                                                <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
+                                            </svg>
+                                        </button>
+                                        <button className="btn btn-outline-info btn-sm" title="Print Invoice">
+                                            <svg width="14" height="14" viewBox="0 0 24 24">
+                                                <path fill="currentColor" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                                            </svg>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
