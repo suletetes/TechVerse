@@ -1,6 +1,18 @@
 import React, { useState } from "react";
 
-const AdminOrders = ({ recentOrders, getStatusColor, formatCurrency }) => {
+const AdminOrders = ({ 
+    recentOrders, 
+    getStatusColor, 
+    formatCurrency,
+    bulkActions,
+    setBulkActions,
+    handleBulkAction,
+    handleQuickAction,
+    filters,
+    updateFilter,
+    clearFilters,
+    handleExport
+}) => {
     const [expandedOrders, setExpandedOrders] = useState(new Set());
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
@@ -98,20 +110,21 @@ const AdminOrders = ({ recentOrders, getStatusColor, formatCurrency }) => {
                 />
             </div>
         </div>
-        <div className="table-responsive">
-            <table className="table table-hover">
-                <thead className="table-light">
-                    <tr>
-                        <th className="border-0 fw-semibold" width="50"></th>
-                        <th className="border-0 fw-semibold">Order ID</th>
-                        <th className="border-0 fw-semibold">Customer</th>
-                        <th className="border-0 fw-semibold">Date</th>
-                        <th className="border-0 fw-semibold">Status</th>
-                        <th className="border-0 fw-semibold">Items</th>
-                        <th className="border-0 fw-semibold">Total</th>
-                        <th className="border-0 fw-semibold text-center">Actions</th>
-                    </tr>
-                </thead>
+        <div className="admin-table-container">
+            <div className="table-responsive">
+                <table className="table table-hover">
+                    <thead className="table-light">
+                        <tr>
+                            <th className="border-0 fw-semibold" width="50"></th>
+                            <th className="border-0 fw-semibold">Order ID</th>
+                            <th className="border-0 fw-semibold">Customer</th>
+                            <th className="border-0 fw-semibold">Date</th>
+                            <th className="border-0 fw-semibold">Status</th>
+                            <th className="border-0 fw-semibold">Items</th>
+                            <th className="border-0 fw-semibold">Total</th>
+                            <th className="border-0 fw-semibold actions-column">Actions</th>
+                        </tr>
+                    </thead>
                 <tbody>
                     {filteredOrders.map((order) => (
                         <React.Fragment key={order.id}>
@@ -151,7 +164,7 @@ const AdminOrders = ({ recentOrders, getStatusColor, formatCurrency }) => {
                                     </div>
                                 </td>
                                 <td>
-                                    <span className={`badge bg-${getStatusColor(order.status)} bg-opacity-15 text-${getStatusColor(order.status)} border border-${getStatusColor(order.status)} border-opacity-25 px-3 py-2 rounded-pill`}>
+                                    <span className={`status-badge ${order.status.toLowerCase()}`}>
                                         {order.status}
                                     </span>
                                 </td>
@@ -159,16 +172,17 @@ const AdminOrders = ({ recentOrders, getStatusColor, formatCurrency }) => {
                                     <span className="fw-medium">{order.items}</span> items
                                 </td>
                                 <td className="fw-bold tc-6533">{formatCurrency(order.total)}</td>
-                                <td className="text-center">
+                                <td className="actions-column">
                                     <div className="dropdown">
                                         <button
                                             className="btn btn-outline-secondary btn-sm dropdown-toggle"
                                             type="button"
                                             data-bs-toggle="dropdown"
+                                            aria-expanded="false"
                                         >
                                             Actions
                                         </button>
-                                        <ul className="dropdown-menu">
+                                                        <ul className="dropdown-menu dropdown-menu-end">
                                             <li>
                                                 <button className="dropdown-item d-flex align-items-center">
                                                     <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
@@ -207,7 +221,7 @@ const AdminOrders = ({ recentOrders, getStatusColor, formatCurrency }) => {
                                 </td>
                             </tr>
                             {expandedOrders.has(order.id) && (
-                                <tr>
+                                <tr className="expanded-details">
                                     <td colSpan="8" className="p-0">
                                         <div className="bg-light border-top">
                                             <div className="p-4">
@@ -338,7 +352,8 @@ const AdminOrders = ({ recentOrders, getStatusColor, formatCurrency }) => {
                         </React.Fragment>
                     ))}
                 </tbody>
-            </table>
+                </table>
+            </div>
         </div>
     </div>
     );
