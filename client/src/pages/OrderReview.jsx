@@ -47,9 +47,15 @@ const OrderReview = () => {
                     <div className="col-12 mb-4">
                         <nav aria-label="breadcrumb">
                             <ol className="breadcrumb">
-                                <li className="breadcrumb-item"><Link to="/user">My Account</Link></li>
-                                <li className="breadcrumb-item"><Link to="/user?tab=orders">Orders</Link></li>
-                                <li className="breadcrumb-item"><Link to={`/user/order/${order.id}`}>Order Details</Link></li>
+                                <li className="breadcrumb-item">
+                                    <Link to="/user" title="Go to My Account">My Account</Link>
+                                </li>
+                                <li className="breadcrumb-item">
+                                    <Link to="/user?tab=orders" title="View all orders">Orders</Link>
+                                </li>
+                                <li className="breadcrumb-item">
+                                    <Link to={`/user/order/${order.id}`} title="View order details">Order Details</Link>
+                                </li>
                                 <li className="breadcrumb-item active" aria-current="page">Write Review</li>
                             </ol>
                         </nav>
