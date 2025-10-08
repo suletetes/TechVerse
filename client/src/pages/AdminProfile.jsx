@@ -46,6 +46,7 @@ const AdminProfile = () => {
         isEditingProfile,
         setIsEditingProfile,
         passwordData,
+        setPasswordData,
         exportData,
         setExportData,
         handleAdminProfileInputChange,
@@ -218,6 +219,17 @@ const AdminProfile = () => {
                 return (
                     <AdminSettings
                         adminData={adminData}
+                        passwordData={passwordData}
+                        setPasswordData={setPasswordData}
+                        handlePasswordInputChange={handlePasswordInputChange}
+                        handlePasswordChange={handlePasswordChange}
+                        adminProfileData={adminProfileData}
+                        isEditingProfile={isEditingProfile}
+                        setIsEditingProfile={setIsEditingProfile}
+                        handleAdminProfileInputChange={handleAdminProfileInputChange}
+                        handleSaveAdminProfile={handleSaveAdminProfile}
+                        handleAdminAvatarChange={handleAdminAvatarChange}
+                        toggleTwoFactor={toggleTwoFactor}
                     />
                 );
             

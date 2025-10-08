@@ -7,7 +7,6 @@ const AdminSettings = ({
     handlePasswordInputChange, 
     handlePasswordChange,
     adminProfileData,
-    setAdminProfileData,
     isEditingProfile,
     setIsEditingProfile,
     handleAdminProfileInputChange,

@@ -171,6 +171,7 @@ export const useAdminState = (setActiveTab, setEditProductId) => {
         isEditingProfile,
         setIsEditingProfile,
         passwordData,
+        setPasswordData,
         exportData,
         setExportData,
         handleAdminProfileInputChange,
