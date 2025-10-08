@@ -105,6 +105,7 @@ vi.mock('../../hooks/useAdminState', () => ({
             newPassword: '',
             confirmPassword: ''
         },
+        setPasswordData: vi.fn(),
         exportData: {
             type: '',
             format: 'csv',

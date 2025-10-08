@@ -72,6 +72,7 @@ const mockUseAdminState = {
     isEditingProfile: false,
     setIsEditingProfile: vi.fn(),
     passwordData: { currentPassword: '', newPassword: '', confirmPassword: '' },
+    setPasswordData: vi.fn(),
     exportData: { type: '', format: 'csv', dateRange: '30days', loading: false },
     setExportData: vi.fn(),
     handleAdminProfileInputChange: vi.fn(),
@@ -92,10 +93,11 @@ const mockUseAdminState = {
     handleAddUser: vi.fn(),
     handleEditUser: vi.fn(),
     handleDeleteUser: vi.fn()
-}; vi.
-    mock('../../hooks/useAdminData', () => ({
-        useAdminData: () => mockUseAdminData
-    }));
+};
+
+vi.mock('../../hooks/useAdminData', () => ({
+    useAdminData: () => mockUseAdminData
+}));
 
 vi.mock('../../hooks/useAdminState', () => ({
     useAdminState: () => mockUseAdminState
