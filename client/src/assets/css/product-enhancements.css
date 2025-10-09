@@ -1,0 +1,217 @@
+/* Product Page Enhancements */
+
+/* Category Pane Styles */
+.category-pane .breadcrumb-item + .breadcrumb-item::before {
+    content: "›";
+    color: #6c757d;
+    font-weight: bold;
+}
+
+.category-pane .hover-primary:hover {
+    color: var(--bs-primary) !important;
+}
+
+.category-pane .hover-bg-light:hover {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+    transition: background-color 0.2s ease;
+}
+
+.category-pane .category-icon {
+    transition: all 0.3s ease;
+}
+
+.category-pane .category-icon:hover {
+    transform: translateY(-2px);
+}
+
+/* Detailed Specs Styles */
+.detailed-specs .spec-section-header {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.detailed-specs .spec-section-header:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.detailed-specs .spec-item {
+    transition: background-color 0.2s ease;
+}
+
+.detailed-specs .spec-item:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.detailed-specs .spec-label {
+    flex: 1;
+    max-width: 60%;
+}
+
+.detailed-specs .spec-value {
+    flex: 1;
+    max-width: 40%;
+}
+
+/* Animation for expanding sections */
+.detailed-specs .spec-section-content {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Quick specs summary */
+.detailed-specs .quick-specs-summary .col-md-3,
+.detailed-specs .quick-specs-summary .col-6 {
+    transition: transform 0.2s ease;
+}
+
+.detailed-specs .quick-specs-summary .col-md-3:hover,
+.detailed-specs .quick-specs-summary .col-6:hover {
+    transform: translateY(-2px);
+}
+
+/* Enhanced button styles */
+.btn-rd {
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-rd:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Category features grid */
+.category-pane .category-features .col-6 {
+    transition: transform 0.2s ease;
+}
+
+.category-pane .category-features .col-6:hover {
+    transform: translateY(-2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .detailed-specs .spec-label {
+        max-width: 50%;
+    }
+    
+    .detailed-specs .spec-value {
+        max-width: 50%;
+    }
+    
+    .detailed-specs .spec-item {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.5rem;
+    }
+    
+    .detailed-specs .spec-value {
+        text-align: left !important;
+    }
+}
+
+/* Enhanced store card styles */
+.store-card.outline-card.fill-card {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.store-card.outline-card.fill-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Icon animations */
+.category-pane svg,
+.detailed-specs svg {
+    transition: all 0.2s ease;
+}
+
+.category-pane .btn:hover svg,
+.detailed-specs .btn:hover svg {
+    transform: scale(1.1);
+}
+
+/* Badge enhancements */
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.025em;
+}
+
+/* Improved focus states */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+    border-color: var(--bs-primary);
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid var(--bs-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .store-card.outline-card.fill-card {
+        border: 2px solid;
+    }
+    
+    .btn-outline-primary,
+    .btn-outline-secondary {
+        border-width: 2px;
+    }
+}
+
+/* Dark mode support (if implemented) */
+@media (prefers-color-scheme: dark) {
+    .detailed-specs .spec-item:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .category-pane .hover-bg-light:hover {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+    }
+}
