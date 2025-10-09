@@ -134,6 +134,25 @@ const AdminSidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, ad
                         <small className="text-muted">Customer Management</small>
                     </div>
                 </button>
+                {/* Catalog Management */}
+                <button
+                    className={`nav-link d-flex align-items-center px-4 py-3 border-0 text-start position-relative ${activeTab === 'catalog' ? 'active bg-secondary bg-opacity-10 text-secondary' : 'text-dark'}`}
+                    onClick={() => {
+                        setActiveTab('catalog');
+                        setSidebarOpen(false);
+                    }}
+                >
+                    {activeTab === 'catalog' && <div className="position-absolute start-0 top-0 bottom-0 bg-secondary" style={{ width: '3px' }}></div>}
+                    <div className={`rounded-2 p-2 me-3 ${activeTab === 'catalog' ? 'bg-secondary' : 'bg-light'}`}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" className={`flex-shrink-0 ${activeTab === 'catalog' ? 'text-white' : 'text-muted'}`}>
+                            <path fill="currentColor" d="M10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6H12L10,4Z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div className="fw-semibold">Catalog</div>
+                        <small className="text-muted">Categories & Specs</small>
+                    </div>
+                </button>
                 {/* Activity Log */}
                 <button
                     className={`nav-link d-flex align-items-center px-4 py-3 border-0 text-start position-relative ${activeTab === 'activity' ? 'active bg-info bg-opacity-10 text-info' : 'text-dark'}`}

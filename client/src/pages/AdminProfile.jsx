@@ -8,6 +8,7 @@ import {
     AdminUsers,
     AdminAddProduct,
     AdminCategories,
+    AdminCatalogManager,
     AdminSettings,
     AdminNotifications,
     AdminAnalytics,
@@ -132,6 +133,20 @@ const AdminProfile = () => {
                         setActiveTab={handleTabChange}
                         onSave={handleSaveCategory}
                         onDelete={handleDeleteCategory}
+                    />
+                );
+            
+            case 'catalog':
+                return (
+                    <AdminCatalogManager
+                        categories={categories}
+                        specifications={{}}
+                        onSaveCategory={handleSaveCategory}
+                        onDeleteCategory={handleDeleteCategory}
+                        onSaveSpecifications={(categoryName, specs) => {
+                            console.log('Saving specifications for', categoryName, specs);
+                            alert(`Specifications saved for ${categoryName}!`);
+                        }}
                     />
                 );
             
