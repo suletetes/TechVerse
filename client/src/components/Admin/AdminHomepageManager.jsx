@@ -21,6 +21,30 @@ const AdminHomepageManager = () => {
         { id: 10, name: 'Smart Watch', price: 399, category: 'Wearables', image: 'img/watch-product.jpg', rating: 4.2, sales: 678 }
     ];
 
+    // Icon components
+    const SectionIcons = {
+        latest: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+        ),
+        topSellers: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7M9 3V4H15V3H9M7 6V19H17V6H7M9 8H15V18H9V8Z"/>
+            </svg>
+        ),
+        quickPicks: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7,2V13H10V22L17,10H13L17,2H7Z"/>
+            </svg>
+        ),
+        weeklyDeals: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/>
+            </svg>
+        )
+    };
+
     // Homepage sections configuration
     const homepageSections = {
         latest: {
@@ -28,7 +52,7 @@ const AdminHomepageManager = () => {
             subtitle: 'Take a look at what\'s new',
             maxProducts: 8,
             description: 'Showcase the newest products in your catalog',
-            icon: '🆕',
+            icon: SectionIcons.latest,
             color: 'primary'
         },
         topSellers: {
@@ -36,7 +60,7 @@ const AdminHomepageManager = () => {
             subtitle: 'Find the perfect gift',
             maxProducts: 9,
             description: 'Display your best-selling products',
-            icon: '🏆',
+            icon: SectionIcons.topSellers,
             color: 'success'
         },
         quickPicks: {
@@ -44,7 +68,7 @@ const AdminHomepageManager = () => {
             subtitle: 'Perfect gifts at perfect prices',
             maxProducts: 9,
             description: 'Curated selection of recommended products',
-            icon: '⚡',
+            icon: SectionIcons.quickPicks,
             color: 'warning'
         },
         weeklyDeals: {
@@ -52,7 +76,7 @@ const AdminHomepageManager = () => {
             subtitle: 'Discover our amazing offers',
             maxProducts: 3,
             description: 'Featured deals and discounts',
-            icon: '💰',
+            icon: SectionIcons.weeklyDeals,
             color: 'danger'
         }
     };
@@ -199,7 +223,7 @@ const AdminHomepageManager = () => {
                                 <div className="row align-items-center">
                                     <div className="col-md-8">
                                         <div className="d-flex align-items-center mb-2">
-                                            <span className="fs-3 me-3">{section.icon}</span>
+                                            <div className="me-3" style={{ fontSize: '2rem' }}>{section.icon}</div>
                                             <div>
                                                 <h5 className="mb-1">{section.title}</h5>
                                                 <p className="text-muted mb-0">{section.subtitle}</p>
@@ -395,7 +419,7 @@ const AdminHomepageManager = () => {
                         <div key={key} className="col-md-3 mb-3">
                             <div className={`card text-center bg-${section.color} bg-opacity-10`}>
                                 <div className="card-body py-3">
-                                    <div className="fs-4 mb-1">{section.icon}</div>
+                                    <div className="mb-1" style={{ fontSize: '1.5rem' }}>{section.icon}</div>
                                     <h6 className={`text-${section.color} mb-1`}>{stats.assigned}/{stats.max}</h6>
                                     <small className="text-muted">{section.title}</small>
                                 </div>
