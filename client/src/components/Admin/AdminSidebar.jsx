@@ -153,6 +153,25 @@ const AdminSidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, ad
                         <small className="text-muted">Categories & Specs</small>
                     </div>
                 </button>
+                {/* Homepage Manager */}
+                <button
+                    className={`nav-link d-flex align-items-center px-4 py-3 border-0 text-start position-relative ${activeTab === 'homepage' ? 'active bg-warning bg-opacity-10 text-warning' : 'text-dark'}`}
+                    onClick={() => {
+                        setActiveTab('homepage');
+                        setSidebarOpen(false);
+                    }}
+                >
+                    {activeTab === 'homepage' && <div className="position-absolute start-0 top-0 bottom-0 bg-warning" style={{ width: '3px' }}></div>}
+                    <div className={`rounded-2 p-2 me-3 ${activeTab === 'homepage' ? 'bg-warning' : 'bg-light'}`}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" className={`flex-shrink-0 ${activeTab === 'homepage' ? 'text-white' : 'text-muted'}`}>
+                            <path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div className="fw-semibold">Homepage</div>
+                        <small className="text-muted">Manage Sections</small>
+                    </div>
+                </button>
                 {/* Activity Log */}
                 <button
                     className={`nav-link d-flex align-items-center px-4 py-3 border-0 text-start position-relative ${activeTab === 'activity' ? 'active bg-info bg-opacity-10 text-info' : 'text-dark'}`}

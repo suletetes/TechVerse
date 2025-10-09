@@ -16,3 +16,5 @@ export { default as AdminAnalytics } from './AdminAnalytics';
 export { default as AdminActivityLog } from './AdminActivityLog';
 export { default as AdminSecurity } from './AdminSecurity';
 export { default as AdminProfileSettings } from './AdminProfileSettings';
+// AdminCatalogPane doesn't exist - removed invalid export
+export { default as AdminHomepageManager } from './AdminHomepageManager';

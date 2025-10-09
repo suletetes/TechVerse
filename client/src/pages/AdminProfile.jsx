@@ -9,6 +9,7 @@ import {
     AdminAddProduct,
     AdminCategories,
     AdminCatalogManager,
+    AdminHomepageManager,
     AdminSettings,
     AdminNotifications,
     AdminAnalytics,
@@ -163,6 +164,11 @@ const AdminProfile = () => {
                             alert(`Specifications saved for ${categoryName}!`);
                         }}
                     />
+                );
+            
+            case 'homepage':
+                return (
+                    <AdminHomepageManager />
                 );
             
             case 'orders':
