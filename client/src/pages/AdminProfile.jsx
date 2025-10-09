@@ -101,9 +101,23 @@ const AdminProfile = () => {
                 return (
                     <AdminProducts
                         products={products}
+                        categories={categories}
+                        specifications={{}}
                         setActiveTab={handleTabChange}
                         getStatusColor={getStatusColor}
                         formatCurrency={formatCurrency}
+                        onUpdateProduct={(productId, updates) => {
+                            console.log('Updating product:', productId, updates);
+                            alert('Product updated successfully! (Demo mode)');
+                        }}
+                        onDeleteProduct={(productId) => {
+                            console.log('Deleting product:', productId);
+                            alert('Product deleted successfully! (Demo mode)');
+                        }}
+                        onDuplicateProduct={(product) => {
+                            console.log('Duplicating product:', product);
+                            alert('Product duplicated successfully! (Demo mode)');
+                        }}
                     />
                 );
             
@@ -140,6 +154,7 @@ const AdminProfile = () => {
                 return (
                     <AdminCatalogManager
                         categories={categories}
+                        products={products}
                         specifications={{}}
                         onSaveCategory={handleSaveCategory}
                         onDeleteCategory={handleDeleteCategory}

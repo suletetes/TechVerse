@@ -4,6 +4,7 @@ import AdminSpecificationManager from './AdminSpecificationManager';
 
 const AdminCatalogManager = ({ 
     categories = [],
+    products = [],
     specifications = {},
     onSaveCategory,
     onDeleteCategory,
@@ -11,7 +12,15 @@ const AdminCatalogManager = ({
 }) => {
     const [activeTab, setActiveTab] = useState('categories');
 
-    // Sample data for demonstration
+    // Calculate product counts for categories
+    const getProductCountForCategory = (categoryName) => {
+        return products.filter(product => 
+            product.category === categoryName || 
+            product.category === categoryName.toLowerCase()
+        ).length;
+    };
+
+    // Sample data for demonstration with dynamic product counts
     const sampleCategories = [
         {
             id: 1,
@@ -21,7 +30,7 @@ const AdminCatalogManager = ({
             image: '/img/category-tablets.jpg',
             isActive: true,
             sortOrder: 1,
-            productCount: 24,
+            productCount: getProductCountForCategory('Tablets'),
             parentId: null,
             seoTitle: 'Tablets - Latest iPad, Android & Windows Tablets',
             seoDescription: 'Shop the latest tablets from top brands. Find iPad, Android, and Windows tablets with fast shipping.',
@@ -44,7 +53,7 @@ const AdminCatalogManager = ({
             image: '/img/category-phones.jpg',
             isActive: true,
             sortOrder: 2,
-            productCount: 45,
+            productCount: getProductCountForCategory('Phones'),
             parentId: null,
             seoTitle: 'Smartphones - iPhone, Samsung, Google Pixel',
             seoDescription: 'Discover the latest smartphones with advanced features and competitive prices.',
@@ -67,7 +76,7 @@ const AdminCatalogManager = ({
             image: '/img/category-laptops.jpg',
             isActive: true,
             sortOrder: 3,
-            productCount: 32,
+            productCount: getProductCountForCategory('Laptops'),
             parentId: null,
             seoTitle: 'Laptops - MacBook, Windows, Gaming Laptops',
             seoDescription: 'Find the perfect laptop for work, study, or gaming. Top brands and competitive prices.',

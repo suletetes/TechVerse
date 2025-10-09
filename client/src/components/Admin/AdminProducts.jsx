@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 
-const AdminProducts = ({ products, setActiveTab, getStatusColor, formatCurrency }) => {
+const AdminProducts = ({ 
+    products, 
+    categories = [], 
+    specifications = {},
+    setActiveTab, 
+    getStatusColor, 
+    formatCurrency,
+    onUpdateProduct,
+    onDeleteProduct,
+    onDuplicateProduct 
+}) => {
     const [filteredProducts, setFilteredProducts] = useState(products);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
@@ -10,14 +20,15 @@ const AdminProducts = ({ products, setActiveTab, getStatusColor, formatCurrency 
     const [currentPage, setCurrentPage] = useState(1);
     const [productsPerPage] = useState(10);
 
-    // Enhanced product categories matching Product.jsx structure
-    const categories = [
+    // Dynamic categories from catalog management system
+    const categoryOptions = [
         { value: '', label: 'All Categories' },
-        { value: 'tablets', label: 'Tablets' },
-        { value: 'phones', label: 'Smartphones' },
-        { value: 'laptops', label: 'Laptops' },
-        { value: 'accessories', label: 'Accessories' },
-        { value: 'wearables', label: 'Wearables' }
+        ...categories.map(cat => ({
+            value: cat.slug || cat.name.toLowerCase(),
+            label: cat.name,
+            count: cat.productCount || 0,
+            isActive: cat.isActive
+        }))
     ];
 
     const statusOptions = [
@@ -94,27 +105,57 @@ const AdminProducts = ({ products, setActiveTab, getStatusColor, formatCurrency 
     };
 
     const handleDelete = (productId) => {
-        if (window.confirm('Are you sure you want to delete this product?')) {
-            console.log('Delete product:', productId);
-            // Handle delete logic
+        if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+            if (onDeleteProduct) {
+                onDeleteProduct(productId);
+            } else {
+                console.log('Delete product:', productId);
+                alert('Product deleted successfully! (Demo mode)');
+            }
         }
     };
 
     const handleDuplicate = (productId) => {
-        console.log('Duplicate product:', productId);
-        // Handle duplicate logic
+        const productToDuplicate = products.find(p => p.id === productId);
+        if (productToDuplicate && onDuplicateProduct) {
+            onDuplicateProduct(productToDuplicate);
+        } else {
+            console.log('Duplicate product:', productId);
+            alert('Product duplicated successfully! (Demo mode)');
+        }
     };
 
     const handleToggleStatus = (productId, currentStatus) => {
         const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-        console.log('Toggle status:', productId, newStatus);
-        // Handle status toggle logic
+        const updatedProduct = { status: newStatus };
+        
+        if (onUpdateProduct) {
+            onUpdateProduct(productId, updatedProduct);
+        } else {
+            console.log('Toggle status:', productId, newStatus);
+            alert(`Product status changed to ${newStatus}! (Demo mode)`);
+        }
     };
 
     const getStockStatus = (stock) => {
         if (stock === 0) return { color: 'danger', text: 'Out of Stock' };
         if (stock < 10) return { color: 'warning', text: 'Low Stock' };
         return { color: 'success', text: 'In Stock' };
+    };
+
+    const getCategorySpecs = (categoryName) => {
+        const categorySpecs = specifications[categoryName];
+        if (!categorySpecs) return 0;
+        
+        return Object.values(categorySpecs).reduce((total, group) => {
+            return total + (Array.isArray(group) ? group.length : 0);
+        }, 0);
+    };
+
+    const getCategoryInfo = (categorySlug) => {
+        return categories.find(cat => 
+            (cat.slug || cat.name.toLowerCase()) === categorySlug
+        );
     };
 
     return (
@@ -125,15 +166,27 @@ const AdminProducts = ({ products, setActiveTab, getStatusColor, formatCurrency 
                     <h3 className="tc-6533 bold-text mb-1">Product Management</h3>
                     <p className="text-muted mb-0">Manage your product catalog and inventory</p>
                 </div>
-                <button
-                    className="btn btn-success btn-rd d-flex align-items-center"
-                    onClick={() => setActiveTab('add-product')}
-                >
-                    <svg width="18" height="18" viewBox="0 0 24 24" className="me-2" fill="white">
-                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                    </svg>
-                    Add New Product
-                </button>
+                <div className="d-flex gap-2">
+                    <button
+                        className="btn btn-outline-secondary btn-rd d-flex align-items-center"
+                        onClick={() => setActiveTab('catalog')}
+                        title="Manage Categories & Specifications"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                            <path fill="currentColor" d="M10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6H12L10,4Z"/>
+                        </svg>
+                        Manage Catalog
+                    </button>
+                    <button
+                        className="btn btn-success btn-rd d-flex align-items-center"
+                        onClick={() => setActiveTab('add-product')}
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" className="me-2" fill="white">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                        </svg>
+                        Add New Product
+                    </button>
+                </div>
             </div>
 
             {/* Filters and Search */}
@@ -161,8 +214,10 @@ const AdminProducts = ({ products, setActiveTab, getStatusColor, formatCurrency 
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
                     >
-                        {categories.map(cat => (
-                            <option key={cat.value} value={cat.value}>{cat.label}</option>
+                        {categoryOptions.map(cat => (
+                            <option key={cat.value} value={cat.value}>
+                                {cat.label} {cat.count > 0 && `(${cat.count})`}
+                            </option>
                         ))}
                     </select>
                 </div>
@@ -198,23 +253,48 @@ const AdminProducts = ({ products, setActiveTab, getStatusColor, formatCurrency 
                 </div>
             </div>
 
-            {/* Products Summary */}
-            <div className="row mb-3">
+            {/* Category & Products Summary */}
+            <div className="row mb-4">
                 <div className="col-12">
-                    <div className="d-flex justify-content-between align-items-center">
-                        <span className="text-muted">
-                            Showing {indexOfFirstProduct + 1}-{Math.min(indexOfLastProduct, filteredProducts.length)} of {filteredProducts.length} products
-                        </span>
-                        <div className="d-flex gap-2">
-                            <span className="badge bg-success bg-opacity-15 text-success">
-                                {products.filter(p => p.status === 'active').length} Active
-                            </span>
-                            <span className="badge bg-warning bg-opacity-15 text-warning">
-                                {products.filter(p => p.stock < 10 && p.stock > 0).length} Low Stock
-                            </span>
-                            <span className="badge bg-danger bg-opacity-15 text-danger">
-                                {products.filter(p => p.stock === 0).length} Out of Stock
-                            </span>
+                    <div className="card bg-light border-0">
+                        <div className="card-body p-3">
+                            <div className="row align-items-center">
+                                <div className="col-md-6">
+                                    <div className="d-flex align-items-center">
+                                        <span className="text-muted me-3">
+                                            Showing {indexOfFirstProduct + 1}-{Math.min(indexOfLastProduct, filteredProducts.length)} of {filteredProducts.length} products
+                                        </span>
+                                        {selectedCategory && (
+                                            <div className="d-flex align-items-center">
+                                                <span className="badge bg-primary me-2">
+                                                    {categoryOptions.find(c => c.value === selectedCategory)?.label}
+                                                </span>
+                                                {getCategorySpecs(selectedCategory) > 0 && (
+                                                    <small className="text-muted">
+                                                        {getCategorySpecs(selectedCategory)} specs available
+                                                    </small>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="col-md-6">
+                                    <div className="d-flex gap-2 justify-content-md-end">
+                                        <span className="badge bg-success bg-opacity-15 text-success">
+                                            {products.filter(p => p.status === 'active').length} Active
+                                        </span>
+                                        <span className="badge bg-warning bg-opacity-15 text-warning">
+                                            {products.filter(p => p.stock < 10 && p.stock > 0).length} Low Stock
+                                        </span>
+                                        <span className="badge bg-danger bg-opacity-15 text-danger">
+                                            {products.filter(p => p.stock === 0).length} Out of Stock
+                                        </span>
+                                        <span className="badge bg-info bg-opacity-15 text-info">
+                                            {categories.length} Categories
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -279,9 +359,16 @@ const AdminProducts = ({ products, setActiveTab, getStatusColor, formatCurrency 
                                         </div>
                                     </td>
                                     <td className="d-none d-md-table-cell">
-                                        <span className="badge bg-light text-dark border px-3 py-2 rounded-pill">
-                                            {product.category}
-                                        </span>
+                                        <div className="d-flex flex-column">
+                                            <span className="badge bg-light text-dark border px-3 py-2 rounded-pill mb-1">
+                                                {product.category}
+                                            </span>
+                                            {getCategorySpecs(product.category) > 0 && (
+                                                <small className="text-muted">
+                                                    {getCategorySpecs(product.category)} specifications
+                                                </small>
+                                            )}
+                                        </div>
                                     </td>
                                     <td>
                                         <div className="d-flex flex-column">
@@ -409,17 +496,66 @@ const AdminProducts = ({ products, setActiveTab, getStatusColor, formatCurrency 
                         <path fill="currentColor" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6Z" />
                     </svg>
                     <h5 className="text-muted">No products found</h5>
-                    <p className="text-muted">Try adjusting your search or filter criteria</p>
-                    <button
-                        className="btn btn-primary"
-                        onClick={() => {
-                            setSearchTerm('');
-                            setSelectedCategory('');
-                            setSelectedStatus('');
-                        }}
-                    >
-                        Clear Filters
-                    </button>
+                    <p className="text-muted">
+                        {selectedCategory 
+                            ? `No products found in the "${categoryOptions.find(c => c.value === selectedCategory)?.label}" category`
+                            : 'Try adjusting your search or filter criteria'
+                        }
+                    </p>
+                    <div className="d-flex gap-2 justify-content-center">
+                        <button
+                            className="btn btn-primary"
+                            onClick={() => {
+                                setSearchTerm('');
+                                setSelectedCategory('');
+                                setSelectedStatus('');
+                            }}
+                        >
+                            Clear Filters
+                        </button>
+                        {selectedCategory && (
+                            <button
+                                className="btn btn-outline-secondary"
+                                onClick={() => setActiveTab('catalog')}
+                            >
+                                Manage "{categoryOptions.find(c => c.value === selectedCategory)?.label}" Category
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Category Management Quick Actions */}
+            {selectedCategory && filteredProducts.length > 0 && (
+                <div className="mt-4 p-3 bg-light rounded-3">
+                    <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 className="mb-1">Category: {categoryOptions.find(c => c.value === selectedCategory)?.label}</h6>
+                            <small className="text-muted">
+                                {filteredProducts.length} products • {getCategorySpecs(selectedCategory)} specifications available
+                            </small>
+                        </div>
+                        <div className="d-flex gap-2">
+                            <button
+                                className="btn btn-sm btn-outline-primary"
+                                onClick={() => setActiveTab('catalog')}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" className="me-1">
+                                    <path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 2 2h12c1.11 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
+                                </svg>
+                                Manage Specifications
+                            </button>
+                            <button
+                                className="btn btn-sm btn-outline-secondary"
+                                onClick={() => setActiveTab('add-product')}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" className="me-1">
+                                    <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                                </svg>
+                                Add Product to Category
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
