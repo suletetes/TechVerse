@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AdminHeader } from '../components/Admin';
+import { AdminHeader } from '../../components/Admin';
 
 const AdminOrderManagement = () => {
     const [orders, setOrders] = useState([

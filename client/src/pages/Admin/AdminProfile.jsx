@@ -16,14 +16,14 @@ import {
     AdminActivityLog,
     AdminSecurity,
     AdminProfileSettings
-} from "../components";
+} from "../../components";
 
 // Import admin-specific CSS
-import '../assets/css/admin-enhancements.css';
+import '../../assets/css/admin-enhancements.css';
 
 // Import hooks and data
-import { useAdminData } from '../hooks/index.js';
-import { useAdminState } from '../hooks/index.js';
+import { useAdminData } from '../../hooks/index.js';
+import { useAdminState } from '../../hooks/index.js';
 
 const AdminProfile = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
