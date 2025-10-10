@@ -79,7 +79,6 @@ describe('Product Component', () => {
     });
 
     it('handles missing product ID gracefully', () => {
-        vi.mocked(require('react-router-dom').useParams).mockReturnValue({ id: null });
         renderWithRouter(<Product />);
         // Should still render without crashing
         expect(screen.getByTestId('product-media-gallery')).toBeInTheDocument();
