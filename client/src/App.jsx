@@ -2,8 +2,7 @@ import React from 'react'
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary, RouterErrorBoundary } from './components';
-import { AuthProvider, CartProvider } from './context';
-import { NotificationProvider } from './context/NotificationContext.jsx';
+import { AppProviders } from './context';
 import {
     Contact,
     HomeLayout,
@@ -163,13 +162,9 @@ const App = () => {
     return (
         <ErrorBoundary>
             <QueryClientProvider client={queryClient}>
-                <NotificationProvider>
-                    <AuthProvider>
-                        <CartProvider>
-                            <RouterProvider router={router} />
-                        </CartProvider>
-                    </AuthProvider>
-                </NotificationProvider>
+                <AppProviders>
+                    <RouterProvider router={router} />
+                </AppProviders>
             </QueryClientProvider>
         </ErrorBoundary>
     );
