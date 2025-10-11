@@ -3,7 +3,7 @@ import { useLazyImage } from '../../hooks/usePerformance.js';
 
 const LazyImage = memo(({
   src,
-  alt,
+  alt = '',
   className = '',
   placeholder = '/img/lazyload-ph.png',
   webpSrc,
