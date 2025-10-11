@@ -300,11 +300,6 @@ export const requireEmailVerification = (req, res, next) => {
 export const sensitiveOperationLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // limit each IP to 5 requests per windowMs
-  message: {
-    success: false,
-    message: 'Too many sensitive operations. Please try again in 15 minutes.',
-    code: 'RATE_LIMIT_EXCEEDED'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
@@ -315,11 +310,17 @@ export const sensitiveOperationLimit = rateLimit({
     // Skip rate limiting for admin users
     return req.user && req.user.role === 'admin';
   },
-  onLimitReached: (req) => {
+  handler: (req, res) => {
     logger.warn('Sensitive operation rate limit reached', {
       ip: req.ip,
       userId: req.user?._id,
       endpoint: req.originalUrl
+    });
+    
+    res.status(429).json({
+      success: false,
+      message: 'Too many sensitive operations. Please try again in 15 minutes.',
+      code: 'RATE_LIMIT_EXCEEDED'
     });
   }
 });
@@ -345,18 +346,19 @@ export const apiRateLimit = rateLimit({
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // limit each IP to 5 auth attempts per windowMs
-  message: {
-    success: false,
-    message: 'Too many authentication attempts. Please try again in 15 minutes.',
-    code: 'AUTH_RATE_LIMIT_EXCEEDED'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful requests
-  onLimitReached: (req) => {
+  handler: (req, res) => {
     logger.warn('Authentication rate limit reached', {
       ip: req.ip,
       endpoint: req.originalUrl
+    });
+    
+    res.status(429).json({
+      success: false,
+      message: 'Too many authentication attempts. Please try again in 15 minutes.',
+      code: 'AUTH_RATE_LIMIT_EXCEEDED'
     });
   }
 });

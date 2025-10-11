@@ -43,8 +43,8 @@ export const compressionMiddleware = compression({
   // Window bits (9-15, 15 is default)
   windowBits: 15,
 
-  // Compression strategy
-  strategy: compression.constants.Z_DEFAULT_STRATEGY
+  // Compression strategy (use zlib constants)
+  strategy: 0 // Z_DEFAULT_STRATEGY
 });
 
 // Brotli compression middleware (for modern browsers)
