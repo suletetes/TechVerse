@@ -217,7 +217,7 @@ export const AuthProvider = ({ children }) => {
     loadUser();
     setupSessionManagement();
     setupActivityTracking();
-    
+
     return () => {
       clearInterval(sessionCheckInterval.current);
       clearTimeout(activityTimeout.current);
@@ -229,7 +229,7 @@ export const AuthProvider = ({ children }) => {
     sessionCheckInterval.current = setInterval(() => {
       if (state.isAuthenticated && state.sessionExpiry) {
         const timeUntilExpiry = state.sessionExpiry - Date.now();
-        
+
         if (timeUntilExpiry <= 0) {
           handleSessionExpired();
         } else if (timeUntilExpiry <= SESSION_WARNING_TIME) {
@@ -242,11 +242,11 @@ export const AuthProvider = ({ children }) => {
   // Setup activity tracking
   const setupActivityTracking = useCallback(() => {
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    
+
     const handleActivity = () => {
       if (state.isAuthenticated) {
         dispatch({ type: AUTH_ACTIONS.UPDATE_ACTIVITY });
-        
+
         // Reset activity timeout
         clearTimeout(activityTimeout.current);
         activityTimeout.current = setTimeout(() => {
@@ -294,15 +294,15 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: AUTH_ACTIONS.LOAD_USER_START });
       const userData = await authService.getProfile();
-      
+
       // Set device info
       const deviceInfo = getDeviceInfo();
       dispatch({ type: AUTH_ACTIONS.SET_DEVICE_INFO, payload: deviceInfo });
-      
+
       dispatch({ type: AUTH_ACTIONS.LOAD_USER_SUCCESS, payload: userData });
     } catch (error) {
       dispatch({ type: AUTH_ACTIONS.LOAD_USER_FAILURE, payload: error.message });
-      
+
       // If token is invalid, clear it
       if (error.status === 401) {
         authService.logout();
@@ -320,7 +320,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       dispatch({ type: AUTH_ACTIONS.LOGIN_START });
-      
+
       // Add device info to credentials
       const deviceInfo = getDeviceInfo();
       const loginData = {
@@ -328,38 +328,38 @@ export const AuthProvider = ({ children }) => {
         deviceInfo,
         rememberMe: options.rememberMe || false
       };
-      
+
       const response = await authService.login(loginData);
-      
+
       // Handle MFA requirement
       if (response.mfaRequired) {
         dispatch({ type: AUTH_ACTIONS.SET_MFA_REQUIRED, payload: response.mfaToken });
         return { mfaRequired: true, mfaToken: response.mfaToken };
       }
-      
+
       // Set remember me preference
       if (options.rememberMe) {
         dispatch({ type: AUTH_ACTIONS.SET_REMEMBER_ME, payload: true });
       }
-      
+
       // Reset login attempts on successful login
       dispatch({ type: AUTH_ACTIONS.RESET_LOGIN_ATTEMPTS });
       dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response });
-      
+
       showNotification('Login successful!', 'success');
       return response;
-      
+
     } catch (error) {
       // Increment login attempts
       dispatch({ type: AUTH_ACTIONS.INCREMENT_LOGIN_ATTEMPTS });
-      
+
       // Lock account after max attempts
       if (state.loginAttempts + 1 >= MAX_LOGIN_ATTEMPTS) {
         const lockoutExpiry = Date.now() + LOCKOUT_DURATION;
         dispatch({ type: AUTH_ACTIONS.SET_ACCOUNT_LOCKED, payload: lockoutExpiry });
         showNotification('Account locked due to multiple failed attempts.', 'error');
       }
-      
+
       dispatch({ type: AUTH_ACTIONS.LOGIN_FAILURE, payload: error.message });
       throw error;
     }
@@ -369,25 +369,25 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       dispatch({ type: AUTH_ACTIONS.LOGIN_START });
-      
+
       // Add device info
       const deviceInfo = getDeviceInfo();
       const registrationData = {
         ...userData,
         deviceInfo
       };
-      
+
       const response = await authService.register(registrationData);
-      
+
       if (response.requiresVerification) {
         showNotification('Registration successful! Please check your email to verify your account.', 'success');
         return { requiresVerification: true, email: userData.email };
       }
-      
+
       dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response });
       showNotification('Registration successful!', 'success');
       return response;
-      
+
     } catch (error) {
       dispatch({ type: AUTH_ACTIONS.LOGIN_FAILURE, payload: error.message });
       throw error;
@@ -405,7 +405,7 @@ export const AuthProvider = ({ children }) => {
       // Clear intervals and timeouts
       clearInterval(sessionCheckInterval.current);
       clearTimeout(activityTimeout.current);
-      
+
       dispatch({ type: AUTH_ACTIONS.LOGOUT });
     }
   };
@@ -414,13 +414,13 @@ export const AuthProvider = ({ children }) => {
   const verifyMFA = async (code, mfaToken = state.mfaToken) => {
     try {
       const response = await authService.verifyMFA(code, mfaToken);
-      
+
       dispatch({ type: AUTH_ACTIONS.CLEAR_MFA });
       dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response });
-      
+
       showNotification('MFA verification successful!', 'success');
       return response;
-      
+
     } catch (error) {
       throw error;
     }
@@ -439,13 +439,13 @@ export const AuthProvider = ({ children }) => {
   const disableMFA = async (password) => {
     try {
       const response = await authService.disableMFA(password);
-      
+
       // Update user data
       dispatch({ type: AUTH_ACTIONS.UPDATE_USER, payload: { mfaEnabled: false } });
-      
+
       showNotification('MFA disabled successfully', 'success');
       return response;
-      
+
     } catch (error) {
       throw error;
     }
@@ -593,9 +593,9 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user is authenticated and email verified
   const isFullyAuthenticated = () => {
-    return state.isAuthenticated && 
-           (state.user?.isEmailVerified || state.isEmailVerified) && 
-           !state.mfaRequired;
+    return state.isAuthenticated &&
+      (state.user?.isEmailVerified || state.isEmailVerified) &&
+      !state.mfaRequired;
   };
 
   // Check if session is about to expire
@@ -625,29 +625,29 @@ export const AuthProvider = ({ children }) => {
     verifyMFA,
     setupMFA,
     disableMFA,
-    
+
     // Profile management
     updateProfile,
     changePassword,
     updatePreferences,
-    
+
     // Password recovery
     forgotPassword,
     resetPassword,
-    
+
     // Email verification
     verifyEmail,
     resendVerification,
-    
+
     // Session management
     refreshSession,
     getUserSessions,
     revokeSession,
-    
+
     // Utility methods
     clearError,
     loadUser,
-    
+
     // Permission checks
     hasRole,
     hasPermission,
@@ -655,12 +655,12 @@ export const AuthProvider = ({ children }) => {
     hasAnyPermission,
     isAdmin,
     isFullyAuthenticated,
-    
+
     // Session status
     isSessionExpiringSoon,
     getTimeUntilExpiry,
     isUserActive,
-    
+
     // Constants
     MAX_LOGIN_ATTEMPTS,
     LOCKOUT_DURATION
