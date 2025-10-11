@@ -1,5 +1,6 @@
 export * from './Accordion';
 export * from './Admin';
+export * from './Auth';
 export * from './Cards';
 export * from './Category';
 export * from './Common';
@@ -16,3 +17,8 @@ export * from './RelatedProducts';
 export * from './FAQ';
 export * from './UserProfile';
 export * from './ErrorBoundary';
+
+// Export optimized components
+export { default as LazyImage } from './Common/LazyImage.jsx';
+export { default as VirtualList } from './Common/VirtualList.jsx';
+export { default as OptimizedProductCard } from './Common/OptimizedProductCard.jsx';

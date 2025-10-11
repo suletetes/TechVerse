@@ -5,6 +5,8 @@ export * from './errorHandler.js';
 export * from './upload.js';
 export * from './security.js';
 export * from './logging.js';
+export * from './caching.js';
+export * from './compression.js';
 
 // Default exports
 export { default as auth } from './auth.js';
