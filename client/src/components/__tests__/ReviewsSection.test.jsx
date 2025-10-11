@@ -8,7 +8,7 @@ vi.mock('../Reviews/ReviewsSummary', () => ({
 }));
 
 vi.mock('../Reviews/WriteReview', () => ({
-    default: ({ onSubmit = () => {} }) => (
+    default: ({ onSubmit = () => { } }) => (
         <div data-testid="write-review">
             <button onClick={() => onSubmit({ rating: 5, comment: 'Great product!' })}>
                 Submit Review
@@ -106,7 +106,7 @@ describe('ReviewsSection Component', () => {
 
         it('sorts reviews by date or rating', () => {
             render(<ReviewsSection {...defaultProps} />);
-            
+
             // Should have sorting options
             const sortButtons = screen.getAllByRole('button');
             expect(sortButtons.length).toBeGreaterThan(0);
@@ -114,7 +114,7 @@ describe('ReviewsSection Component', () => {
 
         it('filters reviews by rating', () => {
             render(<ReviewsSection {...defaultProps} />);
-            
+
             // Should have filter options
             const filterElements = document.querySelectorAll('[data-filter], .filter');
             expect(filterElements.length).toBeGreaterThanOrEqual(0);
@@ -125,17 +125,17 @@ describe('ReviewsSection Component', () => {
         it('handles new review submission', async () => {
             const onSubmitReview = vi.fn();
             render(<ReviewsSection onSubmitReview={onSubmitReview} />);
-            
+
             const submitButton = screen.getByText('Submit Review');
             fireEvent.click(submitButton);
-            
+
             // The mock component should handle the submission
             expect(submitButton).toBeInTheDocument();
         });
 
         it('validates review input', () => {
             render(<ReviewsSection {...defaultProps} />);
-            
+
             // Should validate rating and comment
             const writeReview = screen.getByTestId('write-review');
             expect(writeReview).toBeInTheDocument();
@@ -143,10 +143,10 @@ describe('ReviewsSection Component', () => {
 
         it('shows success message after submission', async () => {
             render(<ReviewsSection {...defaultProps} />);
-            
+
             const submitButton = screen.getByText('Submit Review');
             fireEvent.click(submitButton);
-            
+
             // Should show success feedback
         });
     });
@@ -154,7 +154,7 @@ describe('ReviewsSection Component', () => {
     describe('Review Interactions', () => {
         it('handles helpful/unhelpful votes', () => {
             render(<ReviewsSection {...defaultProps} />);
-            
+
             // Should have voting buttons
             const voteButtons = document.querySelectorAll('[data-vote], .vote-btn');
             expect(voteButtons.length).toBeGreaterThanOrEqual(0);
@@ -162,7 +162,7 @@ describe('ReviewsSection Component', () => {
 
         it('allows reporting inappropriate reviews', () => {
             render(<ReviewsSection {...defaultProps} />);
-            
+
             // Should have report functionality
             const reportButtons = document.querySelectorAll('[data-report], .report-btn');
             expect(reportButtons.length).toBeGreaterThanOrEqual(0);
@@ -170,7 +170,7 @@ describe('ReviewsSection Component', () => {
 
         it('supports review replies', () => {
             render(<ReviewsSection {...defaultProps} />);
-            
+
             // Should have reply functionality
             const replyButtons = document.querySelectorAll('[data-reply], .reply-btn');
             expect(replyButtons.length).toBeGreaterThanOrEqual(0);
@@ -189,7 +189,7 @@ describe('ReviewsSection Component', () => {
             }));
 
             render(<ReviewsSection productId="1" reviews={manyReviews} />);
-            
+
             // Should show pagination controls
             const paginationElements = document.querySelectorAll('.pagination, [data-pagination]');
             expect(paginationElements.length).toBeGreaterThanOrEqual(0);
@@ -197,7 +197,7 @@ describe('ReviewsSection Component', () => {
 
         it('loads more reviews on demand', () => {
             render(<ReviewsSection {...defaultProps} />);
-            
+
             // Should have load more functionality
             const loadMoreButtons = document.querySelectorAll('[data-load-more], .load-more');
             expect(loadMoreButtons.length).toBeGreaterThanOrEqual(0);
@@ -207,7 +207,7 @@ describe('ReviewsSection Component', () => {
     describe('Accessibility', () => {
         it('has proper heading structure', () => {
             render(<ReviewsSection {...defaultProps} />);
-            
+
             // Should have proper headings
             const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
             expect(headings.length).toBeGreaterThan(0);
@@ -215,7 +215,7 @@ describe('ReviewsSection Component', () => {
 
         it('supports keyboard navigation', () => {
             render(<ReviewsSection {...defaultProps} />);
-            
+
             // Should be keyboard accessible
             const focusableElements = document.querySelectorAll('button, [tabindex], input, textarea');
             expect(focusableElements.length).toBeGreaterThan(0);
@@ -223,7 +223,7 @@ describe('ReviewsSection Component', () => {
 
         it('has proper ARIA labels', () => {
             render(<ReviewsSection {...defaultProps} />);
-            
+
             // Should have ARIA attributes
             const ariaElements = document.querySelectorAll('[aria-label], [aria-describedby], [role]');
             expect(ariaElements.length).toBeGreaterThanOrEqual(0);
@@ -239,10 +239,10 @@ describe('ReviewsSection Component', () => {
         it('handles network errors during submission', async () => {
             const onReviewSubmit = vi.fn().mockRejectedValue(new Error('Network error'));
             render(<ReviewsSection {...defaultProps} onReviewSubmit={onReviewSubmit} />);
-            
+
             const submitButton = screen.getByText('Submit Review');
             fireEvent.click(submitButton);
-            
+
             // Should handle error gracefully
         });
 
