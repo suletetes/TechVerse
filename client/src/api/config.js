@@ -13,7 +13,14 @@ export const API_ENDPOINTS = {
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password',
     CHANGE_PASSWORD: '/auth/change-password',
-    VERIFY_EMAIL: '/auth/verify-email'
+    VERIFY_EMAIL: '/auth/verify-email',
+    RESEND_VERIFICATION: '/auth/resend-verification',
+    VERIFY_MFA: '/auth/verify-mfa',
+    SETUP_MFA: '/auth/setup-mfa',
+    DISABLE_MFA: '/auth/disable-mfa',
+    RESEND_MFA: '/auth/resend-mfa',
+    PREFERENCES: '/auth/preferences',
+    SESSIONS: '/auth/sessions'
   },
   
   // Products

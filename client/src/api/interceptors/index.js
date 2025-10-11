@@ -25,15 +25,20 @@ class ApiClient {
     this.baseURL = baseURL;
     this.isRefreshing = false;
     this.failedQueue = [];
+    this.retryAttempts = new Map();
+    this.maxRetries = 3;
+    this.retryDelay = 1000; // 1 second
   }
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
     const token = tokenManager.getToken();
+    const requestId = `${options.method || 'GET'}_${endpoint}`;
     
     // Default headers
     const headers = {
       'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
       ...options.headers
     };
     
@@ -42,23 +47,105 @@ class ApiClient {
       headers.Authorization = `Bearer ${token}`;
     }
     
+    // Add request ID for tracking
+    headers['X-Request-ID'] = this.generateRequestId();
+    
     const config = {
       ...options,
-      headers
+      headers,
+      timeout: options.timeout || 30000
     };
     
     try {
-      const response = await fetch(url, config);
+      const response = await this.fetchWithTimeout(url, config);
       
       // Handle token refresh for 401 errors
-      if (response.status === HTTP_STATUS.UNAUTHORIZED && token) {
+      if (response.status === HTTP_STATUS.UNAUTHORIZED && token && !endpoint.includes('/auth/')) {
         return this.handleTokenRefresh(endpoint, options);
       }
       
+      // Handle rate limiting
+      if (response.status === 429) {
+        return this.handleRateLimit(endpoint, options, response);
+      }
+      
+      // Handle server errors with retry
+      if (response.status >= 500 && this.shouldRetry(requestId)) {
+        return this.handleRetry(endpoint, options, requestId);
+      }
+      
+      // Reset retry count on success
+      this.retryAttempts.delete(requestId);
+      
       return response;
     } catch (error) {
+      // Handle network errors with retry
+      if (this.isNetworkError(error) && this.shouldRetry(requestId)) {
+        return this.handleRetry(endpoint, options, requestId);
+      }
+      
       throw new Error(`Network error: ${error.message}`);
     }
+  }
+
+  // Fetch with timeout support
+  async fetchWithTimeout(url, config) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), config.timeout);
+    
+    try {
+      const response = await fetch(url, {
+        ...config,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout');
+      }
+      throw error;
+    }
+  }
+
+  // Generate unique request ID
+  generateRequestId() {
+    return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // Check if error is network-related
+  isNetworkError(error) {
+    return error.message.includes('Network') || 
+           error.message.includes('timeout') || 
+           error.message.includes('Failed to fetch');
+  }
+
+  // Check if request should be retried
+  shouldRetry(requestId) {
+    const attempts = this.retryAttempts.get(requestId) || 0;
+    return attempts < this.maxRetries;
+  }
+
+  // Handle retry logic
+  async handleRetry(endpoint, options, requestId) {
+    const attempts = this.retryAttempts.get(requestId) || 0;
+    this.retryAttempts.set(requestId, attempts + 1);
+    
+    // Exponential backoff
+    const delay = this.retryDelay * Math.pow(2, attempts);
+    await new Promise(resolve => setTimeout(resolve, delay));
+    
+    return this.request(endpoint, options);
+  }
+
+  // Handle rate limiting
+  async handleRateLimit(endpoint, options, response) {
+    const retryAfter = response.headers.get('Retry-After');
+    const delay = retryAfter ? parseInt(retryAfter) * 1000 : 5000; // Default 5 seconds
+    
+    await new Promise(resolve => setTimeout(resolve, delay));
+    return this.request(endpoint, options);
   }
   
   async handleTokenRefresh(originalEndpoint, originalOptions) {
