@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 
 class ErrorBoundary extends React.Component {
     constructor(props) {
@@ -69,7 +68,7 @@ const DevelopmentErrorUI = ({ error, errorInfo }) => {
                                     <h5 className="text-danger mb-3">Error Details:</h5>
                                     <div className="bg-light p-3 rounded border">
                                         <pre className="mb-0 text-danger" style={{ fontSize: '14px', whiteSpace: 'pre-wrap' }}>
-                                            {this.state.error && this.state.error.toString()}
+                                            {error && error.toString()}
                                         </pre>
                                     </div>
                                 </div>
@@ -99,13 +98,13 @@ const DevelopmentErrorUI = ({ error, errorInfo }) => {
                                         </svg>
                                         Reload Page
                                     </button>
-                                    <Link to="/" className="btn btn-outline-secondary btn-rd">
+                                    <a href="/" className="btn btn-outline-secondary btn-rd">
                                         <svg width="16" height="16" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
                                             <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                                             <polyline points="9,22 9,12 15,12 15,22" />
                                         </svg>
                                         Go Home
-                                    </Link>
+                                    </a>
                                 </div>
 
                                 {/* Development Tips */}
@@ -168,8 +167,8 @@ const ProductionErrorUI = () => {
                                         </svg>
                                         Try Again
                                     </button>
-                                    <Link
-                                        to="/"
+                                    <a
+                                        href="/"
                                         className="btn btn-outline-primary btn-rd btn-lg d-flex align-items-center justify-content-center px-4"
                                     >
                                         <svg width="20" height="20" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
@@ -177,7 +176,7 @@ const ProductionErrorUI = () => {
                                             <polyline points="9,22 9,12 15,12 15,22" />
                                         </svg>
                                         Back to Home
-                                    </Link>
+                                    </a>
                                 </div>
 
                                 {/* Help Section */}
@@ -185,32 +184,32 @@ const ProductionErrorUI = () => {
                                     <h6 className="tc-6533 mb-3">Need Help?</h6>
                                     <div className="row g-3">
                                         <div className="col-md-4">
-                                            <Link to="/contact" className="btn btn-outline-secondary btn-sm w-100">
+                                            <a href="/contact" className="btn btn-outline-secondary btn-sm w-100">
                                                 <svg width="16" height="16" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
                                                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                                                     <polyline points="22,6 12,13 2,6" />
                                                 </svg>
                                                 Contact Support
-                                            </Link>
+                                            </a>
                                         </div>
                                         <div className="col-md-4">
-                                            <Link to="/faq" className="btn btn-outline-secondary btn-sm w-100">
+                                            <a href="/faq" className="btn btn-outline-secondary btn-sm w-100">
                                                 <svg width="16" height="16" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
                                                     <circle cx="12" cy="12" r="10" />
                                                     <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
                                                     <line x1="12" y1="17" x2="12.01" y2="17" />
                                                 </svg>
                                                 FAQ
-                                            </Link>
+                                            </a>
                                         </div>
                                         <div className="col-md-4">
-                                            <Link to="/category" className="btn btn-outline-secondary btn-sm w-100">
+                                            <a href="/category" className="btn btn-outline-secondary btn-sm w-100">
                                                 <svg width="16" height="16" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
                                                     <circle cx="11" cy="11" r="8" />
                                                     <path d="m21 21-4.35-4.35" />
                                                 </svg>
                                                 Browse Products
-                                            </Link>
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
