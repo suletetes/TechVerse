@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context';
+import { LoadingSpinner } from '../../components/Common';
 
 const Signup = () => {
+    const navigate = useNavigate();
+    const { register, isLoading, error, isAuthenticated, clearError } = useAuth();
+    
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -12,32 +17,123 @@ const Signup = () => {
         subscribeNewsletter: false
     });
 
+    const [validationErrors, setValidationErrors] = useState({});
+
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/');
+        }
+    }, [isAuthenticated, navigate]);
+
+    // Clear errors when component mounts
+    useEffect(() => {
+        clearError();
+    }, [clearError]);
+
+    const validateForm = () => {
+        const errors = {};
+
+        // Name validation
+        if (!formData.firstName.trim()) {
+            errors.firstName = 'First name is required';
+        }
+        if (!formData.lastName.trim()) {
+            errors.lastName = 'Last name is required';
+        }
+
+        // Email validation
+        if (!formData.email.trim()) {
+            errors.email = 'Email is required';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            errors.email = 'Please enter a valid email address';
+        }
+
+        // Password validation
+        if (!formData.password) {
+            errors.password = 'Password is required';
+        } else if (formData.password.length < 8) {
+            errors.password = 'Password must be at least 8 characters long';
+        } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+            errors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+        }
+
+        // Confirm password validation
+        if (!formData.confirmPassword) {
+            errors.confirmPassword = 'Please confirm your password';
+        } else if (formData.password !== formData.confirmPassword) {
+            errors.confirmPassword = 'Passwords do not match';
+        }
+
+        // Terms validation
+        if (!formData.agreeToTerms) {
+            errors.agreeToTerms = 'You must agree to the Terms of Service and Privacy Policy';
+        }
+
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
+
+        // Clear validation error for this field
+        if (validationErrors[name]) {
+            setValidationErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }));
+        }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (formData.password !== formData.confirmPassword) {
-            alert('Passwords do not match!');
+        
+        if (!validateForm()) {
             return;
         }
-        console.log('Signup form submitted:', formData);
-        // Handle signup logic here
+
+        try {
+            const userData = {
+                firstName: formData.firstName.trim(),
+                lastName: formData.lastName.trim(),
+                email: formData.email.trim().toLowerCase(),
+                password: formData.password,
+                subscribeNewsletter: formData.subscribeNewsletter
+            };
+
+            const result = await register(userData);
+
+            if (result.requiresVerification) {
+                // Redirect to verification page or show message
+                navigate('/login', { 
+                    state: { 
+                        message: 'Registration successful! Please check your email to verify your account.',
+                        email: userData.email
+                    }
+                });
+            } else {
+                // Registration successful, user is logged in
+                navigate('/');
+            }
+        } catch (err) {
+            // Error is handled by AuthContext and displayed via notifications
+            console.error('Registration error:', err);
+        }
     };
 
     const handleGoogleSignup = () => {
+        // TODO: Implement Google OAuth
         console.log('Google signup clicked');
-        // Handle Google OAuth
     };
 
     const handleAppleSignup = () => {
+        // TODO: Implement Apple OAuth
         console.log('Apple signup clicked');
-        // Handle Apple OAuth
     };
 
     return (
@@ -115,6 +211,14 @@ const Signup = () => {
                                         </div>
                                     </div>
 
+                                    {/* Error Display */}
+                                    {error && (
+                                        <div className="alert alert-danger mb-4" role="alert">
+                                            <i className="fas fa-exclamation-triangle me-2"></i>
+                                            {error}
+                                        </div>
+                                    )}
+
                                     {/* Signup Form */}
                                     <form onSubmit={handleSubmit}>
                                         <div className="row">
@@ -126,13 +230,18 @@ const Signup = () => {
                                                     <input 
                                                         type="text"
                                                         name="firstName"
-                                                        className="form-control"
+                                                        className={`form-control ${validationErrors.firstName ? 'is-invalid' : ''}`}
                                                         placeholder="First name"
                                                         value={formData.firstName}
                                                         onChange={handleInputChange}
-                                                        required
+                                                        disabled={isLoading}
                                                         style={{padding: '12px'}}
                                                     />
+                                                    {validationErrors.firstName && (
+                                                        <div className="invalid-feedback">
+                                                            {validationErrors.firstName}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="col-md-6">
@@ -143,13 +252,18 @@ const Signup = () => {
                                                     <input 
                                                         type="text"
                                                         name="lastName"
-                                                        className="form-control"
+                                                        className={`form-control ${validationErrors.lastName ? 'is-invalid' : ''}`}
                                                         placeholder="Last name"
                                                         value={formData.lastName}
                                                         onChange={handleInputChange}
-                                                        required
+                                                        disabled={isLoading}
                                                         style={{padding: '12px'}}
                                                     />
+                                                    {validationErrors.lastName && (
+                                                        <div className="invalid-feedback">
+                                                            {validationErrors.lastName}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -161,13 +275,18 @@ const Signup = () => {
                                             <input 
                                                 type="email"
                                                 name="email"
-                                                className="form-control"
+                                                className={`form-control ${validationErrors.email ? 'is-invalid' : ''}`}
                                                 placeholder="Enter your email"
                                                 value={formData.email}
                                                 onChange={handleInputChange}
-                                                required
+                                                disabled={isLoading}
                                                 style={{padding: '12px'}}
                                             />
+                                            {validationErrors.email && (
+                                                <div className="invalid-feedback">
+                                                    {validationErrors.email}
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="form-group mb-3">
@@ -177,13 +296,21 @@ const Signup = () => {
                                             <input 
                                                 type="password"
                                                 name="password"
-                                                className="form-control"
+                                                className={`form-control ${validationErrors.password ? 'is-invalid' : ''}`}
                                                 placeholder="Create a password"
                                                 value={formData.password}
                                                 onChange={handleInputChange}
-                                                required
+                                                disabled={isLoading}
                                                 style={{padding: '12px'}}
                                             />
+                                            {validationErrors.password && (
+                                                <div className="invalid-feedback">
+                                                    {validationErrors.password}
+                                                </div>
+                                            )}
+                                            <div className="form-text">
+                                                Password must be at least 8 characters with uppercase, lowercase, and number.
+                                            </div>
                                         </div>
 
                                         <div className="form-group mb-3">
@@ -193,28 +320,38 @@ const Signup = () => {
                                             <input 
                                                 type="password"
                                                 name="confirmPassword"
-                                                className="form-control"
+                                                className={`form-control ${validationErrors.confirmPassword ? 'is-invalid' : ''}`}
                                                 placeholder="Confirm your password"
                                                 value={formData.confirmPassword}
                                                 onChange={handleInputChange}
-                                                required
+                                                disabled={isLoading}
                                                 style={{padding: '12px'}}
                                             />
+                                            {validationErrors.confirmPassword && (
+                                                <div className="invalid-feedback">
+                                                    {validationErrors.confirmPassword}
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="form-check mb-3">
                                             <input 
-                                                className="form-check-input" 
+                                                className={`form-check-input ${validationErrors.agreeToTerms ? 'is-invalid' : ''}`}
                                                 type="checkbox" 
                                                 name="agreeToTerms"
                                                 id="agreeToTerms"
                                                 checked={formData.agreeToTerms}
                                                 onChange={handleInputChange}
-                                                required
+                                                disabled={isLoading}
                                             />
                                             <label className="form-check-label tc-6533 sm-text" htmlFor="agreeToTerms">
                                                 I agree to the <Link to="/terms" className="tc-2101">Terms of Service</Link> and <Link to="/privacy" className="tc-2101">Privacy Policy</Link>
                                             </label>
+                                            {validationErrors.agreeToTerms && (
+                                                <div className="invalid-feedback d-block">
+                                                    {validationErrors.agreeToTerms}
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="form-check mb-4">
@@ -225,6 +362,7 @@ const Signup = () => {
                                                 id="subscribeNewsletter"
                                                 checked={formData.subscribeNewsletter}
                                                 onChange={handleInputChange}
+                                                disabled={isLoading}
                                             />
                                             <label className="form-check-label tc-6533 sm-text" htmlFor="subscribeNewsletter">
                                                 Subscribe to our newsletter for exclusive deals and updates
@@ -234,8 +372,16 @@ const Signup = () => {
                                         <button 
                                             className="bloc-button btn btn-lg w-100 btn-c-2101 btn-rd mb-3" 
                                             type="submit"
+                                            disabled={isLoading}
                                         >
-                                            Create Account
+                                            {isLoading ? (
+                                                <>
+                                                    <LoadingSpinner size="sm" className="me-2" />
+                                                    Creating Account...
+                                                </>
+                                            ) : (
+                                                'Create Account'
+                                            )}
                                         </button>
                                     </form>
 
