@@ -1,79 +1,413 @@
 import { apiClient, handleApiResponse } from '../interceptors/index.js';
 import { API_ENDPOINTS } from '../config.js';
 
-// Product Service
-// TODO: Implement product API calls
-
 class ProductService {
-  // Get all products with filters
+  constructor() {
+    this.cache = new Map();
+    this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+  }
+
+  // Get all products with filters, sorting, and pagination
   async getProducts(params = {}) {
-    // TODO: Implement get products with filtering, sorting, pagination
-    const response = await apiClient.get(API_ENDPOINTS.PRODUCTS.BASE, { params });
-    return handleApiResponse(response);
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        sort = 'createdAt',
+        order = 'desc',
+        category,
+        minPrice,
+        maxPrice,
+        inStock,
+        featured,
+        search,
+        ...otherParams
+      } = params;
+
+      const queryParams = {
+        page,
+        limit,
+        sort,
+        order,
+        ...otherParams
+      };
+
+      // Add optional filters
+      if (category) queryParams.category = category;
+      if (minPrice !== undefined) queryParams.minPrice = minPrice;
+      if (maxPrice !== undefined) queryParams.maxPrice = maxPrice;
+      if (inStock !== undefined) queryParams.inStock = inStock;
+      if (featured !== undefined) queryParams.featured = featured;
+      if (search) queryParams.search = search;
+
+      const response = await apiClient.get(API_ENDPOINTS.PRODUCTS.BASE, {
+        params: queryParams
+      });
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      throw new Error(error.message || 'Failed to fetch products');
+    }
   }
 
-  // Get single product by ID
+  // Get single product by ID with caching
   async getProductById(id) {
-    // TODO: Implement get product by ID
-    const response = await apiClient.get(`${API_ENDPOINTS.PRODUCTS.BASE}/${id}`);
-    return handleApiResponse(response);
+    if (!id) {
+      throw new Error('Product ID is required');
+    }
+
+    const cacheKey = `product_${id}`;
+
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      const cached = this.cache.get(cacheKey);
+      if (Date.now() - cached.timestamp < this.cacheTimeout) {
+        return cached.data;
+      }
+      this.cache.delete(cacheKey);
+    }
+
+    try {
+      const response = await apiClient.get(`${API_ENDPOINTS.PRODUCTS.BASE}/${id}`);
+      const data = await handleApiResponse(response);
+
+      // Cache the result
+      this.cache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+
+      return data;
+    } catch (error) {
+      console.error(`Error fetching product ${id}:`, error);
+      throw new Error(error.message || 'Failed to fetch product');
+    }
   }
 
-  // Search products
+  // Search products with debouncing support
   async searchProducts(query, filters = {}) {
-    // TODO: Implement product search
-    const params = { q: query, ...filters };
-    const response = await apiClient.get(API_ENDPOINTS.PRODUCTS.SEARCH, { params });
-    return handleApiResponse(response);
+    if (!query || query.trim().length < 2) {
+      throw new Error('Search query must be at least 2 characters');
+    }
+
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        category,
+        minPrice,
+        maxPrice,
+        sort = 'relevance',
+        ...otherFilters
+      } = filters;
+
+      const params = {
+        q: query.trim(),
+        page,
+        limit,
+        sort,
+        ...otherFilters
+      };
+
+      // Add optional filters
+      if (category) params.category = category;
+      if (minPrice !== undefined) params.minPrice = minPrice;
+      if (maxPrice !== undefined) params.maxPrice = maxPrice;
+
+      const response = await apiClient.get(API_ENDPOINTS.PRODUCTS.SEARCH, { params });
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error('Error searching products:', error);
+      throw new Error(error.message || 'Failed to search products');
+    }
   }
 
-  // Get featured products
-  async getFeaturedProducts() {
-    // TODO: Implement get featured products
-    const response = await apiClient.get(API_ENDPOINTS.PRODUCTS.FEATURED);
-    return handleApiResponse(response);
+  // Get featured products with caching
+  async getFeaturedProducts(limit = 10) {
+    const cacheKey = `featured_products_${limit}`;
+
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      const cached = this.cache.get(cacheKey);
+      if (Date.now() - cached.timestamp < this.cacheTimeout) {
+        return cached.data;
+      }
+      this.cache.delete(cacheKey);
+    }
+
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.PRODUCTS.FEATURED, {
+        params: { limit }
+      });
+      const data = await handleApiResponse(response);
+
+      // Cache the result
+      this.cache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching featured products:', error);
+      throw new Error(error.message || 'Failed to fetch featured products');
+    }
   }
 
   // Get products by category
   async getProductsByCategory(categoryId, params = {}) {
-    // TODO: Implement get products by category
-    const response = await apiClient.get(`${API_ENDPOINTS.PRODUCTS.BASE}/category/${categoryId}`, { params });
-    return handleApiResponse(response);
+    if (!categoryId) {
+      throw new Error('Category ID is required');
+    }
+
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        sort = 'createdAt',
+        order = 'desc',
+        minPrice,
+        maxPrice,
+        inStock,
+        ...otherParams
+      } = params;
+
+      const queryParams = {
+        page,
+        limit,
+        sort,
+        order,
+        ...otherParams
+      };
+
+      // Add optional filters
+      if (minPrice !== undefined) queryParams.minPrice = minPrice;
+      if (maxPrice !== undefined) queryParams.maxPrice = maxPrice;
+      if (inStock !== undefined) queryParams.inStock = inStock;
+
+      const response = await apiClient.get(
+        `${API_ENDPOINTS.PRODUCTS.BASE}/category/${categoryId}`,
+        { params: queryParams }
+      );
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error(`Error fetching products for category ${categoryId}:`, error);
+      throw new Error(error.message || 'Failed to fetch category products');
+    }
   }
 
-  // Get product reviews
+  // Get product reviews with pagination
   async getProductReviews(productId, params = {}) {
-    // TODO: Implement get product reviews
-    const response = await apiClient.get(API_ENDPOINTS.PRODUCTS.REVIEWS(productId), { params });
-    return handleApiResponse(response);
+    if (!productId) {
+      throw new Error('Product ID is required');
+    }
+
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sort = 'createdAt',
+        order = 'desc',
+        rating,
+        ...otherParams
+      } = params;
+
+      const queryParams = {
+        page,
+        limit,
+        sort,
+        order,
+        ...otherParams
+      };
+
+      // Filter by rating if specified
+      if (rating !== undefined) queryParams.rating = rating;
+
+      const response = await apiClient.get(API_ENDPOINTS.PRODUCTS.REVIEWS(productId), {
+        params: queryParams
+      });
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error(`Error fetching reviews for product ${productId}:`, error);
+      throw new Error(error.message || 'Failed to fetch product reviews');
+    }
   }
 
   // Add product review
   async addProductReview(productId, reviewData) {
-    // TODO: Implement add product review
-    const response = await apiClient.post(API_ENDPOINTS.PRODUCTS.REVIEWS(productId), reviewData);
-    return handleApiResponse(response);
+    if (!productId) {
+      throw new Error('Product ID is required');
+    }
+
+    const { rating, comment, title } = reviewData;
+
+    // Validate review data
+    if (!rating || rating < 1 || rating > 5) {
+      throw new Error('Rating must be between 1 and 5');
+    }
+
+    if (!comment || comment.trim().length < 10) {
+      throw new Error('Review comment must be at least 10 characters');
+    }
+
+    try {
+      const response = await apiClient.post(API_ENDPOINTS.PRODUCTS.REVIEWS(productId), {
+        rating: parseInt(rating),
+        comment: comment.trim(),
+        title: title?.trim() || ''
+      });
+
+      // Clear product cache to refresh data
+      this.clearProductCache(productId);
+
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error(`Error adding review for product ${productId}:`, error);
+      throw new Error(error.message || 'Failed to add product review');
+    }
   }
 
   // Admin: Create product
   async createProduct(productData) {
-    // TODO: Implement create product (admin only)
-    const response = await apiClient.post(API_ENDPOINTS.PRODUCTS.BASE, productData);
-    return handleApiResponse(response);
+    try {
+      // Validate required fields
+      const requiredFields = ['name', 'description', 'price', 'category'];
+      for (const field of requiredFields) {
+        if (!productData[field]) {
+          throw new Error(`${field} is required`);
+        }
+      }
+
+      // Validate price
+      if (productData.price <= 0) {
+        throw new Error('Price must be greater than 0');
+      }
+
+      const response = await apiClient.post(API_ENDPOINTS.PRODUCTS.BASE, productData);
+
+      // Clear relevant caches
+      this.clearCache();
+
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error('Error creating product:', error);
+      throw new Error(error.message || 'Failed to create product');
+    }
   }
 
   // Admin: Update product
   async updateProduct(id, productData) {
-    // TODO: Implement update product (admin only)
-    const response = await apiClient.put(`${API_ENDPOINTS.PRODUCTS.BASE}/${id}`, productData);
-    return handleApiResponse(response);
+    if (!id) {
+      throw new Error('Product ID is required');
+    }
+
+    try {
+      // Validate price if provided
+      if (productData.price !== undefined && productData.price <= 0) {
+        throw new Error('Price must be greater than 0');
+      }
+
+      const response = await apiClient.put(`${API_ENDPOINTS.PRODUCTS.BASE}/${id}`, productData);
+
+      // Clear product cache
+      this.clearProductCache(id);
+
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error(`Error updating product ${id}:`, error);
+      throw new Error(error.message || 'Failed to update product');
+    }
   }
 
   // Admin: Delete product
   async deleteProduct(id) {
-    // TODO: Implement delete product (admin only)
-    const response = await apiClient.delete(`${API_ENDPOINTS.PRODUCTS.BASE}/${id}`);
-    return handleApiResponse(response);
+    if (!id) {
+      throw new Error('Product ID is required');
+    }
+
+    try {
+      const response = await apiClient.delete(`${API_ENDPOINTS.PRODUCTS.BASE}/${id}`);
+
+      // Clear product cache
+      this.clearProductCache(id);
+
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error(`Error deleting product ${id}:`, error);
+      throw new Error(error.message || 'Failed to delete product');
+    }
+  }
+
+  // Get product categories
+  async getCategories() {
+    const cacheKey = 'product_categories';
+
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      const cached = this.cache.get(cacheKey);
+      if (Date.now() - cached.timestamp < this.cacheTimeout) {
+        return cached.data;
+      }
+      this.cache.delete(cacheKey);
+    }
+
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.PRODUCTS.CATEGORIES);
+      const data = await handleApiResponse(response);
+
+      // Cache the result
+      this.cache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      throw new Error(error.message || 'Failed to fetch categories');
+    }
+  }
+
+  // Get related products
+  async getRelatedProducts(productId, limit = 4) {
+    if (!productId) {
+      throw new Error('Product ID is required');
+    }
+
+    try {
+      const response = await apiClient.get(`${API_ENDPOINTS.PRODUCTS.BASE}/${productId}/related`, {
+        params: { limit }
+      });
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error(`Error fetching related products for ${productId}:`, error);
+      throw new Error(error.message || 'Failed to fetch related products');
+    }
+  }
+
+  // Utility methods
+  clearProductCache(productId) {
+    if (productId) {
+      this.cache.delete(`product_${productId}`);
+    }
+    // Clear other related caches
+    this.cache.delete('featured_products');
+    for (const key of this.cache.keys()) {
+      if (key.startsWith('featured_products_')) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  clearCache() {
+    this.cache.clear();
+  }
+
+  getCacheStats() {
+    return {
+      size: this.cache.size,
+      keys: Array.from(this.cache.keys())
+    };
   }
 }
 
