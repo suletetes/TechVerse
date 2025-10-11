@@ -1,6 +1,9 @@
 import React from 'react'
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary, RouterErrorBoundary } from './components';
+import { AuthProvider, CartProvider } from './context';
+import { NotificationProvider } from './context/NotificationContext.jsx';
 import {
     Contact,
     HomeLayout,
@@ -144,10 +147,30 @@ const router = createBrowserRouter([
     },
 ]);
 
+// Create a client
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            staleTime: 5 * 60 * 1000, // 5 minutes
+            cacheTime: 10 * 60 * 1000, // 10 minutes
+            retry: 3,
+            refetchOnWindowFocus: false,
+        },
+    },
+});
+
 const App = () => {
     return (
         <ErrorBoundary>
-            <RouterProvider router={router} />
+            <QueryClientProvider client={queryClient}>
+                <NotificationProvider>
+                    <AuthProvider>
+                        <CartProvider>
+                            <RouterProvider router={router} />
+                        </CartProvider>
+                    </AuthProvider>
+                </NotificationProvider>
+            </QueryClientProvider>
         </ErrorBoundary>
     );
 };
