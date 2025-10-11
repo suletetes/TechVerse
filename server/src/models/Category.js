@@ -106,16 +106,7 @@ categorySchema.virtual('level').get(function() {
   return this.parent ? 1 : 0;
 });
 
-// Pre-save middleware to generate slug
-categorySchema.pre('save', function(next) {
-  if (this.isModified('name') || this.isNew) {
-    this.slug = this.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-  }
-  next();
-});
+// Slug generation is handled in the comprehensive pre-save middleware below
 
 // Method to get full category path
 categorySchema.methods.getFullPath = async function() {
@@ -387,9 +378,15 @@ categorySchema.pre('save', async function(next) {
     let counter = 1;
     
     // Ensure unique slug
-    while (await this.constructor.findOne({ slug, _id: { $ne: this._id } })) {
+    const query = { slug };
+    if (!this.isNew) {
+      query._id = { $ne: this._id };
+    }
+    
+    while (await this.constructor.findOne(query)) {
       slug = `${baseSlug}-${counter}`;
       counter++;
+      query.slug = slug;
     }
     
     this.slug = slug;
@@ -411,10 +408,10 @@ categorySchema.pre('save', async function(next) {
   next();
 });
 
-// Post-save middleware to update product counts
-categorySchema.post('save', async function() {
-  await this.updateProductCount();
-});
+// Post-save middleware to update product counts (disabled for seeding performance)
+// categorySchema.post('save', async function() {
+//   await this.updateProductCount();
+// });
 
 // Post-remove middleware to handle orphaned products and subcategories
 categorySchema.post('remove', async function() {

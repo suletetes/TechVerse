@@ -1,8 +1,7 @@
-import mongoose from 'mongoose';
 import logger from '../utils/logger.js';
 
 // Custom error class
-export class AppError extends Error {
+class AppError extends Error {
   constructor(message, statusCode, code = null, isOperational = true) {
     super(message);
     this.statusCode = statusCode;
@@ -15,14 +14,14 @@ export class AppError extends Error {
 }
 
 // Async error wrapper
-export const asyncHandler = (fn) => {
+const asyncHandler = (fn) => {
   return (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 };
 
 // Not found middleware
-export const notFound = (req, res, next) => {
+const notFound = (req, res, next) => {
   const error = new AppError(
     `Route ${req.originalUrl} not found`,
     404,
