@@ -1,0 +1,545 @@
+import React, { createContext, useContext, useReducer, useCallback } from 'react';
+import { productService } from '../api/services/index.js';
+import { useNotification } from './NotificationContext.jsx';
+
+// Initial state
+const initialState = {
+  products: [],
+  featuredProducts: [],
+  categories: [],
+  currentProduct: null,
+  searchResults: [],
+  relatedProducts: [],
+  reviews: [],
+  isLoading: false,
+  error: null,
+  pagination: {
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+    hasMore: false
+  },
+  filters: {
+    category: null,
+    minPrice: null,
+    maxPrice: null,
+    inStock: null,
+    sort: 'createdAt',
+    order: 'desc'
+  },
+  searchQuery: ''
+};
+
+// Action types
+const PRODUCT_ACTIONS = {
+  // Loading states
+  SET_LOADING: 'SET_LOADING',
+  SET_ERROR: 'SET_ERROR',
+  CLEAR_ERROR: 'CLEAR_ERROR',
+  
+  // Products
+  LOAD_PRODUCTS_SUCCESS: 'LOAD_PRODUCTS_SUCCESS',
+  LOAD_MORE_PRODUCTS_SUCCESS: 'LOAD_MORE_PRODUCTS_SUCCESS',
+  
+  // Featured products
+  LOAD_FEATURED_PRODUCTS_SUCCESS: 'LOAD_FEATURED_PRODUCTS_SUCCESS',
+  
+  // Categories
+  LOAD_CATEGORIES_SUCCESS: 'LOAD_CATEGORIES_SUCCESS',
+  
+  // Single product
+  LOAD_PRODUCT_SUCCESS: 'LOAD_PRODUCT_SUCCESS',
+  CLEAR_CURRENT_PRODUCT: 'CLEAR_CURRENT_PRODUCT',
+  
+  // Search
+  SEARCH_PRODUCTS_SUCCESS: 'SEARCH_PRODUCTS_SUCCESS',
+  SET_SEARCH_QUERY: 'SET_SEARCH_QUERY',
+  CLEAR_SEARCH: 'CLEAR_SEARCH',
+  
+  // Related products
+  LOAD_RELATED_PRODUCTS_SUCCESS: 'LOAD_RELATED_PRODUCTS_SUCCESS',
+  
+  // Reviews
+  LOAD_REVIEWS_SUCCESS: 'LOAD_REVIEWS_SUCCESS',
+  ADD_REVIEW_SUCCESS: 'ADD_REVIEW_SUCCESS',
+  
+  // Filters
+  SET_FILTERS: 'SET_FILTERS',
+  CLEAR_FILTERS: 'CLEAR_FILTERS',
+  
+  // Pagination
+  SET_PAGINATION: 'SET_PAGINATION'
+};
+
+// Reducer
+const productReducer = (state, action) => {
+  switch (action.type) {
+    case PRODUCT_ACTIONS.SET_LOADING:
+      return { ...state, isLoading: action.payload, error: null };
+    
+    case PRODUCT_ACTIONS.SET_ERROR:
+      return { ...state, error: action.payload, isLoading: false };
+    
+    case PRODUCT_ACTIONS.CLEAR_ERROR:
+      return { ...state, error: null };
+    
+    case PRODUCT_ACTIONS.LOAD_PRODUCTS_SUCCESS:
+      return {
+        ...state,
+        products: action.payload.data || [],
+        pagination: {
+          page: action.payload.page || 1,
+          limit: action.payload.limit || 20,
+          total: action.payload.total || 0,
+          totalPages: action.payload.totalPages || 0,
+          hasMore: action.payload.hasMore || false
+        },
+        isLoading: false,
+        error: null
+      };
+    
+    case PRODUCT_ACTIONS.LOAD_MORE_PRODUCTS_SUCCESS:
+      return {
+        ...state,
+        products: [...state.products, ...(action.payload.data || [])],
+        pagination: {
+          page: action.payload.page || state.pagination.page + 1,
+          limit: action.payload.limit || state.pagination.limit,
+          total: action.payload.total || state.pagination.total,
+          totalPages: action.payload.totalPages || state.pagination.totalPages,
+          hasMore: action.payload.hasMore || false
+        },
+        isLoading: false,
+        error: null
+      };
+    
+    case PRODUCT_ACTIONS.LOAD_FEATURED_PRODUCTS_SUCCESS:
+      return {
+        ...state,
+        featuredProducts: action.payload.data || action.payload || [],
+        isLoading: false,
+        error: null
+      };
+    
+    case PRODUCT_ACTIONS.LOAD_CATEGORIES_SUCCESS:
+      return {
+        ...state,
+        categories: action.payload.data || action.payload || [],
+        isLoading: false,
+        error: null
+      };
+    
+    case PRODUCT_ACTIONS.LOAD_PRODUCT_SUCCESS:
+      return {
+        ...state,
+        currentProduct: action.payload.data || action.payload,
+        isLoading: false,
+        error: null
+      };
+    
+    case PRODUCT_ACTIONS.CLEAR_CURRENT_PRODUCT:
+      return {
+        ...state,
+        currentProduct: null,
+        relatedProducts: [],
+        reviews: []
+      };
+    
+    case PRODUCT_ACTIONS.SEARCH_PRODUCTS_SUCCESS:
+      return {
+        ...state,
+        searchResults: action.payload.data || [],
+        pagination: {
+          page: action.payload.page || 1,
+          limit: action.payload.limit || 20,
+          total: action.payload.total || 0,
+          totalPages: action.payload.totalPages || 0,
+          hasMore: action.payload.hasMore || false
+        },
+        isLoading: false,
+        error: null
+      };
+    
+    case PRODUCT_ACTIONS.SET_SEARCH_QUERY:
+      return { ...state, searchQuery: action.payload };
+    
+    case PRODUCT_ACTIONS.CLEAR_SEARCH:
+      return {
+        ...state,
+        searchResults: [],
+        searchQuery: '',
+        pagination: { ...initialState.pagination }
+      };
+    
+    case PRODUCT_ACTIONS.LOAD_RELATED_PRODUCTS_SUCCESS:
+      return {
+        ...state,
+        relatedProducts: action.payload.data || action.payload || [],
+        isLoading: false,
+        error: null
+      };
+    
+    case PRODUCT_ACTIONS.LOAD_REVIEWS_SUCCESS:
+      return {
+        ...state,
+        reviews: action.payload.data || action.payload || [],
+        isLoading: false,
+        error: null
+      };
+    
+    case PRODUCT_ACTIONS.ADD_REVIEW_SUCCESS:
+      return {
+        ...state,
+        reviews: [action.payload, ...state.reviews],
+        isLoading: false,
+        error: null
+      };
+    
+    case PRODUCT_ACTIONS.SET_FILTERS:
+      return {
+        ...state,
+        filters: { ...state.filters, ...action.payload }
+      };
+    
+    case PRODUCT_ACTIONS.CLEAR_FILTERS:
+      return {
+        ...state,
+        filters: { ...initialState.filters }
+      };
+    
+    case PRODUCT_ACTIONS.SET_PAGINATION:
+      return {
+        ...state,
+        pagination: { ...state.pagination, ...action.payload }
+      };
+    
+    default:
+      return state;
+  }
+};
+
+// Create context
+const ProductContext = createContext();
+
+// Provider component
+export const ProductProvider = ({ children }) => {
+  const [state, dispatch] = useReducer(productReducer, initialState);
+  const { showNotification } = useNotification();
+
+  // Load products with filters and pagination
+  const loadProducts = useCallback(async (params = {}, loadMore = false) => {
+    try {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+      
+      const queryParams = {
+        ...state.filters,
+        ...params,
+        page: loadMore ? state.pagination.page + 1 : (params.page || 1)
+      };
+
+      const response = await productService.getProducts(queryParams);
+      
+      const actionType = loadMore 
+        ? PRODUCT_ACTIONS.LOAD_MORE_PRODUCTS_SUCCESS 
+        : PRODUCT_ACTIONS.LOAD_PRODUCTS_SUCCESS;
+      
+      dispatch({ type: actionType, payload: response });
+      return response;
+    } catch (error) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
+      showNotification(error.message, 'error');
+      throw error;
+    }
+  }, [state.filters, state.pagination.page, showNotification]);
+
+  // Load more products (pagination)
+  const loadMoreProducts = useCallback(async () => {
+    if (!state.pagination.hasMore || state.isLoading) return;
+    return loadProducts({}, true);
+  }, [loadProducts, state.pagination.hasMore, state.isLoading]);
+
+  // Load featured products
+  const loadFeaturedProducts = useCallback(async (limit = 10) => {
+    try {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+      const response = await productService.getFeaturedProducts(limit);
+      dispatch({ type: PRODUCT_ACTIONS.LOAD_FEATURED_PRODUCTS_SUCCESS, payload: response });
+      return response;
+    } catch (error) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
+      showNotification(error.message, 'error');
+      throw error;
+    }
+  }, [showNotification]);
+
+  // Load categories
+  const loadCategories = useCallback(async () => {
+    try {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+      const response = await productService.getCategories();
+      dispatch({ type: PRODUCT_ACTIONS.LOAD_CATEGORIES_SUCCESS, payload: response });
+      return response;
+    } catch (error) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
+      showNotification(error.message, 'error');
+      throw error;
+    }
+  }, [showNotification]);  
+// Load single product
+  const loadProduct = useCallback(async (productId) => {
+    if (!productId) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: 'Product ID is required' });
+      return;
+    }
+
+    try {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+      const response = await productService.getProductById(productId);
+      dispatch({ type: PRODUCT_ACTIONS.LOAD_PRODUCT_SUCCESS, payload: response });
+      return response;
+    } catch (error) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
+      showNotification(error.message, 'error');
+      throw error;
+    }
+  }, [showNotification]);
+
+  // Load products by category
+  const loadProductsByCategory = useCallback(async (categoryId, params = {}) => {
+    if (!categoryId) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: 'Category ID is required' });
+      return;
+    }
+
+    try {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+      const response = await productService.getProductsByCategory(categoryId, params);
+      dispatch({ type: PRODUCT_ACTIONS.LOAD_PRODUCTS_SUCCESS, payload: response });
+      return response;
+    } catch (error) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
+      showNotification(error.message, 'error');
+      throw error;
+    }
+  }, [showNotification]);
+
+  // Search products
+  const searchProducts = useCallback(async (query, filters = {}, loadMore = false) => {
+    if (!query || query.trim().length < 2) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: 'Search query must be at least 2 characters' });
+      return;
+    }
+
+    try {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+      
+      const searchParams = {
+        ...filters,
+        page: loadMore ? state.pagination.page + 1 : 1
+      };
+
+      const response = await productService.searchProducts(query, searchParams);
+      
+      dispatch({ type: PRODUCT_ACTIONS.SET_SEARCH_QUERY, payload: query });
+      dispatch({ type: PRODUCT_ACTIONS.SEARCH_PRODUCTS_SUCCESS, payload: response });
+      
+      return response;
+    } catch (error) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
+      showNotification(error.message, 'error');
+      throw error;
+    }
+  }, [state.pagination.page, showNotification]);
+
+  // Load related products
+  const loadRelatedProducts = useCallback(async (productId, limit = 4) => {
+    if (!productId) return;
+
+    try {
+      const response = await productService.getRelatedProducts(productId, limit);
+      dispatch({ type: PRODUCT_ACTIONS.LOAD_RELATED_PRODUCTS_SUCCESS, payload: response });
+      return response;
+    } catch (error) {
+      console.error('Error loading related products:', error);
+      // Don't show notification for related products error as it's not critical
+    }
+  }, []);
+
+  // Load product reviews
+  const loadProductReviews = useCallback(async (productId, params = {}) => {
+    if (!productId) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: 'Product ID is required' });
+      return;
+    }
+
+    try {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+      const response = await productService.getProductReviews(productId, params);
+      dispatch({ type: PRODUCT_ACTIONS.LOAD_REVIEWS_SUCCESS, payload: response });
+      return response;
+    } catch (error) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
+      showNotification(error.message, 'error');
+      throw error;
+    }
+  }, [showNotification]);
+
+  // Add product review
+  const addProductReview = useCallback(async (productId, reviewData) => {
+    if (!productId) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: 'Product ID is required' });
+      return;
+    }
+
+    try {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+      const response = await productService.addProductReview(productId, reviewData);
+      dispatch({ type: PRODUCT_ACTIONS.ADD_REVIEW_SUCCESS, payload: response.data || response });
+      showNotification('Review added successfully!', 'success');
+      return response;
+    } catch (error) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
+      showNotification(error.message, 'error');
+      throw error;
+    }
+  }, [showNotification]);
+
+  // Set filters
+  const setFilters = useCallback((filters) => {
+    dispatch({ type: PRODUCT_ACTIONS.SET_FILTERS, payload: filters });
+  }, []);
+
+  // Clear filters
+  const clearFilters = useCallback(() => {
+    dispatch({ type: PRODUCT_ACTIONS.CLEAR_FILTERS });
+  }, []);
+
+  // Clear search
+  const clearSearch = useCallback(() => {
+    dispatch({ type: PRODUCT_ACTIONS.CLEAR_SEARCH });
+  }, []);
+
+  // Clear current product
+  const clearCurrentProduct = useCallback(() => {
+    dispatch({ type: PRODUCT_ACTIONS.CLEAR_CURRENT_PRODUCT });
+  }, []);
+
+  // Clear error
+  const clearError = useCallback(() => {
+    dispatch({ type: PRODUCT_ACTIONS.CLEAR_ERROR });
+  }, []);
+
+  // Utility functions
+  const getProductById = useCallback((productId) => {
+    return state.products.find(product => product._id === productId) || 
+           state.searchResults.find(product => product._id === productId) ||
+           state.featuredProducts.find(product => product._id === productId);
+  }, [state.products, state.searchResults, state.featuredProducts]);
+
+  const getCategoryById = useCallback((categoryId) => {
+    return state.categories.find(category => category._id === categoryId);
+  }, [state.categories]);
+
+  const isProductInResults = useCallback((productId) => {
+    return state.products.some(product => product._id === productId) ||
+           state.searchResults.some(product => product._id === productId);
+  }, [state.products, state.searchResults]);
+
+  // Filter products by criteria
+  const filterProducts = useCallback((products, criteria) => {
+    return products.filter(product => {
+      if (criteria.category && product.category._id !== criteria.category) return false;
+      if (criteria.minPrice && product.price < criteria.minPrice) return false;
+      if (criteria.maxPrice && product.price > criteria.maxPrice) return false;
+      if (criteria.inStock !== undefined && product.inStock !== criteria.inStock) return false;
+      if (criteria.rating && product.averageRating < criteria.rating) return false;
+      return true;
+    });
+  }, []);
+
+  // Sort products
+  const sortProducts = useCallback((products, sortBy, order = 'asc') => {
+    return [...products].sort((a, b) => {
+      let aValue = a[sortBy];
+      let bValue = b[sortBy];
+
+      // Handle nested properties
+      if (sortBy.includes('.')) {
+        const keys = sortBy.split('.');
+        aValue = keys.reduce((obj, key) => obj?.[key], a);
+        bValue = keys.reduce((obj, key) => obj?.[key], b);
+      }
+
+      // Handle different data types
+      if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+
+      if (aValue < bValue) return order === 'asc' ? -1 : 1;
+      if (aValue > bValue) return order === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, []);
+
+  // Get filtered and sorted products
+  const getFilteredProducts = useCallback(() => {
+    let products = state.searchQuery ? state.searchResults : state.products;
+    
+    // Apply client-side filters if needed
+    if (Object.values(state.filters).some(value => value !== null && value !== '')) {
+      products = filterProducts(products, state.filters);
+    }
+
+    return products;
+  }, [state.products, state.searchResults, state.searchQuery, state.filters, filterProducts]);
+
+  const value = {
+    ...state,
+    
+    // Data loading methods
+    loadProducts,
+    loadMoreProducts,
+    loadFeaturedProducts,
+    loadCategories,
+    loadProduct,
+    loadProductsByCategory,
+    searchProducts,
+    loadRelatedProducts,
+    loadProductReviews,
+    addProductReview,
+    
+    // State management
+    setFilters,
+    clearFilters,
+    clearSearch,
+    clearCurrentProduct,
+    clearError,
+    
+    // Utility methods
+    getProductById,
+    getCategoryById,
+    isProductInResults,
+    filterProducts,
+    sortProducts,
+    getFilteredProducts
+  };
+
+  return (
+    <ProductContext.Provider value={value}>
+      {children}
+    </ProductContext.Provider>
+  );
+};
+
+// Hook to use product context
+export const useProduct = () => {
+  const context = useContext(ProductContext);
+  if (!context) {
+    throw new Error('useProduct must be used within a ProductProvider');
+  }
+  return context;
+};
+
+export default ProductContext;
