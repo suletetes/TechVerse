@@ -1,159 +1,134 @@
-import React, {useState, useMemo} from "react";
-import {ProductFilters, ProductCard, ProductCardList, Pagination, ViewToggle} from "../components";
-
-// Example product data - expanded for better demonstration
-const phones = [
-    {
-        id: 1,
-        name: "Phone Pro",
-        price: "From £2000",
-        numericPrice: 2000,
-        brand: "TechBrand",
-        category: "flagship",
-        rating: 4.8,
-        image: "../img/phone-product.jpg",
-        webp: "../img/phone-product.webp",
-        link: "/product/1",
-    },
-    {
-        id: 2,
-        name: "Phone Lite",
-        price: "From £1500",
-        numericPrice: 1500,
-        brand: "TechBrand",
-        category: "mid-range",
-        rating: 4.5,
-        image: "../img/phone-product.jpg",
-        webp: "../img/phone-product.webp",
-        link: "/product/2",
-    },
-    {
-        id: 3,
-        name: "Phone Ultra",
-        price: "From £2500",
-        numericPrice: 2500,
-        brand: "TechBrand",
-        category: "flagship",
-        rating: 4.9,
-        image: "../img/phone-product.jpg",
-        webp: "../img/phone-product.webp",
-        link: "/product/3",
-    },
-    {
-        id: 4,
-        name: "Phone Basic",
-        price: "From £800",
-        numericPrice: 800,
-        brand: "ValueBrand",
-        category: "budget",
-        rating: 4.2,
-        image: "../img/phone-product.jpg",
-        webp: "../img/phone-product.webp",
-        link: "/product/4",
-    },
-    {
-        id: 5,
-        name: "Phone Max",
-        price: "From £3000",
-        numericPrice: 3000,
-        brand: "PremiumBrand",
-        category: "flagship",
-        rating: 4.7,
-        image: "../img/phone-product.jpg",
-        webp: "../img/phone-product.webp",
-        link: "/product/5",
-    },
-    {
-        id: 6,
-        name: "Phone Mini",
-        price: "From £1200",
-        numericPrice: 1200,
-        brand: "CompactBrand",
-        category: "mid-range",
-        rating: 4.4,
-        image: "../img/phone-product.jpg",
-        webp: "../img/phone-product.webp",
-        link: "/product/6",
-    },
-    {
-        id: 7,
-        name: "Phone Edge",
-        price: "From £1800",
-        numericPrice: 1800,
-        brand: "TechBrand",
-        category: "mid-range",
-        rating: 4.6,
-        image: "../img/phone-product.jpg",
-        webp: "../img/phone-product.webp",
-        link: "/product/7",
-    },
-    {
-        id: 8,
-        name: "Phone Fold",
-        price: "From £3500",
-        numericPrice: 3500,
-        brand: "InnovaBrand",
-        category: "flagship",
-        rating: 4.3,
-        image: "../img/phone-product.jpg",
-        webp: "../img/phone-product.webp",
-        link: "/product/8",
-    },
-];
+import React, { useState, useEffect, useMemo } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
+import { useProduct } from "../context";
+import { LoadingSpinner } from "../components/Common";
+import { ProductFilters, ProductCard, ProductCardList, Pagination, ViewToggle } from "../components";
 
 const Category = () => {
-    // State management
-    const [searchTerm, setSearchTerm] = useState("");
-    const [sortBy, setSortBy] = useState("name");
-    const [filterBrand, setFilterBrand] = useState("");
-    const [filterCategory, setFilterCategory] = useState("");
-    const [priceRange, setPriceRange] = useState([0, 4000]);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(6);
+    const { categorySlug } = useParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    
+    // Context hooks
+    const { 
+        products, 
+        categories,
+        pagination,
+        filters,
+        isLoading, 
+        error,
+        loadProducts,
+        loadProductsByCategory,
+        loadCategories,
+        setFilters,
+        clearFilters: clearProductFilters
+    } = useProduct();
+
+    // Local state
     const [viewMode, setViewMode] = useState("grid");
+    const [localFilters, setLocalFilters] = useState({
+        search: searchParams.get('search') || '',
+        sort: searchParams.get('sort') || 'createdAt',
+        order: searchParams.get('order') || 'desc',
+        minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : null,
+        maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : null,
+        brand: searchParams.get('brand') || '',
+        inStock: searchParams.get('inStock') ? searchParams.get('inStock') === 'true' : null
+    });
 
-    // Get unique brands and categories for filters
-    const brands = [...new Set(phones.map(phone => phone.brand))];
-    const categories = [...new Set(phones.map(phone => phone.category))];
+    // Load data on mount and when category changes
+    useEffect(() => {
+        loadCategories();
+        
+        if (categorySlug) {
+            // Load products by category
+            const categoryFilters = {
+                ...localFilters,
+                page: 1,
+                limit: 12
+            };
+            loadProductsByCategory(categorySlug, categoryFilters);
+        } else {
+            // Load all products
+            const allFilters = {
+                ...localFilters,
+                page: 1,
+                limit: 12
+            };
+            loadProducts(allFilters);
+        }
+    }, [categorySlug, loadProducts, loadProductsByCategory, loadCategories]);
 
-    // Filter and sort logic
-    const filteredAndSortedPhones = useMemo(() => {
-        let filtered = phones.filter(phone => {
-            const matchesSearch = phone.name.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesBrand = !filterBrand || phone.brand === filterBrand;
-            const matchesCategory = !filterCategory || phone.category === filterCategory;
-            const matchesPrice = phone.numericPrice >= priceRange[0] && phone.numericPrice <= priceRange[1];
-
-            return matchesSearch && matchesBrand && matchesCategory && matchesPrice;
-        });
-
-        // Sort logic
-        filtered.sort((a, b) => {
-            switch (sortBy) {
-                case "price-low":
-                    return a.numericPrice - b.numericPrice;
-                case "price-high":
-                    return b.numericPrice - a.numericPrice;
-                case "rating":
-                    return b.rating - a.rating;
-                case "name":
-                default:
-                    return a.name.localeCompare(b.name);
+    // Update URL params when filters change
+    useEffect(() => {
+        const params = new URLSearchParams();
+        
+        Object.entries(localFilters).forEach(([key, value]) => {
+            if (value !== null && value !== '' && value !== undefined) {
+                params.set(key, value.toString());
             }
         });
+        
+        setSearchParams(params);
+    }, [localFilters, setSearchParams]);
 
-        return filtered;
-    }, [searchTerm, sortBy, filterBrand, filterCategory, priceRange]);
+    // Apply filters to context when local filters change
+    useEffect(() => {
+        setFilters(localFilters);
+        
+        // Reload products with new filters
+        if (categorySlug) {
+            loadProductsByCategory(categorySlug, { ...localFilters, page: 1, limit: 12 });
+        } else {
+            loadProducts({ ...localFilters, page: 1, limit: 12 });
+        }
+    }, [localFilters, categorySlug, setFilters, loadProducts, loadProductsByCategory]);
 
-    // Pagination logic
-    const totalPages = Math.ceil(filteredAndSortedPhones.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const currentPhones = filteredAndSortedPhones.slice(startIndex, startIndex + itemsPerPage);
+    // Get current category info
+    const currentCategory = categories.find(cat => cat.slug === categorySlug);
+    const categoryName = currentCategory?.name || 'All Products';
 
-    // Reset to first page when filters change
-    React.useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, sortBy, filterBrand, filterCategory, priceRange]);
+    // Get unique brands from current products for filters
+    const brands = useMemo(() => {
+        const uniqueBrands = [...new Set(products.map(product => product.brand).filter(Boolean))];
+        return uniqueBrands.sort();
+    }, [products]);
+
+    // Get price range from current products
+    const priceRange = useMemo(() => {
+        if (products.length === 0) return [0, 1000];
+        const prices = products.map(product => product.price || 0);
+        return [Math.min(...prices), Math.max(...prices)];
+    }, [products]);
+
+    const handleFilterChange = (filterName, value) => {
+        setLocalFilters(prev => ({
+            ...prev,
+            [filterName]: value
+        }));
+    };
+
+    const handlePageChange = (page) => {
+        const newFilters = { ...localFilters, page };
+        
+        if (categorySlug) {
+            loadProductsByCategory(categorySlug, { ...newFilters, limit: 12 });
+        } else {
+            loadProducts({ ...newFilters, limit: 12 });
+        }
+    };
+
+    const clearFilters = () => {
+        setLocalFilters({
+            search: '',
+            sort: 'createdAt',
+            order: 'desc',
+            minPrice: null,
+            maxPrice: null,
+            brand: '',
+            inStock: null
+        });
+        clearProductFilters();
+    };
 
     const clearFilters = () => {
         setSearchTerm("");
@@ -164,6 +139,41 @@ const Category = () => {
         setCurrentPage(1);
     };
 
+    // Show loading state
+    if (isLoading && products.length === 0) {
+        return (
+            <div className="bloc bgc-5700 none full-width-bloc l-bloc" id="bloc-8">
+                <div className="container bloc-md-sm bloc-md bloc-lg-md">
+                    <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                        <LoadingSpinner size="lg" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Show error state
+    if (error) {
+        return (
+            <div className="bloc bgc-5700 none full-width-bloc l-bloc" id="bloc-8">
+                <div className="container bloc-md-sm bloc-md bloc-lg-md">
+                    <div className="text-center py-5">
+                        <div className="alert alert-danger">
+                            <h4>Error Loading Products</h4>
+                            <p>{error}</p>
+                            <button 
+                                className="btn btn-primary"
+                                onClick={() => window.location.reload()}
+                            >
+                                Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="bloc bgc-5700 none full-width-bloc l-bloc" id="bloc-8">
             <div className="container bloc-md-sm bloc-md bloc-lg-md">
@@ -171,31 +181,43 @@ const Category = () => {
                     {/* Header */}
                     <div className="col-lg-12 ps-0 pe-0 mb-4">
                         <div className="d-flex justify-content-between align-items-center">
-                            <h1 className="tc-6533 mb-0">Phones</h1>
+                            <div>
+                                <h1 className="tc-6533 mb-0">{categoryName}</h1>
+                                {currentCategory?.description && (
+                                    <p className="tc-6533 opacity-75 mb-0">{currentCategory.description}</p>
+                                )}
+                            </div>
                             <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode}/>
                         </div>
                     </div>
 
                     {/* Search and Filters */}
                     <ProductFilters
-                        searchTerm={searchTerm}
-                        setSearchTerm={setSearchTerm}
-                        sortBy={sortBy}
-                        setSortBy={setSortBy}
-                        filterBrand={filterBrand}
-                        setFilterBrand={setFilterBrand}
-                        filterCategory={filterCategory}
-                        setFilterCategory={setFilterCategory}
-                        priceRange={priceRange}
-                        setPriceRange={setPriceRange}
+                        searchTerm={localFilters.search}
+                        setSearchTerm={(value) => handleFilterChange('search', value)}
+                        sortBy={localFilters.sort}
+                        setSortBy={(value) => handleFilterChange('sort', value)}
+                        sortOrder={localFilters.order}
+                        setSortOrder={(value) => handleFilterChange('order', value)}
+                        filterBrand={localFilters.brand}
+                        setFilterBrand={(value) => handleFilterChange('brand', value)}
+                        minPrice={localFilters.minPrice}
+                        maxPrice={localFilters.maxPrice}
+                        setPriceRange={(range) => {
+                            handleFilterChange('minPrice', range[0]);
+                            handleFilterChange('maxPrice', range[1]);
+                        }}
+                        inStock={localFilters.inStock}
+                        setInStock={(value) => handleFilterChange('inStock', value)}
                         brands={brands}
-                        categories={categories}
+                        priceRange={priceRange}
                         onClearFilters={clearFilters}
-                        resultsCount={filteredAndSortedPhones.length}
+                        resultsCount={pagination.total || products.length}
+                        isLoading={isLoading}
                     />
 
                     {/* Products Grid/List */}
-                    {currentPhones.length === 0 ? (
+                    {products.length === 0 && !isLoading ? (
                         <div className="col-12 text-center py-5">
                             <div className="tc-6533">
                                 <i className="fa fa-search fa-3x mb-3 opacity-50"></i>
@@ -206,25 +228,51 @@ const Category = () => {
                                 </button>
                             </div>
                         </div>
-                    ) : viewMode === 'grid' ? (
-                        currentPhones.map((phone) => (
-                            <ProductCard key={phone.id} product={phone}/>
-                        ))
                     ) : (
-                        currentPhones.map((phone) => (
-                            <ProductCardList key={phone.id} product={phone}/>
-                        ))
+                        <>
+                            {/* Loading overlay for filter changes */}
+                            {isLoading && products.length > 0 && (
+                                <div className="col-12 mb-3">
+                                    <div className="d-flex justify-content-center">
+                                        <LoadingSpinner size="sm" />
+                                        <span className="ms-2">Updating results...</span>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Products */}
+                            {viewMode === 'grid' ? (
+                                products.map((product) => (
+                                    <ProductCard 
+                                        key={product._id} 
+                                        product={product}
+                                        showWishlist={true}
+                                    />
+                                ))
+                            ) : (
+                                products.map((product) => (
+                                    <ProductCardList 
+                                        key={product._id} 
+                                        product={product}
+                                        showWishlist={true}
+                                    />
+                                ))
+                            )}
+                        </>
                     )}
 
                     {/* Pagination */}
-                    <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                        startIndex={startIndex}
-                        itemsPerPage={itemsPerPage}
-                        totalItems={filteredAndSortedPhones.length}
-                    />
+                    {pagination.totalPages > 1 && (
+                        <Pagination
+                            currentPage={pagination.page}
+                            totalPages={pagination.totalPages}
+                            onPageChange={handlePageChange}
+                            startIndex={(pagination.page - 1) * pagination.limit + 1}
+                            itemsPerPage={pagination.limit}
+                            totalItems={pagination.total}
+                            isLoading={isLoading}
+                        />
+                    )}
                 </div>
             </div>
         </div>
