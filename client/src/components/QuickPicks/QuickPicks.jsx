@@ -2,8 +2,19 @@ import React from 'react';
 import {QuickPickCard} from '../Cards';
 import { HorizontalScroll } from '../Common';
 
-const QuickPicks = () => {
-    const products = [
+const QuickPicks = ({ products = [], isLoading = false }) => {
+    // Transform API data to component format
+    const transformedProducts = products.map(product => ({
+        id: product._id,
+        title: product.name,
+        price: `£${product.price}`,
+        link: `/product/${product.slug || product._id}`,
+        imageWebp: product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder-product.webp',
+        imageJpg: product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder-product.jpg'
+    }));
+
+    // Fallback products for when loading or no data
+    const fallbackProducts = [
         {
             title: 'Ultra HD QLED',
             price: '$2999',

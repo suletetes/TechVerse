@@ -2,8 +2,22 @@ import React from "react";
 import ProductCard from './ProductCard';
 import { HorizontalScroll } from '../Common';
 
-const TopSellerProducts = () => {
-    const products = [
+const TopSellerProducts = ({ products = [], isLoading = false }) => {
+    // Transform API data to component format
+    const transformedProducts = products.map(product => ({
+        id: product._id,
+        name: product.name,
+        price: `From £${product.price}`,
+        link: `/product/${product.slug || product._id}`,
+        webp: product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder-product.webp',
+        image: product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder-product.jpg',
+        brand: product.brand,
+        category: product.category?.name || 'premium',
+        rating: product.rating?.average || 4.5
+    }));
+
+    // Fallback products for when loading or no data
+    const fallbackProducts = [
         {
             name: '8K QLED',
             price: 'From £2999',
@@ -107,12 +121,20 @@ const TopSellerProducts = () => {
                     </div>
                     <div className="text-start offset-lg-0 col-lg-12 col">
                         <HorizontalScroll>
-                            {products.map((product, index) => (
-                                <ProductCard
-                                    key={index}
-                                    product={product}
-                                />
-                            ))}
+                            {isLoading ? (
+                                <div className="text-center p-4">
+                                    <div className="spinner-border text-primary" role="status">
+                                        <span className="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                (transformedProducts.length > 0 ? transformedProducts : fallbackProducts).map((product, index) => (
+                                    <ProductCard
+                                        key={product.id || index}
+                                        product={product}
+                                    />
+                                ))
+                            )}
                         </HorizontalScroll>
                     </div>
                 </div>

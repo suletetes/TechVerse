@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useProduct } from "../context";
 import {
     Header,
@@ -10,19 +10,17 @@ import {
 } from "../components";
 
 const Home = () => {
-    const { 
-        featuredProducts,
+    const {
         topSellingProducts,
         latestProducts,
         productsOnSale,
         quickPicks,
-        loadFeaturedProducts,
         loadTopSellingProducts,
         loadLatestProducts,
         loadProductsOnSale,
         loadQuickPicks,
         loadCategories,
-        isLoading 
+        isLoading
     } = useProduct();
 
     // Load all product types and categories on mount
@@ -47,36 +45,36 @@ const Home = () => {
     return (
         <>
             {/* header */}
-            <Header/>
+            <Header />
             {/* header END */}
 
             {/* latest-products */}
-            <LatestProducts 
+            <LatestProducts
                 products={latestProducts}
                 isLoading={isLoading}
             />
             {/* latest-products END */}
 
             {/* top-seller-products */}
-            <TopSellerProducts 
+            <TopSellerProducts
                 products={topSellingProducts}
                 isLoading={isLoading}
             />
             {/* top-seller-products END */}
 
             {/* service */}
-            <Service/>
+            <Service />
             {/* service END */}
 
             {/* quick-picks */}
-            <QuickPicks 
+            <QuickPicks
                 products={quickPicks}
                 isLoading={isLoading}
             />
             {/* quick-picks END */}
 
             {/* weekly-deals */}
-            <WeeklyDeals 
+            <WeeklyDeals
                 products={productsOnSale}
                 isLoading={isLoading}
             />
