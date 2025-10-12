@@ -1,16 +1,65 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context';
+import { LoadingSpinner } from '../Common';
 
-const ProfileTab = ({ 
-    profileData, 
-    setProfileData, 
-    isEditing, 
-    setIsEditing, 
-    handleInputChange, 
-    handleSaveProfile, 
-    handleAvatarChange, 
-    calculateProfileCompleteness, 
-    onPasswordChange 
-}) => {
+const ProfileTab = () => {
+    const { user, updateProfile, isLoading } = useAuth();
+    const [isEditing, setIsEditing] = useState(false);
+    const [profileData, setProfileData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        dateOfBirth: '',
+        gender: '',
+        avatar: ''
+    });
+
+    // Load user data when component mounts
+    useEffect(() => {
+        if (user) {
+            setProfileData({
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                email: user.email || '',
+                phone: user.phone || '',
+                dateOfBirth: user.dateOfBirth || '',
+                gender: user.gender || '',
+                avatar: user.avatar || ''
+            });
+        }
+    }, [user]);
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setProfileData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleSaveProfile = async () => {
+        try {
+            await updateProfile(profileData);
+            setIsEditing(false);
+        } catch (error) {
+            console.error('Error updating profile:', error);
+        }
+    };
+
+    const calculateProfileCompleteness = () => {
+        const fields = ['firstName', 'lastName', 'email', 'phone', 'dateOfBirth'];
+        const completedFields = fields.filter(field => profileData[field]?.trim());
+        return Math.round((completedFields.length / fields.length) * 100);
+    };
+
+    if (isLoading) {
+        return (
+            <div className="store-card fill-card d-flex justify-content-center align-items-center" style={{ minHeight: '300px' }}>
+                <LoadingSpinner size="lg" />
+            </div>
+        );
+    }
 
     return (
         <div className="store-card fill-card">
