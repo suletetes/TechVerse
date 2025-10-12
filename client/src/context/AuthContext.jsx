@@ -561,9 +561,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Clear error
-  const clearError = () => {
+  const clearError = useCallback(() => {
     dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-  };
+  }, []);
 
   // Check if user has specific role
   const hasRole = (role) => {

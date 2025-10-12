@@ -1,10 +1,13 @@
-import React from 'react';
+import React from 'react'
 import LatestProductCard from './LatestProductCard';
 import { HorizontalScroll } from '../Common';
 
 const LatestProducts = ({ products = [], isLoading = false }) => {
+    // Ensure products is an array
+    const safeProducts = Array.isArray(products) ? products : [];
+
     // Transform API data to component format
-    const transformedProducts = products.map(product => ({
+    const transformedProducts = safeProducts.map(product => ({
         id: product._id,
         title: product.name,
         price: `From £${product.price}`,

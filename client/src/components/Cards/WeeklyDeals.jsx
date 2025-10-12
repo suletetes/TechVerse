@@ -1,8 +1,23 @@
-import React from "react";
+import React from 'react'
+
 import DealCard from "./DealCard";
 
-export default function WeeklyDeals() {
-    const deals = [
+const WeeklyDeals = ({ products = [], isLoading = false }) => {
+    // Ensure products is an array
+    const safeProducts = Array.isArray(products) ? products : [];
+    
+    // Transform API data to component format
+    const transformedProducts = safeProducts.map(product => ({
+        title: product.name,
+        price: `From £${product.price}`,
+        discount: product.comparePrice ? `Save £${(product.comparePrice - product.price).toFixed(2)}` : 'Special Offer',
+        link: `/product/${product.slug || product._id}`,
+        imageWebp: product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder-product.webp',
+        imageJpg: product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder-product.jpg'
+    }));
+
+    // Fallback deals for when no products are available
+    const fallbackDeals = [
         {
             title: "Ultra Laptop",
             price: "From £2000",
@@ -29,6 +44,9 @@ export default function WeeklyDeals() {
         },
     ];
 
+    // Use real products if available, otherwise show fallback
+    const displayDeals = transformedProducts.length > 0 ? transformedProducts : fallbackDeals;
+
     return (
         <div className="bloc bgc-5700 none full-width-bloc l-bloc" id="weekly-deals">
             <div className="container bloc-md">
@@ -38,11 +56,21 @@ export default function WeeklyDeals() {
                             <span className="primary-text">Weekly Deals.</span> Discover our amazing offers.
                         </h3>
                     </div>
-                    {deals.map((deal, index) => (
-                        <DealCard key={index} {...deal} />
-                    ))}
+                    {isLoading ? (
+                        <div className="col-12 text-center p-4">
+                            <div className="spinner-border text-primary" role="status">
+                                <span className="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    ) : (
+                        displayDeals.map((deal, index) => (
+                            <DealCard key={index} {...deal} />
+                        ))
+                    )}
                 </div>
             </div>
         </div>
     );
-}
+};
+
+export default WeeklyDeals;

@@ -3,8 +3,9 @@ import {QuickPickCard} from '../Cards';
 import { HorizontalScroll } from '../Common';
 
 const QuickPicks = ({ products = [], isLoading = false }) => {
+    const safeProducts = Array.isArray(products) ? products : [];
     // Transform API data to component format
-    const transformedProducts = products.map(product => ({
+    const transformedProducts = safeProducts.map(product => ({
         id: product._id,
         title: product.name,
         price: `£${product.price}`,
@@ -91,9 +92,9 @@ const QuickPicks = ({ products = [], isLoading = false }) => {
                     </div>
                     <div className="text-start offset-lg-0 col-lg-12 col">
                         <HorizontalScroll>
-                            {products.map((product, index) => (
+                            {(transformedProducts.length > 0 ? transformedProducts : fallbackProducts).map((product, index) => (
                                 <QuickPickCard
-                                    key={index}
+                                    key={product.id || index}
                                     title={product.title}
                                     price={product.price}
                                     link={product.link}
