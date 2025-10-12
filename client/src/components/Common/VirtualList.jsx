@@ -1,4 +1,4 @@
-import { memo, useMemo, useCallback } from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 import { useVirtualScroll } from '../../hooks/usePerformance.js';
 
 const VirtualList = memo(({

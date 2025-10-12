@@ -1,5 +1,14 @@
 import React from 'react';
 
+// Import providers for use in AppProviders
+import { AuthProvider } from './AuthContext.jsx';
+import { CartProvider } from './CartContext.jsx';
+import { NotificationProvider } from './NotificationContext.jsx';
+import { ProductProvider } from './ProductContext.jsx';
+import { OrderProvider } from './OrderContext.jsx';
+import { AdminProvider } from './AdminContext.jsx';
+import { WishlistProvider } from './WishlistContext.jsx';
+
 // Context Providers Export
 export { AuthProvider, useAuth } from './AuthContext.jsx';
 export { CartProvider, useCart } from './CartContext.jsx';
