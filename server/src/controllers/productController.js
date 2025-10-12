@@ -102,7 +102,7 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
 // @access  Public
 export const getProductById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  
+
   // Try to find by ID first, then by slug
   let product = await Product.findById(id)
     .populate('category', 'name slug')
@@ -193,9 +193,9 @@ export const createProduct = asyncHandler(async (req, res, next) => {
 // @access  Private (Admin only)
 export const updateProduct = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  
+
   let product = await Product.findById(id);
-  
+
   if (!product) {
     return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
   }
@@ -212,7 +212,7 @@ export const updateProduct = asyncHandler(async (req, res, next) => {
   if (req.files && req.files.images) {
     try {
       const uploadedImages = await imageService.uploadMultipleImages(req.files.images, 'products');
-      
+
       // If replacing all images, delete old ones
       if (req.body.replaceImages === 'true') {
         // Delete old images
@@ -264,9 +264,9 @@ export const updateProduct = asyncHandler(async (req, res, next) => {
 // @access  Private (Admin only)
 export const deleteProduct = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  
+
   const product = await Product.findById(id);
-  
+
   if (!product) {
     return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
   }
@@ -277,10 +277,10 @@ export const deleteProduct = asyncHandler(async (req, res, next) => {
       try {
         await imageService.deleteImage(image.publicId);
       } catch (error) {
-        logger.warn('Failed to delete product image', { 
-          productId: id, 
+        logger.warn('Failed to delete product image', {
+          productId: id,
           imageId: image.publicId,
-          error: error.message 
+          error: error.message
         });
       }
     }
@@ -381,7 +381,7 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
 // @access  Public
 export const getFeaturedProducts = asyncHandler(async (req, res, next) => {
   const { limit = 10 } = req.query;
-  
+
   const products = await Product.findFeatured(parseInt(limit));
 
   res.status(200).json({
@@ -579,5 +579,20 @@ export const getProductReviews = asyncHandler(async (req, res, next) => {
         limit: options.limit
       }
     }
+  });
+});
+// @desc    Get all categories
+// @route   GET /api/products/categories
+// @access  Public
+export const getCategories = asyncHandler(async (req, res, next) => {
+  const categories = await Category.find({ isActive: true })
+    .select('name slug description image parent displayOrder productCount')
+    .populate('parent', 'name slug')
+    .sort({ displayOrder: 1, name: 1 });
+
+  res.status(200).json({
+    success: true,
+    message: 'Categories retrieved successfully',
+    data: categories
   });
 });

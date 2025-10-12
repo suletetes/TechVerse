@@ -9,7 +9,8 @@ import {
   getFeaturedProducts,
   getProductsByCategory,
   addProductReview,
-  getProductReviews
+  getProductReviews,
+  getCategories
 } from '../controllers/productController.js';
 import { authenticate, requireAdmin, optionalAuth } from '../middleware/auth.js';
 
@@ -18,6 +19,7 @@ const router = express.Router();
 // Public routes
 router.get('/', optionalAuth, getAllProducts);
 router.get('/search', optionalAuth, searchProducts);
+router.get('/categories', getCategories);
 router.get('/featured', getFeaturedProducts);
 router.get('/category/:categoryId', optionalAuth, getProductsByCategory);
 router.get('/:id', optionalAuth, getProductById);
