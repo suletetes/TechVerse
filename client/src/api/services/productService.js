@@ -411,4 +411,132 @@ class ProductService {
   }
 }
 
-export default new ProductService();
+export default new ProductService();  // Get t
+op selling products
+  async getTopSellingProducts(limit = 10, timeframe = null) {
+    const cacheKey = `top_selling_${limit}_${timeframe || 'all'}`;
+
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      const cached = this.cache.get(cacheKey);
+      if (Date.now() - cached.timestamp < this.cacheTimeout) {
+        return cached.data;
+      }
+      this.cache.delete(cacheKey);
+    }
+
+    try {
+      const params = { limit };
+      if (timeframe) params.timeframe = timeframe;
+
+      const response = await apiClient.get(API_ENDPOINTS.PRODUCTS.TOP_SELLERS, { params });
+      const data = await handleApiResponse(response);
+
+      // Cache the result
+      this.cache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching top selling products:', error);
+      throw new Error(error.message || 'Failed to fetch top selling products');
+    }
+  }
+
+  // Get latest products
+  async getLatestProducts(limit = 10) {
+    const cacheKey = `latest_products_${limit}`;
+
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      const cached = this.cache.get(cacheKey);
+      if (Date.now() - cached.timestamp < this.cacheTimeout) {
+        return cached.data;
+      }
+      this.cache.delete(cacheKey);
+    }
+
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.PRODUCTS.LATEST, {
+        params: { limit }
+      });
+      const data = await handleApiResponse(response);
+
+      // Cache the result
+      this.cache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching latest products:', error);
+      throw new Error(error.message || 'Failed to fetch latest products');
+    }
+  }
+
+  // Get products on sale
+  async getProductsOnSale(limit = 10) {
+    const cacheKey = `products_on_sale_${limit}`;
+
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      const cached = this.cache.get(cacheKey);
+      if (Date.now() - cached.timestamp < this.cacheTimeout) {
+        return cached.data;
+      }
+      this.cache.delete(cacheKey);
+    }
+
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.PRODUCTS.ON_SALE, {
+        params: { limit }
+      });
+      const data = await handleApiResponse(response);
+
+      // Cache the result
+      this.cache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching products on sale:', error);
+      throw new Error(error.message || 'Failed to fetch products on sale');
+    }
+  }
+
+  // Get quick picks
+  async getQuickPicks(limit = 8) {
+    const cacheKey = `quick_picks_${limit}`;
+
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      const cached = this.cache.get(cacheKey);
+      if (Date.now() - cached.timestamp < this.cacheTimeout) {
+        return cached.data;
+      }
+      this.cache.delete(cacheKey);
+    }
+
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.PRODUCTS.QUICK_PICKS, {
+        params: { limit }
+      });
+      const data = await handleApiResponse(response);
+
+      // Cache the result
+      this.cache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching quick picks:', error);
+      throw new Error(error.message || 'Failed to fetch quick picks');
+    }
+  }

@@ -29,6 +29,10 @@ export const API_ENDPOINTS = {
     SEARCH: '/products/search',
     CATEGORIES: '/products/categories',
     FEATURED: '/products/featured',
+    TOP_SELLERS: '/products/top-sellers',
+    LATEST: '/products/latest',
+    ON_SALE: '/products/on-sale',
+    QUICK_PICKS: '/products/quick-picks',
     REVIEWS: (id) => `/products/${id}/reviews`
   },
   
