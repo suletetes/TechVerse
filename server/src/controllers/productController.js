@@ -653,13 +653,9 @@ export const getProductsOnSale = asyncHandler(async (req, res, next) => {
     $expr: { $gt: ['$comparePrice', '$price'] }
   })
     .sort({ 
-      // Sort by discount percentage (highest first)
-      $expr: { 
-        $divide: [
-          { $subtract: ['$comparePrice', '$price'] },
-          '$comparePrice'
-        ]
-      }
+      // Sort by compare price descending (highest discounts first)
+      comparePrice: -1,
+      createdAt: -1
     })
     .limit(parseInt(limit))
     .populate('category', 'name slug')

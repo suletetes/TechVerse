@@ -388,21 +388,34 @@ export const seedDatabase = async () => {
         }
 
         const adminUser = users.find(u => u.role === 'admin');
-
-        console.log('📦 Creating products...');
+        
+        if (!adminUser) {
+            throw new Error('Admin user not found! Cannot proceed with product seeding.');
+        }
+        
+        console.log(`📦 Creating products... (Admin user: ${adminUser.email})`);
         const products = [];
         for (const productData of seedData.products) {
             const categoryId = categoryMap.get(productData.category);
 
             if (categoryId) {
-                const product = await Product.create({
-                    ...productData,
-                    category: categoryId,
-                    createdBy: adminUser._id,
-                    updatedBy: adminUser._id
-                });
-                products.push(product);
-                console.log(`   ✅ Created product: ${product.name}`);
+                console.log(`Creating product: ${productData.name}...`);
+                try {
+                    const product = await Product.create({
+                        ...productData,
+                        category: categoryId,
+                        createdBy: adminUser._id,
+                        updatedBy: adminUser._id
+                    });
+                    products.push(product);
+                    console.log(`   ✅ Created product: ${product.name}`);
+                } catch (error) {
+                    console.error(`   ❌ Failed to create product: ${productData.name}`);
+                    console.error(`   Error: ${error.message}`);
+                    throw error;
+                }
+            } else {
+                console.log(`   ⚠️  Skipping product ${productData.name} - category not found: ${productData.category}`);
             }
         }
 
