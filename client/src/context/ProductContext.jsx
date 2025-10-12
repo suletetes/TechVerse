@@ -5,6 +5,10 @@ import { productService } from '../api/services/index.js';
 const initialState = {
   products: [],
   featuredProducts: [],
+  topSellingProducts: [],
+  latestProducts: [],
+  productsOnSale: [],
+  quickPicks: [],
   categories: [],
   currentProduct: null,
   searchResults: [],
@@ -43,6 +47,18 @@ const PRODUCT_ACTIONS = {
   
   // Featured products
   LOAD_FEATURED_PRODUCTS_SUCCESS: 'LOAD_FEATURED_PRODUCTS_SUCCESS',
+  
+  // Top selling products
+  LOAD_TOP_SELLING_SUCCESS: 'LOAD_TOP_SELLING_SUCCESS',
+  
+  // Latest products
+  LOAD_LATEST_PRODUCTS_SUCCESS: 'LOAD_LATEST_PRODUCTS_SUCCESS',
+  
+  // Products on sale
+  LOAD_PRODUCTS_ON_SALE_SUCCESS: 'LOAD_PRODUCTS_ON_SALE_SUCCESS',
+  
+  // Quick picks
+  LOAD_QUICK_PICKS_SUCCESS: 'LOAD_QUICK_PICKS_SUCCESS',
   
   // Categories
   LOAD_CATEGORIES_SUCCESS: 'LOAD_CATEGORIES_SUCCESS',
@@ -117,6 +133,38 @@ const productReducer = (state, action) => {
       return {
         ...state,
         featuredProducts: action.payload.data || action.payload || [],
+        isLoading: false,
+        error: null
+      };
+    
+    case PRODUCT_ACTIONS.LOAD_TOP_SELLING_SUCCESS:
+      return {
+        ...state,
+        topSellingProducts: action.payload.data || action.payload || [],
+        isLoading: false,
+        error: null
+      };
+    
+    case PRODUCT_ACTIONS.LOAD_LATEST_PRODUCTS_SUCCESS:
+      return {
+        ...state,
+        latestProducts: action.payload.data || action.payload || [],
+        isLoading: false,
+        error: null
+      };
+    
+    case PRODUCT_ACTIONS.LOAD_PRODUCTS_ON_SALE_SUCCESS:
+      return {
+        ...state,
+        productsOnSale: action.payload.data || action.payload || [],
+        isLoading: false,
+        error: null
+      };
+    
+    case PRODUCT_ACTIONS.LOAD_QUICK_PICKS_SUCCESS:
+      return {
+        ...state,
+        quickPicks: action.payload.data || action.payload || [],
         isLoading: false,
         error: null
       };
@@ -270,6 +318,62 @@ export const ProductProvider = ({ children }) => {
       dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
       const response = await productService.getFeaturedProducts(limit);
       dispatch({ type: PRODUCT_ACTIONS.LOAD_FEATURED_PRODUCTS_SUCCESS, payload: response });
+      return response;
+    } catch (error) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
+      showNotification(error.message, 'error');
+      throw error;
+    }
+  }, [showNotification]);
+
+  // Load top selling products
+  const loadTopSellingProducts = useCallback(async (limit = 10, timeframe = null) => {
+    try {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+      const response = await productService.getTopSellingProducts(limit, timeframe);
+      dispatch({ type: PRODUCT_ACTIONS.LOAD_TOP_SELLING_SUCCESS, payload: response });
+      return response;
+    } catch (error) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
+      showNotification(error.message, 'error');
+      throw error;
+    }
+  }, [showNotification]);
+
+  // Load latest products
+  const loadLatestProducts = useCallback(async (limit = 10) => {
+    try {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+      const response = await productService.getLatestProducts(limit);
+      dispatch({ type: PRODUCT_ACTIONS.LOAD_LATEST_PRODUCTS_SUCCESS, payload: response });
+      return response;
+    } catch (error) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
+      showNotification(error.message, 'error');
+      throw error;
+    }
+  }, [showNotification]);
+
+  // Load products on sale
+  const loadProductsOnSale = useCallback(async (limit = 10) => {
+    try {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+      const response = await productService.getProductsOnSale(limit);
+      dispatch({ type: PRODUCT_ACTIONS.LOAD_PRODUCTS_ON_SALE_SUCCESS, payload: response });
+      return response;
+    } catch (error) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
+      showNotification(error.message, 'error');
+      throw error;
+    }
+  }, [showNotification]);
+
+  // Load quick picks
+  const loadQuickPicks = useCallback(async (limit = 8) => {
+    try {
+      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
+      const response = await productService.getQuickPicks(limit);
+      dispatch({ type: PRODUCT_ACTIONS.LOAD_QUICK_PICKS_SUCCESS, payload: response });
       return response;
     } catch (error) {
       dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
@@ -507,6 +611,10 @@ export const ProductProvider = ({ children }) => {
     loadProducts,
     loadMoreProducts,
     loadFeaturedProducts,
+    loadTopSellingProducts,
+    loadLatestProducts,
+    loadProductsOnSale,
+    loadQuickPicks,
     loadCategories,
     loadProduct,
     loadProductsByCategory,
