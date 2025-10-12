@@ -1,4 +1,4 @@
-import { memo, useState, useCallback } from 'react';
+import React, { memo, useState, useCallback } from 'react';
 import { useLazyImage } from '../../hooks/usePerformance.js';
 
 const LazyImage = memo(({

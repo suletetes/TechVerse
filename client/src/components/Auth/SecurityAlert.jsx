@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { X, Shield, AlertTriangle, Info, CheckCircle } from 'lucide-react';
 
 const SecurityAlert = ({ alert, onDismiss }) => {
