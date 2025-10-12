@@ -7,6 +7,10 @@ import {
   deleteProduct,
   searchProducts,
   getFeaturedProducts,
+  getTopSellingProducts,
+  getLatestProducts,
+  getProductsOnSale,
+  getQuickPicks,
   getProductsByCategory,
   addProductReview,
   getProductReviews,
@@ -21,6 +25,10 @@ router.get('/', optionalAuth, getAllProducts);
 router.get('/search', optionalAuth, searchProducts);
 router.get('/categories', getCategories);
 router.get('/featured', getFeaturedProducts);
+router.get('/top-sellers', getTopSellingProducts);
+router.get('/latest', getLatestProducts);
+router.get('/on-sale', getProductsOnSale);
+router.get('/quick-picks', getQuickPicks);
 router.get('/category/:categoryId', optionalAuth, getProductsByCategory);
 router.get('/:id', optionalAuth, getProductById);
 router.get('/:id/reviews', getProductReviews);
