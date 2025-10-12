@@ -1,8 +1,29 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth, useCart, useWishlist } from '../../context';
 import NavLink from './NavLink';
 
 const Navigation = () => {
+    const navigate = useNavigate();
+    const { isAuthenticated, user, logout, isAdmin } = useAuth();
+    const { itemCount } = useCart();
+    const { getWishlistCount } = useWishlist();
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+    const wishlistCount = getWishlistCount();
+
+    const handleLogout = async () => {
+        try {
+            setIsLoggingOut(true);
+            await logout();
+            navigate('/');
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            setIsLoggingOut(false);
+        }
+    };
+
     return (
         <div className="bloc bgc-6533 full-width-bloc d-bloc" id="navigation">
             <div className="container bloc-sm">
@@ -39,30 +60,107 @@ const Navigation = () => {
                                         <NavLink to="/" exact>
                                             Home
                                         </NavLink>
-                                        <NavLink to="/admin">
-                                            Admin
-                                        </NavLink>
-                                        <NavLink to="/user">
-                                            User
-                                        </NavLink>
-                                        <NavLink to="/profile">
-                                            Account
-                                        </NavLink>
+                                        
                                         <NavLink to="/category">
-                                            Category
+                                            Products
                                         </NavLink>
-                                        <NavLink to="/cart">
-                                            Cart
-                                        </NavLink>
-                                        <NavLink to="/wishlist">
-                                            Wishlist
-                                        </NavLink>
-                                        <NavLink to="/signup">
-                                            Signup
-                                        </NavLink>
-                                        <NavLink to="/login">
-                                            Login
-                                        </NavLink>
+
+                                        {/* Admin Link - Only show for admins */}
+                                        {isAuthenticated && isAdmin() && (
+                                            <NavLink to="/admin">
+                                                Admin
+                                            </NavLink>
+                                        )}
+
+                                        {/* Cart with item count */}
+                                        <li className="nav-item">
+                                            <Link 
+                                                to="/cart" 
+                                                className="nav-link ltc-2175 position-relative"
+                                            >
+                                                Cart
+                                                {itemCount > 0 && (
+                                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                                        {itemCount > 99 ? '99+' : itemCount}
+                                                        <span className="visually-hidden">items in cart</span>
+                                                    </span>
+                                                )}
+                                            </Link>
+                                        </li>
+
+                                        {/* Wishlist with item count */}
+                                        <li className="nav-item">
+                                            <Link 
+                                                to="/wishlist" 
+                                                className="nav-link ltc-2175 position-relative"
+                                            >
+                                                Wishlist
+                                                {wishlistCount > 0 && (
+                                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">
+                                                        {wishlistCount > 99 ? '99+' : wishlistCount}
+                                                        <span className="visually-hidden">items in wishlist</span>
+                                                    </span>
+                                                )}
+                                            </Link>
+                                        </li>
+
+                                        {/* Authentication Links */}
+                                        {isAuthenticated ? (
+                                            <>
+                                                {/* User Profile Dropdown */}
+                                                <li className="nav-item dropdown">
+                                                    <a 
+                                                        className="nav-link dropdown-toggle ltc-2175" 
+                                                        href="#" 
+                                                        role="button" 
+                                                        data-bs-toggle="dropdown" 
+                                                        aria-expanded="false"
+                                                    >
+                                                        {user?.firstName || 'Account'}
+                                                    </a>
+                                                    <ul className="dropdown-menu">
+                                                        <li>
+                                                            <Link className="dropdown-item" to="/user">
+                                                                <i className="fas fa-user me-2"></i>
+                                                                Profile
+                                                            </Link>
+                                                        </li>
+                                                        <li>
+                                                            <Link className="dropdown-item" to="/user/orders">
+                                                                <i className="fas fa-shopping-bag me-2"></i>
+                                                                Orders
+                                                            </Link>
+                                                        </li>
+                                                        <li>
+                                                            <Link className="dropdown-item" to="/user/addresses">
+                                                                <i className="fas fa-map-marker-alt me-2"></i>
+                                                                Addresses
+                                                            </Link>
+                                                        </li>
+                                                        <li><hr className="dropdown-divider" /></li>
+                                                        <li>
+                                                            <button 
+                                                                className="dropdown-item" 
+                                                                onClick={handleLogout}
+                                                                disabled={isLoggingOut}
+                                                            >
+                                                                <i className="fas fa-sign-out-alt me-2"></i>
+                                                                {isLoggingOut ? 'Logging out...' : 'Logout'}
+                                                            </button>
+                                                        </li>
+                                                    </ul>
+                                                </li>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <NavLink to="/login">
+                                                    Login
+                                                </NavLink>
+                                                <NavLink to="/signup">
+                                                    Sign Up
+                                                </NavLink>
+                                            </>
+                                        )}
                                     </ul>
                                 </div>
                             </div>
