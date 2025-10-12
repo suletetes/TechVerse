@@ -1,14 +1,92 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useOrder } from '../../context';
+import { LoadingSpinner } from '../Common';
 
-const OrdersTab = ({ 
-    orders, 
-    orderFilters, 
-    setOrderFilters, 
-    getFilteredOrders, 
-    handleOrderAction, 
-    getStatusColor 
-}) => {
+const OrdersTab = () => {
+    const { 
+        orders, 
+        pagination,
+        isLoading, 
+        error,
+        loadOrders, 
+        cancelOrder,
+        getOrderById,
+        formatOrderStatus
+    } = useOrder();
+
+    const [orderFilters, setOrderFilters] = useState({
+        searchTerm: '',
+        status: 'all',
+        dateRange: 'all'
+    });
+
+    // Load orders on component mount
+    useEffect(() => {
+        loadOrders();
+    }, [loadOrders]);
+
+    const getFilteredOrders = () => {
+        return orders.filter(order => {
+            const matchesSearch = orderFilters.searchTerm === '' || 
+                order.orderNumber?.toLowerCase().includes(orderFilters.searchTerm.toLowerCase());
+            const matchesStatus = orderFilters.status === 'all' || order.status === orderFilters.status;
+            return matchesSearch && matchesStatus;
+        });
+    };
+
+    const handleOrderAction = async (orderId, action) => {
+        try {
+            switch (action) {
+                case 'cancel':
+                    await cancelOrder(orderId, 'User requested cancellation');
+                    break;
+                case 'reorder':
+                    // Handle reorder logic
+                    console.log('Reorder:', orderId);
+                    break;
+                default:
+                    break;
+            }
+        } catch (error) {
+            console.error('Error handling order action:', error);
+        }
+    };
+
+    const getStatusColor = (status) => {
+        const statusColors = {
+            'pending': 'warning',
+            'confirmed': 'info',
+            'processing': 'primary',
+            'shipped': 'success',
+            'delivered': 'success',
+            'cancelled': 'danger',
+            'refunded': 'secondary'
+        };
+        return statusColors[status?.toLowerCase()] || 'secondary';
+    };
+
+    if (isLoading && orders.length === 0) {
+        return (
+            <div className="store-card fill-card d-flex justify-content-center align-items-center" style={{ minHeight: '300px' }}>
+                <LoadingSpinner size="lg" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="store-card fill-card">
+                <div className="alert alert-danger">
+                    <h5>Error Loading Orders</h5>
+                    <p>{error}</p>
+                    <button className="btn btn-primary" onClick={() => loadOrders()}>
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        );
+    }
     return (
         <div className="store-card fill-card">
             <div className="d-flex justify-content-between align-items-center mb-4">
