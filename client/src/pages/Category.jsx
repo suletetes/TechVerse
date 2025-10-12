@@ -130,15 +130,6 @@ const Category = () => {
         clearProductFilters();
     };
 
-    const clearFilters = () => {
-        setSearchTerm("");
-        setFilterBrand("");
-        setFilterCategory("");
-        setPriceRange([0, 4000]);
-        setSortBy("name");
-        setCurrentPage(1);
-    };
-
     // Show loading state
     if (isLoading && products.length === 0) {
         return (
