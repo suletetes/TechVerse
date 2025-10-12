@@ -145,15 +145,15 @@ const seedData = {
             featured: true,
             weight: 2.16,
             dimensions: { length: 35.57, width: 24.81, height: 1.68 },
-            specifications: {
-                'Processor': 'Apple M3 Pro chip',
-                'Memory': '18GB unified memory',
-                'Storage': '512GB SSD',
-                'Display': '16.2-inch Liquid Retina XDR',
-                'Graphics': 'Integrated 18-core GPU',
-                'Battery Life': 'Up to 18 hours',
-                'Operating System': 'macOS Sonoma'
-            },
+            specifications: [
+                { name: 'Processor', value: 'Apple M3 Pro chip', category: 'performance' },
+                { name: 'Memory', value: '18GB unified memory', category: 'performance' },
+                { name: 'Storage', value: '512GB SSD', category: 'storage' },
+                { name: 'Display', value: '16.2-inch Liquid Retina XDR', category: 'display' },
+                { name: 'Graphics', value: 'Integrated 18-core GPU', category: 'performance' },
+                { name: 'Battery Life', value: 'Up to 18 hours', category: 'battery' },
+                { name: 'Operating System', value: 'macOS Sonoma', category: 'software' }
+            ],
             tags: ['laptop', 'apple', 'professional', 'm3-pro', 'creative'],
             seo: {
                 title: 'MacBook Pro 16-inch M3 Pro - Professional Laptop | TechVerse',
@@ -177,15 +177,15 @@ const seedData = {
             visibility: 'public',
             featured: true,
             weight: 1.26,
-            specifications: {
-                'Processor': 'Intel Core i7-1260P',
-                'Memory': '16GB LPDDR5',
-                'Storage': '512GB PCIe NVMe SSD',
-                'Display': '13.4-inch FHD+ InfinityEdge',
-                'Graphics': 'Intel Iris Xe Graphics',
-                'Battery Life': 'Up to 12 hours',
-                'Operating System': 'Windows 11 Home'
-            },
+            specifications: [
+                { name: 'Processor', value: 'Intel Core i7-1260P', category: 'performance' },
+                { name: 'Memory', value: '16GB LPDDR5', category: 'performance' },
+                { name: 'Storage', value: '512GB PCIe NVMe SSD', category: 'storage' },
+                { name: 'Display', value: '13.4-inch FHD+ InfinityEdge', category: 'display' },
+                { name: 'Graphics', value: 'Intel Iris Xe Graphics', category: 'performance' },
+                { name: 'Battery Life', value: 'Up to 12 hours', category: 'battery' },
+                { name: 'Operating System', value: 'Windows 11 Home', category: 'software' }
+            ],
             tags: ['laptop', 'dell', 'ultrabook', 'premium', 'business']
         },
 
@@ -207,15 +207,15 @@ const seedData = {
             visibility: 'public',
             featured: true,
             weight: 0.187,
-            specifications: {
-                'Processor': 'A17 Pro chip',
-                'Storage': '128GB',
-                'Display': '6.1-inch Super Retina XDR',
-                'Camera': '48MP Main, 12MP Ultra Wide, 12MP Telephoto',
-                'Battery Life': 'Up to 23 hours video playback',
-                'Operating System': 'iOS 17',
-                'Material': 'Titanium'
-            },
+            specifications: [
+                { name: 'Processor', value: 'A17 Pro chip', category: 'performance' },
+                { name: 'Storage', value: '128GB', category: 'storage' },
+                { name: 'Display', value: '6.1-inch Super Retina XDR', category: 'display' },
+                { name: 'Camera', value: '48MP Main, 12MP Ultra Wide, 12MP Telephoto', category: 'camera' },
+                { name: 'Battery Life', value: 'Up to 23 hours video playback', category: 'battery' },
+                { name: 'Operating System', value: 'iOS 17', category: 'software' },
+                { name: 'Material', value: 'Titanium', category: 'design' }
+            ],
             tags: ['smartphone', 'apple', 'iphone', 'titanium', 'a17-pro'],
             seo: {
                 title: 'iPhone 15 Pro - Titanium Design | TechVerse',
@@ -238,16 +238,16 @@ const seedData = {
             visibility: 'public',
             featured: true,
             weight: 0.232,
-            specifications: {
-                'Processor': 'Snapdragon 8 Gen 3',
-                'Memory': '12GB RAM',
-                'Storage': '256GB',
-                'Display': '6.8-inch Dynamic AMOLED 2X',
-                'Camera': '200MP Main, 50MP Periscope Telephoto, 12MP Ultra Wide',
-                'Battery': '5000mAh',
-                'Operating System': 'Android 14 with One UI 6.1',
-                'Special Features': 'S Pen included'
-            },
+            specifications: [
+                { name: 'Processor', value: 'Snapdragon 8 Gen 3', category: 'performance' },
+                { name: 'Memory', value: '12GB RAM', category: 'performance' },
+                { name: 'Storage', value: '256GB', category: 'storage' },
+                { name: 'Display', value: '6.8-inch Dynamic AMOLED 2X', category: 'display' },
+                { name: 'Camera', value: '200MP Main, 50MP Periscope Telephoto, 12MP Ultra Wide', category: 'camera' },
+                { name: 'Battery', value: '5000mAh', category: 'battery' },
+                { name: 'Operating System', value: 'Android 14 with One UI 6.1', category: 'software' },
+                { name: 'Special Features', value: 'S Pen included', category: 'features' }
+            ],
             tags: ['smartphone', 'samsung', 'galaxy', 's-pen', 'android', 'flagship']
         },
         {
@@ -267,16 +267,16 @@ const seedData = {
             visibility: 'public',
             featured: true,
             weight: 0.682,
-            specifications: {
-                'Processor': 'Apple M2 chip',
-                'Memory': '8GB unified memory',
-                'Storage': '128GB',
-                'Display': '12.9-inch Liquid Retina XDR',
-                'Camera': '12MP Wide, 10MP Ultra Wide',
-                'Battery Life': 'Up to 10 hours',
-                'Operating System': 'iPadOS 17',
-                'Connectivity': 'Wi-Fi 6E, Bluetooth 5.3'
-            },
+            specifications: [
+                { name: 'Processor', value: 'Apple M2 chip', category: 'performance' },
+                { name: 'Memory', value: '8GB unified memory', category: 'performance' },
+                { name: 'Storage', value: '128GB', category: 'storage' },
+                { name: 'Display', value: '12.9-inch Liquid Retina XDR', category: 'display' },
+                { name: 'Camera', value: '12MP Wide, 10MP Ultra Wide', category: 'camera' },
+                { name: 'Battery Life', value: 'Up to 10 hours', category: 'battery' },
+                { name: 'Operating System', value: 'iPadOS 17', category: 'software' },
+                { name: 'Connectivity', value: 'Wi-Fi 6E, Bluetooth 5.3', category: 'connectivity' }
+            ],
             tags: ['tablet', 'ipad', 'apple', 'm2-chip', 'professional', 'creative']
         },
 
@@ -296,15 +296,15 @@ const seedData = {
             visibility: 'public',
             featured: true,
             weight: 4.5,
-            specifications: {
-                'Processor': 'Custom AMD Zen 2',
-                'Graphics': 'Custom AMD RDNA 2',
-                'Memory': '16GB GDDR6',
-                'Storage': '825GB Custom SSD',
-                'Optical Drive': '4K UHD Blu-ray',
-                'Audio': 'Tempest 3D AudioTech',
-                'Connectivity': 'Wi-Fi 6, Bluetooth 5.1, Gigabit Ethernet'
-            },
+            specifications: [
+                { name: 'Processor', value: 'Custom AMD Zen 2', category: 'performance' },
+                { name: 'Graphics', value: 'Custom AMD RDNA 2', category: 'performance' },
+                { name: 'Memory', value: '16GB GDDR6', category: 'performance' },
+                { name: 'Storage', value: '825GB Custom SSD', category: 'storage' },
+                { name: 'Optical Drive', value: '4K UHD Blu-ray', category: 'features' },
+                { name: 'Audio', value: 'Tempest 3D AudioTech', category: 'audio' },
+                { name: 'Connectivity', value: 'Wi-Fi 6, Bluetooth 5.1, Gigabit Ethernet', category: 'connectivity' }
+            ],
             tags: ['gaming', 'console', 'playstation', 'sony', 'ps5', '4k-gaming']
         },
 
@@ -326,15 +326,15 @@ const seedData = {
             visibility: 'public',
             featured: true,
             weight: 25.8,
-            specifications: {
-                'Screen Size': '65 inches',
-                'Resolution': '4K Ultra HD (3840 x 2160)',
-                'Display Technology': 'Neo QLED with Quantum Matrix',
-                'HDR': 'HDR10, HDR10+, HLG',
-                'Smart Platform': 'Tizen OS',
-                'Connectivity': '4x HDMI 2.1, 2x USB, Wi-Fi 6, Bluetooth',
-                'Audio': '40W 2.2.2 Channel with Object Tracking Sound'
-            },
+            specifications: [
+                { name: 'Screen Size', value: '65 inches', category: 'display' },
+                { name: 'Resolution', value: '4K Ultra HD (3840 x 2160)', category: 'display' },
+                { name: 'Display Technology', value: 'Neo QLED with Quantum Matrix', category: 'display' },
+                { name: 'HDR', value: 'HDR10, HDR10+, HLG', category: 'display' },
+                { name: 'Smart Platform', value: 'Tizen OS', category: 'software' },
+                { name: 'Connectivity', value: '4x HDMI 2.1, 2x USB, Wi-Fi 6, Bluetooth', category: 'connectivity' },
+                { name: 'Audio', value: '40W 2.2.2 Channel with Object Tracking Sound', category: 'audio' }
+            ],
             tags: ['tv', 'smart-tv', 'samsung', 'neo-qled', '4k', 'hdr', '65-inch']
         }
     ]
