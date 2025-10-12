@@ -595,8 +595,8 @@ export const getCategories = asyncHandler(async (req, res, next) => {
     message: 'Categories retrieved successfully',
     data: categories
   });
-});/
-/ @desc    Get top selling products
+});
+// @desc    Get top selling products
 // @route   GET /api/products/top-sellers
 // @access  Public
 export const getTopSellingProducts = asyncHandler(async (req, res, next) => {
