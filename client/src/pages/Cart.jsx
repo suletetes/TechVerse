@@ -1,53 +1,113 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useCart, useAuth } from '../context';
+import { LoadingSpinner } from '../components/Common';
 
 const Cart = () => {
-    const [cartItems, setCartItems] = useState([
-        {
-            id: 1,
-            name: 'Tablet Air',
-            color: 'Silver',
-            storage: '128GB',
-            price: 1999,
-            quantity: 1,
-            image: 'img/tablet-product.jpg',
-            imageWebp: 'img/tablet-product.webp'
-        },
-        {
-            id: 2,
-            name: 'Phone Pro',
-            color: 'Black',
-            storage: '256GB',
-            price: 999,
-            quantity: 2,
-            image: 'img/phone-product.jpg',
-            imageWebp: 'img/phone-product.webp'
-        },
-        {
-            id: 3,
-            name: 'Ultra Laptop',
-            color: 'Space Gray',
-            storage: '512GB',
-            price: 2000,
-            quantity: 1,
-            image: 'img/laptop-product.jpg',
-            imageWebp: 'img/laptop-product.webp'
-        }
-    ]);
+    const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
+    const { 
+        items, 
+        total, 
+        itemCount, 
+        isLoading, 
+        error,
+        updateCartItem, 
+        removeFromCart, 
+        clearCart, 
+        loadCart 
+    } = useCart();
 
-    const updateQuantity = (id, newQuantity) => {
+    // Load cart on component mount
+    useEffect(() => {
+        if (isAuthenticated) {
+            loadCart();
+        }
+    }, [isAuthenticated, loadCart]);
+
+    // Redirect to login if not authenticated
+    useEffect(() => {
+        if (!isAuthenticated) {
+            navigate('/login', { 
+                state: { 
+                    from: { pathname: '/cart' },
+                    message: 'Please login to view your cart'
+                }
+            });
+        }
+    }, [isAuthenticated, navigate]);
+
+    const updateQuantity = async (itemId, newQuantity) => {
         if (newQuantity === 0) {
-            removeItem(id);
+            await removeFromCart(itemId);
             return;
         }
-        setCartItems(items =>
-            items.map(item =>
-                item.id === id ? { ...item, quantity: newQuantity } : item
-            )
-        );
+        try {
+            await updateCartItem(itemId, { quantity: newQuantity });
+        } catch (error) {
+            console.error('Error updating quantity:', error);
+        }
     };
 
-    const removeItem = (id) => {
+    const removeItem = async (itemId) => {
+        try {
+            await removeFromCart(itemId);
+        } catch (error) {
+            console.error('Error removing item:', error);
+        }
+    };
+
+    const handleClearCart = async () => {
+        if (window.confirm('Are you sure you want to clear your cart?')) {
+            try {
+                await clearCart();
+            } catch (error) {
+                console.error('Error clearing cart:', error);
+            }
+        }
+    };
+
+    // Show loading state
+    if (isLoading && items.length === 0) {
+        return (
+            <div className="container py-5">
+                <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                    <LoadingSpinner size="lg" />
+                </div>
+            </div>
+        );
+    }
+
+    // Show error state
+    if (error) {
+        return (
+            <div className="container py-5">
+                <div className="alert alert-danger">
+                    <h4>Error Loading Cart</h4>
+                    <p>{error}</p>
+                    <button className="btn btn-primary" onClick={() => loadCart()}>
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Show empty cart
+    if (!isLoading && items.length === 0) {
+        return (
+            <div className="container py-5 text-center">
+                <div className="py-5">
+                    <i className="fas fa-shopping-cart fa-4x text-muted mb-4"></i>
+                    <h3>Your cart is empty</h3>
+                    <p className="text-muted mb-4">Add some products to get started!</p>
+                    <Link to="/category" className="btn btn-primary btn-lg">
+                        Continue Shopping
+                    </Link>
+                </div>
+            </div>
+        );
+    }
         setCartItems(items => items.filter(item => item.id !== id));
     };
 
