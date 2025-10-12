@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import LazyImage from './LazyImage.jsx';
 import { useOptimizedEventHandler } from '../../hooks/usePerformance.js';

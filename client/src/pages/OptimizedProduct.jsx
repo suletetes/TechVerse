@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useMemo, Suspense, lazy } from 'react';
+import React, { memo, useState, useCallback, useMemo, Suspense, lazy } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useDebounce, usePerformanceMonitor } from '../hooks/usePerformance.js';
