@@ -5,25 +5,90 @@ import connectDB from '../config/database.js';
 const seedData = {
     categories: [
         {
-            name: 'Laptops',
-            description: 'Laptops and computers',
+            name: 'Laptops & Computers',
+            description: 'High-performance laptops, desktops, and computing accessories for work, gaming, and creativity.',
             isActive: true,
             showInMenu: true,
-            displayOrder: 1
+            displayOrder: 1,
+            isFeatured: true,
+            image: {
+                url: '/img/laptop-product.webp',
+                alt: 'Laptops & Computers Category'
+            },
+            icon: 'computer',
+            color: '#3B82F6'
         },
         {
-            name: 'Smartphones',
-            description: 'Smartphones and tablets',
+            name: 'Smartphones & Tablets',
+            description: 'Latest smartphones, tablets, and mobile accessories from top brands.',
             isActive: true,
             showInMenu: true,
-            displayOrder: 2
+            displayOrder: 2,
+            isFeatured: true,
+            image: {
+                url: '/img/phone-product.webp',
+                alt: 'Smartphones & Tablets Category'
+            },
+            icon: 'phone',
+            color: '#10B981'
         },
         {
             name: 'Gaming',
-            description: 'Gaming products',
+            description: 'Gaming consoles, accessories, and peripherals for the ultimate gaming experience.',
             isActive: true,
             showInMenu: true,
-            displayOrder: 3
+            displayOrder: 3,
+            isFeatured: true,
+            image: {
+                url: '/img/tv-product.webp',
+                alt: 'Gaming Category'
+            },
+            icon: 'gaming',
+            color: '#8B5CF6'
+        },
+        {
+            name: 'Audio & Headphones',
+            description: 'Premium headphones, speakers, and audio equipment for music lovers.',
+            isActive: true,
+            showInMenu: true,
+            displayOrder: 4,
+            isFeatured: true,
+            icon: 'headphones',
+            color: '#F59E0B'
+        },
+        {
+            name: 'Smart Watches',
+            description: 'Smartwatches and fitness trackers to keep you connected and healthy.',
+            isActive: true,
+            showInMenu: true,
+            displayOrder: 5,
+            isFeatured: false,
+            icon: 'watch',
+            color: '#EF4444'
+        },
+        {
+            name: 'TV & Entertainment',
+            description: 'Smart TVs, streaming devices, and home entertainment systems.',
+            isActive: true,
+            showInMenu: true,
+            displayOrder: 6,
+            isFeatured: false,
+            image: {
+                url: '/img/tv-product.webp',
+                alt: 'TV & Entertainment Category'
+            },
+            icon: 'tv',
+            color: '#6366F1'
+        },
+        {
+            name: 'Accessories',
+            description: 'Cases, chargers, cables, and other essential tech accessories.',
+            isActive: true,
+            showInMenu: true,
+            displayOrder: 7,
+            isFeatured: false,
+            icon: 'accessories',
+            color: '#64748B'
         }
     ],
 
@@ -61,35 +126,216 @@ const seedData = {
     ],
 
     products: [
+        // Laptops & Computers
         {
             name: 'MacBook Pro 16-inch M3 Pro',
-            description: 'The most powerful MacBook Pro ever is here.',
-            shortDescription: 'Powerful 16-inch MacBook Pro with M3 Pro chip.',
+            description: 'The most powerful MacBook Pro ever is here. Featuring the groundbreaking M3 Pro chip, this laptop delivers exceptional performance for professionals, creators, and power users. With up to 18 hours of battery life, stunning Liquid Retina XDR display, and advanced connectivity options.',
+            shortDescription: 'Powerful 16-inch MacBook Pro with M3 Pro chip for professional workflows.',
             price: 2499.00,
+            compareAtPrice: 2699.00,
             brand: 'Apple',
-            category: 'laptops',
+            category: 'laptops-computers',
             images: [
-                { url: '/images/products/macbook-pro-16-1.jpg', alt: 'MacBook Pro 16-inch', isPrimary: true }
+                { url: '/img/laptop-product.webp', alt: 'MacBook Pro 16-inch M3 Pro', isPrimary: true },
+                { url: '/img/laptop-product.jpg', alt: 'MacBook Pro 16-inch M3 Pro - Alternative view', isPrimary: false }
             ],
             stock: { quantity: 25, lowStockThreshold: 5 },
             status: 'active',
             visibility: 'public',
-            featured: true
+            featured: true,
+            weight: 2.16,
+            dimensions: { length: 35.57, width: 24.81, height: 1.68 },
+            specifications: {
+                'Processor': 'Apple M3 Pro chip',
+                'Memory': '18GB unified memory',
+                'Storage': '512GB SSD',
+                'Display': '16.2-inch Liquid Retina XDR',
+                'Graphics': 'Integrated 18-core GPU',
+                'Battery Life': 'Up to 18 hours',
+                'Operating System': 'macOS Sonoma'
+            },
+            tags: ['laptop', 'apple', 'professional', 'm3-pro', 'creative'],
+            seo: {
+                title: 'MacBook Pro 16-inch M3 Pro - Professional Laptop | TechVerse',
+                description: 'Buy the latest MacBook Pro 16-inch with M3 Pro chip. Perfect for professionals and creators. Free shipping available.',
+                keywords: ['macbook pro', 'm3 pro', 'apple laptop', 'professional laptop']
+            }
         },
         {
-            name: 'iPhone 15 Pro',
-            description: 'iPhone 15 Pro with titanium design and A17 Pro chip.',
-            shortDescription: 'Latest iPhone with titanium design.',
-            price: 999.00,
-            brand: 'Apple',
-            category: 'smartphones',
+            name: 'Dell XPS 13 Plus',
+            description: 'Experience the future of laptops with the Dell XPS 13 Plus. This ultra-premium laptop features a stunning 13.4-inch InfinityEdge display, 12th Gen Intel processors, and a revolutionary capacitive function row that adapts to your workflow.',
+            shortDescription: 'Ultra-premium Dell XPS 13 Plus with cutting-edge design and performance.',
+            price: 1299.00,
+            compareAtPrice: 1499.00,
+            brand: 'Dell',
+            category: 'laptops-computers',
             images: [
-                { url: '/images/products/iphone-15-pro-1.jpg', alt: 'iPhone 15 Pro', isPrimary: true }
+                { url: '/img/laptop-product.webp', alt: 'Dell XPS 13 Plus', isPrimary: true }
+            ],
+            stock: { quantity: 18, lowStockThreshold: 5 },
+            status: 'active',
+            visibility: 'public',
+            featured: true,
+            weight: 1.26,
+            specifications: {
+                'Processor': 'Intel Core i7-1260P',
+                'Memory': '16GB LPDDR5',
+                'Storage': '512GB PCIe NVMe SSD',
+                'Display': '13.4-inch FHD+ InfinityEdge',
+                'Graphics': 'Intel Iris Xe Graphics',
+                'Battery Life': 'Up to 12 hours',
+                'Operating System': 'Windows 11 Home'
+            },
+            tags: ['laptop', 'dell', 'ultrabook', 'premium', 'business']
+        },
+
+        // Smartphones & Tablets
+        {
+            name: 'iPhone 15 Pro',
+            description: 'iPhone 15 Pro with titanium design and A17 Pro chip. The most advanced iPhone ever, featuring a titanium design, Action Button, and the most powerful chip in a smartphone. Capture stunning photos with the 48MP Main camera and enjoy all-day battery life.',
+            shortDescription: 'Latest iPhone with titanium design and A17 Pro chip.',
+            price: 999.00,
+            compareAtPrice: 1099.00,
+            brand: 'Apple',
+            category: 'smartphones-tablets',
+            images: [
+                { url: '/img/phone-product.webp', alt: 'iPhone 15 Pro', isPrimary: true },
+                { url: '/img/phone-product.jpg', alt: 'iPhone 15 Pro - Back view', isPrimary: false }
             ],
             stock: { quantity: 45, lowStockThreshold: 10 },
             status: 'active',
             visibility: 'public',
-            featured: true
+            featured: true,
+            weight: 0.187,
+            specifications: {
+                'Processor': 'A17 Pro chip',
+                'Storage': '128GB',
+                'Display': '6.1-inch Super Retina XDR',
+                'Camera': '48MP Main, 12MP Ultra Wide, 12MP Telephoto',
+                'Battery Life': 'Up to 23 hours video playback',
+                'Operating System': 'iOS 17',
+                'Material': 'Titanium'
+            },
+            tags: ['smartphone', 'apple', 'iphone', 'titanium', 'a17-pro'],
+            seo: {
+                title: 'iPhone 15 Pro - Titanium Design | TechVerse',
+                description: 'Get the new iPhone 15 Pro with titanium design and A17 Pro chip. Advanced camera system and all-day battery life.',
+                keywords: ['iphone 15 pro', 'titanium iphone', 'a17 pro', 'apple smartphone']
+            }
+        },
+        {
+            name: 'Samsung Galaxy S24 Ultra',
+            description: 'The ultimate Android flagship with S Pen built-in. Features a 200MP camera, AI-powered photography, and the most advanced Galaxy experience yet. Perfect for productivity and creativity on the go.',
+            shortDescription: 'Premium Android flagship with S Pen and 200MP camera.',
+            price: 1199.00,
+            brand: 'Samsung',
+            category: 'smartphones-tablets',
+            images: [
+                { url: '/img/phone-product.webp', alt: 'Samsung Galaxy S24 Ultra', isPrimary: true }
+            ],
+            stock: { quantity: 32, lowStockThreshold: 8 },
+            status: 'active',
+            visibility: 'public',
+            featured: true,
+            weight: 0.232,
+            specifications: {
+                'Processor': 'Snapdragon 8 Gen 3',
+                'Memory': '12GB RAM',
+                'Storage': '256GB',
+                'Display': '6.8-inch Dynamic AMOLED 2X',
+                'Camera': '200MP Main, 50MP Periscope Telephoto, 12MP Ultra Wide',
+                'Battery': '5000mAh',
+                'Operating System': 'Android 14 with One UI 6.1',
+                'Special Features': 'S Pen included'
+            },
+            tags: ['smartphone', 'samsung', 'galaxy', 's-pen', 'android', 'flagship']
+        },
+        {
+            name: 'iPad Pro 12.9-inch M2',
+            description: 'The most advanced iPad ever, now with the M2 chip. Perfect for professional workflows, creative projects, and entertainment. Features the stunning Liquid Retina XDR display and works seamlessly with Apple Pencil and Magic Keyboard.',
+            shortDescription: 'Professional tablet with M2 chip and Liquid Retina XDR display.',
+            price: 1099.00,
+            brand: 'Apple',
+            category: 'smartphones-tablets',
+            images: [
+                { url: '/img/tablet-product.webp', alt: 'iPad Pro 12.9-inch M2', isPrimary: true },
+                { url: '/img/tablet-product.jpg', alt: 'iPad Pro 12.9-inch M2 - Side view', isPrimary: false },
+                { url: '/img/tablet-lg.webp', alt: 'iPad Pro 12.9-inch M2 - Large view', isPrimary: false }
+            ],
+            stock: { quantity: 28, lowStockThreshold: 6 },
+            status: 'active',
+            visibility: 'public',
+            featured: true,
+            weight: 0.682,
+            specifications: {
+                'Processor': 'Apple M2 chip',
+                'Memory': '8GB unified memory',
+                'Storage': '128GB',
+                'Display': '12.9-inch Liquid Retina XDR',
+                'Camera': '12MP Wide, 10MP Ultra Wide',
+                'Battery Life': 'Up to 10 hours',
+                'Operating System': 'iPadOS 17',
+                'Connectivity': 'Wi-Fi 6E, Bluetooth 5.3'
+            },
+            tags: ['tablet', 'ipad', 'apple', 'm2-chip', 'professional', 'creative']
+        },
+
+        // Gaming
+        {
+            name: 'PlayStation 5 Console',
+            description: 'Experience lightning-fast loading with an ultra-high speed SSD, deeper immersion with support for haptic feedback, adaptive triggers and 3D Audio, and an all-new generation of incredible PlayStation games.',
+            shortDescription: 'Next-generation gaming console with ultra-fast SSD and 3D Audio.',
+            price: 479.99,
+            brand: 'Sony',
+            category: 'gaming',
+            images: [
+                { url: '/img/tv-product.webp', alt: 'PlayStation 5 Console', isPrimary: true }
+            ],
+            stock: { quantity: 15, lowStockThreshold: 3 },
+            status: 'active',
+            visibility: 'public',
+            featured: true,
+            weight: 4.5,
+            specifications: {
+                'Processor': 'Custom AMD Zen 2',
+                'Graphics': 'Custom AMD RDNA 2',
+                'Memory': '16GB GDDR6',
+                'Storage': '825GB Custom SSD',
+                'Optical Drive': '4K UHD Blu-ray',
+                'Audio': 'Tempest 3D AudioTech',
+                'Connectivity': 'Wi-Fi 6, Bluetooth 5.1, Gigabit Ethernet'
+            },
+            tags: ['gaming', 'console', 'playstation', 'sony', 'ps5', '4k-gaming']
+        },
+
+        // TV & Entertainment
+        {
+            name: 'Samsung 65" Neo QLED 4K Smart TV',
+            description: 'Immerse yourself in brilliant picture quality with Quantum Matrix Technology and Mini LEDs. This premium smart TV delivers exceptional contrast, vibrant colors, and smart features powered by Tizen OS.',
+            shortDescription: '65-inch Neo QLED 4K Smart TV with Quantum Matrix Technology.',
+            price: 1799.00,
+            compareAtPrice: 1999.00,
+            brand: 'Samsung',
+            category: 'tv-entertainment',
+            images: [
+                { url: '/img/tv-product.webp', alt: 'Samsung 65" Neo QLED 4K Smart TV', isPrimary: true },
+                { url: '/img/tv-product.jpg', alt: 'Samsung 65" Neo QLED 4K Smart TV - Room setup', isPrimary: false }
+            ],
+            stock: { quantity: 12, lowStockThreshold: 3 },
+            status: 'active',
+            visibility: 'public',
+            featured: true,
+            weight: 25.8,
+            specifications: {
+                'Screen Size': '65 inches',
+                'Resolution': '4K Ultra HD (3840 x 2160)',
+                'Display Technology': 'Neo QLED with Quantum Matrix',
+                'HDR': 'HDR10, HDR10+, HLG',
+                'Smart Platform': 'Tizen OS',
+                'Connectivity': '4x HDMI 2.1, 2x USB, Wi-Fi 6, Bluetooth',
+                'Audio': '40W 2.2.2 Channel with Object Tracking Sound'
+            },
+            tags: ['tv', 'smart-tv', 'samsung', 'neo-qled', '4k', 'hdr', '65-inch']
         }
     ]
 };

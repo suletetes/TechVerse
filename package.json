@@ -15,7 +15,13 @@
     "test": "cd client && npm test",
     "test:server": "cd server && npm test"
   },
-  "keywords": ["ecommerce", "mern", "react", "nodejs", "mongodb"],
+  "keywords": [
+    "ecommerce",
+    "mern",
+    "react",
+    "nodejs",
+    "mongodb"
+  ],
   "author": "Suleiman Abdulkadir",
   "license": "MIT",
   "devDependencies": {
