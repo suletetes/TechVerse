@@ -79,8 +79,9 @@ class AdminService {
       console.error('Error fetching admin products:', error);
       throw new Error(error.message || 'Failed to fetch products');
     }
-  }  // 
-Order Management
+  }
+
+  // Order Management
   async getAdminOrders(params = {}) {
     try {
       const {
@@ -215,8 +216,9 @@ Order Management
       console.error(`Error updating user ${userId} role:`, error);
       throw new Error(error.message || 'Failed to update user role');
     }
-  }  // Catego
-ry Management
+  }
+
+  // Category Management
   async getCategories() {
     const cacheKey = 'admin_categories';
     
