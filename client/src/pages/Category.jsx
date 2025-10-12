@@ -32,6 +32,7 @@ const Category = () => {
         minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : null,
         maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : null,
         brand: searchParams.get('brand') || '',
+        category: searchParams.get('category') || '',
         inStock: searchParams.get('inStock') ? searchParams.get('inStock') === 'true' : null
     });
 
@@ -125,6 +126,7 @@ const Category = () => {
             minPrice: null,
             maxPrice: null,
             brand: '',
+            category: '',
             inStock: null
         });
         clearProductFilters();
@@ -192,6 +194,8 @@ const Category = () => {
                         setSortOrder={(value) => handleFilterChange('order', value)}
                         filterBrand={localFilters.brand}
                         setFilterBrand={(value) => handleFilterChange('brand', value)}
+                        filterCategory={localFilters.category}
+                        setFilterCategory={(value) => handleFilterChange('category', value)}
                         minPrice={localFilters.minPrice}
                         maxPrice={localFilters.maxPrice}
                         setPriceRange={(range) => {
@@ -201,6 +205,7 @@ const Category = () => {
                         inStock={localFilters.inStock}
                         setInStock={(value) => handleFilterChange('inStock', value)}
                         brands={brands}
+                        categories={categories}
                         priceRange={priceRange}
                         onClearFilters={clearFilters}
                         resultsCount={pagination.total || products.length}
