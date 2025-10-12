@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth, useAdmin } from '../../context';
+import { LoadingSpinner } from '../../components/Common';
 import {
     AdminSidebar,
     AdminHeader,
@@ -21,64 +24,228 @@ import {
 // Import admin-specific CSS
 import '../../assets/css/admin-enhancements.css';
 
-// Import hooks and data
-import { useAdminData } from '../../hooks/index.js';
-import { useAdminState } from '../../hooks/index.js';
-
 const AdminProfile = () => {
+    const navigate = useNavigate();
+    const { isAuthenticated, user, isAdmin } = useAuth();
+    
+    // Admin context
+    const {
+        // Dashboard data
+        dashboardStats,
+        analytics,
+        
+        // Products
+        adminProducts,
+        productsPagination,
+        
+        // Orders
+        adminOrders,
+        ordersPagination,
+        
+        // Users
+        adminUsers,
+        usersPagination,
+        
+        // Categories
+        categories,
+        
+        // Loading states
+        isDashboardLoading,
+        isProductsLoading,
+        isOrdersLoading,
+        isUsersLoading,
+        isCategoriesLoading,
+        
+        // Error states
+        dashboardError,
+        productsError,
+        ordersError,
+        usersError,
+        categoriesError,
+        
+        // Methods
+        loadDashboardStats,
+        loadAnalytics,
+        loadAdminProducts,
+        createProduct,
+        updateProduct,
+        deleteProduct,
+        loadAdminOrders,
+        updateOrderStatus,
+        loadAdminUsers,
+        updateUserStatus,
+        updateUserRole,
+        loadCategories,
+        createCategory,
+        updateCategory,
+        deleteCategory,
+        exportData,
+        clearError
+    } = useAdmin();
+
+    // Local state
     const [activeTab, setActiveTab] = useState('dashboard');
     const [editProductId, setEditProductId] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    
-    // Use custom hooks for data and state management
-    const {
-        adminProfileData,
-        dashboardStats,
-        recentOrders,
-        products,
-        categories,
-        users,
-        notifications,
-        activityLog,
-        formatCurrency,
-        getStatusColor
-    } = useAdminData();
+    const [dateRange, setDateRange] = useState('7days');
 
-    const {
-        isEditingProfile,
-        setIsEditingProfile,
-        passwordData,
-        setPasswordData,
-        exportData,
-        setExportData,
-        handleAdminProfileInputChange,
-        handleSaveAdminProfile,
-        handleAdminAvatarChange,
-        handlePasswordInputChange,
-        handlePasswordChange,
-        toggleTwoFactor,
-        markNotificationAsRead,
-        markAllNotificationsAsRead,
-        deleteNotification,
-        handleExport,
-        handleTabChange,
-        handleAddProduct,
-        handleUpdateProduct,
-        handleSaveCategory,
-        handleDeleteCategory,
-        handleAddUser,
-        handleEditUser,
-        handleDeleteUser
-    } = useAdminState(setActiveTab, setEditProductId);
+    // Check authentication and admin access
+    useEffect(() => {
+        if (!isAuthenticated) {
+            navigate('/login', { 
+                state: { 
+                    from: { pathname: '/admin' },
+                    message: 'Please login to access the admin panel'
+                }
+            });
+            return;
+        }
 
-    // Admin data for backward compatibility
+        if (!isAdmin()) {
+            navigate('/', { 
+                state: { 
+                    message: 'You do not have permission to access the admin panel'
+                }
+            });
+            return;
+        }
+    }, [isAuthenticated, isAdmin, navigate]);
+
+    // Load initial data
+    useEffect(() => {
+        if (isAuthenticated && isAdmin()) {
+            loadDashboardStats({ period: dateRange });
+            loadCategories();
+        }
+    }, [isAuthenticated, isAdmin, loadDashboardStats, loadCategories, dateRange]);
+
+    // Load data based on active tab
+    useEffect(() => {
+        if (!isAuthenticated || !isAdmin()) return;
+
+        switch (activeTab) {
+            case 'products':
+            case 'add-product':
+            case 'edit-product':
+                loadAdminProducts();
+                break;
+            case 'orders':
+                loadAdminOrders();
+                break;
+            case 'users':
+                loadAdminUsers();
+                break;
+            case 'analytics':
+                loadAnalytics();
+                break;
+            default:
+                break;
+        }
+    }, [activeTab, isAuthenticated, isAdmin, loadAdminProducts, loadAdminOrders, loadAdminUsers, loadAnalytics]);
+
+    // Show loading for initial load
+    if (!isAuthenticated || (isAuthenticated && !user)) {
+        return (
+            <div className="min-vh-100 d-flex justify-content-center align-items-center">
+                <LoadingSpinner size="lg" />
+            </div>
+        );
+    }
+
+    // Admin data for components
     const adminData = {
-        name: adminProfileData.name,
-        role: adminProfileData.role,
-        email: adminProfileData.email,
-        avatar: adminProfileData.avatar,
-        lastLogin: adminProfileData.lastLogin,
-        permissions: adminProfileData.permissions
+        name: user?.firstName ? `${user.firstName} ${user.lastName}` : user?.email,
+        role: user?.role || 'admin',
+        email: user?.email,
+        avatar: user?.avatar,
+        lastLogin: user?.lastLogin,
+        permissions: user?.permissions || []
+    };
+
+    // Utility functions
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-GB', {
+            style: 'currency',
+            currency: 'GBP'
+        }).format(amount || 0);
+    };
+
+    const getStatusColor = (status) => {
+        const statusColors = {
+            'pending': 'warning',
+            'confirmed': 'info',
+            'processing': 'primary',
+            'shipped': 'success',
+            'delivered': 'success',
+            'cancelled': 'danger',
+            'refunded': 'secondary',
+            'active': 'success',
+            'inactive': 'secondary',
+            'suspended': 'danger'
+        };
+        return statusColors[status?.toLowerCase()] || 'secondary';
+    };
+
+    // Event handlers
+    const handleTabChange = (tab) => {
+        setActiveTab(tab);
+        clearError();
+    };
+
+    const handleAddProduct = async (productData) => {
+        try {
+            await createProduct(productData);
+            setActiveTab('products');
+        } catch (error) {
+            console.error('Error adding product:', error);
+        }
+    };
+
+    const handleUpdateProduct = async (productData) => {
+        try {
+            await updateProduct(editProductId, productData);
+            setActiveTab('products');
+            setEditProductId(null);
+        } catch (error) {
+            console.error('Error updating product:', error);
+        }
+    };
+
+    const handleDeleteProduct = async (productId) => {
+        if (window.confirm('Are you sure you want to delete this product?')) {
+            try {
+                await deleteProduct(productId);
+            } catch (error) {
+                console.error('Error deleting product:', error);
+            }
+        }
+    };
+
+    const handleEditProduct = (productId) => {
+        setEditProductId(productId);
+        setActiveTab('edit-product');
+    };
+
+    const handleSaveCategory = async (categoryData) => {
+        try {
+            if (categoryData.id) {
+                await updateCategory(categoryData.id, categoryData);
+            } else {
+                await createCategory(categoryData);
+            }
+        } catch (error) {
+            console.error('Error saving category:', error);
+        }
+    };
+
+    const handleDeleteCategory = async (categoryId) => {
+        if (window.confirm('Are you sure you want to delete this category?')) {
+            try {
+                await deleteCategory(categoryId);
+            } catch (error) {
+                console.error('Error deleting category:', error);
+            }
+        }
     };
 
     const renderActiveTab = () => {
@@ -87,38 +254,31 @@ const AdminProfile = () => {
                 return (
                     <AdminDashboard
                         dashboardStats={dashboardStats}
-                        dateRange="7days"
-                        setDateRange={() => {}}
-                        recentOrders={recentOrders}
+                        dateRange={dateRange}
+                        setDateRange={setDateRange}
+                        recentOrders={adminOrders?.slice(0, 10) || []}
                         setActiveTab={setActiveTab}
                         getStatusColor={getStatusColor}
                         formatCurrency={formatCurrency}
-                        notifications={notifications}
-                        activityLog={activityLog}
+                        isLoading={isDashboardLoading}
+                        error={dashboardError}
                     />
                 );
             
             case 'products':
                 return (
                     <AdminProducts
-                        products={products}
+                        products={adminProducts}
                         categories={categories}
-                        specifications={{}}
+                        pagination={productsPagination}
                         setActiveTab={handleTabChange}
                         getStatusColor={getStatusColor}
                         formatCurrency={formatCurrency}
-                        onUpdateProduct={(productId, updates) => {
-                            console.log('Updating product:', productId, updates);
-                            alert('Product updated successfully! (Demo mode)');
-                        }}
-                        onDeleteProduct={(productId) => {
-                            console.log('Deleting product:', productId);
-                            alert('Product deleted successfully! (Demo mode)');
-                        }}
-                        onDuplicateProduct={(product) => {
-                            console.log('Duplicating product:', product);
-                            alert('Product duplicated successfully! (Demo mode)');
-                        }}
+                        onEditProduct={handleEditProduct}
+                        onDeleteProduct={handleDeleteProduct}
+                        onUpdateProduct={handleUpdateProduct}
+                        isLoading={isProductsLoading}
+                        error={productsError}
                     />
                 );
             
@@ -128,6 +288,7 @@ const AdminProfile = () => {
                         categories={categories}
                         onSave={handleAddProduct}
                         onCancel={() => handleTabChange('products')}
+                        isLoading={isProductsLoading}
                     />
                 );
             
@@ -135,9 +296,10 @@ const AdminProfile = () => {
                 return (
                     <AdminAddProduct
                         categories={categories}
-                        editProduct={products.find(p => p.id === editProductId)}
+                        editProduct={adminProducts.find(p => p._id === editProductId)}
                         onSave={handleUpdateProduct}
                         onCancel={() => handleTabChange('products')}
+                        isLoading={isProductsLoading}
                     />
                 );
             
@@ -148,6 +310,8 @@ const AdminProfile = () => {
                         setActiveTab={handleTabChange}
                         onSave={handleSaveCategory}
                         onDelete={handleDeleteCategory}
+                        isLoading={isCategoriesLoading}
+                        error={categoriesError}
                     />
                 );
             
@@ -174,29 +338,26 @@ const AdminProfile = () => {
             case 'orders':
                 return (
                     <AdminOrders
-                        recentOrders={recentOrders}
+                        orders={adminOrders}
+                        pagination={ordersPagination}
                         getStatusColor={getStatusColor}
                         formatCurrency={formatCurrency}
-                        bulkActions={{}}
-                        setBulkActions={() => {}}
-                        handleBulkAction={() => {}}
-                        handleQuickAction={() => {}}
-                        filters={{}}
-                        updateFilter={() => {}}
-                        clearFilters={() => {}}
-                        handleExport={handleExport}
+                        onUpdateOrderStatus={updateOrderStatus}
+                        isLoading={isOrdersLoading}
+                        error={ordersError}
                     />
                 );
             
             case 'users':
                 return (
                     <AdminUsers
-                        users={users}
+                        users={adminUsers}
+                        pagination={usersPagination}
                         getStatusColor={getStatusColor}
-                        formatCurrency={formatCurrency}
-                        onAddUser={handleAddUser}
-                        onEditUser={handleEditUser}
-                        onDeleteUser={handleDeleteUser}
+                        onUpdateUserStatus={updateUserStatus}
+                        onUpdateUserRole={updateUserRole}
+                        isLoading={isUsersLoading}
+                        error={usersError}
                     />
                 );
             
@@ -214,10 +375,10 @@ const AdminProfile = () => {
                 return (
                     <AdminAnalytics
                         dashboardStats={dashboardStats}
+                        analytics={analytics}
                         formatCurrency={formatCurrency}
-                        exportData={exportData}
-                        setExportData={setExportData}
-                        handleExport={handleExport}
+                        onExportData={exportData}
+                        isLoading={isDashboardLoading}
                     />
                 );
             
