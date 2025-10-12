@@ -29,7 +29,7 @@ const Signup = () => {
     // Clear errors when component mounts
     useEffect(() => {
         clearError();
-    }, [clearError]);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const validateForm = () => {
         const errors = {};
