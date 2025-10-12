@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { userService } from '../api/services/index.js';
 import { useAuth } from './AuthContext.jsx';
-import { useNotification } from './NotificationContext.jsx';
 
 // Initial state
 const initialState = {
@@ -34,13 +33,13 @@ const wishlistReducer = (state, action) => {
   switch (action.type) {
     case WISHLIST_ACTIONS.SET_LOADING:
       return { ...state, isLoading: action.payload, error: null };
-    
+
     case WISHLIST_ACTIONS.SET_ERROR:
       return { ...state, error: action.payload, isLoading: false };
-    
+
     case WISHLIST_ACTIONS.CLEAR_ERROR:
       return { ...state, error: null };
-    
+
     case WISHLIST_ACTIONS.LOAD_WISHLIST_SUCCESS:
       return {
         ...state,
@@ -55,7 +54,7 @@ const wishlistReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case WISHLIST_ACTIONS.LOAD_MORE_WISHLIST_SUCCESS:
       return {
         ...state,
@@ -70,7 +69,7 @@ const wishlistReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case WISHLIST_ACTIONS.ADD_TO_WISHLIST_SUCCESS:
       return {
         ...state,
@@ -78,19 +77,19 @@ const wishlistReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case WISHLIST_ACTIONS.REMOVE_FROM_WISHLIST_SUCCESS:
       return {
         ...state,
-        items: state.items.filter(item => 
-          item.product._id !== action.payload && 
+        items: state.items.filter(item =>
+          item.product._id !== action.payload &&
           item.product !== action.payload &&
           item._id !== action.payload
         ),
         isLoading: false,
         error: null
       };
-    
+
     case WISHLIST_ACTIONS.CLEAR_WISHLIST:
       return {
         ...state,
@@ -99,7 +98,7 @@ const wishlistReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     default:
       return state;
   }
@@ -112,7 +111,13 @@ const WishlistContext = createContext();
 export const WishlistProvider = ({ children }) => {
   const [state, dispatch] = useReducer(wishlistReducer, initialState);
   const { isAuthenticated } = useAuth();
-  const { showNotification } = useNotification();
+
+  // Temporary notification function - will be enhanced later
+  const showNotification = useCallback((message, type = 'info') => {
+    if (import.meta.env.DEV) {
+      console.log(`[WISHLIST ${type.toUpperCase()}] ${message}`);
+    }
+  }, []);
 
   // Load wishlist
   const loadWishlist = useCallback(async (params = {}, loadMore = false) => {
@@ -123,18 +128,18 @@ export const WishlistProvider = ({ children }) => {
 
     try {
       dispatch({ type: WISHLIST_ACTIONS.SET_LOADING, payload: true });
-      
+
       const queryParams = {
         ...params,
         page: loadMore ? state.pagination.page + 1 : (params.page || 1)
       };
 
       const response = await userService.getWishlist(queryParams);
-      
-      const actionType = loadMore 
-        ? WISHLIST_ACTIONS.LOAD_MORE_WISHLIST_SUCCESS 
+
+      const actionType = loadMore
+        ? WISHLIST_ACTIONS.LOAD_MORE_WISHLIST_SUCCESS
         : WISHLIST_ACTIONS.LOAD_WISHLIST_SUCCESS;
-      
+
       dispatch({ type: actionType, payload: response });
       return response;
     } catch (error) {
@@ -163,7 +168,7 @@ export const WishlistProvider = ({ children }) => {
     }
 
     // Check if item is already in wishlist
-    const isAlreadyInWishlist = state.items.some(item => 
+    const isAlreadyInWishlist = state.items.some(item =>
       item.product._id === productId || item.product === productId
     );
 
@@ -175,13 +180,13 @@ export const WishlistProvider = ({ children }) => {
     try {
       dispatch({ type: WISHLIST_ACTIONS.SET_LOADING, payload: true });
       const response = await userService.addToWishlist(productId);
-      
+
       // If response contains the full item, use it; otherwise create a basic item
-      const wishlistItem = response.item || response.data || { 
+      const wishlistItem = response.item || response.data || {
         product: { _id: productId },
         addedAt: new Date().toISOString()
       };
-      
+
       dispatch({ type: WISHLIST_ACTIONS.ADD_TO_WISHLIST_SUCCESS, payload: wishlistItem });
       showNotification('Added to wishlist!', 'success');
       return response;
@@ -218,7 +223,7 @@ export const WishlistProvider = ({ children }) => {
 
   // Toggle wishlist item
   const toggleWishlist = useCallback(async (productId) => {
-    const isInWishlist = state.items.some(item => 
+    const isInWishlist = state.items.some(item =>
       item.product._id === productId || item.product === productId
     );
 
@@ -232,7 +237,7 @@ export const WishlistProvider = ({ children }) => {
   // Check if product is in wishlist
   const isInWishlist = useCallback((productId) => {
     if (!productId) return false;
-    return state.items.some(item => 
+    return state.items.some(item =>
       item.product._id === productId || item.product === productId
     );
   }, [state.items]);
@@ -254,7 +259,7 @@ export const WishlistProvider = ({ children }) => {
 
   // Get wishlist items by category
   const getWishlistByCategory = useCallback((categoryId) => {
-    return state.items.filter(item => 
+    return state.items.filter(item =>
       item.product.category === categoryId || item.product.category._id === categoryId
     );
   }, [state.items]);
@@ -277,22 +282,22 @@ export const WishlistProvider = ({ children }) => {
 
   const value = {
     ...state,
-    
+
     // Data loading methods
     loadWishlist,
     loadMoreWishlist,
-    
+
     // Wishlist operations
     addToWishlist,
     removeFromWishlist,
     toggleWishlist,
-    
+
     // Utility methods
     isInWishlist,
     getWishlistCount,
     getWishlistByCategory,
     getRecentlyAdded,
-    
+
     // State management
     clearWishlist,
     clearError

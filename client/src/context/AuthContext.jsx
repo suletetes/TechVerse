@@ -1,7 +1,6 @@
 import React from 'react'
 import { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
 import authService from '../api/services/authService.js';
-import { useNotification } from './NotificationContext.jsx';
 
 // Initial state
 const initialState = {
@@ -202,7 +201,16 @@ const AuthContext = createContext();
 // Provider component
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
-  const { showNotification } = useNotification();
+  
+  // Simple notification function for now - we'll enhance this later
+  const showNotification = useCallback((message, type = 'info') => {
+    // For now, just log to console in development
+    if (import.meta.env.DEV) {
+      console.log(`[${type.toUpperCase()}] ${message}`);
+    }
+    // TODO: Integrate with notification system once circular dependency is resolved
+  }, []);
+  
   const sessionCheckInterval = useRef(null);
   const activityTimeout = useRef(null);
 
@@ -212,17 +220,61 @@ export const AuthProvider = ({ children }) => {
   const SESSION_WARNING_TIME = 5 * 60 * 1000; // 5 minutes before expiry
   const ACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes of inactivity
 
+  // Get device information
+  const getDeviceInfo = useCallback(() => {
+    return {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      language: navigator.language,
+      cookieEnabled: navigator.cookieEnabled,
+      onLine: navigator.onLine,
+      timestamp: new Date().toISOString()
+    };
+  }, []);
+
+  // Load user from token
+  const loadUser = useCallback(async () => {
+    if (!authService.isAuthenticated()) {
+      dispatch({ type: AUTH_ACTIONS.LOAD_USER_FAILURE, payload: 'No token found' });
+      return;
+    }
+
+    try {
+      dispatch({ type: AUTH_ACTIONS.LOAD_USER_START });
+      const userData = await authService.getProfile();
+
+      // Set device info
+      const deviceInfo = getDeviceInfo();
+      dispatch({ type: AUTH_ACTIONS.SET_DEVICE_INFO, payload: deviceInfo });
+
+      dispatch({ type: AUTH_ACTIONS.LOAD_USER_SUCCESS, payload: userData });
+    } catch (error) {
+      dispatch({ type: AUTH_ACTIONS.LOAD_USER_FAILURE, payload: error.message });
+
+      // If token is invalid, clear it
+      if (error.status === 401) {
+        authService.logout();
+      }
+    }
+  }, [getDeviceInfo]);
+
   // Load user on app start
   useEffect(() => {
     loadUser();
-    setupSessionManagement();
-    setupActivityTracking();
+  }, [loadUser]);
 
-    return () => {
-      clearInterval(sessionCheckInterval.current);
-      clearTimeout(activityTimeout.current);
-    };
-  }, []);
+  // Setup session management when authenticated
+  useEffect(() => {
+    if (state.isAuthenticated) {
+      setupSessionManagement();
+      setupActivityTracking();
+
+      return () => {
+        clearInterval(sessionCheckInterval.current);
+        clearTimeout(activityTimeout.current);
+      };
+    }
+  }, [state.isAuthenticated]);
 
   // Setup session management
   const setupSessionManagement = useCallback(() => {
@@ -237,7 +289,7 @@ export const AuthProvider = ({ children }) => {
         }
       }
     }, 60000); // Check every minute
-  }, [state.isAuthenticated, state.sessionExpiry]);
+  }, []);
 
   // Setup activity tracking
   const setupActivityTracking = useCallback(() => {
@@ -264,51 +316,13 @@ export const AuthProvider = ({ children }) => {
         document.removeEventListener(event, handleActivity, true);
       });
     };
-  }, [state.isAuthenticated]);
+  }, []);
 
   // Handle session expiry
   const handleSessionExpired = useCallback(() => {
     dispatch({ type: AUTH_ACTIONS.SESSION_EXPIRED });
     showNotification('Your session has expired. Please log in again.', 'error');
   }, []);
-
-  // Get device information
-  const getDeviceInfo = useCallback(() => {
-    return {
-      userAgent: navigator.userAgent,
-      platform: navigator.platform,
-      language: navigator.language,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      screenResolution: `${screen.width}x${screen.height}`,
-      timestamp: Date.now()
-    };
-  }, []);
-
-  // Load user from token
-  const loadUser = async () => {
-    if (!authService.isAuthenticated()) {
-      dispatch({ type: AUTH_ACTIONS.LOAD_USER_FAILURE, payload: 'No token found' });
-      return;
-    }
-
-    try {
-      dispatch({ type: AUTH_ACTIONS.LOAD_USER_START });
-      const userData = await authService.getProfile();
-
-      // Set device info
-      const deviceInfo = getDeviceInfo();
-      dispatch({ type: AUTH_ACTIONS.SET_DEVICE_INFO, payload: deviceInfo });
-
-      dispatch({ type: AUTH_ACTIONS.LOAD_USER_SUCCESS, payload: userData });
-    } catch (error) {
-      dispatch({ type: AUTH_ACTIONS.LOAD_USER_FAILURE, payload: error.message });
-
-      // If token is invalid, clear it
-      if (error.status === 401) {
-        authService.logout();
-      }
-    }
-  };
 
   // Login with enhanced security
   const login = async (credentials, options = {}) => {

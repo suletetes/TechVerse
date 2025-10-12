@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import { productService } from '../api/services/index.js';
-import { useNotification } from './NotificationContext.jsx';
 
 // Initial state
 const initialState = {
@@ -225,7 +224,13 @@ const ProductContext = createContext();
 // Provider component
 export const ProductProvider = ({ children }) => {
   const [state, dispatch] = useReducer(productReducer, initialState);
-  const { showNotification } = useNotification();
+  
+  // Temporary notification function - will be enhanced later
+  const showNotification = useCallback((message, type = 'info') => {
+    if (import.meta.env.DEV) {
+      console.log(`[PRODUCT ${type.toUpperCase()}] ${message}`);
+    }
+  }, []);
 
   // Load products with filters and pagination
   const loadProducts = useCallback(async (params = {}, loadMore = false) => {

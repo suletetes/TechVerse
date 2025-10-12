@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import { adminService, productService } from '../api/services/index.js';
 import { useAuth } from './AuthContext.jsx';
-import { useNotification } from './NotificationContext.jsx';
 
 // Initial state
 const initialState = {
@@ -424,7 +423,13 @@ const AdminContext = createContext();
 export const AdminProvider = ({ children }) => {
   const [state, dispatch] = useReducer(adminReducer, initialState);
   const { isAuthenticated, isAdmin } = useAuth();
-  const { showNotification } = useNotification();
+  
+  // Temporary notification function - will be enhanced later
+  const showNotification = useCallback((message, type = 'info') => {
+    if (import.meta.env.DEV) {
+      console.log(`[ADMIN ${type.toUpperCase()}] ${message}`);
+    }
+  }, []);
 
   // Dashboard methods
   const loadDashboardStats = useCallback(async (params = {}) => {

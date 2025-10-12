@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import { orderService } from '../api/services/index.js';
 import { useAuth } from './AuthContext.jsx';
-import { useNotification } from './NotificationContext.jsx';
 
 // Initial state
 const initialState = {
@@ -191,7 +190,13 @@ const OrderContext = createContext();
 export const OrderProvider = ({ children }) => {
   const [state, dispatch] = useReducer(orderReducer, initialState);
   const { isAuthenticated } = useAuth();
-  const { showNotification } = useNotification();
+  
+  // Temporary notification function - will be enhanced later
+  const showNotification = useCallback((message, type = 'info') => {
+    if (import.meta.env.DEV) {
+      console.log(`[ORDER ${type.toUpperCase()}] ${message}`);
+    }
+  }, []);
 
   // Load user orders
   const loadOrders = useCallback(async (params = {}, loadMore = false) => {
