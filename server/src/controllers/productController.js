@@ -595,4 +595,109 @@ export const getCategories = asyncHandler(async (req, res, next) => {
     message: 'Categories retrieved successfully',
     data: categories
   });
+});/
+/ @desc    Get top selling products
+// @route   GET /api/products/top-sellers
+// @access  Public
+export const getTopSellingProducts = asyncHandler(async (req, res, next) => {
+  const { limit = 10, timeframe } = req.query;
+
+  const products = await Product.getTopSelling(
+    parseInt(limit), 
+    timeframe ? parseInt(timeframe) : null
+  );
+
+  res.status(200).json({
+    success: true,
+    message: 'Top selling products retrieved successfully',
+    data: {
+      products
+    }
+  });
+});
+
+// @desc    Get latest products
+// @route   GET /api/products/latest
+// @access  Public
+export const getLatestProducts = asyncHandler(async (req, res, next) => {
+  const { limit = 10 } = req.query;
+
+  const products = await Product.find({ 
+    status: 'active', 
+    visibility: 'public' 
+  })
+    .sort({ createdAt: -1 })
+    .limit(parseInt(limit))
+    .populate('category', 'name slug')
+    .lean();
+
+  res.status(200).json({
+    success: true,
+    message: 'Latest products retrieved successfully',
+    data: {
+      products
+    }
+  });
+});
+
+// @desc    Get products on sale (with comparePrice > price)
+// @route   GET /api/products/on-sale
+// @access  Public
+export const getProductsOnSale = asyncHandler(async (req, res, next) => {
+  const { limit = 10 } = req.query;
+
+  const products = await Product.find({ 
+    status: 'active', 
+    visibility: 'public',
+    comparePrice: { $exists: true, $gt: 0 },
+    $expr: { $gt: ['$comparePrice', '$price'] }
+  })
+    .sort({ 
+      // Sort by discount percentage (highest first)
+      $expr: { 
+        $divide: [
+          { $subtract: ['$comparePrice', '$price'] },
+          '$comparePrice'
+        ]
+      }
+    })
+    .limit(parseInt(limit))
+    .populate('category', 'name slug')
+    .lean();
+
+  res.status(200).json({
+    success: true,
+    message: 'Products on sale retrieved successfully',
+    data: {
+      products
+    }
+  });
+});
+
+// @desc    Get quick picks (featured products with high ratings)
+// @route   GET /api/products/quick-picks
+// @access  Public
+export const getQuickPicks = asyncHandler(async (req, res, next) => {
+  const { limit = 8 } = req.query;
+
+  const products = await Product.find({ 
+    status: 'active', 
+    visibility: 'public',
+    $or: [
+      { featured: true },
+      { 'rating.average': { $gte: 4.5 } }
+    ]
+  })
+    .sort({ 'rating.average': -1, featured: -1 })
+    .limit(parseInt(limit))
+    .populate('category', 'name slug')
+    .lean();
+
+  res.status(200).json({
+    success: true,
+    message: 'Quick picks retrieved successfully',
+    data: {
+      products
+    }
+  });
 });
