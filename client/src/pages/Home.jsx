@@ -11,17 +11,38 @@ import {
 
 const Home = () => {
     const { 
-        featuredProducts, 
-        loadFeaturedProducts, 
+        featuredProducts,
+        topSellingProducts,
+        latestProducts,
+        productsOnSale,
+        quickPicks,
+        loadFeaturedProducts,
+        loadTopSellingProducts,
+        loadLatestProducts,
+        loadProductsOnSale,
+        loadQuickPicks,
         loadCategories,
         isLoading 
     } = useProduct();
 
-    // Load featured products and categories on mount
+    // Load all product types and categories on mount
     useEffect(() => {
-        loadFeaturedProducts(12); // Load 12 featured products
-        loadCategories();
-    }, [loadFeaturedProducts, loadCategories]);
+        const loadAllData = async () => {
+            try {
+                await Promise.all([
+                    loadLatestProducts(12),
+                    loadTopSellingProducts(12),
+                    loadQuickPicks(8),
+                    loadProductsOnSale(10),
+                    loadCategories()
+                ]);
+            } catch (error) {
+                console.error('Error loading home page data:', error);
+            }
+        };
+
+        loadAllData();
+    }, [loadLatestProducts, loadTopSellingProducts, loadQuickPicks, loadProductsOnSale, loadCategories]);
 
     return (
         <>
@@ -31,14 +52,14 @@ const Home = () => {
 
             {/* latest-products */}
             <LatestProducts 
-                products={featuredProducts}
+                products={latestProducts}
                 isLoading={isLoading}
             />
             {/* latest-products END */}
 
             {/* top-seller-products */}
             <TopSellerProducts 
-                products={featuredProducts}
+                products={topSellingProducts}
                 isLoading={isLoading}
             />
             {/* top-seller-products END */}
@@ -49,14 +70,14 @@ const Home = () => {
 
             {/* quick-picks */}
             <QuickPicks 
-                products={featuredProducts}
+                products={quickPicks}
                 isLoading={isLoading}
             />
             {/* quick-picks END */}
 
             {/* weekly-deals */}
             <WeeklyDeals 
-                products={featuredProducts}
+                products={productsOnSale}
                 isLoading={isLoading}
             />
             {/* weekly-deals END */}

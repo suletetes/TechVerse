@@ -266,57 +266,42 @@ export const AuthProvider = ({ children }) => {
   // Setup session management when authenticated
   useEffect(() => {
     if (state.isAuthenticated) {
-      setupSessionManagement();
-      setupActivityTracking();
+      // Setup session check interval
+      sessionCheckInterval.current = setInterval(() => {
+        // Use current state values to avoid stale closures
+        const currentState = state;
+        if (currentState.sessionExpiry) {
+          const timeUntilExpiry = currentState.sessionExpiry - Date.now();
+
+          if (timeUntilExpiry <= 0) {
+            dispatch({ type: AUTH_ACTIONS.SESSION_EXPIRED });
+          } else if (timeUntilExpiry <= SESSION_WARNING_TIME) {
+            // Session expiring soon - could trigger notification here
+          }
+        }
+      }, 60000); // Check every minute
+
+      // Setup activity tracking
+      const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+      const handleActivity = () => {
+        dispatch({ type: AUTH_ACTIONS.UPDATE_ACTIVITY });
+      };
+
+      events.forEach(event => {
+        document.addEventListener(event, handleActivity, true);
+      });
 
       return () => {
         clearInterval(sessionCheckInterval.current);
         clearTimeout(activityTimeout.current);
+        events.forEach(event => {
+          document.removeEventListener(event, handleActivity, true);
+        });
       };
     }
   }, [state.isAuthenticated]);
 
-  // Setup session management
-  const setupSessionManagement = useCallback(() => {
-    sessionCheckInterval.current = setInterval(() => {
-      if (state.isAuthenticated && state.sessionExpiry) {
-        const timeUntilExpiry = state.sessionExpiry - Date.now();
 
-        if (timeUntilExpiry <= 0) {
-          handleSessionExpired();
-        } else if (timeUntilExpiry <= SESSION_WARNING_TIME) {
-          showNotification('Session expiring soon. Please save your work.', 'warning');
-        }
-      }
-    }, 60000); // Check every minute
-  }, []);
-
-  // Setup activity tracking
-  const setupActivityTracking = useCallback(() => {
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-
-    const handleActivity = () => {
-      if (state.isAuthenticated) {
-        dispatch({ type: AUTH_ACTIONS.UPDATE_ACTIVITY });
-
-        // Reset activity timeout
-        clearTimeout(activityTimeout.current);
-        activityTimeout.current = setTimeout(() => {
-          showNotification('You have been inactive. Please refresh to continue.', 'warning');
-        }, ACTIVITY_TIMEOUT);
-      }
-    };
-
-    events.forEach(event => {
-      document.addEventListener(event, handleActivity, true);
-    });
-
-    return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, handleActivity, true);
-      });
-    };
-  }, []);
 
   // Handle session expiry
   const handleSessionExpired = useCallback(() => {
