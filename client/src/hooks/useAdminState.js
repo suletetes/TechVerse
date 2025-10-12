@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 export const useAdminState = (setActiveTab, setEditProductId) => {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
-    
+
     const [passwordData, setPasswordData] = useState({
         currentPassword: '',
         newPassword: '',
@@ -101,7 +101,7 @@ export const useAdminState = (setActiveTab, setEditProductId) => {
 
     const handleExport = async (type, selectedIds = null) => {
         setExportData(prev => ({ ...prev, loading: true, type }));
-        
+
         // Simulate export process
         setTimeout(() => {
             const filename = `${type}_export_${new Date().toISOString().split('T')[0]}.${exportData.format}`;
