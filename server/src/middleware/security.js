@@ -297,6 +297,33 @@ export const securityHeaders = (req, res, next) => {
   next();
 };
 
+// API rate limiting
+export const apiRateLimit = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again later.',
+    code: 'RATE_LIMIT_EXCEEDED'
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  handler: (req, res) => {
+    logger.warn('Rate limit exceeded', {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      url: req.originalUrl,
+      method: req.method
+    });
+    
+    res.status(429).json({
+      success: false,
+      message: 'Too many requests from this IP, please try again later.',
+      code: 'RATE_LIMIT_EXCEEDED'
+    });
+  }
+});
+
 export default {
   corsOptions,
   helmetConfig,
@@ -308,5 +335,6 @@ export default {
   suspiciousActivityDetector,
   validateApiKey,
   maintenanceMode,
-  securityHeaders
+  securityHeaders,
+  apiRateLimit
 };
