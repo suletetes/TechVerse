@@ -141,11 +141,37 @@ class ApiClient {
 
   // Handle rate limiting
   async handleRateLimit(endpoint, options, response) {
+    const requestId = `${options.method || 'GET'}_${endpoint}_rate_limit`;
+    const attempts = this.retryAttempts.get(requestId) || 0;
+    
+    // Don't retry rate limits more than 2 times
+    if (attempts >= 2) {
+      this.retryAttempts.delete(requestId);
+      const error = new Error('Rate limit exceeded - too many retry attempts');
+      error.status = 429;
+      error.code = 'RATE_LIMIT_EXCEEDED';
+      throw error;
+    }
+    
+    this.retryAttempts.set(requestId, attempts + 1);
+    
     const retryAfter = response.headers.get('Retry-After');
     const delay = retryAfter ? parseInt(retryAfter) * 1000 : 5000; // Default 5 seconds
     
+    console.warn(`Rate limited. Retrying in ${delay/1000} seconds... (attempt ${attempts + 1}/3)`);
+    
     await new Promise(resolve => setTimeout(resolve, delay));
     return this.request(endpoint, options);
+  }
+  
+  // Clear retry attempts (useful for debugging)
+  clearRetryAttempts() {
+    this.retryAttempts.clear();
+  }
+  
+  // Get current retry attempts (useful for debugging)
+  getRetryAttempts() {
+    return Object.fromEntries(this.retryAttempts);
   }
   
   async handleTokenRefresh(originalEndpoint, originalOptions) {

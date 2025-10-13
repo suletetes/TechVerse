@@ -300,7 +300,7 @@ export const securityHeaders = (req, res, next) => {
 // API rate limiting
 export const apiRateLimit = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || (process.env.NODE_ENV === 'development' ? 1000 : 100), // More lenient in development
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.',
@@ -308,6 +308,13 @@ export const apiRateLimit = rateLimit({
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skip: (req) => {
+    // Skip rate limiting for health checks in development
+    if (process.env.NODE_ENV === 'development' && req.originalUrl === '/api/health') {
+      return true;
+    }
+    return false;
+  },
   handler: (req, res) => {
     logger.warn('Rate limit exceeded', {
       ip: req.ip,
@@ -316,10 +323,15 @@ export const apiRateLimit = rateLimit({
       method: req.method
     });
     
+    // Add Retry-After header to help clients
+    const retryAfter = Math.ceil(parseInt(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000) / 1000);
+    res.set('Retry-After', retryAfter);
+    
     res.status(429).json({
       success: false,
       message: 'Too many requests from this IP, please try again later.',
-      code: 'RATE_LIMIT_EXCEEDED'
+      code: 'RATE_LIMIT_EXCEEDED',
+      retryAfter: retryAfter
     });
   }
 });

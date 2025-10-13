@@ -325,22 +325,7 @@ export const sensitiveOperationLimit = rateLimit({
   }
 });
 
-// API rate limiting (general)
-export const apiRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: {
-    success: false,
-    message: 'Too many requests. Please try again later.',
-    code: 'RATE_LIMIT_EXCEEDED'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => {
-    // Skip rate limiting for admin users
-    return req.user && req.user.role === 'admin';
-  }
-});
+// Note: apiRateLimit is now exported from security.js to avoid conflicts
 
 // Strict rate limiting for auth endpoints
 export const authRateLimit = rateLimit({
@@ -449,7 +434,6 @@ export default {
   requireOwnershipOrAdmin,
   requireEmailVerification,
   sensitiveOperationLimit,
-  apiRateLimit,
   authRateLimit,
   requireAccountAge,
   loadResource
