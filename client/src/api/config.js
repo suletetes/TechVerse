@@ -33,6 +33,7 @@ export const API_ENDPOINTS = {
     LATEST: '/products/latest',
     ON_SALE: '/products/on-sale',
     QUICK_PICKS: '/products/quick-picks',
+    WEEKLY_DEALS: '/products/weekly-deals',
     REVIEWS: (id) => `/products/${id}/reviews`
   },
   
@@ -60,7 +61,22 @@ export const API_ENDPOINTS = {
     ORDERS: '/admin/orders',
     USERS: '/admin/users',
     CATEGORIES: '/admin/categories',
-    ANALYTICS: '/admin/analytics'
+    ANALYTICS: '/admin/analytics',
+    SECTIONS: '/admin/sections',
+    SECTIONS_PREVIEW: '/admin/sections/preview',
+    SECTION: (type) => `/admin/sections/${type}`,
+    STORES: '/admin/stores'
+  },
+  
+  // Stores
+  STORES: {
+    BASE: '/stores'
+  },
+  
+  // Pages
+  PAGES: {
+    BASE: '/pages',
+    BY_SLUG: (slug) => `/pages/${slug}`
   }
 };
 
