@@ -697,3 +697,32 @@ export const getQuickPicks = asyncHandler(async (req, res, next) => {
     }
   });
 });
+
+// @desc    Get weekly deals (products on sale)
+// @route   GET /api/products/weekly-deals
+// @access  Public
+export const getWeeklyDeals = asyncHandler(async (req, res, next) => {
+  const { limit = 6 } = req.query;
+
+  const products = await Product.find({ 
+    status: 'active', 
+    visibility: 'public',
+    comparePrice: { $exists: true, $gt: 0 },
+    $expr: { $gt: ['$comparePrice', '$price'] }
+  })
+    .sort({ 
+      createdAt: -1,
+      comparePrice: -1
+    })
+    .limit(parseInt(limit))
+    .populate('category', 'name slug')
+    .lean();
+
+  res.status(200).json({
+    success: true,
+    message: 'Weekly deals retrieved successfully',
+    data: {
+      products
+    }
+  });
+});
