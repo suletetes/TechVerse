@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { useProduct } from "../context";
+import React, { useEffect, useState } from "react";
+import { productService } from "../api/services";
 import {
     Header,
     LatestProducts,
@@ -10,37 +10,45 @@ import {
 } from "../components";
 
 const Home = () => {
-    const {
-        topSellingProducts,
-        latestProducts,
-        productsOnSale,
-        quickPicks,
-        loadTopSellingProducts,
-        loadLatestProducts,
-        loadProductsOnSale,
-        loadQuickPicks,
-        loadCategories,
-        isLoading
-    } = useProduct();
+    const [homeData, setHomeData] = useState({
+        latestProducts: [],
+        topSellingProducts: [],
+        quickPicks: [],
+        weeklyDeals: []
+    });
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Load all product types and categories on mount
+    // Load all product types on mount
     useEffect(() => {
         const loadAllData = async () => {
             try {
-                await Promise.all([
-                    loadLatestProducts(12),
-                    loadTopSellingProducts(12),
-                    loadQuickPicks(8),
-                    loadProductsOnSale(10),
-                    loadCategories()
+                setIsLoading(true);
+                setError(null);
+
+                const [latestResponse, topSellersResponse, quickPicksResponse, weeklyDealsResponse] = await Promise.all([
+                    productService.getLatestProducts(12),
+                    productService.getTopSellingProducts(12),
+                    productService.getQuickPicks(8),
+                    productService.getWeeklyDeals(6)
                 ]);
+
+                setHomeData({
+                    latestProducts: latestResponse.data?.products || [],
+                    topSellingProducts: topSellersResponse.data?.products || [],
+                    quickPicks: quickPicksResponse.data?.products || [],
+                    weeklyDeals: weeklyDealsResponse.data?.products || []
+                });
             } catch (error) {
                 console.error('Error loading home page data:', error);
+                setError(error.message);
+            } finally {
+                setIsLoading(false);
             }
         };
 
         loadAllData();
-    }, [loadLatestProducts, loadTopSellingProducts, loadQuickPicks, loadProductsOnSale, loadCategories]);
+    }, []);
 
     return (
         <>
@@ -48,16 +56,32 @@ const Home = () => {
             <Header />
             {/* header END */}
 
+            {/* Error display */}
+            {error && (
+                <div className="container my-4">
+                    <div className="alert alert-danger" role="alert">
+                        <h4 className="alert-heading">Error Loading Data</h4>
+                        <p>{error}</p>
+                        <button 
+                            className="btn btn-outline-danger" 
+                            onClick={() => window.location.reload()}
+                        >
+                            Retry
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* latest-products */}
             <LatestProducts
-                products={latestProducts}
+                products={homeData.latestProducts}
                 isLoading={isLoading}
             />
             {/* latest-products END */}
 
             {/* top-seller-products */}
             <TopSellerProducts
-                products={topSellingProducts}
+                products={homeData.topSellingProducts}
                 isLoading={isLoading}
             />
             {/* top-seller-products END */}
@@ -68,14 +92,14 @@ const Home = () => {
 
             {/* quick-picks */}
             <QuickPicks
-                products={quickPicks}
+                products={homeData.quickPicks}
                 isLoading={isLoading}
             />
             {/* quick-picks END */}
 
             {/* weekly-deals */}
             <WeeklyDeals
-                products={productsOnSale}
+                products={homeData.weeklyDeals}
                 isLoading={isLoading}
             />
             {/* weekly-deals END */}
