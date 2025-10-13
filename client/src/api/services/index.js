@@ -6,6 +6,8 @@ export { default as userService } from './userService.js';
 export { default as adminService } from './adminService.js';
 export { default as enhancedApiService } from './enhancedApiService.js';
 export { default as apiUtils } from './apiUtils.js';
+export { default as storeService } from './storeService.js';
+export { default as pageService } from './pageService.js';
 
 // Import services for the combined object
 import authService from './authService.js';
@@ -15,6 +17,8 @@ import userService from './userService.js';
 import adminService from './adminService.js';
 import enhancedApiService from './enhancedApiService.js';
 import apiUtils from './apiUtils.js';
+import storeService from './storeService.js';
+import pageService from './pageService.js';
 
 // Export all services as a single object for convenience
 export const apiServices = {
@@ -24,5 +28,7 @@ export const apiServices = {
   user: userService,
   admin: adminService,
   enhanced: enhancedApiService,
-  utils: apiUtils
+  utils: apiUtils,
+  store: storeService,
+  page: pageService
 };

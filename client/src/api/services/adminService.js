@@ -420,6 +420,153 @@ class AdminService {
     }
   }
 
+  // Homepage Sections Management
+  async getHomepageSections() {
+    const cacheKey = 'homepage_sections';
+    
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      const cached = this.cache.get(cacheKey);
+      if (Date.now() - cached.timestamp < this.cacheTimeout) {
+        return cached.data;
+      }
+      this.cache.delete(cacheKey);
+    }
+
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.ADMIN.SECTIONS);
+      const data = await handleApiResponse(response);
+      
+      // Cache the result
+      this.cache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching homepage sections:', error);
+      throw new Error(error.message || 'Failed to fetch homepage sections');
+    }
+  }
+
+  async updateHomepageSection(sectionType, sectionData) {
+    if (!sectionType) {
+      throw new Error('Section type is required');
+    }
+
+    try {
+      const response = await apiClient.put(API_ENDPOINTS.ADMIN.SECTION(sectionType), sectionData);
+      const data = await handleApiResponse(response);
+      
+      // Clear sections cache
+      this.cache.delete('homepage_sections');
+      
+      return data;
+    } catch (error) {
+      console.error(`Error updating homepage section ${sectionType}:`, error);
+      throw new Error(error.message || 'Failed to update homepage section');
+    }
+  }
+
+  async getHomepageSectionsPreview() {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.ADMIN.SECTIONS_PREVIEW);
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error('Error fetching homepage sections preview:', error);
+      throw new Error(error.message || 'Failed to fetch homepage sections preview');
+    }
+  }
+
+  // Store Management
+  async getStores() {
+    const cacheKey = 'admin_stores';
+    
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      const cached = this.cache.get(cacheKey);
+      if (Date.now() - cached.timestamp < this.cacheTimeout) {
+        return cached.data;
+      }
+      this.cache.delete(cacheKey);
+    }
+
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.ADMIN.STORES);
+      const data = await handleApiResponse(response);
+      
+      // Cache the result
+      this.cache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching stores:', error);
+      throw new Error(error.message || 'Failed to fetch stores');
+    }
+  }
+
+  async createStore(storeData) {
+    try {
+      // Validate store data
+      if (!storeData.name || !storeData.name.trim()) {
+        throw new Error('Store name is required');
+      }
+
+      const response = await apiClient.post(API_ENDPOINTS.ADMIN.STORES, storeData);
+      const data = await handleApiResponse(response);
+      
+      // Clear stores cache
+      this.cache.delete('admin_stores');
+      
+      return data;
+    } catch (error) {
+      console.error('Error creating store:', error);
+      throw new Error(error.message || 'Failed to create store');
+    }
+  }
+
+  async updateStore(storeId, storeData) {
+    if (!storeId) {
+      throw new Error('Store ID is required');
+    }
+
+    try {
+      const response = await apiClient.put(`${API_ENDPOINTS.ADMIN.STORES}/${storeId}`, storeData);
+      const data = await handleApiResponse(response);
+      
+      // Clear stores cache
+      this.cache.delete('admin_stores');
+      
+      return data;
+    } catch (error) {
+      console.error(`Error updating store ${storeId}:`, error);
+      throw new Error(error.message || 'Failed to update store');
+    }
+  }
+
+  async deleteStore(storeId) {
+    if (!storeId) {
+      throw new Error('Store ID is required');
+    }
+
+    try {
+      const response = await apiClient.delete(`${API_ENDPOINTS.ADMIN.STORES}/${storeId}`);
+      const data = await handleApiResponse(response);
+      
+      // Clear stores cache
+      this.cache.delete('admin_stores');
+      
+      return data;
+    } catch (error) {
+      console.error(`Error deleting store ${storeId}:`, error);
+      throw new Error(error.message || 'Failed to delete store');
+    }
+  }
+
   // Utility Methods
   clearCache() {
     this.cache.clear();

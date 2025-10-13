@@ -467,6 +467,38 @@ class ProductService {
     }
   }
 
+  // Get weekly deals
+  async getWeeklyDeals(limit = 6) {
+    const cacheKey = `weekly_deals_${limit}`;
+
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      const cached = this.cache.get(cacheKey);
+      if (Date.now() - cached.timestamp < this.cacheTimeout) {
+        return cached.data;
+      }
+      this.cache.delete(cacheKey);
+    }
+
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.PRODUCTS.WEEKLY_DEALS, {
+        params: { limit }
+      });
+      const data = await handleApiResponse(response);
+
+      // Cache the result
+      this.cache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching weekly deals:', error);
+      throw new Error(error.message || 'Failed to fetch weekly deals');
+    }
+  }
+
   // Get product categories
   async getCategories() {
     const cacheKey = 'product_categories';
