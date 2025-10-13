@@ -11,6 +11,7 @@ import {
   getLatestProducts,
   getProductsOnSale,
   getQuickPicks,
+  getWeeklyDeals,
   getProductsByCategory,
   addProductReview,
   getProductReviews,
@@ -29,6 +30,7 @@ router.get('/top-sellers', getTopSellingProducts);
 router.get('/latest', getLatestProducts);
 router.get('/on-sale', getProductsOnSale);
 router.get('/quick-picks', getQuickPicks);
+router.get('/weekly-deals', getWeeklyDeals);
 router.get('/category/:categoryId', optionalAuth, getProductsByCategory);
 router.get('/:id', optionalAuth, getProductById);
 router.get('/:id/reviews', getProductReviews);
