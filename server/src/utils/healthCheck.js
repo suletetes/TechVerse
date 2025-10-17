@@ -39,17 +39,17 @@ class HealthCheck {
 
     // Check database connectivity
     health.services.database = await this.checkDatabase();
-    
+
     // Check memory usage
     health.services.memory = this.checkMemory();
-    
+
     // Check process health
     health.services.process = this.checkProcess();
 
     // Determine overall status
     const allServicesHealthy = Object.values(health.services)
       .every(service => service.status === 'healthy');
-    
+
     health.status = allServicesHealthy ? 'OK' : 'DEGRADED';
 
     return health;
@@ -61,7 +61,7 @@ class HealthCheck {
   async checkDatabase() {
     try {
       const startTime = Date.now();
-      
+
       // Check connection state
       const connectionState = mongoose.connection.readyState;
       const stateMap = {
@@ -141,7 +141,7 @@ class HealthCheck {
     };
 
     const heapUsedPercent = Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100);
-    
+
     return {
       status: heapUsedPercent > 90 ? 'warning' : 'healthy',
       heapUsed: formatBytes(memUsage.heapUsed),
@@ -157,7 +157,7 @@ class HealthCheck {
    */
   checkProcess() {
     const cpuUsage = process.cpuUsage();
-    
+
     return {
       status: 'healthy',
       pid: process.pid,
@@ -177,11 +177,11 @@ class HealthCheck {
   getUptime() {
     const uptimeMs = Date.now() - this.startTime;
     const uptimeSeconds = Math.floor(uptimeMs / 1000);
-    
+
     const hours = Math.floor(uptimeSeconds / 3600);
     const minutes = Math.floor((uptimeSeconds % 3600) / 60);
     const seconds = uptimeSeconds % 60;
-    
+
     return {
       ms: uptimeMs,
       human: `${hours}h ${minutes}m ${seconds}s`
@@ -200,7 +200,7 @@ class HealthCheck {
    */
   async runCustomChecks() {
     const results = {};
-    
+
     for (const [name, checkFn] of this.checks) {
       try {
         results[name] = await checkFn();
@@ -211,7 +211,7 @@ class HealthCheck {
         };
       }
     }
-    
+
     return results;
   }
 
