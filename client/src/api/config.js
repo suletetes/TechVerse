@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // API endpoints
 export const API_ENDPOINTS = {
@@ -22,7 +22,7 @@ export const API_ENDPOINTS = {
     PREFERENCES: '/auth/preferences',
     SESSIONS: '/auth/sessions'
   },
-  
+
   // Products
   PRODUCTS: {
     BASE: '/products',
@@ -35,14 +35,14 @@ export const API_ENDPOINTS = {
     QUICK_PICKS: '/products/quick-picks',
     REVIEWS: (id) => `/products/${id}/reviews`
   },
-  
+
   // Orders
   ORDERS: {
     BASE: '/orders',
     USER_ORDERS: '/orders/user',
     TRACKING: (id) => `/orders/${id}/tracking`
   },
-  
+
   // Users
   USERS: {
     BASE: '/users',
@@ -52,7 +52,7 @@ export const API_ENDPOINTS = {
     WISHLIST: '/users/wishlist',
     CART: '/users/cart'
   },
-  
+
   // Admin
   ADMIN: {
     DASHBOARD: '/admin/dashboard',
