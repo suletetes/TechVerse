@@ -171,6 +171,11 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  sections: [{
+    type: String,
+    enum: ['latest', 'topSeller', 'quickPick', 'weeklyDeal'],
+    index: true
+  }],
   reviews: [reviewSchema],
   rating: {
     average: { type: Number, default: 0, min: 0, max: 5 },

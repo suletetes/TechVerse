@@ -13,6 +13,13 @@ import {
   deleteCategory,
   getAnalytics
 } from '../controllers/adminController.js';
+import {
+  getSectionProducts,
+  setSectionProducts,
+  addProductToSection,
+  removeProductFromSection,
+  getAllSections
+} from '../controllers/sectionController.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -39,5 +46,12 @@ router.get('/categories', getAllCategories);
 router.post('/categories', createCategory);
 router.put('/categories/:id', updateCategory);
 router.delete('/categories/:id', deleteCategory);
+
+// Section management routes
+router.get('/sections', getAllSections);
+router.get('/sections/:section', getSectionProducts);
+router.post('/sections/:section', setSectionProducts);
+router.patch('/sections/:section/add', addProductToSection);
+router.patch('/sections/:section/remove', removeProductFromSection);
 
 export default router;
