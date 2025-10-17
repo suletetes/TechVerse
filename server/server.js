@@ -102,13 +102,46 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 
-// Health check endpoint
+// Health check endpoints
+import healthCheck from './src/utils/healthCheck.js';
+
 app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    message: 'TechVerse API is running',
-    timestamp: new Date().toISOString()
-  });
+  const health = healthCheck.getBasicHealth();
+  res.status(200).json(health);
+});
+
+// Detailed health check endpoint
+app.get('/api/health/detailed', async (req, res) => {
+  try {
+    const health = await healthCheck.getDetailedHealth();
+    const statusCode = health.status === 'OK' ? 200 : 503;
+    res.status(statusCode).json(health);
+  } catch (error) {
+    logger.error('Health check failed:', error);
+    res.status(503).json({
+      status: 'ERROR',
+      message: 'Health check failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Database-specific health check
+app.get('/api/health/database', async (req, res) => {
+  try {
+    const dbHealth = await healthCheck.checkDatabase();
+    const statusCode = dbHealth.status === 'healthy' ? 200 : 503;
+    res.status(statusCode).json(dbHealth);
+  } catch (error) {
+    logger.error('Database health check failed:', error);
+    res.status(503).json({
+      status: 'unhealthy',
+      message: 'Database health check failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // 404 handler for undefined routes

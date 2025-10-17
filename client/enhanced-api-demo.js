@@ -60,9 +60,9 @@ global.fetch = async (url, options = {}) => {
     body: options.body,
     timestamp: new Date().toISOString()
   };
-  
+
   requestLog.push(requestInfo);
-  
+
   // Log the request
   log(`📤 Request #${requestCount}:`, 'blue');
   log(`   URL: ${url}`, 'bright');
@@ -70,21 +70,21 @@ global.fetch = async (url, options = {}) => {
   log(`   Headers:`, 'bright');
   Object.entries(requestInfo.headers).forEach(([key, value]) => {
     if (key === 'Authorization') {
-      const maskedValue = value.length > 20 ? 
+      const maskedValue = value.length > 20 ?
         `${value.substring(0, 20)}...` : value;
       log(`     ${key}: ${maskedValue}`, 'green');
     } else {
       log(`     ${key}: ${value}`, 'bright');
     }
   });
-  
+
   if (requestInfo.body && requestInfo.method !== 'GET') {
     log(`   Body: ${requestInfo.body}`, 'bright');
   }
-  
+
   // Mock response based on endpoint
   let mockResponse;
-  
+
   if (url.includes('/auth/login')) {
     mockResponse = {
       ok: true,
@@ -137,24 +137,24 @@ global.fetch = async (url, options = {}) => {
       })
     };
   }
-  
+
   // Log the response
   log(`📥 Response #${requestCount}:`, 'green');
   log(`   Status: ${mockResponse.status}`, 'bright');
   log(`   OK: ${mockResponse.ok}`, 'bright');
-  
+
   return mockResponse;
 };
 
 async function demonstrateApiConfiguration() {
   section('🔧 TechVerse API Configuration Demonstration');
-  
+
   // 1. Base URL Configuration
   subsection('1. Base URL Configuration');
   log(`✅ API Base URL: ${API_BASE_URL}`, 'green');
   log(`✅ Environment Variable: ${process.env.VITE_API_URL || 'Using fallback'}`, 'green');
   log(`✅ Fallback URL: http://localhost:5000/api`, 'green');
-  
+
   // 2. Endpoint Configuration
   subsection('2. API Endpoints Configuration');
   log('✅ Authentication Endpoints:', 'green');
@@ -165,7 +165,7 @@ async function demonstrateApiConfiguration() {
       log(`   ${key}: ${value}`, 'bright');
     }
   });
-  
+
   log('\n✅ Product Endpoints:', 'green');
   Object.entries(API_ENDPOINTS.PRODUCTS).forEach(([key, value]) => {
     if (typeof value === 'function') {
@@ -174,7 +174,7 @@ async function demonstrateApiConfiguration() {
       log(`   ${key}: ${value}`, 'bright');
     }
   });
-  
+
   // 3. HTTP Status Codes
   subsection('3. HTTP Status Codes');
   log('✅ Configured Status Codes:', 'green');
@@ -185,10 +185,10 @@ async function demonstrateApiConfiguration() {
 
 async function demonstrateAuthorizationHeaders() {
   section('🔐 Authorization Header Demonstration');
-  
+
   // Clear any existing tokens
   tokenManager.clearTokens();
-  
+
   subsection('Test 1: Request WITHOUT Token');
   try {
     await apiClient.get('/products');
@@ -196,14 +196,14 @@ async function demonstrateAuthorizationHeaders() {
   } catch (error) {
     log(`❌ Error: ${error.message}`, 'red');
   }
-  
+
   subsection('Test 2: Login and Token Storage');
   try {
     const response = await apiClient.post('/auth/login', {
       email: 'test@example.com',
       password: 'password123'
     });
-    
+
     const data = await handleApiResponse(response);
     log('✅ Login successful', 'green');
     log(`✅ Token stored: ${tokenManager.getToken() ? 'Yes' : 'No'}`, 'green');
@@ -211,7 +211,7 @@ async function demonstrateAuthorizationHeaders() {
   } catch (error) {
     log(`❌ Login error: ${error.message}`, 'red');
   }
-  
+
   subsection('Test 3: Request WITH Token');
   try {
     await apiClient.get('/products');
@@ -219,7 +219,7 @@ async function demonstrateAuthorizationHeaders() {
   } catch (error) {
     log(`❌ Error: ${error.message}`, 'red');
   }
-  
+
   subsection('Test 4: Protected Route Access');
   try {
     await apiClient.get('/auth/profile');
@@ -231,14 +231,14 @@ async function demonstrateAuthorizationHeaders() {
 
 async function demonstrateErrorHandling() {
   section('🚨 Error Handling Demonstration');
-  
+
   // Mock 401 error
   const originalGet = apiClient.get;
   let callCount = 0;
-  
-  apiClient.get = async function(endpoint, options) {
+
+  apiClient.get = async function (endpoint, options) {
     callCount++;
-    
+
     if (endpoint === '/test-401' && callCount === 1) {
       // First call returns 401
       const mockResponse = {
@@ -247,16 +247,16 @@ async function demonstrateErrorHandling() {
         headers: new Map([['content-type', 'application/json']]),
         json: async () => ({ message: 'Unauthorized' })
       };
-      
+
       log('📥 Mock 401 Response (triggering token refresh)', 'yellow');
-      
+
       // Simulate the 401 handling
       return apiClient.handleTokenRefresh(endpoint, options);
     }
-    
+
     return originalGet.call(this, endpoint, options);
   };
-  
+
   subsection('Test 1: Token Refresh on 401');
   try {
     await apiClient.get('/test-401');
@@ -264,30 +264,30 @@ async function demonstrateErrorHandling() {
   } catch (error) {
     log(`❌ Token refresh error: ${error.message}`, 'red');
   }
-  
+
   // Restore original method
   apiClient.get = originalGet;
 }
 
 async function demonstrateAdvancedFeatures() {
   section('⚡ Advanced Features Demonstration');
-  
+
   subsection('1. Request ID Generation');
   const requestId1 = apiClient.generateRequestId();
   const requestId2 = apiClient.generateRequestId();
   log(`✅ Request ID 1: ${requestId1}`, 'green');
   log(`✅ Request ID 2: ${requestId2}`, 'green');
   log(`✅ IDs are unique: ${requestId1 !== requestId2}`, 'green');
-  
+
   subsection('2. Timeout Configuration');
   log(`✅ Default timeout: 30000ms`, 'green');
   log(`✅ Configurable per request: Yes`, 'green');
-  
+
   subsection('3. Retry Logic');
   log(`✅ Max retries: ${apiClient.maxRetries}`, 'green');
   log(`✅ Retry delay: ${apiClient.retryDelay}ms`, 'green');
   log(`✅ Exponential backoff: Yes`, 'green');
-  
+
   subsection('4. Content Type Handling');
   log(`✅ Default Content-Type: application/json`, 'green');
   log(`✅ FormData handling: Automatic`, 'green');
@@ -296,26 +296,26 @@ async function demonstrateAdvancedFeatures() {
 
 function generateRequestSummary() {
   section('📊 Request Summary');
-  
+
   log(`Total requests made: ${requestCount}`, 'bright');
-  
+
   if (requestLog.length > 0) {
     subsection('Request Details:');
     requestLog.forEach((req, index) => {
       log(`${index + 1}. ${req.method} ${req.url}`, 'bright');
-      
+
       // Check for Authorization header
       if (req.headers.Authorization) {
         log(`   ✅ Authorization header present`, 'green');
       } else {
         log(`   ❌ No Authorization header`, 'yellow');
       }
-      
+
       // Check for other important headers
       if (req.headers['X-Requested-With']) {
         log(`   ✅ CSRF protection header present`, 'green');
       }
-      
+
       if (req.headers['Content-Type']) {
         log(`   ✅ Content-Type: ${req.headers['Content-Type']}`, 'green');
       }
@@ -325,7 +325,7 @@ function generateRequestSummary() {
 
 function displayConfigurationStatus() {
   section('✅ Configuration Status Summary');
-  
+
   const checks = [
     { name: 'Base URL Configuration', status: API_BASE_URL === 'http://localhost:5000/api' },
     { name: 'Environment Variable Support', status: true },
@@ -340,19 +340,19 @@ function displayConfigurationStatus() {
     { name: 'Timeout Configuration', status: true },
     { name: 'CSRF Protection', status: true }
   ];
-  
+
   checks.forEach(check => {
     const icon = check.status ? '✅' : '❌';
     const color = check.status ? 'green' : 'red';
     log(`${icon} ${check.name}`, color);
   });
-  
+
   const passedChecks = checks.filter(c => c.status).length;
   const totalChecks = checks.length;
   const percentage = Math.round((passedChecks / totalChecks) * 100);
-  
+
   log(`\n🎯 Overall Status: ${passedChecks}/${totalChecks} (${percentage}%)`, 'bright');
-  
+
   if (percentage === 100) {
     log('🎉 All configuration checks passed!', 'green');
   } else {
@@ -369,11 +369,11 @@ async function main() {
     await demonstrateAdvancedFeatures();
     generateRequestSummary();
     displayConfigurationStatus();
-    
+
     section('🎯 Demonstration Complete');
     log('All API configuration features have been demonstrated successfully!', 'green');
     log('The TechVerse API client is ready for production use.', 'bright');
-    
+
   } catch (error) {
     log(`❌ Demonstration failed: ${error.message}`, 'red');
     console.error(error);
