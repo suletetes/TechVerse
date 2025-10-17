@@ -15,6 +15,10 @@ import {
   getProductsInSection,
   removeProductFromSection,
   addProductToSection,
+  getSectionOverview,
+  clearSection,
+  getAvailableProducts,
+  bulkUpdateProductSections,
   getAnalytics
 } from '../controllers/adminController.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
@@ -45,9 +49,15 @@ router.put('/categories/:id', updateCategory);
 router.delete('/categories/:id', deleteCategory);
 
 // Section management routes
+router.get('/sections', getSectionOverview);
 router.post('/sections/:section', setProductsInSection);
 router.get('/sections/:section', getProductsInSection);
+router.delete('/sections/:section', clearSection);
 router.post('/sections/:section/products/:productId', addProductToSection);
 router.delete('/sections/:section/products/:productId', removeProductFromSection);
+
+// Product management for sections
+router.get('/products/available', getAvailableProducts);
+router.put('/products/sections', bulkUpdateProductSections);
 
 export default router;

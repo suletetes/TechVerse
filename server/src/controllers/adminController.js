@@ -693,6 +693,216 @@ export const addProductToSection = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get section overview (all sections with product counts)
+// @route   GET /api/admin/sections
+// @access  Private (Admin only)
+export const getSectionOverview = asyncHandler(async (req, res, next) => {
+  const sections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  
+  const sectionData = await Promise.all(
+    sections.map(async (section) => {
+      const products = await Product.find({
+        sections: section,
+        status: 'active'
+      }).select('_id name price images rating');
+      
+      return {
+        section,
+        productCount: products.length,
+        products: products.slice(0, 5) // First 5 products for preview
+      };
+    })
+  );
+
+  res.status(200).json({
+    success: true,
+    message: 'Section overview retrieved successfully',
+    data: {
+      sections: sectionData,
+      totalSections: sections.length
+    }
+  });
+});
+
+// @desc    Clear all products from a section
+// @route   DELETE /api/admin/sections/:section
+// @access  Private (Admin only)
+export const clearSection = asyncHandler(async (req, res, next) => {
+  const { section } = req.params;
+
+  // Validate section
+  const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  if (!validSections.includes(section)) {
+    return next(new AppError('Invalid section', 400, 'INVALID_SECTION'));
+  }
+
+  // Remove all products from this section
+  const result = await Product.updateMany(
+    { sections: section },
+    { $pull: { sections: section } }
+  );
+
+  logger.info('Section cleared by admin', {
+    section,
+    productsAffected: result.modifiedCount,
+    adminUserId: req.user._id,
+    ip: req.ip
+  });
+
+  res.status(200).json({
+    success: true,
+    message: `All products removed from ${section} section successfully`,
+    data: {
+      section,
+      productsRemoved: result.modifiedCount
+    }
+  });
+});
+
+// @desc    Get products available for section assignment
+// @route   GET /api/admin/products/available
+// @access  Private (Admin only)
+export const getAvailableProducts = asyncHandler(async (req, res, next) => {
+  const {
+    page = 1,
+    limit = 20,
+    search,
+    category,
+    excludeSection
+  } = req.query;
+
+  // Build filter
+  const filter = {
+    status: 'active',
+    visibility: 'public'
+  };
+
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { brand: { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  if (category) {
+    filter.category = category;
+  }
+
+  if (excludeSection) {
+    filter.sections = { $ne: excludeSection };
+  }
+
+  // Calculate pagination
+  const skip = (page - 1) * limit;
+  const limitNum = Math.min(limit, 50); // Max 50 products per page
+
+  // Execute query
+  const [products, totalProducts] = await Promise.all([
+    Product.find(filter)
+      .populate('category', 'name slug')
+      .select('name slug price images rating sections status createdAt')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean(),
+    Product.countDocuments(filter)
+  ]);
+
+  // Calculate pagination info
+  const totalPages = Math.ceil(totalProducts / limitNum);
+
+  res.status(200).json({
+    success: true,
+    message: 'Available products retrieved successfully',
+    data: {
+      products,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalProducts,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+        limit: limitNum
+      },
+      filters: {
+        search,
+        category,
+        excludeSection
+      }
+    }
+  });
+});
+
+// @desc    Bulk update product sections
+// @route   PUT /api/admin/products/sections
+// @access  Private (Admin only)
+export const bulkUpdateProductSections = asyncHandler(async (req, res, next) => {
+  const { updates } = req.body;
+
+  if (!Array.isArray(updates) || updates.length === 0) {
+    return next(new AppError('Updates array is required', 400, 'UPDATES_REQUIRED'));
+  }
+
+  const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  let successCount = 0;
+  let errorCount = 0;
+  const errors = [];
+
+  for (const update of updates) {
+    try {
+      const { productId, sections } = update;
+
+      if (!productId) {
+        errors.push({ productId, error: 'Product ID is required' });
+        errorCount++;
+        continue;
+      }
+
+      // Validate sections
+      if (sections && !sections.every(section => validSections.includes(section))) {
+        errors.push({ productId, error: 'Invalid section name' });
+        errorCount++;
+        continue;
+      }
+
+      // Update product
+      const product = await Product.findById(productId);
+      if (!product) {
+        errors.push({ productId, error: 'Product not found' });
+        errorCount++;
+        continue;
+      }
+
+      product.sections = sections || [];
+      await product.save();
+      successCount++;
+
+    } catch (error) {
+      errors.push({ productId: update.productId, error: error.message });
+      errorCount++;
+    }
+  }
+
+  logger.info('Bulk section update completed by admin', {
+    totalUpdates: updates.length,
+    successCount,
+    errorCount,
+    adminUserId: req.user._id,
+    ip: req.ip
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Bulk section update completed',
+    data: {
+      totalUpdates: updates.length,
+      successCount,
+      errorCount,
+      errors: errors.length > 0 ? errors : undefined
+    }
+  });
+});
+
 // @desc    Get analytics data
 // @route   GET /api/admin/analytics
 // @access  Private (Admin only)
