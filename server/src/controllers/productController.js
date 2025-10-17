@@ -18,6 +18,7 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
     maxPrice,
     minRating,
     featured,
+    section,
     status = 'active'
   } = req.query;
 
@@ -36,6 +37,7 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
   }
   if (minRating) filter['rating.average'] = { $gte: parseFloat(minRating) };
   if (featured === 'true') filter.featured = true;
+  if (section) filter.sections = section;
 
   // Build sort object
   const sortOptions = {
@@ -91,6 +93,7 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
         maxPrice,
         minRating,
         featured,
+        section,
         sort
       }
     }
@@ -602,10 +605,13 @@ export const getCategories = asyncHandler(async (req, res, next) => {
 export const getTopSellingProducts = asyncHandler(async (req, res, next) => {
   const { limit = 10, timeframe } = req.query;
 
-  const products = await Product.getTopSelling(
-    parseInt(limit), 
-    timeframe ? parseInt(timeframe) : null
-  );
+  // Try to get products from 'topSeller' section first, fallback to top selling products
+  let products = await Product.findBySection('topSeller', parseInt(limit));
+  
+  if (products.length === 0) {
+    // Fallback to top selling products if no products in 'topSeller' section
+    products = await Product.findTopSellers(parseInt(limit));
+  }
 
   res.status(200).json({
     success: true,
@@ -622,14 +628,13 @@ export const getTopSellingProducts = asyncHandler(async (req, res, next) => {
 export const getLatestProducts = asyncHandler(async (req, res, next) => {
   const { limit = 10 } = req.query;
 
-  const products = await Product.find({ 
-    status: 'active', 
-    visibility: 'public' 
-  })
-    .sort({ createdAt: -1 })
-    .limit(parseInt(limit))
-    .populate('category', 'name slug')
-    .lean();
+  // Try to get products from 'latest' section first, fallback to newest products
+  let products = await Product.findBySection('latest', parseInt(limit));
+  
+  if (products.length === 0) {
+    // Fallback to newest products if no products in 'latest' section
+    products = await Product.findLatest(parseInt(limit));
+  }
 
   res.status(200).json({
     success: true,
@@ -670,30 +675,97 @@ export const getProductsOnSale = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get weekly deals
+// @route   GET /api/products/weekly-deals
+// @access  Public
+export const getWeeklyDeals = asyncHandler(async (req, res, next) => {
+  const { limit = 4 } = req.query;
+
+  // Try to get products from 'weeklyDeal' section first, fallback to products on sale
+  let products = await Product.findBySection('weeklyDeal', parseInt(limit));
+  
+  if (products.length === 0) {
+    // Fallback to products on sale if no products in 'weeklyDeal' section
+    products = await Product.find({ 
+      status: 'active', 
+      visibility: 'public',
+      comparePrice: { $exists: true, $gt: 0 },
+      $expr: { $gt: ['$comparePrice', '$price'] }
+    })
+      .sort({ 
+        comparePrice: -1,
+        createdAt: -1
+      })
+      .limit(parseInt(limit))
+      .populate('category', 'name slug')
+      .lean();
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Weekly deals retrieved successfully',
+    data: {
+      products
+    }
+  });
+});
+
 // @desc    Get quick picks (featured products with high ratings)
 // @route   GET /api/products/quick-picks
 // @access  Public
 export const getQuickPicks = asyncHandler(async (req, res, next) => {
   const { limit = 8 } = req.query;
 
-  const products = await Product.find({ 
-    status: 'active', 
-    visibility: 'public',
-    $or: [
-      { featured: true },
-      { 'rating.average': { $gte: 4.5 } }
-    ]
-  })
-    .sort({ 'rating.average': -1, featured: -1 })
-    .limit(parseInt(limit))
-    .populate('category', 'name slug')
-    .lean();
+  // Try to get products from 'quickPick' section first, fallback to featured/high-rated products
+  let products = await Product.findBySection('quickPick', parseInt(limit));
+  
+  if (products.length === 0) {
+    // Fallback to featured/high-rated products if no products in 'quickPick' section
+    products = await Product.find({ 
+      status: 'active', 
+      visibility: 'public',
+      $or: [
+        { featured: true },
+        { 'rating.average': { $gte: 4.5 } }
+      ]
+    })
+      .sort({ 'rating.average': -1, featured: -1 })
+      .limit(parseInt(limit))
+      .populate('category', 'name slug')
+      .lean();
+  }
 
   res.status(200).json({
     success: true,
     message: 'Quick picks retrieved successfully',
     data: {
       products
+    }
+  });
+});
+
+// @desc    Get products by section
+// @route   GET /api/products/section/:section
+// @access  Public
+export const getProductsBySection = asyncHandler(async (req, res, next) => {
+  const { section } = req.params;
+  const { limit = 10 } = req.query;
+
+  // Validate section
+  const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  if (!validSections.includes(section)) {
+    return next(new AppError('Invalid section', 400, 'INVALID_SECTION'));
+  }
+
+  const products = await Product.findBySection(section, parseInt(limit));
+
+  res.status(200).json({
+    success: true,
+    message: `${section} products retrieved successfully`,
+    data: {
+      section,
+      products,
+      count: products.length
     }
   });
 });

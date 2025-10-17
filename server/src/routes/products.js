@@ -10,8 +10,10 @@ import {
   getTopSellingProducts,
   getLatestProducts,
   getProductsOnSale,
+  getWeeklyDeals,
   getQuickPicks,
   getProductsByCategory,
+  getProductsBySection,
   addProductReview,
   getProductReviews,
   getCategories
@@ -28,7 +30,9 @@ router.get('/featured', getFeaturedProducts);
 router.get('/top-sellers', getTopSellingProducts);
 router.get('/latest', getLatestProducts);
 router.get('/on-sale', getProductsOnSale);
+router.get('/weekly-deals', getWeeklyDeals);
 router.get('/quick-picks', getQuickPicks);
+router.get('/section/:section', getProductsBySection);
 router.get('/category/:categoryId', optionalAuth, getProductsByCategory);
 router.get('/:id', optionalAuth, getProductById);
 router.get('/:id/reviews', getProductReviews);
