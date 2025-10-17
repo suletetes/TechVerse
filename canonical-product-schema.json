@@ -1,0 +1,102 @@
+{
+  "_id": "string (required)",
+  "name": "string (required)",
+  "slug": "string (required)",
+  "description": "string (required)",
+  "price": "number (required)",
+  "comparePrice": "number (optional)",
+  "images": [
+    {
+      "url": "string (required)",
+      "webp": "string (optional)",
+      "alt": "string (optional)",
+      "isPrimary": "boolean (optional)"
+    }
+  ],
+  "primaryImage": {
+    "url": "string (optional)",
+    "webp": "string (optional)",
+    "alt": "string (optional)"
+  },
+  "category": {
+    "_id": "string (required)",
+    "name": "string (required)",
+    "slug": "string (required)"
+  },
+  "subcategory": {
+    "_id": "string (optional)",
+    "name": "string (optional)",
+    "slug": "string (optional)"
+  },
+  "brand": "string (required)",
+  "sku": "string (optional)",
+  "status": "string (required, enum: ['active', 'inactive', 'draft'])",
+  "visibility": "string (optional, enum: ['public', 'private'])",
+  "featured": "boolean (optional, default: false)",
+  "sections": ["string (optional, array of section names)"],
+  "stock": {
+    "quantity": "number (required)",
+    "trackQuantity": "boolean (optional, default: true)",
+    "lowStockThreshold": "number (optional, default: 10)",
+    "inStock": "boolean (computed)"
+  },
+  "rating": {
+    "average": "number (optional, 0-5)",
+    "count": "number (optional, default: 0)"
+  },
+  "averageRating": "number (optional, alias for rating.average)",
+  "reviews": "number (optional, alias for rating.count)",
+  "specifications": [
+    {
+      "name": "string (required)",
+      "value": "string (required)",
+      "category": "string (optional)"
+    }
+  ],
+  "features": ["string (optional, array of feature descriptions)"],
+  "tags": ["string (optional, array of tags)"],
+  "colors": [
+    {
+      "id": "string (required)",
+      "name": "string (required)",
+      "class": "string (optional, CSS class)",
+      "hex": "string (optional, color code)"
+    }
+  ],
+  "storageOptions": [
+    {
+      "id": "string (required)",
+      "name": "string (required)",
+      "price": "number (required)"
+    }
+  ],
+  "mediaGallery": [
+    {
+      "id": "string (required)",
+      "type": "string (required, enum: ['image', 'video'])",
+      "url": "string (required)",
+      "thumbnail": "string (optional)",
+      "alt": "string (optional)"
+    }
+  ],
+  "breadcrumbs": [
+    {
+      "name": "string (required)",
+      "path": "string (required)"
+    }
+  ],
+  "relatedCategories": [
+    {
+      "_id": "string (required)",
+      "name": "string (required)",
+      "slug": "string (required)"
+    }
+  ],
+  "seo": {
+    "title": "string (optional)",
+    "description": "string (optional)",
+    "keywords": ["string (optional)"]
+  },
+  "createdAt": "string (ISO date, required)",
+  "updatedAt": "string (ISO date, required)"
+}
