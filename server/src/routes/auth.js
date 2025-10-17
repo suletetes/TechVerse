@@ -10,6 +10,7 @@ import {
   verifyEmail,
   resendVerification,
   changePassword,
+  getMe,
   getProfile,
   updateProfile
 } from '../controllers/authController.js';
@@ -117,6 +118,7 @@ router.get('/verify-email/:token', verifyEmail);
 router.post('/resend-verification', forgotPasswordValidation, validate, resendVerification);
 
 // Protected routes
+router.get('/me', authenticate, getMe);
 router.get('/profile', authenticate, getProfile);
 router.put('/profile', authenticate, updateProfileValidation, validate, updateProfile);
 router.post('/change-password', authenticate, changePasswordValidation, validate, sensitiveOperationLimit, changePassword);

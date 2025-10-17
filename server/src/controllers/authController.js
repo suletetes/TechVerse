@@ -9,14 +9,14 @@ import logger from '../utils/logger.js';
 const generateTokens = (user) => {
   const accessToken = user.generateAuthToken();
   const refreshToken = user.generateRefreshToken();
-  
+
   return { accessToken, refreshToken };
 };
 
 // Helper function to send token response
 const sendTokenResponse = (user, statusCode, res, message = 'Success') => {
   const { accessToken, refreshToken } = generateTokens(user);
-  
+
   // Remove sensitive data
   const userResponse = {
     _id: user._id,
@@ -108,7 +108,7 @@ export const login = asyncHandler(async (req, res, next) => {
 
   // Find user and include password for comparison
   const user = await User.findByEmail(email).select('+password');
-  
+
   if (!user) {
     return next(new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS'));
   }
@@ -126,7 +126,7 @@ export const login = asyncHandler(async (req, res, next) => {
 
   // Check password
   const isPasswordValid = await user.comparePassword(password);
-  
+
   if (!isPasswordValid) {
     await user.incLoginAttempts();
     return next(new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS'));
@@ -159,7 +159,7 @@ export const login = asyncHandler(async (req, res, next) => {
 export const logout = asyncHandler(async (req, res, next) => {
   // In a stateless JWT system, logout is handled client-side
   // But we can log the logout event and potentially blacklist the token
-  
+
   if (req.user) {
     logger.info('User logged out', {
       userId: req.user._id,
@@ -187,14 +187,14 @@ export const refreshToken = asyncHandler(async (req, res, next) => {
   try {
     // Verify refresh token
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    
+
     if (decoded.type !== 'refresh') {
       return next(new AppError('Invalid refresh token', 401, 'INVALID_REFRESH_TOKEN'));
     }
 
     // Find user
     const user = await User.findById(decoded.id);
-    
+
     if (!user || !user.isActive) {
       return next(new AppError('Invalid refresh token', 401, 'INVALID_REFRESH_TOKEN'));
     }
@@ -226,7 +226,7 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
   const { email } = req.body;
 
   const user = await User.findByEmail(email);
-  
+
   if (!user) {
     // Don't reveal if email exists or not
     return res.status(200).json({
@@ -241,7 +241,7 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
 
   try {
     await emailService.sendPasswordResetEmail(user, resetToken);
-    
+
     logger.info('Password reset email sent', {
       userId: user._id,
       email: user.email,
@@ -272,7 +272,7 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
 
   // Find user by reset token
   const user = await User.findByPasswordResetToken(token);
-  
+
   if (!user) {
     return next(new AppError('Invalid or expired password reset token', 400, 'INVALID_RESET_TOKEN'));
   }
@@ -281,11 +281,11 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
   user.password = password;
   user.passwordResetToken = undefined;
   user.passwordResetExpires = undefined;
-  
+
   // Reset login attempts
   user.loginAttempts = 0;
   user.lockUntil = undefined;
-  
+
   await user.save();
 
   logger.info('Password reset successfully', {
@@ -305,7 +305,7 @@ export const verifyEmail = asyncHandler(async (req, res, next) => {
 
   // Find user by verification token
   const user = await User.findByVerificationToken(token);
-  
+
   if (!user) {
     return next(new AppError('Invalid or expired verification token', 400, 'INVALID_VERIFICATION_TOKEN'));
   }
@@ -315,7 +315,7 @@ export const verifyEmail = asyncHandler(async (req, res, next) => {
   user.accountStatus = 'active';
   user.emailVerificationToken = undefined;
   user.emailVerificationExpires = undefined;
-  
+
   await user.save();
 
   // Send welcome email
@@ -344,7 +344,7 @@ export const resendVerification = asyncHandler(async (req, res, next) => {
   const { email } = req.body;
 
   const user = await User.findByEmail(email);
-  
+
   if (!user) {
     return res.status(200).json({
       success: true,
@@ -362,7 +362,7 @@ export const resendVerification = asyncHandler(async (req, res, next) => {
 
   try {
     await emailService.sendVerificationEmail(user, verificationToken);
-    
+
     res.status(200).json({
       success: true,
       message: 'Verification email has been sent.'
@@ -382,14 +382,14 @@ export const changePassword = asyncHandler(async (req, res, next) => {
 
   // Get user with password
   const user = await User.findById(req.user._id).select('+password');
-  
+
   if (!user) {
     return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
   }
 
   // Check current password
   const isCurrentPasswordValid = await user.comparePassword(currentPassword);
-  
+
   if (!isCurrentPasswordValid) {
     return next(new AppError('Current password is incorrect', 400, 'INVALID_CURRENT_PASSWORD'));
   }
@@ -407,6 +407,26 @@ export const changePassword = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: 'Password changed successfully'
+  });
+});
+
+// @desc    Get current user (me)
+// @route   GET /api/auth/me
+// @access  Private
+export const getMe = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user._id)
+    .select('-password -emailVerificationToken -passwordResetToken');
+
+  if (!user) {
+    return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Current user retrieved successfully',
+    data: {
+      user
+    }
   });
 });
 
