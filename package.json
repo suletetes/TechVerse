@@ -5,6 +5,7 @@
   "main": "server/server.js",
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "start:dev": "node start-dev.js",
     "server:dev": "cd server && npm run dev",
     "client:dev": "cd client && npm run dev",
     "server:start": "cd server && npm start",
@@ -12,8 +13,11 @@
     "install:all": "npm install && cd client && npm install && cd ../server && npm install",
     "seed": "cd server && npm run seed",
     "seed:dev": "cd server && npm run seed:dev",
+    "migrate:sections": "cd server && node src/scripts/migrate-sections.js",
     "test": "cd client && npm test",
-    "test:server": "cd server && npm test"
+    "test:server": "cd server && npm test",
+    "test:integration": "node integration-test.js",
+    "validate": "node integration-test.js && echo '✅ Integration validation complete!'"
   },
   "keywords": [
     "ecommerce",

@@ -143,6 +143,7 @@ const seedData = {
             status: 'active',
             visibility: 'public',
             featured: true,
+            sections: ['latest', 'topSeller'],
             weight: 2.16,
             dimensions: { length: 35.57, width: 24.81, height: 1.68 },
             specifications: [
@@ -176,6 +177,7 @@ const seedData = {
             status: 'active',
             visibility: 'public',
             featured: true,
+            sections: ['latest', 'quickPick'],
             weight: 1.26,
             specifications: [
                 { name: 'Processor', value: 'Intel Core i7-1260P', category: 'performance' },
@@ -206,6 +208,7 @@ const seedData = {
             status: 'active',
             visibility: 'public',
             featured: true,
+            sections: ['topSeller', 'quickPick'],
             weight: 0.187,
             specifications: [
                 { name: 'Processor', value: 'A17 Pro chip', category: 'performance' },
@@ -237,6 +240,7 @@ const seedData = {
             status: 'active',
             visibility: 'public',
             featured: true,
+            sections: ['latest', 'weeklyDeal'],
             weight: 0.232,
             specifications: [
                 { name: 'Processor', value: 'Snapdragon 8 Gen 3', category: 'performance' },
@@ -266,6 +270,7 @@ const seedData = {
             status: 'active',
             visibility: 'public',
             featured: true,
+            sections: ['quickPick', 'weeklyDeal'],
             weight: 0.682,
             specifications: [
                 { name: 'Processor', value: 'Apple M2 chip', category: 'performance' },
@@ -295,6 +300,7 @@ const seedData = {
             status: 'active',
             visibility: 'public',
             featured: true,
+            sections: ['topSeller'],
             weight: 4.5,
             specifications: [
                 { name: 'Processor', value: 'Custom AMD Zen 2', category: 'performance' },
@@ -325,6 +331,7 @@ const seedData = {
             status: 'active',
             visibility: 'public',
             featured: true,
+            sections: ['weeklyDeal'],
             weight: 25.8,
             specifications: [
                 { name: 'Screen Size', value: '65 inches', category: 'display' },
