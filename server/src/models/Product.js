@@ -171,6 +171,11 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  sections: [{
+    type: String,
+    enum: ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'],
+    index: true
+  }],
   reviews: [reviewSchema],
   rating: {
     average: { type: Number, default: 0, min: 0, max: 5 },
@@ -350,6 +355,20 @@ productSchema.methods.addImage = function(imageData) {
   return this.save();
 };
 
+// Method to add to section
+productSchema.methods.addToSection = function(section) {
+  if (!this.sections.includes(section)) {
+    this.sections.push(section);
+  }
+  return this.save();
+};
+
+// Method to remove from section
+productSchema.methods.removeFromSection = function(section) {
+  this.sections = this.sections.filter(s => s !== section);
+  return this.save();
+};
+
 // Method to remove image
 productSchema.methods.removeImage = function(imageId) {
   const image = this.images.id(imageId);
@@ -427,6 +446,37 @@ productSchema.statics.findFeatured = function(limit = 10) {
   })
   .limit(limit)
   .sort({ createdAt: -1 });
+};
+
+productSchema.statics.findBySection = function(section, limit = 10) {
+  return this.find({
+    sections: section,
+    status: 'active',
+    visibility: 'public'
+  })
+  .populate('category', 'name slug')
+  .limit(limit)
+  .sort({ createdAt: -1 });
+};
+
+productSchema.statics.findLatest = function(limit = 10) {
+  return this.find({
+    status: 'active',
+    visibility: 'public'
+  })
+  .populate('category', 'name slug')
+  .limit(limit)
+  .sort({ createdAt: -1 });
+};
+
+productSchema.statics.findTopSellers = function(limit = 10) {
+  return this.find({
+    status: 'active',
+    visibility: 'public'
+  })
+  .populate('category', 'name slug')
+  .limit(limit)
+  .sort({ 'sales.totalSold': -1, 'rating.average': -1 });
 };
 
 productSchema.statics.findByCategory = function(categoryId, options = {}) {
@@ -556,6 +606,7 @@ productSchema.index({ brand: 1, status: 1 });
 productSchema.index({ price: 1 });
 productSchema.index({ 'rating.average': -1 });
 productSchema.index({ featured: 1, status: 1, visibility: 1 });
+productSchema.index({ sections: 1 });
 productSchema.index({ slug: 1 }, { unique: true });
 productSchema.index({ sku: 1 }, { unique: true, sparse: true });
 productSchema.index({ createdAt: -1 });
