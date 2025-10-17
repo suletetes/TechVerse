@@ -542,6 +542,157 @@ export const deleteCategory = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Set product order in section
+// @route   POST /api/admin/sections/:section
+// @access  Private (Admin only)
+export const setProductsInSection = asyncHandler(async (req, res, next) => {
+  const { section } = req.params;
+  const { productIds } = req.body;
+
+  // Validate section
+  const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  if (!validSections.includes(section)) {
+    return next(new AppError('Invalid section', 400, 'INVALID_SECTION'));
+  }
+
+  if (!Array.isArray(productIds) || productIds.length === 0) {
+    return next(new AppError('Product IDs array is required', 400, 'PRODUCT_IDS_REQUIRED'));
+  }
+
+  // Verify all products exist
+  const products = await Product.find({ _id: { $in: productIds } });
+  if (products.length !== productIds.length) {
+    return next(new AppError('One or more products not found', 404, 'PRODUCTS_NOT_FOUND'));
+  }
+
+  // Remove all products from this section first
+  await Product.updateMany(
+    { sections: section },
+    { $pull: { sections: section } }
+  );
+
+  // Add selected products to the section
+  await Product.updateMany(
+    { _id: { $in: productIds } },
+    { $addToSet: { sections: section } }
+  );
+
+  logger.info('Products assigned to section by admin', {
+    section,
+    productCount: productIds.length,
+    adminUserId: req.user._id,
+    ip: req.ip
+  });
+
+  res.status(200).json({
+    success: true,
+    message: `Products successfully assigned to ${section} section`,
+    data: {
+      section,
+      productCount: productIds.length
+    }
+  });
+});
+
+// @desc    Get products in section for admin management
+// @route   GET /api/admin/sections/:section
+// @access  Private (Admin only)
+export const getProductsInSection = asyncHandler(async (req, res, next) => {
+  const { section } = req.params;
+  const { limit = 20 } = req.query;
+
+  // Validate section
+  const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  if (!validSections.includes(section)) {
+    return next(new AppError('Invalid section', 400, 'INVALID_SECTION'));
+  }
+
+  const products = await Product.find({
+    sections: section,
+    status: 'active'
+  })
+    .populate('category', 'name slug')
+    .select('name slug price images rating sections status createdAt')
+    .sort({ createdAt: -1 })
+    .limit(parseInt(limit));
+
+  res.status(200).json({
+    success: true,
+    message: `Products in ${section} section retrieved successfully`,
+    data: {
+      section,
+      products,
+      count: products.length
+    }
+  });
+});
+
+// @desc    Remove product from section
+// @route   DELETE /api/admin/sections/:section/products/:productId
+// @access  Private (Admin only)
+export const removeProductFromSection = asyncHandler(async (req, res, next) => {
+  const { section, productId } = req.params;
+
+  // Validate section
+  const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  if (!validSections.includes(section)) {
+    return next(new AppError('Invalid section', 400, 'INVALID_SECTION'));
+  }
+
+  const product = await Product.findById(productId);
+  if (!product) {
+    return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
+  }
+
+  // Remove product from section
+  await product.removeFromSection(section);
+
+  logger.info('Product removed from section by admin', {
+    productId,
+    section,
+    adminUserId: req.user._id,
+    ip: req.ip
+  });
+
+  res.status(200).json({
+    success: true,
+    message: `Product removed from ${section} section successfully`
+  });
+});
+
+// @desc    Add product to section
+// @route   POST /api/admin/sections/:section/products/:productId
+// @access  Private (Admin only)
+export const addProductToSection = asyncHandler(async (req, res, next) => {
+  const { section, productId } = req.params;
+
+  // Validate section
+  const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  if (!validSections.includes(section)) {
+    return next(new AppError('Invalid section', 400, 'INVALID_SECTION'));
+  }
+
+  const product = await Product.findById(productId);
+  if (!product) {
+    return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
+  }
+
+  // Add product to section
+  await product.addToSection(section);
+
+  logger.info('Product added to section by admin', {
+    productId,
+    section,
+    adminUserId: req.user._id,
+    ip: req.ip
+  });
+
+  res.status(200).json({
+    success: true,
+    message: `Product added to ${section} section successfully`
+  });
+});
+
 // @desc    Get analytics data
 // @route   GET /api/admin/analytics
 // @access  Private (Admin only)

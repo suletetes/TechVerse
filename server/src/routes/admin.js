@@ -11,6 +11,10 @@ import {
   createCategory,
   updateCategory,
   deleteCategory,
+  setProductsInSection,
+  getProductsInSection,
+  removeProductFromSection,
+  addProductToSection,
   getAnalytics
 } from '../controllers/adminController.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
@@ -39,5 +43,11 @@ router.get('/categories', getAllCategories);
 router.post('/categories', createCategory);
 router.put('/categories/:id', updateCategory);
 router.delete('/categories/:id', deleteCategory);
+
+// Section management routes
+router.post('/sections/:section', setProductsInSection);
+router.get('/sections/:section', getProductsInSection);
+router.post('/sections/:section/products/:productId', addProductToSection);
+router.delete('/sections/:section/products/:productId', removeProductFromSection);
 
 export default router;
