@@ -26,7 +26,8 @@
     "test:ci": "vitest run --coverage --reporter=junit --outputFile=test-results.xml",
     "test:sections": "node src/scripts/testSectionManagement.js",
     "migrate:sections": "node src/scripts/updateProductSections.js",
-    "verify:seed": "node src/scripts/verifySeedData.js"
+    "verify:seed": "node src/scripts/verifySeedData.js",
+    "test:upload": "node src/scripts/testFileUpload.js"
   },
   "dependencies": {
     "express": "^4.18.2",

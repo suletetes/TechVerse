@@ -32,6 +32,7 @@ import productRoutes from './src/routes/products.js';
 import orderRoutes from './src/routes/orders.js';
 import userRoutes from './src/routes/users.js';
 import adminRoutes from './src/routes/admin.js';
+import uploadRoutes from './src/routes/upload.js';
 
 // Load environment variables
 dotenv.config();
@@ -64,15 +65,15 @@ app.use(cors(corsOptions));
 app.use(requestSizeLimiter('10mb'));
 
 // Body parsing middleware
-app.use(express.json({ 
+app.use(express.json({
   limit: '10mb',
   verify: (req, res, buf) => {
     req.rawBody = buf;
   }
 }));
-app.use(express.urlencoded({ 
-  extended: true, 
-  limit: '10mb' 
+app.use(express.urlencoded({
+  extended: true,
+  limit: '10mb'
 }));
 
 // Input sanitization
@@ -92,6 +93,57 @@ if (NODE_ENV === 'development') {
 // Performance monitoring
 app.use(performanceMonitor);
 
+// Static file serving configuration
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Serve uploaded images from server/uploads/
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  maxAge: '1d', // Cache for 1 day
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    // Set proper MIME types for images
+    if (filePath.endsWith('.webp')) {
+      res.setHeader('Content-Type', 'image/webp');
+    } else if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (filePath.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    }
+    // Add CORS headers for images
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  }
+}));
+
+// Serve client public images (for development/testing)
+app.use('/img', express.static(path.join(__dirname, '../client/public/img'), {
+  maxAge: '7d', // Cache for 7 days (these are static assets)
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    // Set proper MIME types for images
+    if (filePath.endsWith('.webp')) {
+      res.setHeader('Content-Type', 'image/webp');
+    } else if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (filePath.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    } else if (filePath.endsWith('.svg')) {
+      res.setHeader('Content-Type', 'image/svg+xml');
+    } else if (filePath.endsWith('.gif')) {
+      res.setHeader('Content-Type', 'image/gif');
+    }
+    // Add CORS headers for images
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  }
+}));
+
 // Rate limiting for API routes
 app.use('/api/', apiRateLimit);
 
@@ -101,6 +153,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Health check endpoints
 import healthCheck from './src/utils/healthCheck.js';
@@ -153,17 +206,17 @@ app.use(errorHandler);
 // Graceful shutdown handling
 const gracefulShutdown = (signal) => {
   logger.info(`Received ${signal}. Starting graceful shutdown...`);
-  
+
   server.close((err) => {
     if (err) {
       logger.error('Error during server shutdown', err);
       process.exit(1);
     }
-    
+
     logger.info('Server closed successfully');
     process.exit(0);
   });
-  
+
   // Force shutdown after 30 seconds
   setTimeout(() => {
     logger.error('Forced shutdown after timeout');
@@ -179,7 +232,7 @@ const server = app.listen(PORT, () => {
     nodeVersion: process.version,
     timestamp: new Date().toISOString()
   });
-  
+
   if (NODE_ENV === 'development') {
     console.log(`🌐 Server running at: http://localhost:${PORT}`);
     console.log(`📚 API Documentation: http://localhost:${PORT}/api/health`);
