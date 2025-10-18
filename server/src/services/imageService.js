@@ -1,550 +1,293 @@
-import { v2 as cloudinary } from 'cloudinary';
-import fs from 'fs';
+import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import sharp from 'sharp';
 import logger from '../utils/logger.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '../../uploads');
+const productsDir = path.join(uploadsDir, 'products');
+const categoriesDir = path.join(uploadsDir, 'categories');
+const reviewsDir = path.join(uploadsDir, 'reviews');
+
+// Create directories if they don't exist
+[uploadsDir, productsDir, categoriesDir, reviewsDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    logger.info(`Created directory: ${dir}`);
+  }
+});
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    let uploadPath = uploadsDir;
+    
+    // Determine upload path based on route or field name
+    if (req.route?.path?.includes('products') || file.fieldname === 'productImages') {
+      uploadPath = productsDir;
+    } else if (req.route?.path?.includes('categories') || file.fieldname === 'categoryImage') {
+      uploadPath = categoriesDir;
+    } else if (req.route?.path?.includes('reviews') || file.fieldname === 'reviewImages') {
+      uploadPath = reviewsDir;
+    }
+    
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    // Generate unique filename with timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname).toLowerCase();
+    const name = file.originalname.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+    cb(null, `${name}-${uniqueSuffix}${ext}`);
+  }
+});
+
+// File filter for images only
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = allowedTypes.test(file.mimetype);
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error('Only image files (JPEG, JPG, PNG, GIF, WebP) are allowed!'));
+  }
+};
+
+// Multer configuration
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+    files: 10 // Maximum 10 files per request
+  },
+  fileFilter: fileFilter
+});
+
 class ImageService {
-  constructor() {
-    this.isConfigured = false;
-    this.initializeCloudinary();
+  /**
+   * Upload single image
+   */
+  static uploadSingle(fieldName = 'image') {
+    return upload.single(fieldName);
   }
 
-  // Initialize Cloudinary
-  initializeCloudinary() {
-    try {
-      if (!process.env.CLOUDINARY_CLOUD_NAME || 
-          !process.env.CLOUDINARY_API_KEY || 
-          !process.env.CLOUDINARY_API_SECRET) {
-        logger.warn('Cloudinary configuration missing. Image service will use local storage.');
-        return;
-      }
-
-      cloudinary.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET,
-        secure: true
-      });
-
-      this.isConfigured = true;
-      logger.info('Image service (Cloudinary) configured successfully');
-
-    } catch (error) {
-      logger.error('Failed to initialize Cloudinary', error);
-      this.isConfigured = false;
-    }
+  /**
+   * Upload multiple images
+   */
+  static uploadMultiple(fieldName = 'images', maxCount = 10) {
+    return upload.array(fieldName, maxCount);
   }
 
-  // Upload single image
-  async uploadImage(file, folder = 'products', options = {}) {
-    try {
-      // Process image before upload
-      const processedFile = await this.processImage(file, options);
-
-      if (this.isConfigured) {
-        return await this.uploadToCloudinary(processedFile, folder, options);
-      } else {
-        return await this.uploadToLocal(processedFile, folder);
-      }
-
-    } catch (error) {
-      logger.error('Failed to upload image', {
-        filename: file.originalname || file.filename,
-        error: error.message
-      });
-      throw error;
-    }
+  /**
+   * Upload mixed fields
+   */
+  static uploadFields(fields) {
+    return upload.fields(fields);
   }
 
-  // Upload multiple images
-  async uploadMultipleImages(files, folder = 'products', options = {}) {
+  /**
+   * Process uploaded image (resize, optimize, create WebP version)
+   */
+  static async processImage(filePath, options = {}) {
     try {
-      const uploadPromises = files.map(file => this.uploadImage(file, folder, options));
-      const results = await Promise.all(uploadPromises);
-      
-      logger.info('Multiple images uploaded successfully', {
-        count: results.length,
-        folder
-      });
+      const {
+        width = 800,
+        height = 600,
+        quality = 80,
+        createWebP = true,
+        createThumbnail = false,
+        thumbnailSize = 200
+      } = options;
 
-      return results;
-
-    } catch (error) {
-      logger.error('Failed to upload multiple images', {
-        count: files.length,
-        folder,
-        error: error.message
-      });
-      throw error;
-    }
-  }
-
-  // Process image (resize, optimize, etc.)
-  async processImage(file, options = {}) {
-    const {
-      maxWidth = 1920,
-      maxHeight = 1080,
-      quality = 85,
-      format = 'jpeg',
-      generateThumbnail = true,
-      thumbnailSize = 300
-    } = options;
-
-    try {
-      let imageBuffer;
-      
-      // Get image buffer
-      if (file.buffer) {
-        imageBuffer = file.buffer;
-      } else if (file.path) {
-        imageBuffer = fs.readFileSync(file.path);
-      } else {
-        throw new Error('Invalid file format');
-      }
-
-      // Get image metadata
-      const metadata = await sharp(imageBuffer).metadata();
+      const ext = path.extname(filePath).toLowerCase();
+      const basePath = filePath.replace(ext, '');
       
       // Process main image
-      let processedBuffer = await sharp(imageBuffer)
-        .resize(maxWidth, maxHeight, {
-          fit: 'inside',
-          withoutEnlargement: true
+      const processedPath = `${basePath}-processed${ext}`;
+      await sharp(filePath)
+        .resize(width, height, { 
+          fit: 'inside', 
+          withoutEnlargement: true 
         })
         .jpeg({ quality })
-        .toBuffer();
+        .png({ quality })
+        .toFile(processedPath);
 
-      // Generate thumbnail if requested
-      let thumbnailBuffer = null;
-      if (generateThumbnail) {
-        thumbnailBuffer = await sharp(imageBuffer)
-          .resize(thumbnailSize, thumbnailSize, {
-            fit: 'cover',
-            position: 'center'
+      // Create WebP version
+      let webpPath = null;
+      if (createWebP) {
+        webpPath = `${basePath}.webp`;
+        await sharp(filePath)
+          .resize(width, height, { 
+            fit: 'inside', 
+            withoutEnlargement: true 
           })
-          .jpeg({ quality: 80 })
-          .toBuffer();
+          .webp({ quality })
+          .toFile(webpPath);
       }
+
+      // Create thumbnail
+      let thumbnailPath = null;
+      if (createThumbnail) {
+        thumbnailPath = `${basePath}-thumb${ext}`;
+        await sharp(filePath)
+          .resize(thumbnailSize, thumbnailSize, { 
+            fit: 'cover' 
+          })
+          .jpeg({ quality: 70 })
+          .png({ quality: 70 })
+          .toFile(thumbnailPath);
+      }
+
+      // Remove original file
+      fs.unlinkSync(filePath);
 
       return {
-        ...file,
-        buffer: processedBuffer,
-        thumbnailBuffer,
-        processedMetadata: {
-          originalWidth: metadata.width,
-          originalHeight: metadata.height,
-          originalSize: imageBuffer.length,
-          processedSize: processedBuffer.length,
-          format: metadata.format
-        }
+        original: processedPath,
+        webp: webpPath,
+        thumbnail: thumbnailPath
       };
 
     } catch (error) {
-      logger.error('Failed to process image', {
-        filename: file.originalname || file.filename,
-        error: error.message
-      });
-      throw error;
+      logger.error('Error processing image:', error);
+      throw new Error('Failed to process image');
     }
   }
 
-  // Upload to Cloudinary
-  async uploadToCloudinary(file, folder, options = {}) {
+  /**
+   * Delete image file(s)
+   */
+  static async deleteImage(imagePath) {
     try {
-      const uploadOptions = {
-        folder: `techverse/${folder}`,
-        resource_type: 'image',
-        format: 'jpg',
-        quality: 'auto:good',
-        fetch_format: 'auto',
-        flags: 'progressive',
-        ...options.cloudinaryOptions
-      };
-
-      // Upload main image
-      const result = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          uploadOptions,
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
-        uploadStream.end(file.buffer);
-      });
-
-      // Upload thumbnail if available
-      let thumbnailResult = null;
-      if (file.thumbnailBuffer) {
-        const thumbnailOptions = {
-          ...uploadOptions,
-          folder: `techverse/${folder}/thumbnails`,
-          public_id: `${result.public_id}_thumb`
-        };
-
-        thumbnailResult = await new Promise((resolve, reject) => {
-          const uploadStream = cloudinary.uploader.upload_stream(
-            thumbnailOptions,
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
-            }
-          );
-          uploadStream.end(file.thumbnailBuffer);
-        });
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+        logger.info(`Deleted image: ${imagePath}`);
       }
 
-      const imageData = {
-        url: result.secure_url,
-        publicId: result.public_id,
-        width: result.width,
-        height: result.height,
-        format: result.format,
-        size: result.bytes,
-        alt: file.originalname || '',
-        thumbnail: thumbnailResult ? {
-          url: thumbnailResult.secure_url,
-          publicId: thumbnailResult.public_id
-        } : null,
-        metadata: file.processedMetadata
-      };
-
-      logger.info('Image uploaded to Cloudinary', {
-        publicId: result.public_id,
-        url: result.secure_url,
-        size: result.bytes
-      });
-
-      return imageData;
-
-    } catch (error) {
-      logger.error('Failed to upload to Cloudinary', {
-        folder,
-        error: error.message
-      });
-      throw error;
-    }
-  }
-
-  // Upload to local storage (fallback)
-  async uploadToLocal(file, folder) {
-    try {
-      const uploadDir = path.join(process.cwd(), 'uploads', folder);
-      
-      // Ensure directory exists
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
+      // Also try to delete WebP version
+      const webpPath = imagePath.replace(/\.(jpg|jpeg|png|gif)$/i, '.webp');
+      if (fs.existsSync(webpPath)) {
+        fs.unlinkSync(webpPath);
+        logger.info(`Deleted WebP version: ${webpPath}`);
       }
 
-      // Generate unique filename
-      const timestamp = Date.now();
-      const randomString = Math.random().toString(36).substring(2, 8);
-      const filename = `${timestamp}_${randomString}.jpg`;
-      const filepath = path.join(uploadDir, filename);
-
-      // Save main image
-      fs.writeFileSync(filepath, file.buffer);
-
-      // Save thumbnail if available
-      let thumbnailPath = null;
-      if (file.thumbnailBuffer) {
-        const thumbnailDir = path.join(uploadDir, 'thumbnails');
-        if (!fs.existsSync(thumbnailDir)) {
-          fs.mkdirSync(thumbnailDir, { recursive: true });
-        }
-        
-        const thumbnailFilename = `thumb_${filename}`;
-        thumbnailPath = path.join(thumbnailDir, thumbnailFilename);
-        fs.writeFileSync(thumbnailPath, file.thumbnailBuffer);
-      }
-
-      const baseUrl = process.env.SERVER_URL || 'http://localhost:5000';
-      const imageData = {
-        url: `${baseUrl}/uploads/${folder}/${filename}`,
-        publicId: filename,
-        width: null, // Would need to extract from metadata
-        height: null,
-        format: 'jpeg',
-        size: file.buffer.length,
-        alt: file.originalname || '',
-        thumbnail: thumbnailPath ? {
-          url: `${baseUrl}/uploads/${folder}/thumbnails/thumb_${filename}`,
-          publicId: `thumb_${filename}`
-        } : null,
-        metadata: file.processedMetadata,
-        localPath: filepath
-      };
-
-      logger.info('Image uploaded to local storage', {
-        filename,
-        path: filepath,
-        size: file.buffer.length
-      });
-
-      return imageData;
-
-    } catch (error) {
-      logger.error('Failed to upload to local storage', {
-        folder,
-        error: error.message
-      });
-      throw error;
-    }
-  }
-
-  // Delete image
-  async deleteImage(publicId) {
-    try {
-      if (this.isConfigured) {
-        await this.deleteFromCloudinary(publicId);
-      } else {
-        await this.deleteFromLocal(publicId);
-      }
-
-      logger.info('Image deleted successfully', { publicId });
-
-    } catch (error) {
-      logger.error('Failed to delete image', {
-        publicId,
-        error: error.message
-      });
-      throw error;
-    }
-  }
-
-  // Delete from Cloudinary
-  async deleteFromCloudinary(publicId) {
-    try {
-      const result = await cloudinary.uploader.destroy(publicId);
-      
-      // Also delete thumbnail if exists
-      try {
-        await cloudinary.uploader.destroy(`${publicId}_thumb`);
-      } catch (thumbError) {
-        // Thumbnail might not exist, ignore error
-      }
-
-      return result;
-
-    } catch (error) {
-      logger.error('Failed to delete from Cloudinary', {
-        publicId,
-        error: error.message
-      });
-      throw error;
-    }
-  }
-
-  // Delete from local storage
-  async deleteFromLocal(publicId) {
-    try {
-      // Find and delete the file
-      const uploadDirs = ['products', 'users', 'reviews', 'categories'];
-      
-      for (const dir of uploadDirs) {
-        const filepath = path.join(process.cwd(), 'uploads', dir, publicId);
-        const thumbnailPath = path.join(process.cwd(), 'uploads', dir, 'thumbnails', `thumb_${publicId}`);
-        
-        if (fs.existsSync(filepath)) {
-          fs.unlinkSync(filepath);
-          
-          // Delete thumbnail if exists
-          if (fs.existsSync(thumbnailPath)) {
-            fs.unlinkSync(thumbnailPath);
-          }
-          
-          break;
-        }
+      // Also try to delete thumbnail
+      const ext = path.extname(imagePath);
+      const thumbPath = imagePath.replace(ext, `-thumb${ext}`);
+      if (fs.existsSync(thumbPath)) {
+        fs.unlinkSync(thumbPath);
+        logger.info(`Deleted thumbnail: ${thumbPath}`);
       }
 
     } catch (error) {
-      logger.error('Failed to delete from local storage', {
-        publicId,
-        error: error.message
-      });
-      throw error;
+      logger.error('Error deleting image:', error);
+      throw new Error('Failed to delete image');
     }
   }
 
-  // Generate different image sizes
-  async generateImageVariants(publicId, variants = []) {
-    if (!this.isConfigured) {
-      logger.warn('Image variants generation requires Cloudinary');
-      return [];
+  /**
+   * Get image URL for frontend
+   */
+  static getImageUrl(imagePath, baseUrl = '') {
+    if (!imagePath) return null;
+    
+    // If it's already a full URL, return as is
+    if (imagePath.startsWith('http')) {
+      return imagePath;
     }
-
-    try {
-      const results = [];
-
-      for (const variant of variants) {
-        const { name, width, height, crop = 'fill', quality = 'auto' } = variant;
-        
-        const url = cloudinary.url(publicId, {
-          width,
-          height,
-          crop,
-          quality,
-          fetch_format: 'auto',
-          flags: 'progressive'
-        });
-
-        results.push({
-          name,
-          url,
-          width,
-          height
-        });
-      }
-
-      return results;
-
-    } catch (error) {
-      logger.error('Failed to generate image variants', {
-        publicId,
-        error: error.message
-      });
-      throw error;
+    
+    // If it starts with /uploads, return as is (server will serve it)
+    if (imagePath.startsWith('/uploads')) {
+      return `${baseUrl}${imagePath}`;
     }
+    
+    // If it starts with /img, return as is (client public images)
+    if (imagePath.startsWith('/img')) {
+      return `${baseUrl}${imagePath}`;
+    }
+    
+    // Otherwise, assume it's a relative path in uploads
+    return `${baseUrl}/uploads/${imagePath}`;
   }
 
-  // Get optimized image URL
-  getOptimizedUrl(publicId, options = {}) {
-    if (!this.isConfigured) {
-      return null;
-    }
-
-    const {
-      width,
-      height,
-      crop = 'fill',
-      quality = 'auto',
-      format = 'auto'
-    } = options;
-
-    return cloudinary.url(publicId, {
-      width,
-      height,
-      crop,
-      quality,
-      fetch_format: format,
-      flags: 'progressive'
-    });
-  }
-
-  // Validate image file
-  validateImage(file) {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    const maxSize = 10 * 1024 * 1024; // 10MB
+  /**
+   * Validate image file
+   */
+  static validateImage(file) {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (!allowedTypes.includes(file.mimetype)) {
-      throw new Error(`Invalid file type. Allowed types: ${allowedTypes.join(', ')}`);
+      throw new Error('Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.');
     }
 
     if (file.size > maxSize) {
-      throw new Error(`File too large. Maximum size: ${maxSize / (1024 * 1024)}MB`);
+      throw new Error('File too large. Maximum size is 5MB.');
     }
 
     return true;
   }
 
-  // Get image metadata
-  async getImageMetadata(file) {
+  /**
+   * Get image info
+   */
+  static async getImageInfo(imagePath) {
     try {
-      let imageBuffer;
-      
-      if (file.buffer) {
-        imageBuffer = file.buffer;
-      } else if (file.path) {
-        imageBuffer = fs.readFileSync(file.path);
-      } else {
-        throw new Error('Invalid file format');
-      }
-
-      const metadata = await sharp(imageBuffer).metadata();
+      const metadata = await sharp(imagePath).metadata();
+      const stats = fs.statSync(imagePath);
       
       return {
         width: metadata.width,
         height: metadata.height,
         format: metadata.format,
-        size: imageBuffer.length,
-        hasAlpha: metadata.hasAlpha,
-        channels: metadata.channels,
-        density: metadata.density
+        size: stats.size,
+        created: stats.birthtime,
+        modified: stats.mtime
       };
-
     } catch (error) {
-      logger.error('Failed to get image metadata', {
-        filename: file.originalname || file.filename,
-        error: error.message
-      });
-      throw error;
+      logger.error('Error getting image info:', error);
+      throw new Error('Failed to get image information');
     }
   }
 
-  // Batch operations
-  async batchDelete(publicIds) {
+  /**
+   * Create image variants (different sizes)
+   */
+  static async createImageVariants(originalPath, variants = []) {
+    const results = {};
+    
     try {
-      const results = [];
+      for (const variant of variants) {
+        const { name, width, height, quality = 80 } = variant;
+        const ext = path.extname(originalPath);
+        const basePath = originalPath.replace(ext, '');
+        const variantPath = `${basePath}-${name}${ext}`;
+        
+        await sharp(originalPath)
+          .resize(width, height, { 
+            fit: 'inside', 
+            withoutEnlargement: true 
+          })
+          .jpeg({ quality })
+          .png({ quality })
+          .toFile(variantPath);
+          
+        results[name] = variantPath;
+      }
       
-      for (const publicId of publicIds) {
-        try {
-          await this.deleteImage(publicId);
-          results.push({ publicId, success: true });
-        } catch (error) {
-          results.push({ publicId, success: false, error: error.message });
-        }
-      }
-
       return results;
-
     } catch (error) {
-      logger.error('Batch delete failed', {
-        publicIds,
-        error: error.message
-      });
-      throw error;
-    }
-  }
-
-  // Clean up orphaned images
-  async cleanupOrphanedImages(folder, validPublicIds = []) {
-    if (!this.isConfigured) {
-      logger.warn('Cleanup requires Cloudinary configuration');
-      return;
-    }
-
-    try {
-      // Get all images in folder
-      const result = await cloudinary.search
-        .expression(`folder:techverse/${folder}`)
-        .max_results(500)
-        .execute();
-
-      const orphanedImages = result.resources.filter(
-        resource => !validPublicIds.includes(resource.public_id)
-      );
-
-      if (orphanedImages.length > 0) {
-        const deletePromises = orphanedImages.map(image => 
-          this.deleteImage(image.public_id)
-        );
-        
-        await Promise.all(deletePromises);
-        
-        logger.info('Orphaned images cleaned up', {
-          folder,
-          count: orphanedImages.length
-        });
-      }
-
-    } catch (error) {
-      logger.error('Failed to cleanup orphaned images', {
-        folder,
-        error: error.message
-      });
+      logger.error('Error creating image variants:', error);
+      throw new Error('Failed to create image variants');
     }
   }
 }
 
-export default new ImageService();
+export default ImageService;
