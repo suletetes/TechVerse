@@ -1,8 +1,9 @@
 import React from 'react'
 
 import DealCard from "./DealCard";
+import { SkeletonCard, ErrorState } from '../Common';
 
-const WeeklyDeals = ({ products = [], isLoading = false }) => {
+const WeeklyDeals = ({ products = [], isLoading = false, error = null, onRetry = null }) => {
     // Ensure products is an array
     const safeProducts = Array.isArray(products) ? products : [];
     
@@ -16,36 +17,41 @@ const WeeklyDeals = ({ products = [], isLoading = false }) => {
         imageJpg: product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder-product.jpg'
     }));
 
-    // Fallback deals for when no products are available
-    const fallbackDeals = [
-        {
-            title: "Ultra Laptop",
-            price: "From £2000",
-            discount: "Save $1000",
-            link: "./product/",
-            imageWebp: "img/laptop-product.webp",
-            imageJpg: "img/laptop-product.jpg",
-        },
-        {
-            title: "Tablet Air",
-            price: "From £1999",
-            discount: "Save $400",
-            link: "./product/",
-            imageWebp: "img/tablet-product.webp",
-            imageJpg: "img/tablet-product.jpg",
-        },
-        {
-            title: "Phone Ultra",
-            price: "From £999",
-            discount: "Save $100",
-            link: "./product/",
-            imageWebp: "img/phone-product.webp",
-            imageJpg: "img/phone-product.jpg",
-        },
-    ];
+    const renderContent = () => {
+        if (isLoading) {
+            return Array.from({ length: 3 }, (_, index) => (
+                <SkeletonCard key={index} variant="deal" />
+            ));
+        }
 
-    // Use real products if available, otherwise show fallback
-    const displayDeals = transformedProducts.length > 0 ? transformedProducts : fallbackDeals;
+        if (error) {
+            return (
+                <div className="col-12">
+                    <ErrorState
+                        message="Unable to load weekly deals. Please try again."
+                        onRetry={onRetry}
+                        variant="network"
+                    />
+                </div>
+            );
+        }
+
+        if (transformedProducts.length === 0) {
+            return (
+                <div className="col-12">
+                    <ErrorState
+                        message="No weekly deals available at the moment."
+                        showRetry={false}
+                        variant="empty"
+                    />
+                </div>
+            );
+        }
+
+        return transformedProducts.map((deal, index) => (
+            <DealCard key={index} {...deal} />
+        ));
+    };
 
     return (
         <div className="bloc bgc-5700 none full-width-bloc l-bloc" id="weekly-deals">
@@ -56,17 +62,7 @@ const WeeklyDeals = ({ products = [], isLoading = false }) => {
                             <span className="primary-text">Weekly Deals.</span> Discover our amazing offers.
                         </h3>
                     </div>
-                    {isLoading ? (
-                        <div className="col-12 text-center p-4">
-                            <div className="spinner-border text-primary" role="status">
-                                <span className="visually-hidden">Loading...</span>
-                            </div>
-                        </div>
-                    ) : (
-                        displayDeals.map((deal, index) => (
-                            <DealCard key={index} {...deal} />
-                        ))
-                    )}
+                    {renderContent()}
                 </div>
             </div>
         </div>

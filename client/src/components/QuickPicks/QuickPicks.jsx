@@ -1,9 +1,10 @@
 import React from 'react';
 import {QuickPickCard} from '../Cards';
-import { HorizontalScroll } from '../Common';
+import { HorizontalScroll, SkeletonCard, ErrorState } from '../Common';
 
-const QuickPicks = ({ products = [], isLoading = false }) => {
+const QuickPicks = ({ products = [], isLoading = false, error = null, onRetry = null }) => {
     const safeProducts = Array.isArray(products) ? products : [];
+    
     // Transform API data to component format
     const transformedProducts = safeProducts.map(product => ({
         id: product._id,
@@ -14,72 +15,52 @@ const QuickPicks = ({ products = [], isLoading = false }) => {
         imageJpg: product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder-product.jpg'
     }));
 
-    // Fallback products for when loading or no data
-    const fallbackProducts = [
-        {
-            title: 'Ultra HD QLED',
-            price: '$2999',
-            link: './product/',
-            imageWebp: 'img/tv-product.webp',
-            imageJpg: 'img/tv-product.jpg'
-        },
-        {
-            title: 'Tablet Pro',
-            price: '$1099',
-            link: './product/',
-            imageWebp: 'img/tablet-product.webp',
-            imageJpg: 'img/tablet-product.jpg'
-        },
-        {
-            title: 'Phone 15',
-            price: '$899',
-            link: './product/',
-            imageWebp: 'img/phone-product.webp',
-            imageJpg: 'img/phone-product.jpg'
-        },
-        {
-            title: 'Laptop Pro',
-            price: '$2599',
-            link: './product/',
-            imageWebp: 'img/laptop-product.webp',
-            imageJpg: 'img/laptop-product.jpg'
-        },
-        {
-            title: 'HD TV Plus',
-            price: '$5999',
-            link: './product/',
-            imageWebp: 'img/tv-product.webp',
-            imageJpg: 'img/tv-product.jpg'
-        },
-        {
-            title: 'Phone Air',
-            price: '$699',
-            link: './product/',
-            imageWebp: 'img/phone-product.webp',
-            imageJpg: 'img/phone-product.jpg'
-        },
-        {
-            title: 'Ultra Laptop',
-            price: '$2999',
-            link: './product/',
-            imageWebp: 'img/laptop-product.webp',
-            imageJpg: 'img/laptop-product.jpg'
-        },
-        {
-            title: 'Tablet Pro',
-            price: '$999',
-            link: './product/',
-            imageWebp: 'img/tablet-product.webp',
-            imageJpg: 'img/tablet-product.jpg'
-        },
-        {
-            title: 'Phone 15',
-            price: '$699',
-            link: './product/',
-            imageWebp: 'img/phone-product.webp',
-            imageJpg: 'img/phone-product.jpg'
+    const renderContent = () => {
+        if (isLoading) {
+            return (
+                <HorizontalScroll>
+                    {Array.from({ length: 4 }, (_, index) => (
+                        <SkeletonCard key={index} variant="quickpick" />
+                    ))}
+                </HorizontalScroll>
+            );
         }
-    ];
+
+        if (error) {
+            return (
+                <ErrorState
+                    message="Unable to load quick picks. Please try again."
+                    onRetry={onRetry}
+                    variant="network"
+                />
+            );
+        }
+
+        if (transformedProducts.length === 0) {
+            return (
+                <ErrorState
+                    message="No quick picks available at the moment."
+                    showRetry={false}
+                    variant="empty"
+                />
+            );
+        }
+
+        return (
+            <HorizontalScroll>
+                {transformedProducts.map((product, index) => (
+                    <QuickPickCard
+                        key={product.id || index}
+                        title={product.title}
+                        price={product.price}
+                        link={product.link}
+                        imageWebp={product.imageWebp}
+                        imageJpg={product.imageJpg}
+                    />
+                ))}
+            </HorizontalScroll>
+        );
+    };
 
     return (
         <div className="bloc full-width-bloc bgc-5700 l-bloc" id="quick-picks">
@@ -91,18 +72,7 @@ const QuickPicks = ({ products = [], isLoading = false }) => {
                         </h3>
                     </div>
                     <div className="text-start offset-lg-0 col-lg-12 col">
-                        <HorizontalScroll>
-                            {(transformedProducts.length > 0 ? transformedProducts : fallbackProducts).map((product, index) => (
-                                <QuickPickCard
-                                    key={product.id || index}
-                                    title={product.title}
-                                    price={product.price}
-                                    link={product.link}
-                                    imageWebp={product.imageWebp}
-                                    imageJpg={product.imageJpg}
-                                />
-                            ))}
-                        </HorizontalScroll>
+                        {renderContent()}
                     </div>
                 </div>
             </div>
