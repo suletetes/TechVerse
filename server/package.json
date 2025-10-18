@@ -27,7 +27,8 @@
     "test:sections": "node src/scripts/testSectionManagement.js",
     "migrate:sections": "node src/scripts/updateProductSections.js",
     "verify:seed": "node src/scripts/verifySeedData.js",
-    "test:upload": "node src/scripts/testFileUpload.js"
+    "test:upload": "node src/scripts/testFileUpload.js",
+    "verify:health": "node scripts/verify-health-checks.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
