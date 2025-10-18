@@ -198,20 +198,29 @@ class ApiClient {
     const token = tokenManager.getToken();
     const requestId = `${options.method || 'GET'}_${endpoint}`;
     
-    // Default headers
+    // Default headers with enhanced configuration
     const headers = {
       'Content-Type': 'application/json',
       'X-Requested-With': 'XMLHttpRequest',
+      'Accept': 'application/json',
       ...options.headers
     };
     
-    // Add auth header if token exists
+    // Add Authorization header if token exists (automatic header attachment)
     if (token) {
       headers.Authorization = `Bearer ${token}`;
+      console.log('🔐 Authorization header attached:', `Bearer ${token.substring(0, 20)}...`);
+    } else {
+      console.log('🔓 No token available, request sent without Authorization header');
     }
     
-    // Add request ID for tracking
+    // Add request ID for tracking and debugging
     headers['X-Request-ID'] = this.generateRequestId();
+    
+    // Special handling for FormData (file uploads)
+    if (options.body instanceof FormData) {
+      delete headers['Content-Type']; // Let browser set it for FormData
+    }
     
     const config = {
       ...options,
@@ -219,21 +228,40 @@ class ApiClient {
       timeout: options.timeout || 30000
     };
     
+    // Log request details for debugging
+    console.log('📤 API Request:', {
+      method: options.method || 'GET',
+      url: url,
+      hasAuth: !!token,
+      requestId: headers['X-Request-ID']
+    });
+    
     try {
       const response = await this.fetchWithTimeout(url, config);
       
-      // Handle token refresh for 401 errors
+      // Log response details
+      console.log('📥 API Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        requestId: headers['X-Request-ID']
+      });
+      
+      // Handle token refresh for 401 errors (but not for auth endpoints)
       if (response.status === HTTP_STATUS.UNAUTHORIZED && token && !endpoint.includes('/auth/')) {
+        console.log('🔄 Token expired, attempting refresh...');
         return this.handleTokenRefresh(endpoint, options);
       }
       
-      // Handle rate limiting
+      // Handle rate limiting with exponential backoff
       if (response.status === 429) {
+        console.log('⏳ Rate limited, retrying after delay...');
         return this.handleRateLimit(endpoint, options, response);
       }
       
-      // Handle server errors with retry
+      // Handle server errors with retry logic
       if (response.status >= 500 && this.shouldRetry(requestId)) {
+        console.log(`🔄 Server error ${response.status}, retrying...`);
         return this.handleRetry(endpoint, options, requestId);
       }
       
@@ -242,12 +270,24 @@ class ApiClient {
       
       return response;
     } catch (error) {
+      console.error('❌ Network Error:', {
+        message: error.message,
+        url: url,
+        requestId: headers['X-Request-ID']
+      });
+      
       // Handle network errors with retry
       if (this.isNetworkError(error) && this.shouldRetry(requestId)) {
+        console.log('🔄 Network error, retrying...');
         return this.handleRetry(endpoint, options, requestId);
       }
       
-      throw new Error(`Network error: ${error.message}`);
+      // Enhance error message with more context
+      const enhancedError = new Error(`Network error: ${error.message}`);
+      enhancedError.originalError = error;
+      enhancedError.url = url;
+      enhancedError.requestId = headers['X-Request-ID'];
+      throw enhancedError;
     }
   }
 
@@ -455,25 +495,76 @@ class ApiClient {
 // Create and export API client instance
 export const apiClient = new ApiClient(API_BASE_URL);
 
-// Response handler utility
+// Enhanced response handler utility with consistent error translation
 export const handleApiResponse = async (response) => {
   const contentType = response.headers.get('content-type');
   
   let data;
-  if (contentType && contentType.includes('application/json')) {
-    data = await response.json();
-  } else {
-    data = await response.text();
+  try {
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      data = await response.text();
+    }
+  } catch (parseError) {
+    // Handle cases where response body is not valid JSON/text
+    data = { message: 'Invalid response format', originalError: parseError.message };
   }
   
   if (!response.ok) {
-    const error = new Error(data.message || `HTTP error! status: ${response.status}`);
+    // Create standardized error object with server error translation
+    const errorMessage = translateServerError(response.status, data);
+    const error = new Error(errorMessage);
     error.status = response.status;
     error.data = data;
+    error.code = data.code || `HTTP_${response.status}`;
+    
+    // Log error for debugging
+    console.error('API Error:', {
+      status: response.status,
+      message: errorMessage,
+      url: response.url,
+      data: data
+    });
+    
     throw error;
   }
   
   return data;
+};
+
+// Server error translation utility
+const translateServerError = (status, data) => {
+  // Extract message from various possible response formats
+  const serverMessage = data?.message || data?.error || data?.details || data;
+  
+  // Provide user-friendly error messages based on status codes
+  switch (status) {
+    case 400:
+      return typeof serverMessage === 'string' ? serverMessage : 'Invalid request. Please check your input.';
+    case 401:
+      return 'Authentication required. Please log in again.';
+    case 403:
+      return 'Access denied. You don\'t have permission to perform this action.';
+    case 404:
+      return 'The requested resource was not found.';
+    case 409:
+      return typeof serverMessage === 'string' ? serverMessage : 'Conflict. The resource already exists.';
+    case 422:
+      return typeof serverMessage === 'string' ? serverMessage : 'Validation failed. Please check your input.';
+    case 429:
+      return 'Too many requests. Please wait a moment and try again.';
+    case 500:
+      return 'Internal server error. Please try again later.';
+    case 502:
+      return 'Server is temporarily unavailable. Please try again later.';
+    case 503:
+      return 'Service temporarily unavailable. Please try again later.';
+    case 504:
+      return 'Request timeout. Please try again.';
+    default:
+      return typeof serverMessage === 'string' ? serverMessage : `Server error (${status}). Please try again.`;
+  }
 };
 
 export default apiClient;
