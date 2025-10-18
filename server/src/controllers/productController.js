@@ -3,6 +3,7 @@ import { AppError, asyncHandler } from '../middleware/errorHandler.js';
 import imageService from '../services/imageService.js';
 import logger from '../utils/logger.js';
 import { PAGINATION_DEFAULTS } from '../utils/constants.js';
+import { formatProductImages, getBaseUrl } from '../utils/imageUtils.js';
 
 // @desc    Get all products with filtering, sorting, and pagination
 // @route   GET /api/products
@@ -68,6 +69,13 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
     Product.countDocuments(filter)
   ]);
 
+  // Format image URLs for all products
+  const baseUrl = getBaseUrl(req);
+  const formattedProducts = products.map(product => ({
+    ...product,
+    images: formatProductImages(product.images, baseUrl)
+  }));
+
   // Calculate pagination info
   const totalPages = Math.ceil(totalProducts / limitNum);
   const hasNextPage = page < totalPages;
@@ -77,7 +85,7 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
     success: true,
     message: 'Products retrieved successfully',
     data: {
-      products,
+      products: formattedProducts,
       pagination: {
         currentPage: parseInt(page),
         totalPages,
@@ -133,11 +141,18 @@ export const getProductById = asyncHandler(async (req, res, next) => {
     }
   }
 
+  // Format image URLs
+  const baseUrl = getBaseUrl(req);
+  const formattedProduct = {
+    ...product.toObject(),
+    images: formatProductImages(product.images, baseUrl)
+  };
+
   res.status(200).json({
     success: true,
     message: 'Product retrieved successfully',
     data: {
-      product
+      product: formattedProduct
     }
   });
 });
@@ -613,11 +628,18 @@ export const getTopSellingProducts = asyncHandler(async (req, res, next) => {
     products = await Product.findTopSellers(parseInt(limit));
   }
 
+  // Format image URLs
+  const baseUrl = getBaseUrl(req);
+  const formattedProducts = products.map(product => ({
+    ...product.toObject(),
+    images: formatProductImages(product.images, baseUrl)
+  }));
+
   res.status(200).json({
     success: true,
     message: 'Top selling products retrieved successfully',
     data: {
-      products
+      products: formattedProducts
     }
   });
 });
@@ -636,11 +658,18 @@ export const getLatestProducts = asyncHandler(async (req, res, next) => {
     products = await Product.findLatest(parseInt(limit));
   }
 
+  // Format image URLs
+  const baseUrl = getBaseUrl(req);
+  const formattedProducts = products.map(product => ({
+    ...product.toObject(),
+    images: formatProductImages(product.images, baseUrl)
+  }));
+
   res.status(200).json({
     success: true,
     message: 'Latest products retrieved successfully',
     data: {
-      products
+      products: formattedProducts
     }
   });
 });
@@ -701,11 +730,18 @@ export const getWeeklyDeals = asyncHandler(async (req, res, next) => {
       .lean();
   }
 
+  // Format image URLs
+  const baseUrl = getBaseUrl(req);
+  const formattedProducts = products.map(product => ({
+    ...product,
+    images: formatProductImages(product.images, baseUrl)
+  }));
+
   res.status(200).json({
     success: true,
     message: 'Weekly deals retrieved successfully',
     data: {
-      products
+      products: formattedProducts
     }
   });
 });
@@ -735,11 +771,18 @@ export const getQuickPicks = asyncHandler(async (req, res, next) => {
       .lean();
   }
 
+  // Format image URLs
+  const baseUrl = getBaseUrl(req);
+  const formattedProducts = products.map(product => ({
+    ...product,
+    images: formatProductImages(product.images, baseUrl)
+  }));
+
   res.status(200).json({
     success: true,
     message: 'Quick picks retrieved successfully',
     data: {
-      products
+      products: formattedProducts
     }
   });
 });
@@ -759,13 +802,20 @@ export const getProductsBySection = asyncHandler(async (req, res, next) => {
 
   const products = await Product.findBySection(section, parseInt(limit));
 
+  // Format image URLs
+  const baseUrl = getBaseUrl(req);
+  const formattedProducts = products.map(product => ({
+    ...product.toObject(),
+    images: formatProductImages(product.images, baseUrl)
+  }));
+
   res.status(200).json({
     success: true,
     message: `${section} products retrieved successfully`,
     data: {
       section,
-      products,
-      count: products.length
+      products: formattedProducts,
+      count: formattedProducts.length
     }
   });
 });
