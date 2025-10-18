@@ -9,14 +9,13 @@
 
 import connectDB from '../config/database.js';
 import { User, Product, Category } from '../models/index.js';
-import colors from 'colors';
 
 class SeedDataVerifier {
   constructor() {
     this.results = {
       categories: { expected: 7, actual: 0, status: 'pending' },
       users: { expected: 2, actual: 0, status: 'pending' },
-      products: { expected: 12, actual: 0, status: 'pending' },
+      products: { expected: 14, actual: 0, status: 'pending' },
       sections: {
         latest: { expected: 8, actual: 0, status: 'pending' },
         topSeller: { expected: 6, actual: 0, status: 'pending' },
@@ -31,16 +30,16 @@ class SeedDataVerifier {
     const timestamp = new Date().toISOString();
     switch (type) {
       case 'success':
-        console.log(`[${timestamp}] ✅ ${message}`.green);
+        console.log(`[${timestamp}] ✅ ${message}`);
         break;
       case 'error':
-        console.log(`[${timestamp}] ❌ ${message}`.red);
+        console.log(`[${timestamp}] ❌ ${message}`);
         break;
       case 'warning':
-        console.log(`[${timestamp}] ⚠️  ${message}`.yellow);
+        console.log(`[${timestamp}] ⚠️  ${message}`);
         break;
       case 'info':
-        console.log(`[${timestamp}] ℹ️  ${message}`.blue);
+        console.log(`[${timestamp}] ℹ️  ${message}`);
         break;
       default:
         console.log(`[${timestamp}] ${message}`);
@@ -213,8 +212,8 @@ class SeedDataVerifier {
   }
 
   async generateReport() {
-    console.log('\n📊 Seed Data Verification Report'.cyan.bold);
-    console.log('='.repeat(50).gray);
+    console.log('\n📊 Seed Data Verification Report');
+    console.log('='.repeat(50));
     
     // Categories
     const catStatus = this.results.categories.status === 'success' ? '✅' : '❌';
@@ -243,14 +242,14 @@ class SeedDataVerifier {
 
     console.log('\n🎯 Overall Status:');
     if (allSuccess) {
-      console.log('✅ All verification checks passed!'.green.bold);
+      console.log('✅ All verification checks passed!');
       console.log('\n🚀 Ready for frontend integration:');
       console.log('   - Homepage sections populated');
       console.log('   - Product images referenced correctly');
       console.log('   - Admin user available for testing');
       console.log('   - Categories properly structured');
     } else {
-      console.log('⚠️  Some verification checks failed'.yellow.bold);
+      console.log('⚠️  Some verification checks failed');
       console.log('   Please review the warnings above');
     }
 
