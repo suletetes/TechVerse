@@ -38,16 +38,23 @@ export const authenticate = async (req, res, next) => {
       });
     }
     
-    // Verify token with enhanced error handling
+    // Verify token with enhanced error handling and security validation
     let decoded;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      decoded = jwt.verify(token, process.env.JWT_SECRET, {
+        algorithms: ['HS256'],
+        issuer: process.env.JWT_ISSUER || 'techverse-api',
+        audience: process.env.JWT_AUDIENCE || 'techverse-client',
+        clockTolerance: 30 // 30 seconds clock tolerance
+      });
     } catch (jwtError) {
       logger.warn('JWT verification failed', { 
         error: jwtError.name,
         message: jwtError.message,
         ip: req.ip,
-        userAgent: req.get('User-Agent')
+        userAgent: req.get('User-Agent'),
+        endpoint: req.originalUrl,
+        tokenLength: token.length
       });
       
       if (jwtError.name === 'TokenExpiredError') {
@@ -55,7 +62,8 @@ export const authenticate = async (req, res, next) => {
           success: false,
           message: 'Token has expired. Please login again.',
           code: 'TOKEN_EXPIRED',
-          expiredAt: jwtError.expiredAt
+          expiredAt: jwtError.expiredAt,
+          canRefresh: true
         });
       }
       
@@ -74,14 +82,32 @@ export const authenticate = async (req, res, next) => {
           code: 'TOKEN_NOT_ACTIVE'
         });
       }
+
+      if (jwtError.name === 'InvalidAudienceError') {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid token audience.',
+          code: 'INVALID_AUDIENCE'
+        });
+      }
+
+      if (jwtError.name === 'InvalidIssuerError') {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid token issuer.',
+          code: 'INVALID_ISSUER'
+        });
+      }
       
       throw jwtError;
     }
     
-    // Validate token payload
-    if (!decoded.id || !decoded.email) {
+    // Enhanced token payload validation
+    if (!decoded.id || !decoded.email || !decoded.role) {
       logger.warn('Authentication failed: Invalid token payload', { 
         userId: decoded.id,
+        hasEmail: !!decoded.email,
+        hasRole: !!decoded.role,
         ip: req.ip 
       });
       
@@ -89,6 +115,24 @@ export const authenticate = async (req, res, next) => {
         success: false,
         message: 'Invalid token payload.',
         code: 'INVALID_TOKEN_PAYLOAD'
+      });
+    }
+
+    // Validate token age (prevent very old tokens)
+    const tokenAge = Date.now() / 1000 - decoded.iat;
+    const maxTokenAge = 30 * 24 * 60 * 60; // 30 days in seconds
+    
+    if (tokenAge > maxTokenAge) {
+      logger.warn('Authentication failed: Token too old', { 
+        userId: decoded.id,
+        tokenAge: Math.floor(tokenAge / 86400), // days
+        ip: req.ip 
+      });
+      
+      return res.status(401).json({
+        success: false,
+        message: 'Token is too old. Please login again.',
+        code: 'TOKEN_TOO_OLD'
       });
     }
     
@@ -464,15 +508,8 @@ export const sensitiveOperationLimit = rateLimit({
       windowMs: 15 * 60 * 1000
     });
   },
-  onLimitReached: (req, res, options) => {
-    logger.warn('Rate limit threshold reached', {
-      ip: req.ip,
-      userId: req.user?._id,
-      endpoint: req.originalUrl,
-      limit: options.max,
-      windowMs: options.windowMs
-    });
-  }
+  // onLimitReached removed in express-rate-limit v7
+  // Logging is now handled in the handler function
 });
 
 // API rate limiting (general)
@@ -533,15 +570,8 @@ export const authRateLimit = rateLimit({
       endpoint: endpoint
     });
   },
-  onLimitReached: (req, res, options) => {
-    logger.error('Authentication rate limit threshold reached', {
-      ip: req.ip,
-      endpoint: req.originalUrl,
-      limit: typeof options.max === 'function' ? options.max(req) : options.max,
-      windowMs: options.windowMs,
-      userAgent: req.get('User-Agent')
-    });
-  }
+  // onLimitReached removed in express-rate-limit v7
+  // Logging is now handled in the handler function
 });
 
 // Enhanced input validation for authentication endpoints
@@ -591,7 +621,7 @@ export const validateAuthInput = (req, res, next) => {
 
   // Check for SQL injection patterns
   const sqlInjectionPatterns = [
-    /('|(\\')|(;)|(\\;)|(--)|(\s*(union|select|insert|delete|update|drop|create|alter|exec|execute)\s*)/i
+    /('|\\')|(;|\\;)|(--)|(\s*(union|select|insert|delete|update|drop|create|alter|exec|execute)\s*)/i
   ];
   
   const checkSqlInjection = (value) => {
@@ -706,6 +736,7 @@ export default {
   optionalAuth,
   requireOwnershipOrAdmin,
   requireEmailVerification,
+  validateAuthInput,
   sensitiveOperationLimit,
   apiRateLimit,
   authRateLimit,

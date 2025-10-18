@@ -22,16 +22,42 @@ class AuthService {
     const response = await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
     const data = await handleApiResponse(response);
     
-    if (data.token && !data.mfaRequired) {
-      tokenManager.setToken(data.token);
-      if (data.refreshToken) {
-        tokenManager.setRefreshToken(data.refreshToken);
+    if (data.success && data.data?.tokens && !data.mfaRequired) {
+      const { tokens, user, security } = data.data;
+      
+      // Store tokens with enhanced security
+      tokenManager.setToken(
+        tokens.accessToken, 
+        tokens.expiresIn, 
+        tokens.sessionId
+      );
+      
+      if (tokens.refreshToken) {
+        tokenManager.setRefreshToken(tokens.refreshToken);
       }
       
-      // Store session expiry if provided
-      if (data.sessionExpiry) {
-        localStorage.setItem('session_expiry', data.sessionExpiry.toString());
+      // Store user data and permissions
+      localStorage.setItem('techverse_user', JSON.stringify(user));
+      if (user.permissions) {
+        localStorage.setItem('techverse_permissions', JSON.stringify(user.permissions));
       }
+      
+      // Store security context
+      if (security) {
+        localStorage.setItem('techverse_security_context', JSON.stringify(security));
+      }
+      
+      // Store session expiry
+      if (tokens.expiresAt) {
+        localStorage.setItem('session_expiry', new Date(tokens.expiresAt).getTime().toString());
+      }
+      
+      console.log('Login successful', {
+        userId: user._id,
+        role: user.role,
+        sessionId: tokens.sessionId?.substring(0, 8) + '...',
+        expiresAt: tokens.expiresAt
+      });
     }
     
     return data;
@@ -170,11 +196,37 @@ class AuthService {
     });
     const data = await handleApiResponse(response);
     
-    if (data.token) {
-      tokenManager.setToken(data.token);
-      if (data.refreshToken) {
-        tokenManager.setRefreshToken(data.refreshToken);
+    if (data.success && data.data?.tokens) {
+      const { tokens, user } = data.data;
+      
+      // Update tokens with enhanced security
+      tokenManager.setToken(
+        tokens.accessToken, 
+        tokens.expiresIn, 
+        tokens.sessionId
+      );
+      
+      if (tokens.refreshToken) {
+        tokenManager.setRefreshToken(tokens.refreshToken);
       }
+      
+      // Update user data and permissions
+      if (user) {
+        localStorage.setItem('techverse_user', JSON.stringify(user));
+        if (user.permissions) {
+          localStorage.setItem('techverse_permissions', JSON.stringify(user.permissions));
+        }
+      }
+      
+      // Update session expiry
+      if (tokens.expiresAt) {
+        localStorage.setItem('session_expiry', new Date(tokens.expiresAt).getTime().toString());
+      }
+      
+      console.log('Token refreshed successfully', {
+        sessionId: tokens.sessionId?.substring(0, 8) + '...',
+        expiresAt: tokens.expiresAt
+      });
     }
     
     return data;

@@ -7,24 +7,63 @@ import logger from '../utils/logger.js';
 
 // Helper function to generate tokens with enhanced security
 const generateTokens = (user, req = null) => {
-  const accessToken = user.generateAuthToken();
-  const refreshToken = user.generateRefreshToken();
+  // Enhanced payload with security context
+  const tokenPayload = {
+    id: user._id,
+    email: user.email,
+    role: user.role,
+    isEmailVerified: user.isEmailVerified,
+    accountStatus: user.accountStatus,
+    // Security context
+    iat: Math.floor(Date.now() / 1000),
+    jti: crypto.randomBytes(16).toString('hex'), // JWT ID for token tracking
+    iss: 'techverse-api', // Issuer
+    aud: 'techverse-client', // Audience
+    // Session context
+    sessionId: crypto.randomBytes(32).toString('hex'),
+    ipAddress: req?.ip,
+    userAgent: req?.get('User-Agent')?.substring(0, 200) // Limit length
+  };
+
+  const accessToken = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRE || '7d',
+    algorithm: 'HS256'
+  });
+
+  const refreshTokenPayload = {
+    id: user._id,
+    type: 'refresh',
+    sessionId: tokenPayload.sessionId,
+    jti: crypto.randomBytes(16).toString('hex')
+  };
+
+  const refreshToken = jwt.sign(refreshTokenPayload, process.env.JWT_REFRESH_SECRET, {
+    expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d',
+    algorithm: 'HS256'
+  });
 
   // Log token generation for security monitoring
   logger.info('Tokens generated', {
     userId: user._id,
     email: user.email,
+    sessionId: tokenPayload.sessionId,
+    jti: tokenPayload.jti,
     ip: req?.ip,
     userAgent: req?.get('User-Agent'),
     timestamp: new Date().toISOString()
   });
 
-  return { accessToken, refreshToken };
+  return { 
+    accessToken, 
+    refreshToken, 
+    sessionId: tokenPayload.sessionId,
+    expiresIn: process.env.JWT_EXPIRE || '7d'
+  };
 };
 
 // Helper function to send token response with enhanced security
 const sendTokenResponse = (user, statusCode, res, req, message = 'Success') => {
-  const { accessToken, refreshToken } = generateTokens(user, req);
+  const { accessToken, refreshToken, sessionId, expiresIn } = generateTokens(user, req);
 
   // Remove sensitive data and add security fields
   const userResponse = {
@@ -36,19 +75,24 @@ const sendTokenResponse = (user, statusCode, res, req, message = 'Success') => {
     isEmailVerified: user.isEmailVerified,
     accountStatus: user.accountStatus,
     createdAt: user.createdAt,
-    lastLogin: new Date()
+    lastLogin: new Date(),
+    permissions: getUserPermissions(user.role)
   };
 
-  // Set secure HTTP-only cookie for refresh token (optional, for enhanced security)
-  if (process.env.NODE_ENV === 'production') {
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      path: '/api/auth/refresh-token'
-    });
-  }
+  // Set secure HTTP-only cookie for refresh token
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    path: '/api/auth/refresh-token'
+  };
+
+  res.cookie('refreshToken', refreshToken, cookieOptions);
+
+  // Calculate token expiry timestamp
+  const expiryMs = parseExpiryToMs(expiresIn);
+  const tokenExpiry = new Date(Date.now() + expiryMs);
 
   res.status(statusCode).json({
     success: true,
@@ -57,12 +101,53 @@ const sendTokenResponse = (user, statusCode, res, req, message = 'Success') => {
       user: userResponse,
       tokens: {
         accessToken,
-        refreshToken,
-        expiresIn: process.env.JWT_EXPIRE || '7d',
-        tokenType: 'Bearer'
+        refreshToken: process.env.NODE_ENV === 'development' ? refreshToken : undefined, // Only send in dev
+        expiresIn,
+        tokenType: 'Bearer',
+        expiresAt: tokenExpiry.toISOString(),
+        sessionId
+      },
+      security: {
+        requiresEmailVerification: !user.isEmailVerified,
+        accountStatus: user.accountStatus,
+        lastPasswordChange: user.passwordChangedAt,
+        mfaEnabled: user.mfaEnabled || false
       }
     }
   });
+};
+
+// Helper function to get user permissions based on role
+const getUserPermissions = (role) => {
+  const permissions = {
+    user: ['read:profile', 'update:profile', 'read:orders', 'create:orders'],
+    admin: [
+      'read:profile', 'update:profile', 'read:orders', 'create:orders',
+      'read:users', 'update:users', 'delete:users',
+      'read:products', 'create:products', 'update:products', 'delete:products',
+      'read:analytics', 'manage:sections', 'manage:categories'
+    ]
+  };
+  return permissions[role] || permissions.user;
+};
+
+// Helper function to parse expiry string to milliseconds
+const parseExpiryToMs = (expiresIn) => {
+  if (typeof expiresIn === 'number') return expiresIn * 1000;
+  
+  const match = expiresIn.match(/^(\d+)([dhms])$/);
+  if (!match) return 7 * 24 * 60 * 60 * 1000; // Default 7 days
+  
+  const value = parseInt(match[1]);
+  const unit = match[2];
+  const multipliers = { 
+    d: 24 * 60 * 60 * 1000, 
+    h: 60 * 60 * 1000, 
+    m: 60 * 1000, 
+    s: 1000 
+  };
+  
+  return value * multipliers[unit];
 };
 
 // @desc    Register new user
@@ -166,9 +251,14 @@ export const login = asyncHandler(async (req, res, next) => {
   // Reset login attempts on successful login
   await user.resetLoginAttempts();
 
+  // Add session tracking
+  const sessionId = crypto.randomBytes(32).toString('hex');
+  await user.addSession(sessionId, req.ip, req.get('User-Agent'));
+
   logger.info('User logged in successfully', {
     userId: user._id,
     email: user.email,
+    sessionId: sessionId.substring(0, 8) + '...',
     ip: req.ip
   });
 
@@ -202,8 +292,8 @@ export const logout = asyncHandler(async (req, res, next) => {
 export const refreshToken = asyncHandler(async (req, res, next) => {
   let refreshToken = req.body.refreshToken;
 
-  // Try to get refresh token from HTTP-only cookie if not in body
-  if (!refreshToken && req.cookies && req.cookies.refreshToken) {
+  // Prefer HTTP-only cookie over body for security
+  if (req.cookies && req.cookies.refreshToken) {
     refreshToken = req.cookies.refreshToken;
   }
 
@@ -212,52 +302,83 @@ export const refreshToken = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    // Verify refresh token
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    // Verify refresh token with enhanced validation
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, {
+      algorithms: ['HS256'],
+      issuer: process.env.JWT_ISSUER || 'techverse-api',
+      audience: process.env.JWT_AUDIENCE || 'techverse-client'
+    });
 
     if (decoded.type !== 'refresh') {
-      return next(new AppError('Invalid refresh token', 401, 'INVALID_REFRESH_TOKEN'));
+      throw new Error('Invalid token type');
     }
 
     // Find user and check account status
     const user = await User.findById(decoded.id);
 
-    if (!user || !user.isActive || user.accountStatus !== 'active') {
-      return next(new AppError('Invalid refresh token', 401, 'INVALID_REFRESH_TOKEN'));
+    if (!user) {
+      throw new Error('User not found');
     }
 
-    // Check if account is locked
+    // Enhanced security checks
+    if (!user.isActive) {
+      throw new Error('Account inactive');
+    }
+
+    if (user.accountStatus !== 'active') {
+      throw new Error('Account not active');
+    }
+
     if (user.isLocked) {
       return next(new AppError('Account is locked', 423, 'ACCOUNT_LOCKED'));
     }
 
-    // Generate new tokens
-    const { accessToken, refreshToken: newRefreshToken } = generateTokens(user, req);
-
-    // Update user's last activity
-    await User.findByIdAndUpdate(user._id, {
-      lastActivity: new Date(),
-      ipAddress: req.ip,
-      userAgent: req.get('User-Agent')
-    });
-
-    // Set new refresh token cookie if using cookies
-    if (process.env.NODE_ENV === 'production' && req.cookies && req.cookies.refreshToken) {
-      res.cookie('refreshToken', newRefreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'strict',
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-        path: '/api/auth/refresh-token'
+    // Check for suspicious activity (IP change, etc.)
+    const currentIp = req.ip;
+    const currentUserAgent = req.get('User-Agent');
+    
+    if (user.ipAddress && user.ipAddress !== currentIp) {
+      logger.warn('IP address changed during token refresh', {
+        userId: user._id,
+        oldIp: user.ipAddress,
+        newIp: currentIp,
+        sessionId: decoded.sessionId
       });
     }
+
+    // Generate new tokens with rotation
+    const { accessToken, refreshToken: newRefreshToken, sessionId, expiresIn } = generateTokens(user, req);
+
+    // Update user's last activity and security context
+    await User.findByIdAndUpdate(user._id, {
+      lastActivity: new Date(),
+      ipAddress: currentIp,
+      userAgent: currentUserAgent
+    });
+
+    // Set new refresh token cookie with enhanced security
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      path: '/api/auth/refresh-token'
+    };
+
+    res.cookie('refreshToken', newRefreshToken, cookieOptions);
 
     logger.info('Token refreshed successfully', {
       userId: user._id,
       email: user.email,
-      ip: req.ip,
-      userAgent: req.get('User-Agent')
+      sessionId,
+      oldSessionId: decoded.sessionId,
+      ip: currentIp,
+      userAgent: currentUserAgent
     });
+
+    // Calculate token expiry
+    const expiryMs = parseExpiryToMs(expiresIn);
+    const tokenExpiry = new Date(Date.now() + expiryMs);
 
     res.status(200).json({
       success: true,
@@ -265,9 +386,17 @@ export const refreshToken = asyncHandler(async (req, res, next) => {
       data: {
         tokens: {
           accessToken,
-          refreshToken: newRefreshToken,
-          expiresIn: process.env.JWT_EXPIRE || '7d',
-          tokenType: 'Bearer'
+          refreshToken: process.env.NODE_ENV === 'development' ? newRefreshToken : undefined,
+          expiresIn,
+          tokenType: 'Bearer',
+          expiresAt: tokenExpiry.toISOString(),
+          sessionId
+        },
+        user: {
+          _id: user._id,
+          email: user.email,
+          role: user.role,
+          permissions: getUserPermissions(user.role)
         }
       }
     });
@@ -276,15 +405,22 @@ export const refreshToken = asyncHandler(async (req, res, next) => {
     logger.warn('Invalid refresh token attempt', {
       ip: req.ip,
       userAgent: req.get('User-Agent'),
-      error: error.message
+      error: error.message,
+      tokenPresent: !!refreshToken,
+      cookiePresent: !!(req.cookies && req.cookies.refreshToken)
     });
     
     // Clear refresh token cookie if invalid
     if (req.cookies && req.cookies.refreshToken) {
-      res.clearCookie('refreshToken', { path: '/api/auth/refresh-token' });
+      res.clearCookie('refreshToken', { 
+        path: '/api/auth/refresh-token',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+      });
     }
     
-    return next(new AppError('Invalid refresh token', 401, 'INVALID_REFRESH_TOKEN'));
+    return next(new AppError('Invalid or expired refresh token', 401, 'INVALID_REFRESH_TOKEN'));
   }
 });
 

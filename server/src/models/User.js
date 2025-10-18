@@ -211,6 +211,34 @@ const userSchema = new mongoose.Schema({
   ipAddress: String,
   userAgent: String,
   
+  // Security enhancements
+  passwordChangedAt: Date,
+  securityQuestions: [{
+    question: String,
+    answerHash: String
+  }],
+  twoFactorEnabled: { type: Boolean, default: false },
+  twoFactorSecret: String,
+  backupCodes: [String],
+  trustedDevices: [{
+    deviceId: String,
+    deviceName: String,
+    ipAddress: String,
+    userAgent: String,
+    lastUsed: Date,
+    trusted: { type: Boolean, default: false }
+  }],
+  
+  // Session management
+  activeSessions: [{
+    sessionId: String,
+    ipAddress: String,
+    userAgent: String,
+    createdAt: { type: Date, default: Date.now },
+    lastActivity: Date,
+    isActive: { type: Boolean, default: true }
+  }],
+  
   // Account verification
   emailVerificationToken: String,
   emailVerificationExpires: Date,
@@ -476,6 +504,46 @@ userSchema.methods.updateOrderStats = function(orderTotal) {
   this.totalOrders += 1;
   this.totalSpent += orderTotal;
   this.averageOrderValue = this.totalSpent / this.totalOrders;
+  return this.save();
+};
+
+// Method to add active session
+userSchema.methods.addSession = function(sessionId, ipAddress, userAgent) {
+  // Remove old sessions (keep only last 5)
+  if (this.activeSessions.length >= 5) {
+    this.activeSessions.sort((a, b) => b.lastActivity - a.lastActivity);
+    this.activeSessions = this.activeSessions.slice(0, 4);
+  }
+  
+  this.activeSessions.push({
+    sessionId,
+    ipAddress,
+    userAgent: userAgent?.substring(0, 200), // Limit length
+    lastActivity: new Date()
+  });
+  
+  return this.save();
+};
+
+// Method to update session activity
+userSchema.methods.updateSessionActivity = function(sessionId) {
+  const session = this.activeSessions.find(s => s.sessionId === sessionId);
+  if (session) {
+    session.lastActivity = new Date();
+    return this.save();
+  }
+  return Promise.resolve(this);
+};
+
+// Method to remove session
+userSchema.methods.removeSession = function(sessionId) {
+  this.activeSessions = this.activeSessions.filter(s => s.sessionId !== sessionId);
+  return this.save();
+};
+
+// Method to clear all sessions except current
+userSchema.methods.clearOtherSessions = function(currentSessionId) {
+  this.activeSessions = this.activeSessions.filter(s => s.sessionId === currentSessionId);
   return this.save();
 };
 

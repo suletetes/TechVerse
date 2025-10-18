@@ -4,14 +4,44 @@ import API_BASE_URL, { HTTP_STATUS } from '../config.js';
 const TOKEN_KEY = 'techverse_token';
 const REFRESH_TOKEN_KEY = 'techverse_refresh_token';
 const TOKEN_EXPIRY_KEY = 'techverse_token_expiry';
+const SESSION_ID_KEY = 'techverse_session_id';
+const TOKEN_FINGERPRINT_KEY = 'techverse_token_fp';
+
+// Generate browser fingerprint for token binding
+const generateFingerprint = () => {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.textBaseline = 'top';
+  ctx.font = '14px Arial';
+  ctx.fillText('Browser fingerprint', 2, 2);
+  
+  const fingerprint = [
+    navigator.userAgent,
+    navigator.language,
+    screen.width + 'x' + screen.height,
+    new Date().getTimezoneOffset(),
+    canvas.toDataURL()
+  ].join('|');
+  
+  return btoa(fingerprint).substring(0, 32);
+};
 
 export const tokenManager = {
-  // Get access token with expiry check
+  // Get access token with enhanced security checks
   getToken: () => {
     const token = localStorage.getItem(TOKEN_KEY);
     const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
+    const fingerprint = localStorage.getItem(TOKEN_FINGERPRINT_KEY);
     
     if (!token) return null;
+    
+    // Verify browser fingerprint to detect token theft
+    const currentFingerprint = generateFingerprint();
+    if (fingerprint && fingerprint !== currentFingerprint) {
+      console.warn('Token fingerprint mismatch, possible token theft detected');
+      tokenManager.clearTokens();
+      return null;
+    }
     
     // Check if token is expired (with 5 minute buffer)
     if (expiry && Date.now() > (parseInt(expiry) - 5 * 60 * 1000)) {
@@ -23,9 +53,33 @@ export const tokenManager = {
     return token;
   },
   
-  // Set access token with expiry
-  setToken: (token, expiresIn = '7d') => {
+  // Set access token with enhanced security
+  setToken: (token, expiresIn = '7d', sessionId = null) => {
+    // Validate token format
+    if (!token || typeof token !== 'string' || token.split('.').length !== 3) {
+      throw new Error('Invalid token format');
+    }
+    
+    try {
+      // Basic token validation (decode payload without verification)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (!payload.id || !payload.email) {
+        throw new Error('Invalid token payload');
+      }
+    } catch (error) {
+      throw new Error('Invalid token structure');
+    }
+    
     localStorage.setItem(TOKEN_KEY, token);
+    
+    // Store browser fingerprint for security
+    const fingerprint = generateFingerprint();
+    localStorage.setItem(TOKEN_FINGERPRINT_KEY, fingerprint);
+    
+    // Store session ID if provided
+    if (sessionId) {
+      localStorage.setItem(SESSION_ID_KEY, sessionId);
+    }
     
     // Calculate expiry time
     let expiryTime;
@@ -44,6 +98,13 @@ export const tokenManager = {
     }
     
     localStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
+    
+    // Log token storage for security monitoring
+    console.log('Token stored securely', {
+      expiresAt: new Date(expiryTime).toISOString(),
+      sessionId: sessionId?.substring(0, 8) + '...',
+      fingerprint: fingerprint.substring(0, 8) + '...'
+    });
   },
   
   removeToken: () => {
@@ -69,19 +130,35 @@ export const tokenManager = {
   
   removeRefreshToken: () => localStorage.removeItem(REFRESH_TOKEN_KEY),
   
-  // Clear all tokens and related data
+  // Clear all tokens and related data with enhanced cleanup
   clearTokens: () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(TOKEN_EXPIRY_KEY);
+    const keysToRemove = [
+      TOKEN_KEY,
+      REFRESH_TOKEN_KEY,
+      TOKEN_EXPIRY_KEY,
+      SESSION_ID_KEY,
+      TOKEN_FINGERPRINT_KEY,
+      'techverse_user',
+      'techverse_permissions',
+      'session_expiry',
+      'user_preferences'
+    ];
     
-    // Clear any other auth-related data
-    localStorage.removeItem('techverse_user');
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Clear any session storage as well
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('techverse_temp_data');
+    }
     
     // Dispatch custom event for auth state change
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('authTokensCleared'));
+      window.dispatchEvent(new CustomEvent('authTokensCleared', {
+        detail: { timestamp: new Date().toISOString() }
+      }));
     }
+    
+    console.log('All authentication data cleared');
   },
   
   // Check if tokens exist and are valid
