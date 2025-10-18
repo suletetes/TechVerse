@@ -157,6 +157,7 @@ app.use('/api/upload', uploadRoutes);
 
 // Health check endpoints
 import healthCheck from './src/utils/healthCheck.js';
+import healthMonitor from './src/utils/healthMonitor.js';
 
 app.get('/api/health', (req, res) => {
   const health = healthCheck.getBasicHealth();
@@ -197,6 +198,84 @@ app.get('/api/health/database', async (req, res) => {
   }
 });
 
+// Health monitoring endpoints
+app.get('/api/health/monitor/status', (req, res) => {
+  try {
+    const status = healthMonitor.getStatus();
+    res.status(200).json(status);
+  } catch (error) {
+    logger.error('Failed to get health monitor status:', error);
+    res.status(500).json({
+      error: 'Failed to get health monitor status',
+      message: error.message
+    });
+  }
+});
+
+app.get('/api/health/monitor/stats', (req, res) => {
+  try {
+    const stats = healthMonitor.getHealthStats();
+    res.status(200).json(stats);
+  } catch (error) {
+    logger.error('Failed to get health monitor stats:', error);
+    res.status(500).json({
+      error: 'Failed to get health monitor stats',
+      message: error.message
+    });
+  }
+});
+
+app.get('/api/health/monitor/history', (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const history = healthMonitor.getHealthHistory(limit);
+    res.status(200).json({
+      history,
+      count: history.length,
+      limit
+    });
+  } catch (error) {
+    logger.error('Failed to get health monitor history:', error);
+    res.status(500).json({
+      error: 'Failed to get health monitor history',
+      message: error.message
+    });
+  }
+});
+
+// Admin endpoints for health monitoring control
+app.post('/api/health/monitor/start', (req, res) => {
+  try {
+    healthMonitor.start();
+    res.status(200).json({
+      message: 'Health monitoring started',
+      status: healthMonitor.getStatus()
+    });
+  } catch (error) {
+    logger.error('Failed to start health monitoring:', error);
+    res.status(500).json({
+      error: 'Failed to start health monitoring',
+      message: error.message
+    });
+  }
+});
+
+app.post('/api/health/monitor/stop', (req, res) => {
+  try {
+    healthMonitor.stop();
+    res.status(200).json({
+      message: 'Health monitoring stopped',
+      status: healthMonitor.getStatus()
+    });
+  } catch (error) {
+    logger.error('Failed to stop health monitoring:', error);
+    res.status(500).json({
+      error: 'Failed to stop health monitoring',
+      message: error.message
+    });
+  }
+});
+
 // 404 handler for undefined routes
 app.use(notFound);
 
@@ -225,17 +304,21 @@ const gracefulShutdown = (signal) => {
 };
 
 // Start server
-const server = app.listen(PORT, () => {
-  logger.info(`🚀 TechVerse API Server started`, {
-    port: PORT,
-    environment: NODE_ENV,
-    nodeVersion: process.version,
-    timestamp: new Date().toISOString()
-  });
+const server = app.listen(PORT, async () => {
+  // Log server startup information
+  healthCheck.logServerStartup(PORT, NODE_ENV);
 
-  if (NODE_ENV === 'development') {
-    console.log(`🌐 Server running at: http://localhost:${PORT}`);
-    console.log(`📚 API Documentation: http://localhost:${PORT}/api/health`);
+  // Perform startup health checks
+  try {
+    const healthCheckResult = await healthCheck.performStartupHealthCheck();
+    
+    if (!healthCheckResult.success) {
+      logger.error('Server started but health checks failed', null, healthCheckResult);
+      console.error('⚠️ Server started with health check warnings. Check logs for details.');
+    }
+  } catch (error) {
+    logger.error('Failed to perform startup health checks', error);
+    console.error('⚠️ Could not perform startup health checks:', error.message);
   }
 });
 

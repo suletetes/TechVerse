@@ -230,6 +230,101 @@ class HealthCheck {
         throw new Error(`Unknown service: ${serviceName}`);
     }
   }
+
+  /**
+   * Perform startup health checks
+   * Verifies all critical systems are operational
+   */
+  async performStartupHealthCheck() {
+    logger.info('Performing startup health checks...');
+    
+    const startupChecks = {
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      checks: {}
+    };
+
+    try {
+      // Check database connectivity
+      logger.debug('Checking database connectivity...');
+      startupChecks.checks.database = await this.checkDatabase();
+      
+      if (startupChecks.checks.database.status !== 'healthy') {
+        logger.error('Database health check failed during startup', null, startupChecks.checks.database);
+        throw new Error('Database connectivity check failed');
+      }
+
+      // Check memory usage
+      logger.debug('Checking memory usage...');
+      startupChecks.checks.memory = this.checkMemory();
+      
+      if (startupChecks.checks.memory.status === 'warning') {
+        logger.warn('High memory usage detected during startup', startupChecks.checks.memory);
+      }
+
+      // Check process health
+      logger.debug('Checking process health...');
+      startupChecks.checks.process = this.checkProcess();
+
+      // Log successful startup checks
+      logger.info('Startup health checks completed successfully', {
+        database: startupChecks.checks.database.status,
+        memory: startupChecks.checks.memory.status,
+        process: startupChecks.checks.process.status,
+        responseTime: startupChecks.checks.database.responseTime
+      });
+
+      return {
+        success: true,
+        message: 'All startup health checks passed',
+        ...startupChecks
+      };
+
+    } catch (error) {
+      logger.error('Startup health checks failed', error, startupChecks);
+      
+      return {
+        success: false,
+        message: 'Startup health checks failed',
+        error: error.message,
+        ...startupChecks
+      };
+    }
+  }
+
+  /**
+   * Log server startup information
+   */
+  logServerStartup(port, environment) {
+    const startupInfo = {
+      port,
+      environment,
+      nodeVersion: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      pid: process.pid,
+      timestamp: new Date().toISOString(),
+      uptime: this.getUptime()
+    };
+
+    logger.info('TechVerse API Server started successfully', startupInfo);
+
+    if (environment === 'development') {
+      console.log(`\n🚀 TechVerse API Server is running!`);
+      console.log(`🌐 Server URL: http://localhost:${port}`);
+      console.log(`📚 Health Check: http://localhost:${port}/api/health`);
+      console.log(`🔍 Detailed Health: http://localhost:${port}/api/health/detailed`);
+      console.log(`📊 Database Health: http://localhost:${port}/api/health/database`);
+      console.log(`\n📋 Server Information:`);
+      console.log(`   Environment: ${environment}`);
+      console.log(`   Node.js: ${process.version}`);
+      console.log(`   Platform: ${process.platform} (${process.arch})`);
+      console.log(`   Process ID: ${process.pid}`);
+      console.log(`\n✅ Server ready to accept connections\n`);
+    }
+
+    return startupInfo;
+  }
 }
 
 // Create singleton instance
