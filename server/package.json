@@ -27,7 +27,8 @@
     "test:sections": "node src/scripts/testSectionManagement.js",
     "migrate:sections": "node src/scripts/updateProductSections.js",
     "verify:seed": "node src/scripts/verifySeedData.js",
-    "test:upload": "node src/scripts/testFileUpload.js"
+    "test:upload": "node src/scripts/testFileUpload.js",
+    "test:auth": "node src/scripts/testAuthentication.js"
   },
   "dependencies": {
     "express": "^4.18.2",
