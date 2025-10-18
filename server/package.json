@@ -23,7 +23,10 @@
     "test:middleware": "vitest run src/__tests__/middleware/",
     "test:services": "vitest run src/__tests__/services/",
     "test:auth": "vitest run src/__tests__/controllers/authController.test.js",
-    "test:ci": "vitest run --coverage --reporter=junit --outputFile=test-results.xml"
+    "test:ci": "vitest run --coverage --reporter=junit --outputFile=test-results.xml",
+    "test:sections": "node src/scripts/testSectionManagement.js",
+    "migrate:sections": "node src/scripts/updateProductSections.js",
+    "verify:seed": "node src/scripts/verifySeedData.js"
   },
   "dependencies": {
     "express": "^4.18.2",
