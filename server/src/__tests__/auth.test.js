@@ -2,7 +2,7 @@
 // TODO: Implement authentication tests
 
 import request from 'supertest';
-import app from '../app.js';
+import app from '../../server.js';
 
 describe('Authentication Endpoints', () => {
   describe('POST /api/auth/register', () => {

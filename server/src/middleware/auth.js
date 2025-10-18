@@ -3,12 +3,18 @@ import rateLimit from 'express-rate-limit';
 import User from '../models/User.js';
 import logger from '../utils/logger.js';
 
-// Verify JWT token
+// Enhanced JWT token verification with security improvements
 export const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.header('Authorization');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      logger.warn('Authentication failed: No token provided', { 
+        ip: req.ip, 
+        userAgent: req.get('User-Agent'),
+        endpoint: req.originalUrl 
+      });
+      
       return res.status(401).json({
         success: false,
         message: 'Access denied. No valid token provided.',
@@ -18,8 +24,73 @@ export const authenticate = async (req, res, next) => {
 
     const token = authHeader.replace('Bearer ', '');
     
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Check token format and length
+    if (token.length < 10) {
+      logger.warn('Authentication failed: Invalid token format', { 
+        ip: req.ip,
+        tokenLength: token.length 
+      });
+      
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token format.',
+        code: 'INVALID_TOKEN'
+      });
+    }
+    
+    // Verify token with enhanced error handling
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (jwtError) {
+      logger.warn('JWT verification failed', { 
+        error: jwtError.name,
+        message: jwtError.message,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      
+      if (jwtError.name === 'TokenExpiredError') {
+        return res.status(401).json({
+          success: false,
+          message: 'Token has expired. Please login again.',
+          code: 'TOKEN_EXPIRED',
+          expiredAt: jwtError.expiredAt
+        });
+      }
+      
+      if (jwtError.name === 'JsonWebTokenError') {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid token format.',
+          code: 'INVALID_TOKEN'
+        });
+      }
+      
+      if (jwtError.name === 'NotBeforeError') {
+        return res.status(401).json({
+          success: false,
+          message: 'Token not active yet.',
+          code: 'TOKEN_NOT_ACTIVE'
+        });
+      }
+      
+      throw jwtError;
+    }
+    
+    // Validate token payload
+    if (!decoded.id || !decoded.email) {
+      logger.warn('Authentication failed: Invalid token payload', { 
+        userId: decoded.id,
+        ip: req.ip 
+      });
+      
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token payload.',
+        code: 'INVALID_TOKEN_PAYLOAD'
+      });
+    }
     
     // Find user and exclude sensitive fields
     const user = await User.findById(decoded.id)
@@ -27,7 +98,11 @@ export const authenticate = async (req, res, next) => {
       .lean();
     
     if (!user) {
-      logger.warn('Authentication failed: User not found', { userId: decoded.id });
+      logger.warn('Authentication failed: User not found', { 
+        userId: decoded.id,
+        ip: req.ip 
+      });
+      
       return res.status(401).json({
         success: false,
         message: 'Invalid token. User not found.',
@@ -35,9 +110,13 @@ export const authenticate = async (req, res, next) => {
       });
     }
 
-    // Check account status
+    // Enhanced account status checks
     if (!user.isActive) {
-      logger.warn('Authentication failed: Account inactive', { userId: user._id });
+      logger.warn('Authentication failed: Account inactive', { 
+        userId: user._id,
+        ip: req.ip 
+      });
+      
       return res.status(401).json({
         success: false,
         message: 'Account is deactivated. Please contact support.',
@@ -48,26 +127,43 @@ export const authenticate = async (req, res, next) => {
     // Check if account is locked
     if (user.lockUntil && user.lockUntil > Date.now()) {
       const lockTimeRemaining = Math.ceil((user.lockUntil - Date.now()) / (1000 * 60));
-      logger.warn('Authentication failed: Account locked', { userId: user._id });
-      return res.status(401).json({
+      logger.warn('Authentication failed: Account locked', { 
+        userId: user._id,
+        lockUntil: user.lockUntil,
+        ip: req.ip 
+      });
+      
+      return res.status(423).json({
         success: false,
         message: `Account is temporarily locked. Try again in ${lockTimeRemaining} minutes.`,
         code: 'ACCOUNT_LOCKED',
-        lockUntil: user.lockUntil
+        lockUntil: user.lockUntil,
+        retryAfter: lockTimeRemaining * 60
       });
     }
 
     // Check account status
     if (user.accountStatus === 'suspended') {
-      logger.warn('Authentication failed: Account suspended', { userId: user._id });
+      logger.warn('Authentication failed: Account suspended', { 
+        userId: user._id,
+        suspensionReason: user.suspensionReason,
+        ip: req.ip 
+      });
+      
       return res.status(401).json({
         success: false,
         message: 'Account is suspended. Please contact support.',
-        code: 'ACCOUNT_SUSPENDED'
+        code: 'ACCOUNT_SUSPENDED',
+        reason: user.suspensionReason
       });
     }
 
     if (user.accountStatus === 'pending') {
+      logger.warn('Authentication failed: Email not verified', { 
+        userId: user._id,
+        ip: req.ip 
+      });
+      
       return res.status(401).json({
         success: false,
         message: 'Please verify your email address to activate your account.',
@@ -75,38 +171,69 @@ export const authenticate = async (req, res, next) => {
       });
     }
 
-    // Update last activity
+    if (user.accountStatus === 'closed') {
+      logger.warn('Authentication failed: Account closed', { 
+        userId: user._id,
+        ip: req.ip 
+      });
+      
+      return res.status(401).json({
+        success: false,
+        message: 'Account has been closed. Please contact support.',
+        code: 'ACCOUNT_CLOSED'
+      });
+    }
+
+    // Security: Check for suspicious activity
+    const currentIp = req.ip;
+    const currentUserAgent = req.get('User-Agent');
+    
+    // Log if IP or User-Agent changed (for security monitoring)
+    if (user.ipAddress && user.ipAddress !== currentIp) {
+      logger.info('IP address changed for user', {
+        userId: user._id,
+        oldIp: user.ipAddress,
+        newIp: currentIp,
+        userAgent: currentUserAgent
+      });
+    }
+
+    // Update last activity with enhanced tracking
     await User.findByIdAndUpdate(user._id, { 
       lastActivity: new Date(),
-      ipAddress: req.ip,
-      userAgent: req.get('User-Agent')
+      ipAddress: currentIp,
+      userAgent: currentUserAgent
+    }, { 
+      new: false // Don't return the updated document for performance
     });
 
-    // Attach user to request
+    // Attach user to request with additional security context
     req.user = user;
     req.userId = user._id;
+    req.userRole = user.role;
+    req.authContext = {
+      tokenIssuedAt: new Date(decoded.iat * 1000),
+      tokenExpiresAt: new Date(decoded.exp * 1000),
+      ipAddress: currentIp,
+      userAgent: currentUserAgent
+    };
     
-    logger.debug('User authenticated successfully', { userId: user._id });
+    logger.debug('User authenticated successfully', { 
+      userId: user._id,
+      role: user.role,
+      ip: currentIp 
+    });
+    
     next();
     
   } catch (error) {
-    logger.error('Authentication error', error);
-    
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token format.',
-        code: 'INVALID_TOKEN'
-      });
-    }
-    
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Token has expired. Please login again.',
-        code: 'TOKEN_EXPIRED'
-      });
-    }
+    logger.error('Authentication service error', {
+      error: error.message,
+      stack: error.stack,
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      endpoint: req.originalUrl
+    });
 
     return res.status(500).json({
       success: false,
@@ -296,7 +423,7 @@ export const requireEmailVerification = (req, res, next) => {
   next();
 };
 
-// Rate limiting for sensitive operations
+// Enhanced rate limiting for sensitive operations
 export const sensitiveOperationLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // limit each IP to 5 requests per windowMs
@@ -304,23 +431,46 @@ export const sensitiveOperationLimit = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     // Use combination of IP and user ID for authenticated requests
-    return req.user ? `${req.ip}-${req.user._id}` : req.ip;
+    const baseKey = req.user ? `${req.ip}-${req.user._id}` : req.ip;
+    const endpoint = req.route?.path || req.originalUrl;
+    return `sensitive:${baseKey}:${endpoint}`;
   },
   skip: (req) => {
-    // Skip rate limiting for admin users
-    return req.user && req.user.role === 'admin';
+    // Skip rate limiting for admin users (but still log the attempt)
+    if (req.user && req.user.role === 'admin') {
+      logger.info('Admin bypassed rate limit', {
+        userId: req.user._id,
+        ip: req.ip,
+        endpoint: req.originalUrl
+      });
+      return true;
+    }
+    return false;
   },
   handler: (req, res) => {
-    logger.warn('Sensitive operation rate limit reached', {
+    logger.warn('Sensitive operation rate limit exceeded', {
       ip: req.ip,
       userId: req.user?._id,
-      endpoint: req.originalUrl
+      endpoint: req.originalUrl,
+      userAgent: req.get('User-Agent'),
+      timestamp: new Date().toISOString()
     });
     
     res.status(429).json({
       success: false,
       message: 'Too many sensitive operations. Please try again in 15 minutes.',
-      code: 'RATE_LIMIT_EXCEEDED'
+      code: 'RATE_LIMIT_EXCEEDED',
+      retryAfter: 900, // 15 minutes in seconds
+      windowMs: 15 * 60 * 1000
+    });
+  },
+  onLimitReached: (req, res, options) => {
+    logger.warn('Rate limit threshold reached', {
+      ip: req.ip,
+      userId: req.user?._id,
+      endpoint: req.originalUrl,
+      limit: options.max,
+      windowMs: options.windowMs
     });
   }
 });
@@ -342,26 +492,134 @@ export const apiRateLimit = rateLimit({
   }
 });
 
-// Strict rate limiting for auth endpoints
+// Enhanced strict rate limiting for auth endpoints
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 auth attempts per windowMs
+  max: (req) => {
+    // Different limits based on endpoint
+    if (req.originalUrl.includes('/login')) return 5;
+    if (req.originalUrl.includes('/register')) return 3;
+    if (req.originalUrl.includes('/forgot-password')) return 3;
+    if (req.originalUrl.includes('/reset-password')) return 5;
+    return 10; // Default for other auth endpoints
+  },
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful requests
+  keyGenerator: (req) => {
+    // Include endpoint in key for more granular limiting
+    const endpoint = req.originalUrl.split('?')[0]; // Remove query params
+    return `auth:${req.ip}:${endpoint}`;
+  },
   handler: (req, res) => {
-    logger.warn('Authentication rate limit reached', {
+    const endpoint = req.originalUrl.split('?')[0];
+    
+    logger.warn('Authentication rate limit exceeded', {
       ip: req.ip,
-      endpoint: req.originalUrl
+      endpoint: endpoint,
+      userAgent: req.get('User-Agent'),
+      timestamp: new Date().toISOString(),
+      headers: {
+        'x-forwarded-for': req.get('X-Forwarded-For'),
+        'x-real-ip': req.get('X-Real-IP')
+      }
     });
     
     res.status(429).json({
       success: false,
       message: 'Too many authentication attempts. Please try again in 15 minutes.',
-      code: 'AUTH_RATE_LIMIT_EXCEEDED'
+      code: 'AUTH_RATE_LIMIT_EXCEEDED',
+      retryAfter: 900, // 15 minutes in seconds
+      endpoint: endpoint
+    });
+  },
+  onLimitReached: (req, res, options) => {
+    logger.error('Authentication rate limit threshold reached', {
+      ip: req.ip,
+      endpoint: req.originalUrl,
+      limit: typeof options.max === 'function' ? options.max(req) : options.max,
+      windowMs: options.windowMs,
+      userAgent: req.get('User-Agent')
     });
   }
 });
+
+// Enhanced input validation for authentication endpoints
+export const validateAuthInput = (req, res, next) => {
+  const { email, password } = req.body;
+  const errors = [];
+
+  // Email validation
+  if (email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      errors.push('Invalid email format');
+    }
+    
+    // Check for suspicious email patterns
+    const suspiciousPatterns = [
+      /(.)\1{4,}/, // Repeated characters
+      /^[0-9]+@/, // Starts with numbers only
+      /@[0-9]+\.[0-9]+$/ // IP address domain
+    ];
+    
+    if (suspiciousPatterns.some(pattern => pattern.test(email))) {
+      logger.warn('Suspicious email pattern detected', {
+        email: email.replace(/(.{3}).*(@.*)/, '$1***$2'),
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+    }
+  }
+
+  // Password validation for registration/reset
+  if (password && (req.originalUrl.includes('/register') || req.originalUrl.includes('/reset-password'))) {
+    if (password.length < 6) {
+      errors.push('Password must be at least 6 characters long');
+    }
+    
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      errors.push('Password must contain at least one uppercase letter, one lowercase letter, and one number');
+    }
+    
+    // Check for common weak passwords
+    const commonPasswords = ['password', '123456', 'password123', 'admin', 'qwerty'];
+    if (commonPasswords.includes(password.toLowerCase())) {
+      errors.push('Password is too common. Please choose a stronger password');
+    }
+  }
+
+  // Check for SQL injection patterns
+  const sqlInjectionPatterns = [
+    /('|(\\')|(;)|(\\;)|(--)|(\s*(union|select|insert|delete|update|drop|create|alter|exec|execute)\s*)/i
+  ];
+  
+  const checkSqlInjection = (value) => {
+    return sqlInjectionPatterns.some(pattern => pattern.test(value));
+  };
+
+  Object.values(req.body).forEach(value => {
+    if (typeof value === 'string' && checkSqlInjection(value)) {
+      logger.warn('Potential SQL injection attempt detected', {
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        endpoint: req.originalUrl
+      });
+      errors.push('Invalid input detected');
+    }
+  });
+
+  if (errors.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation failed',
+      errors: errors,
+      code: 'VALIDATION_ERROR'
+    });
+  }
+
+  next();
+};
 
 // Check if user can perform action based on account age
 export const requireAccountAge = (minDays = 1) => {

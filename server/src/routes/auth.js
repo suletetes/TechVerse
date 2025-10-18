@@ -14,7 +14,12 @@ import {
   getProfile,
   updateProfile
 } from '../controllers/authController.js';
-import { authenticate, sensitiveOperationLimit } from '../middleware/auth.js';
+import { 
+  authenticate, 
+  sensitiveOperationLimit, 
+  authRateLimit,
+  validateAuthInput 
+} from '../middleware/auth.js';
 import { validate } from '../middleware/validation.js';
 
 const router = express.Router();
@@ -107,15 +112,15 @@ const updateProfileValidation = [
     .withMessage('Please provide a valid date of birth')
 ];
 
-// Public routes
-router.post('/register', registerValidation, validate, register);
-router.post('/login', loginValidation, validate, sensitiveOperationLimit, login);
+// Public routes with enhanced security
+router.post('/register', authRateLimit, validateAuthInput, registerValidation, validate, register);
+router.post('/login', authRateLimit, validateAuthInput, loginValidation, validate, login);
 router.post('/logout', logout);
-router.post('/refresh-token', refreshToken);
-router.post('/forgot-password', forgotPasswordValidation, validate, sensitiveOperationLimit, forgotPassword);
-router.post('/reset-password', resetPasswordValidation, validate, sensitiveOperationLimit, resetPassword);
+router.post('/refresh-token', authRateLimit, refreshToken);
+router.post('/forgot-password', authRateLimit, validateAuthInput, forgotPasswordValidation, validate, forgotPassword);
+router.post('/reset-password', authRateLimit, validateAuthInput, resetPasswordValidation, validate, resetPassword);
 router.get('/verify-email/:token', verifyEmail);
-router.post('/resend-verification', forgotPasswordValidation, validate, resendVerification);
+router.post('/resend-verification', authRateLimit, validateAuthInput, forgotPasswordValidation, validate, resendVerification);
 
 // Protected routes
 router.get('/me', authenticate, getMe);

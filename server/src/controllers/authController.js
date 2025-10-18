@@ -5,19 +5,28 @@ import { AppError, asyncHandler } from '../middleware/errorHandler.js';
 import emailService from '../services/emailService.js';
 import logger from '../utils/logger.js';
 
-// Helper function to generate tokens
-const generateTokens = (user) => {
+// Helper function to generate tokens with enhanced security
+const generateTokens = (user, req = null) => {
   const accessToken = user.generateAuthToken();
   const refreshToken = user.generateRefreshToken();
+
+  // Log token generation for security monitoring
+  logger.info('Tokens generated', {
+    userId: user._id,
+    email: user.email,
+    ip: req?.ip,
+    userAgent: req?.get('User-Agent'),
+    timestamp: new Date().toISOString()
+  });
 
   return { accessToken, refreshToken };
 };
 
-// Helper function to send token response
-const sendTokenResponse = (user, statusCode, res, message = 'Success') => {
-  const { accessToken, refreshToken } = generateTokens(user);
+// Helper function to send token response with enhanced security
+const sendTokenResponse = (user, statusCode, res, req, message = 'Success') => {
+  const { accessToken, refreshToken } = generateTokens(user, req);
 
-  // Remove sensitive data
+  // Remove sensitive data and add security fields
   const userResponse = {
     _id: user._id,
     firstName: user.firstName,
@@ -26,8 +35,20 @@ const sendTokenResponse = (user, statusCode, res, message = 'Success') => {
     role: user.role,
     isEmailVerified: user.isEmailVerified,
     accountStatus: user.accountStatus,
-    createdAt: user.createdAt
+    createdAt: user.createdAt,
+    lastLogin: new Date()
   };
+
+  // Set secure HTTP-only cookie for refresh token (optional, for enhanced security)
+  if (process.env.NODE_ENV === 'production') {
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      path: '/api/auth/refresh-token'
+    });
+  }
 
   res.status(statusCode).json({
     success: true,
@@ -37,7 +58,8 @@ const sendTokenResponse = (user, statusCode, res, message = 'Success') => {
       tokens: {
         accessToken,
         refreshToken,
-        expiresIn: process.env.JWT_EXPIRE || '7d'
+        expiresIn: process.env.JWT_EXPIRE || '7d',
+        tokenType: 'Bearer'
       }
     }
   });
@@ -97,7 +119,7 @@ export const register = asyncHandler(async (req, res, next) => {
     ip: req.ip
   });
 
-  sendTokenResponse(user, 201, res, 'Registration successful. Please check your email to verify your account.');
+  sendTokenResponse(user, 201, res, req, 'Registration successful. Please check your email to verify your account.');
 });
 
 // @desc    Login user
@@ -150,7 +172,7 @@ export const login = asyncHandler(async (req, res, next) => {
     ip: req.ip
   });
 
-  sendTokenResponse(user, 200, res, 'Login successful');
+  sendTokenResponse(user, 200, res, req, 'Login successful');
 });
 
 // @desc    Logout user
@@ -178,7 +200,12 @@ export const logout = asyncHandler(async (req, res, next) => {
 // @route   POST /api/auth/refresh-token
 // @access  Public
 export const refreshToken = asyncHandler(async (req, res, next) => {
-  const { refreshToken } = req.body;
+  let refreshToken = req.body.refreshToken;
+
+  // Try to get refresh token from HTTP-only cookie if not in body
+  if (!refreshToken && req.cookies && req.cookies.refreshToken) {
+    refreshToken = req.cookies.refreshToken;
+  }
 
   if (!refreshToken) {
     return next(new AppError('Refresh token is required', 400, 'REFRESH_TOKEN_REQUIRED'));
@@ -192,15 +219,45 @@ export const refreshToken = asyncHandler(async (req, res, next) => {
       return next(new AppError('Invalid refresh token', 401, 'INVALID_REFRESH_TOKEN'));
     }
 
-    // Find user
+    // Find user and check account status
     const user = await User.findById(decoded.id);
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || user.accountStatus !== 'active') {
       return next(new AppError('Invalid refresh token', 401, 'INVALID_REFRESH_TOKEN'));
     }
 
+    // Check if account is locked
+    if (user.isLocked) {
+      return next(new AppError('Account is locked', 423, 'ACCOUNT_LOCKED'));
+    }
+
     // Generate new tokens
-    const { accessToken, refreshToken: newRefreshToken } = generateTokens(user);
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens(user, req);
+
+    // Update user's last activity
+    await User.findByIdAndUpdate(user._id, {
+      lastActivity: new Date(),
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent')
+    });
+
+    // Set new refresh token cookie if using cookies
+    if (process.env.NODE_ENV === 'production' && req.cookies && req.cookies.refreshToken) {
+      res.cookie('refreshToken', newRefreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        path: '/api/auth/refresh-token'
+      });
+    }
+
+    logger.info('Token refreshed successfully', {
+      userId: user._id,
+      email: user.email,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
 
     res.status(200).json({
       success: true,
@@ -209,12 +266,24 @@ export const refreshToken = asyncHandler(async (req, res, next) => {
         tokens: {
           accessToken,
           refreshToken: newRefreshToken,
-          expiresIn: process.env.JWT_EXPIRE || '7d'
+          expiresIn: process.env.JWT_EXPIRE || '7d',
+          tokenType: 'Bearer'
         }
       }
     });
 
   } catch (error) {
+    logger.warn('Invalid refresh token attempt', {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      error: error.message
+    });
+    
+    // Clear refresh token cookie if invalid
+    if (req.cookies && req.cookies.refreshToken) {
+      res.clearCookie('refreshToken', { path: '/api/auth/refresh-token' });
+    }
+    
     return next(new AppError('Invalid refresh token', 401, 'INVALID_REFRESH_TOKEN'));
   }
 });
@@ -294,7 +363,7 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
     ip: req.ip
   });
 
-  sendTokenResponse(user, 200, res, 'Password reset successful');
+  sendTokenResponse(user, 200, res, req, 'Password reset successful');
 });
 
 // @desc    Verify email
