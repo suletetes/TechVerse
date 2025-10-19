@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useMemo } from 'react';
 import { userService } from '../api/services/index.js';
 import { useAuth } from './AuthContext.jsx';
+import { useDataSync } from '../hooks/useDataSync.js';
 
 // Initial state
 const initialState = {
@@ -97,6 +98,40 @@ export const CartProvider = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const { isAuthenticated } = useAuth();
 
+  // Data synchronization for cart
+  const { optimisticUpdate, forceRefresh, getCachedData } = useDataSync('cart', {
+    conflictResolver: (operation, error) => {
+      // For cart operations, merge quantities when possible
+      if (error.data && operation.optimisticData) {
+        const serverItems = error.data.cart || [];
+        const localItems = operation.optimisticData.items || [];
+        
+        // Merge cart items by product ID
+        const mergedItems = [...serverItems];
+        localItems.forEach(localItem => {
+          const existingIndex = mergedItems.findIndex(item => 
+            item.product._id === localItem.product._id
+          );
+          if (existingIndex >= 0) {
+            // Use higher quantity
+            mergedItems[existingIndex].quantity = Math.max(
+              mergedItems[existingIndex].quantity,
+              localItem.quantity
+            );
+          } else {
+            mergedItems.push(localItem);
+          }
+        });
+
+        return {
+          strategy: 'merge',
+          data: { ...error.data, cart: mergedItems }
+        };
+      }
+      return { strategy: 'server_wins', data: error.data };
+    }
+  });
+
   // Load cart from API
   const loadCart = async () => {
     if (!isAuthenticated) {
@@ -113,21 +148,48 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  // Add item to cart
+  // Add item to cart with optimistic updates
   const addToCart = async (productId, quantity = 1, variants = []) => {
     if (!isAuthenticated) {
       dispatch({ type: CART_ACTIONS.SET_ERROR, payload: 'Please login to add items to cart' });
       return;
     }
 
+    const optimisticItem = {
+      product: { _id: productId },
+      quantity,
+      variants,
+      _id: `temp_${Date.now()}`,
+      _optimistic: true
+    };
+
     try {
       dispatch({ type: CART_ACTIONS.ADD_ITEM_START });
-      await userService.addToCart({ productId, quantity, variants });
-      dispatch({ type: CART_ACTIONS.ADD_ITEM_SUCCESS });
-      
-      // Reload cart to get updated data
-      await loadCart();
-      
+
+      const result = await optimisticUpdate(
+        { items: [...state.items, optimisticItem] },
+        // Server operation
+        async () => {
+          const response = await userService.addToCart({ productId, quantity, variants });
+          return response.data;
+        },
+        // Rollback function
+        () => {
+          dispatch({ type: CART_ACTIONS.ADD_ITEM_FAILURE, payload: 'Failed to add item to cart' });
+        }
+      );
+
+      if (!result.queued) {
+        dispatch({ type: CART_ACTIONS.ADD_ITEM_SUCCESS });
+        await loadCart(); // Reload to get accurate data
+      } else {
+        // Update state optimistically
+        dispatch({ 
+          type: CART_ACTIONS.LOAD_CART_SUCCESS, 
+          payload: { cart: [...state.items, optimisticItem] }
+        });
+      }
+
       return { success: true };
     } catch (error) {
       dispatch({ type: CART_ACTIONS.ADD_ITEM_FAILURE, payload: error.message });

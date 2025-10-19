@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useCallback, useMemo } from 'react';
 import { productService } from '../api/services/index.js';
+import { useDataSync } from '../hooks/useDataSync.js';
 
 // Initial state
 const initialState = {
@@ -276,6 +277,17 @@ export const ProductProvider = ({ children }) => {
   // Request deduplication - prevent multiple simultaneous calls
   const activeRequests = React.useRef(new Set());
 
+  // Data synchronization
+  const { optimisticUpdate, forceRefresh, getCachedData, invalidateCache } = useDataSync('products', {
+    conflictResolver: (operation, error) => {
+      // For products, server usually wins unless it's a new product
+      if (operation.options?.isNew) {
+        return { strategy: 'client_wins' };
+      }
+      return { strategy: 'server_wins', data: error.data };
+    }
+  });
+
   // Cleanup active requests on unmount
   React.useEffect(() => {
     return () => {
@@ -539,25 +551,59 @@ export const ProductProvider = ({ children }) => {
     }
   }, [showNotification]);
 
-  // Add product review
+  // Add product review with optimistic updates
   const addProductReview = useCallback(async (productId, reviewData) => {
     if (!productId) {
       dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: 'Product ID is required' });
       return;
     }
 
+    const optimisticReview = {
+      ...reviewData,
+      _id: `temp_${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      _optimistic: true
+    };
+
     try {
-      dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
-      const response = await productService.addProductReview(productId, reviewData);
-      dispatch({ type: PRODUCT_ACTIONS.ADD_REVIEW_SUCCESS, payload: response.data || response });
-      showNotification('Review added successfully!', 'success');
-      return response;
+      // Optimistic update
+      const result = await optimisticUpdate(
+        optimisticReview,
+        // Server operation
+        async () => {
+          const response = await productService.addProductReview(productId, reviewData);
+          return response.data || response;
+        },
+        // Rollback function
+        () => {
+          dispatch({ 
+            type: PRODUCT_ACTIONS.SET_ERROR, 
+            payload: 'Failed to add review, rolling back...' 
+          });
+          // Remove optimistic review from state
+          const currentReviews = state.reviews.filter(r => r._id !== optimisticReview._id);
+          dispatch({ 
+            type: PRODUCT_ACTIONS.LOAD_REVIEWS_SUCCESS, 
+            payload: currentReviews 
+          });
+        }
+      );
+
+      if (!result.queued) {
+        dispatch({ type: PRODUCT_ACTIONS.ADD_REVIEW_SUCCESS, payload: result });
+        showNotification('Review added successfully!', 'success');
+      } else {
+        dispatch({ type: PRODUCT_ACTIONS.ADD_REVIEW_SUCCESS, payload: optimisticReview });
+        showNotification('Review added (will sync when online)', 'info');
+      }
+
+      return result;
     } catch (error) {
       dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
       showNotification(error.message, 'error');
       throw error;
     }
-  }, [showNotification]);
+  }, [showNotification, optimisticUpdate, state.reviews]);
 
   // Set filters
   const setFilters = useCallback((filters) => {
@@ -583,6 +629,27 @@ export const ProductProvider = ({ children }) => {
   const clearError = useCallback(() => {
     dispatch({ type: PRODUCT_ACTIONS.CLEAR_ERROR });
   }, []);
+
+  // Cache management functions
+  const refreshProducts = useCallback(async () => {
+    try {
+      const freshData = await forceRefresh(() => productService.getProducts());
+      dispatch({ type: PRODUCT_ACTIONS.LOAD_PRODUCTS_SUCCESS, payload: freshData });
+      return freshData;
+    } catch (error) {
+      dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
+      throw error;
+    }
+  }, [forceRefresh]);
+
+  const invalidateProductCache = useCallback(() => {
+    invalidateCache();
+    dispatch({ type: PRODUCT_ACTIONS.CLEAR_ERROR });
+  }, [invalidateCache]);
+
+  const getCachedProducts = useCallback(() => {
+    return getCachedData();
+  }, [getCachedData]);
 
   // Utility functions - use current state values to avoid stale closures
   const getProductById = useCallback((productId) => {
@@ -681,7 +748,12 @@ export const ProductProvider = ({ children }) => {
     isProductInResults,
     filterProducts,
     sortProducts,
-    getFilteredProducts
+    getFilteredProducts,
+
+    // Cache management
+    refreshProducts,
+    invalidateProductCache,
+    getCachedProducts
   }), [
     state,
     loadProducts,
@@ -708,7 +780,10 @@ export const ProductProvider = ({ children }) => {
     isProductInResults,
     filterProducts,
     sortProducts,
-    getFilteredProducts
+    getFilteredProducts,
+    refreshProducts,
+    invalidateProductCache,
+    getCachedProducts
   ]);
 
   return (
