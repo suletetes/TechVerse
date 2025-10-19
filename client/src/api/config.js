@@ -1,5 +1,7 @@
 // API Configuration
-const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || 'http://localhost:5000/api';
+import config from '../config/environment.js';
+
+const API_BASE_URL = config.API_BASE_URL;
 
 // API endpoints
 export const API_ENDPOINTS = {
@@ -78,7 +80,24 @@ export const HTTP_STATUS = {
   INTERNAL_SERVER_ERROR: 500
 };
 
-// Request timeout
-export const REQUEST_TIMEOUT = 30000; // 30 seconds
+// Request timeout and retry configuration
+export const REQUEST_TIMEOUT = config.REQUEST_TIMEOUT;
+export const RETRY_ATTEMPTS = config.RETRY_ATTEMPTS;
+export const RETRY_DELAY = config.RETRY_DELAY;
+export const CACHE_TTL = config.CACHE_TTL;
+
+// Environment-specific settings
+export const DEBUG_MODE = config.DEBUG_MODE;
+export const ENABLE_LOGGING = config.ENABLE_LOGGING;
+export const ENABLE_MOCK_API = config.ENABLE_MOCK_API;
+
+// Error handling configuration
+export const ERROR_CONFIG = {
+  SHOW_STACK_TRACE: config.DEBUG_MODE,
+  LOG_ERRORS: config.ENABLE_LOGGING,
+  RETRY_ON_NETWORK_ERROR: true,
+  RETRY_ON_SERVER_ERROR: config.ENVIRONMENT !== 'production',
+  SHOW_DETAILED_ERRORS: config.DEBUG_MODE
+};
 
 export default API_BASE_URL;

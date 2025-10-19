@@ -3,19 +3,22 @@ import helmet from 'helmet';
 import cors from 'cors';
 import { AppError } from './errorHandler.js';
 import logger from '../utils/logger.js';
+import config from '../config/environment.js';
 
-// CORS configuration with enhanced security
+// CORS configuration with enhanced security and environment awareness
 export const corsOptions = {
   origin: (origin, callback) => {
-    // In production, only allow CLIENT_URL
-    if (process.env.NODE_ENV === 'production') {
-      const allowedOrigins = [process.env.CLIENT_URL].filter(Boolean);
-      
-      // Don't allow requests with no origin in production
+    // Use configured CORS origins
+    const allowedOrigins = config.CORS_ORIGINS || [];
+    
+    // Environment-specific origin handling
+    if (config.ENVIRONMENT === 'production') {
+      // Production: strict origin checking
       if (!origin) {
         logger.warn('CORS blocked request with no origin in production', { 
           userAgent: 'Unknown',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          requestId: 'unknown'
         });
         return callback(new AppError('Origin required in production', 403, 'CORS_NO_ORIGIN'));
       }
@@ -31,31 +34,45 @@ export const corsOptions = {
         callback(new AppError('Not allowed by CORS policy', 403, 'CORS_ERROR'));
       }
     } else {
-      // Development mode - allow common development ports
-      const allowedOrigins = [
-        process.env.CLIENT_URL,
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'http://localhost:4173'
-      ].filter(Boolean);
-
+      // Development/Staging: more permissive but still controlled
+      
       // Allow requests with no origin in development (mobile apps, Postman, etc.)
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        if (config.ENVIRONMENT === 'development') {
+          return callback(null, true);
+        } else {
+          // Staging: log but allow
+          logger.info('CORS allowing request with no origin in staging', {
+            timestamp: new Date().toISOString()
+          });
+          return callback(null, true);
+        }
+      }
 
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        logger.warn('CORS blocked request in development', { 
+        logger.warn(`CORS blocked request in ${config.ENVIRONMENT}`, { 
           origin,
-          allowedOrigins
+          allowedOrigins,
+          environment: config.ENVIRONMENT
         });
-        callback(new AppError('Not allowed by CORS', 403, 'CORS_ERROR'));
+        
+        // In development, be more helpful with error messages
+        if (config.ENVIRONMENT === 'development') {
+          const suggestion = origin.includes('localhost') ? 
+            'Add this origin to CORS_ORIGINS environment variable' :
+            'Ensure the origin is included in allowed origins';
+          
+          callback(new AppError(`Not allowed by CORS. ${suggestion}`, 403, 'CORS_ERROR'));
+        } else {
+          callback(new AppError('Not allowed by CORS policy', 403, 'CORS_ERROR'));
+        }
       }
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
   allowedHeaders: [
     'Origin',
     'X-Requested-With',
@@ -63,11 +80,23 @@ export const corsOptions = {
     'Accept',
     'Authorization',
     'X-API-Key',
-    'X-Request-ID'
+    'X-Request-ID',
+    'Cache-Control',
+    'Pragma'
   ],
-  exposedHeaders: ['X-Total-Count', 'X-Page-Count', 'X-Request-ID'],
-  maxAge: process.env.NODE_ENV === 'production' ? 86400 : 300, // 24 hours in prod, 5 minutes in dev
-  optionsSuccessStatus: 200 // For legacy browser support
+  exposedHeaders: [
+    'X-Total-Count', 
+    'X-Page-Count', 
+    'X-Request-ID',
+    'X-RateLimit-Limit',
+    'X-RateLimit-Remaining',
+    'X-RateLimit-Reset'
+  ],
+  // Environment-specific cache settings
+  maxAge: config.ENVIRONMENT === 'production' ? 86400 : 
+          config.ENVIRONMENT === 'staging' ? 3600 : 300,
+  optionsSuccessStatus: 200, // For legacy browser support
+  preflightContinue: false // Handle preflight internally
 };
 
 // Enhanced Helmet security configuration

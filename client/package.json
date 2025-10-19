@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node src/scripts/validateConfig.js && vite build",
+    "build": "npm run validate-build && node src/scripts/validateConfig.js && vite build",
+    "build:production": "NODE_ENV=production npm run build",
     "build:no-validate": "vite build",
     "preview": "vite preview",
     "validate-config": "node src/scripts/validateConfig.js",

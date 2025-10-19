@@ -4,6 +4,8 @@
  * for different types of API errors and contexts.
  */
 
+import { handleCorsError, isCorsError } from '../../utils/corsErrorHandler.js';
+
 class ErrorHandler {
   constructor(options = {}) {
     this.config = {
@@ -116,6 +118,27 @@ class ErrorHandler {
    * @returns {Object} User-friendly error object
    */
   translateError(error, context = {}) {
+    // Check for CORS errors first
+    const corsError = handleCorsError(error, context.url);
+    if (corsError) {
+      // Log CORS error
+      this.logError(error, context, { type: 'cors', category: 'network' });
+      
+      return {
+        message: corsError.message,
+        title: corsError.title,
+        type: corsError.type,
+        category: 'network',
+        canRetry: corsError.canRetry,
+        actions: corsError.suggestions?.map(suggestion => ({
+          type: 'info',
+          message: suggestion
+        })) || [],
+        originalError: error,
+        corsInfo: corsError
+      };
+    }
+    
     const errorInfo = this.analyzeError(error, context);
     const userFriendlyError = this.createUserFriendlyError(errorInfo, context);
     
