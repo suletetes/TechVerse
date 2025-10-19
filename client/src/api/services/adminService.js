@@ -420,9 +420,125 @@ class AdminService {
     }
   }
 
+  // Section Management
+  async getSectionAnalytics(period = '30') {
+    try {
+      const cacheKey = `section_analytics_${period}`;
+      
+      // Check cache first
+      if (this.cache.has(cacheKey)) {
+        const cached = this.cache.get(cacheKey);
+        if (Date.now() - cached.timestamp < this.cacheTimeout) {
+          return cached.data;
+        }
+        this.cache.delete(cacheKey);
+      }
+
+      const response = await apiClient.get(API_ENDPOINTS.ADMIN.SECTIONS.ANALYTICS, {
+        params: { period }
+      });
+      const data = await handleApiResponse(response);
+      
+      // Cache the result
+      this.cache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching section analytics:', error);
+      throw new Error(error.message || 'Failed to fetch section analytics');
+    }
+  }
+
+  async bulkAssignProductsToSections(assignments) {
+    if (!Array.isArray(assignments) || assignments.length === 0) {
+      throw new Error('Assignments array is required');
+    }
+
+    try {
+      const response = await apiClient.post(API_ENDPOINTS.ADMIN.SECTIONS.BULK_ASSIGN, {
+        assignments
+      });
+      
+      // Clear related caches
+      this.clearSectionCaches();
+      
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error('Error bulk assigning products to sections:', error);
+      throw new Error(error.message || 'Failed to bulk assign products to sections');
+    }
+  }
+
+  async getDragDropSectionData() {
+    try {
+      const cacheKey = 'drag_drop_section_data';
+      
+      // Check cache first
+      if (this.cache.has(cacheKey)) {
+        const cached = this.cache.get(cacheKey);
+        if (Date.now() - cached.timestamp < (this.cacheTimeout / 2)) { // Shorter cache for drag-drop data
+          return cached.data;
+        }
+        this.cache.delete(cacheKey);
+      }
+
+      const response = await apiClient.get(API_ENDPOINTS.ADMIN.SECTIONS.DRAG_DROP_DATA);
+      const data = await handleApiResponse(response);
+      
+      // Cache the result
+      this.cache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching drag drop section data:', error);
+      throw new Error(error.message || 'Failed to fetch drag drop section data');
+    }
+  }
+
+  async updateSectionProductOrder(sectionId, productIds) {
+    if (!sectionId) {
+      throw new Error('Section ID is required');
+    }
+
+    if (!Array.isArray(productIds)) {
+      throw new Error('Product IDs array is required');
+    }
+
+    try {
+      const response = await apiClient.post(`${API_ENDPOINTS.ADMIN.SECTIONS.BASE}/${sectionId}`, {
+        productIds
+      });
+      
+      // Clear related caches
+      this.clearSectionCaches();
+      
+      return handleApiResponse(response);
+    } catch (error) {
+      console.error(`Error updating section ${sectionId} product order:`, error);
+      throw new Error(error.message || 'Failed to update section product order');
+    }
+  }
+
   // Utility Methods
   clearCache() {
     this.cache.clear();
+  }
+
+  clearSectionCaches() {
+    // Clear all section-related caches
+    const keysToDelete = [];
+    for (const key of this.cache.keys()) {
+      if (key.includes('section') || key.includes('drag_drop')) {
+        keysToDelete.push(key);
+      }
+    }
+    keysToDelete.forEach(key => this.cache.delete(key));
   }
 
   getCacheStats() {

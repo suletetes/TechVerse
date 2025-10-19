@@ -60,7 +60,13 @@ export const API_ENDPOINTS = {
     ORDERS: '/admin/orders',
     USERS: '/admin/users',
     CATEGORIES: '/admin/categories',
-    ANALYTICS: '/admin/analytics'
+    ANALYTICS: '/admin/analytics',
+    SECTIONS: {
+      BASE: '/admin/sections',
+      ANALYTICS: '/admin/sections/analytics',
+      BULK_ASSIGN: '/admin/sections/bulk-assign',
+      DRAG_DROP_DATA: '/admin/sections/drag-drop-data'
+    }
   }
 };
 

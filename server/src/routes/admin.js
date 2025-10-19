@@ -20,7 +20,10 @@ import {
   clearSection,
   getAvailableProducts,
   bulkUpdateProductSections,
-  getAnalytics
+  getAnalytics,
+  getSectionAnalytics,
+  bulkAssignProductsToSections,
+  getDragDropSectionData
 } from '../controllers/adminController.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { validate, commonValidations } from '../middleware/validation.js';
@@ -91,6 +94,28 @@ const bulkSectionUpdateValidation = [
     .withMessage('Each section must be latest, topSeller, quickPick, or weeklyDeal')
 ];
 
+const bulkAssignValidation = [
+  body('assignments')
+    .isArray({ min: 1, max: 50 })
+    .withMessage('Assignments must be an array with 1-50 items'),
+  body('assignments.*.productIds')
+    .isArray({ min: 1, max: 20 })
+    .withMessage('Product IDs must be an array with 1-20 items'),
+  body('assignments.*.productIds.*')
+    .isMongoId()
+    .withMessage('Each product ID must be valid'),
+  body('assignments.*.sections')
+    .isArray({ min: 1, max: 5 })
+    .withMessage('Sections must be an array with 1-5 items'),
+  body('assignments.*.sections.*')
+    .isIn(['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'])
+    .withMessage('Each section must be latest, topSeller, quickPick, weeklyDeal, or featured'),
+  body('assignments.*.action')
+    .optional()
+    .isIn(['add', 'remove', 'replace'])
+    .withMessage('Action must be add, remove, or replace')
+];
+
 // All routes require admin authentication
 router.use(authenticate, requireAdmin);
 
@@ -133,5 +158,10 @@ router.delete('/sections/:section/products/:productId',
 // Product management for sections
 router.get('/products/available', getAvailableProducts);
 router.put('/products/sections', bulkSectionUpdateValidation, validate, bulkUpdateProductSections);
+
+// Enhanced section management routes
+router.get('/sections/analytics', getSectionAnalytics);
+router.post('/sections/bulk-assign', bulkAssignValidation, validate, bulkAssignProductsToSections);
+router.get('/sections/drag-drop-data', getDragDropSectionData);
 
 export default router;

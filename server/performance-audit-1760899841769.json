@@ -1,0 +1,172 @@
+{
+  "timestamp": "2025-10-19T18:50:41.542Z",
+  "database": {
+    "indexes": {
+      "products": {
+        "error": "collection.stats is not a function"
+      },
+      "users": {
+        "error": "collection.stats is not a function"
+      },
+      "orders": {
+        "error": "collection.stats is not a function"
+      },
+      "categories": {
+        "error": "collection.stats is not a function"
+      }
+    },
+    "missingIndexes": [
+      {
+        "collection": "products",
+        "index": {
+          "status": 1,
+          "visibility": 1,
+          "sections": 1
+        },
+        "reason": "Section-based product queries",
+        "priority": "high"
+      },
+      {
+        "collection": "products",
+        "index": {
+          "brand": 1,
+          "status": 1,
+          "visibility": 1
+        },
+        "reason": "Brand filtering with status",
+        "priority": "high"
+      },
+      {
+        "collection": "products",
+        "index": {
+          "price": 1,
+          "status": 1,
+          "visibility": 1
+        },
+        "reason": "Price range filtering",
+        "priority": "high"
+      },
+      {
+        "collection": "products",
+        "index": {
+          "rating.average": 1,
+          "status": 1,
+          "visibility": 1
+        },
+        "reason": "Rating-based sorting",
+        "priority": "high"
+      },
+      {
+        "collection": "products",
+        "index": {
+          "sales.totalSold": 1,
+          "status": 1,
+          "visibility": 1
+        },
+        "reason": "Top sellers queries",
+        "priority": "high"
+      },
+      {
+        "collection": "products",
+        "index": {
+          "createdAt": 1,
+          "status": 1,
+          "visibility": 1
+        },
+        "reason": "Latest products queries",
+        "priority": "high"
+      },
+      {
+        "collection": "products",
+        "index": {
+          "stock.quantity": 1,
+          "stock.trackQuantity": 1
+        },
+        "reason": "Stock management queries",
+        "priority": "high"
+      },
+      {
+        "collection": "users",
+        "index": {
+          "accountStatus": 1,
+          "isActive": 1
+        },
+        "reason": "Account status filtering",
+        "priority": "medium"
+      },
+      {
+        "collection": "orders",
+        "index": {
+          "user": 1,
+          "status": 1,
+          "createdAt": 1
+        },
+        "reason": "User order history with status filtering",
+        "priority": "high"
+      },
+      {
+        "collection": "categories",
+        "index": {
+          "parent": 1,
+          "isActive": 1,
+          "displayOrder": 1
+        },
+        "reason": "Category hierarchy queries",
+        "priority": "medium"
+      },
+      {
+        "collection": "categories",
+        "index": {
+          "showInMenu": 1,
+          "isActive": 1,
+          "displayOrder": 1
+        },
+        "reason": "Menu category queries",
+        "priority": "medium"
+      }
+    ],
+    "queryPerformance": {
+      "totalQueries": 0,
+      "slowQueries": 0,
+      "averageExecutionTime": 0,
+      "queryBreakdown": {},
+      "recommendations": []
+    }
+  },
+  "requests": {
+    "issues": [],
+    "totalIssues": 0,
+    "recommendations": []
+  },
+  "images": {
+    "recommendations": [
+      {
+        "type": "image_optimization",
+        "issue": "4 out of 19 images may not be optimized",
+        "suggestions": [
+          "Implement WebP format conversion",
+          "Add image compression middleware",
+          "Use CDN for image delivery",
+          "Implement responsive image sizes",
+          "Add lazy loading for images"
+        ]
+      },
+      {
+        "type": "static_assets",
+        "suggestions": [
+          "Enable gzip compression for static assets",
+          "Set appropriate cache headers (max-age: 31536000 for images)",
+          "Use ETags for cache validation",
+          "Implement progressive image loading",
+          "Consider using a CDN for global distribution"
+        ]
+      }
+    ],
+    "totalRecommendations": 2
+  },
+  "summary": {
+    "criticalIssues": 0,
+    "recommendations": 13,
+    "performanceScore": 80
+  }
+}

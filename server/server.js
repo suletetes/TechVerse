@@ -28,6 +28,7 @@ import {
 
 // Import routes
 import authRoutes from './src/routes/auth.js';
+import enhancedAuthRoutes from './src/routes/enhancedAuth.js';
 import productRoutes from './src/routes/products.js';
 import orderRoutes from './src/routes/orders.js';
 import userRoutes from './src/routes/users.js';
@@ -149,6 +150,7 @@ app.use('/api/', apiRateLimit);
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', enhancedAuthRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
