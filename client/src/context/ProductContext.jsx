@@ -286,9 +286,8 @@ export const ProductProvider = ({ children }) => {
       dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
       
       const queryParams = {
-        ...state.filters,
         ...params,
-        page: loadMore ? state.pagination.page + 1 : (params.page || 1)
+        page: loadMore ? (params.page || 1) + 1 : (params.page || 1)
       };
 
       const response = await productService.getProducts(queryParams);
@@ -304,13 +303,13 @@ export const ProductProvider = ({ children }) => {
       showNotification(error.message, 'error');
       throw error;
     }
-  }, [state.filters, state.pagination.page, showNotification]);
+  }, [showNotification]); // Remove state dependencies
 
   // Load more products (pagination)
-  const loadMoreProducts = useCallback(async () => {
-    if (!state.pagination.hasMore || state.isLoading) return;
-    return loadProducts({}, true);
-  }, [loadProducts, state.pagination.hasMore, state.isLoading]);
+  const loadMoreProducts = useCallback(async (currentPagination, isCurrentlyLoading) => {
+    if (!currentPagination?.hasMore || isCurrentlyLoading) return;
+    return loadProducts({ page: currentPagination.page + 1 }, true);
+  }, [loadProducts]);
 
   // Load featured products
   const loadFeaturedProducts = useCallback(async (limit = 10) => {

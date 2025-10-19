@@ -25,40 +25,40 @@ const Home = () => {
     } = useProduct();
 
     // Load all product types and categories on mount
-    const loadAllData = useCallback(async () => {
-        try {
-            await Promise.all([
-                loadLatestProducts(12),
-                loadTopSellingProducts(12),
-                loadQuickPicks(8),
-                loadProductsOnSale(10),
-                loadCategories()
-            ]);
-        } catch (error) {
-            console.error('Error loading home page data:', error);
-        }
-    }, [loadLatestProducts, loadTopSellingProducts, loadQuickPicks, loadProductsOnSale, loadCategories]);
-
     useEffect(() => {
+        const loadAllData = async () => {
+            try {
+                await Promise.all([
+                    loadLatestProducts(12),
+                    loadTopSellingProducts(12),
+                    loadQuickPicks(8),
+                    loadProductsOnSale(10),
+                    loadCategories()
+                ]);
+            } catch (error) {
+                console.error('Error loading home page data:', error);
+            }
+        };
+        
         loadAllData();
-    }, [loadAllData]);
+    }, []); // Empty dependency array - only run on mount
 
     // Retry functions for individual sections
     const retryLatestProducts = useCallback(() => {
         loadLatestProducts(12);
-    }, [loadLatestProducts]);
+    }, []); // Remove function dependencies to prevent infinite loops
 
     const retryTopSellingProducts = useCallback(() => {
         loadTopSellingProducts(12);
-    }, [loadTopSellingProducts]);
+    }, []);
 
     const retryQuickPicks = useCallback(() => {
         loadQuickPicks(8);
-    }, [loadQuickPicks]);
+    }, []);
 
     const retryProductsOnSale = useCallback(() => {
         loadProductsOnSale(10);
-    }, [loadProductsOnSale]);
+    }, []);
 
     return (
         <>
