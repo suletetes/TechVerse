@@ -39,7 +39,9 @@ const generateTokens = (user, req = null) => {
 
   const refreshToken = jwt.sign(refreshTokenPayload, process.env.JWT_REFRESH_SECRET, {
     expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d',
-    algorithm: 'HS256'
+    algorithm: 'HS256',
+    issuer: 'techverse-api',
+    audience: 'techverse-client'
   });
 
   // Log token generation for security monitoring
@@ -53,9 +55,9 @@ const generateTokens = (user, req = null) => {
     timestamp: new Date().toISOString()
   });
 
-  return { 
-    accessToken, 
-    refreshToken, 
+  return {
+    accessToken,
+    refreshToken,
     sessionId: tokenPayload.sessionId,
     expiresIn: process.env.JWT_EXPIRE || '7d'
   };
@@ -134,19 +136,19 @@ const getUserPermissions = (role) => {
 // Helper function to parse expiry string to milliseconds
 const parseExpiryToMs = (expiresIn) => {
   if (typeof expiresIn === 'number') return expiresIn * 1000;
-  
+
   const match = expiresIn.match(/^(\d+)([dhms])$/);
   if (!match) return 7 * 24 * 60 * 60 * 1000; // Default 7 days
-  
+
   const value = parseInt(match[1]);
   const unit = match[2];
-  const multipliers = { 
-    d: 24 * 60 * 60 * 1000, 
-    h: 60 * 60 * 1000, 
-    m: 60 * 1000, 
-    s: 1000 
+  const multipliers = {
+    d: 24 * 60 * 60 * 1000,
+    h: 60 * 60 * 1000,
+    m: 60 * 1000,
+    s: 1000
   };
-  
+
   return value * multipliers[unit];
 };
 
@@ -336,7 +338,7 @@ export const refreshToken = asyncHandler(async (req, res, next) => {
     // Check for suspicious activity (IP change, etc.)
     const currentIp = req.ip;
     const currentUserAgent = req.get('User-Agent');
-    
+
     if (user.ipAddress && user.ipAddress !== currentIp) {
       logger.warn('IP address changed during token refresh', {
         userId: user._id,
@@ -409,17 +411,17 @@ export const refreshToken = asyncHandler(async (req, res, next) => {
       tokenPresent: !!refreshToken,
       cookiePresent: !!(req.cookies && req.cookies.refreshToken)
     });
-    
+
     // Clear refresh token cookie if invalid
     if (req.cookies && req.cookies.refreshToken) {
-      res.clearCookie('refreshToken', { 
+      res.clearCookie('refreshToken', {
         path: '/api/auth/refresh-token',
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
       });
     }
-    
+
     return next(new AppError('Invalid or expired refresh token', 401, 'INVALID_REFRESH_TOKEN'));
   }
 });
