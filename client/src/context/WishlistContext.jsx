@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo } from 'react';
 import { userService } from '../api/services/index.js';
 import { useAuth } from './AuthContext.jsx';
 
@@ -278,9 +278,9 @@ export const WishlistProvider = ({ children }) => {
     } else {
       clearWishlist();
     }
-  }, [isAuthenticated, loadWishlist, clearWishlist]);
+  }, [isAuthenticated]); // Remove function dependencies to prevent infinite loops
 
-  const value = {
+  const value = useMemo(() => ({
     ...state,
 
     // Data loading methods
@@ -301,7 +301,20 @@ export const WishlistProvider = ({ children }) => {
     // State management
     clearWishlist,
     clearError
-  };
+  }), [
+    state,
+    loadWishlist,
+    loadMoreWishlist,
+    addToWishlist,
+    removeFromWishlist,
+    toggleWishlist,
+    isInWishlist,
+    getWishlistCount,
+    getWishlistByCategory,
+    getRecentlyAdded,
+    clearWishlist,
+    clearError
+  ]);
 
   return (
     <WishlistContext.Provider value={value}>
