@@ -1,5 +1,4 @@
-import React from 'react'
-import { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
+import { createContext, useContext, useReducer, useEffect, useCallback, useRef, useMemo } from 'react';
 import authService from '../api/services/authService.js';
 import { multiTabSyncManager } from '../utils/multiTabSyncManager.js';
 
@@ -274,17 +273,16 @@ export const AuthProvider = ({ children }) => {
         syncUnsubscribe.current();
       }
     };
-  }, [loadUser]);
+  }, []); // Remove loadUser dependency to prevent infinite loops
 
   // Setup session management when authenticated
   useEffect(() => {
     if (state.isAuthenticated) {
       // Setup session check interval
       sessionCheckInterval.current = setInterval(() => {
-        // Use current state values to avoid stale closures
-        const currentState = state;
-        if (currentState.sessionExpiry) {
-          const timeUntilExpiry = currentState.sessionExpiry - Date.now();
+        // Get fresh state from ref to avoid stale closures
+        if (state.sessionExpiry) {
+          const timeUntilExpiry = state.sessionExpiry - Date.now();
 
           if (timeUntilExpiry <= 0) {
             dispatch({ type: AUTH_ACTIONS.SESSION_EXPIRED });
@@ -305,42 +303,40 @@ export const AuthProvider = ({ children }) => {
       });
 
       return () => {
-        clearInterval(sessionCheckInterval.current);
-        clearTimeout(activityTimeout.current);
+        if (sessionCheckInterval.current) {
+          clearInterval(sessionCheckInterval.current);
+        }
+        if (activityTimeout.current) {
+          clearTimeout(activityTimeout.current);
+        }
         events.forEach(event => {
           document.removeEventListener(event, handleActivity, true);
         });
       };
     }
-  }, [state.isAuthenticated]);
+  }, [state.isAuthenticated, state.sessionExpiry]); // Add sessionExpiry to dependencies
 
 
 
-  // Handle session expiry
-  const handleSessionExpired = useCallback(() => {
-    dispatch({ type: AUTH_ACTIONS.SESSION_EXPIRED });
-    showNotification('Your session has expired. Please log in again.', 'error');
-  }, []);
+
 
   // Handle multi-tab sync events
   const handleSyncEvent = useCallback((event) => {
     switch (event.type) {
       case 'login':
-        if (event.data.user && !state.isAuthenticated) {
+        if (event.data.user) {
           dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: event.data });
           showNotification('Logged in from another tab', 'info');
         }
         break;
       
       case 'logout':
-        if (state.isAuthenticated) {
-          dispatch({ type: AUTH_ACTIONS.LOGOUT });
-          showNotification('Logged out from another tab', 'info');
-        }
+        dispatch({ type: AUTH_ACTIONS.LOGOUT });
+        showNotification('Logged out from another tab', 'info');
         break;
       
       case 'tokenRefresh':
-        if (state.isAuthenticated && event.data.user) {
+        if (event.data.user) {
           dispatch({ type: AUTH_ACTIONS.UPDATE_USER, payload: event.data.user });
         }
         break;
@@ -353,15 +349,15 @@ export const AuthProvider = ({ children }) => {
       case 'sessionStateChange':
         if (event.data) {
           const { isAuthenticated, user } = event.data;
-          if (isAuthenticated && user && !state.isAuthenticated) {
+          if (isAuthenticated && user) {
             dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: { user } });
-          } else if (!isAuthenticated && state.isAuthenticated) {
+          } else if (!isAuthenticated) {
             dispatch({ type: AUTH_ACTIONS.LOGOUT });
           }
         }
         break;
     }
-  }, [state.isAuthenticated, showNotification]);
+  }, [showNotification]); // Remove state dependencies to prevent stale closures
 
   // Login with enhanced security
   const login = async (credentials, options = {}) => {
@@ -682,7 +678,7 @@ export const AuthProvider = ({ children }) => {
     return (Date.now() - state.lastActivity) < ACTIVITY_TIMEOUT;
   };
 
-  const value = {
+  const value = useMemo(() => ({
     ...state,
     // Authentication methods
     login,
@@ -730,7 +726,36 @@ export const AuthProvider = ({ children }) => {
     // Constants
     MAX_LOGIN_ATTEMPTS,
     LOCKOUT_DURATION
-  };
+  }), [
+    state,
+    login,
+    register,
+    logout,
+    verifyMFA,
+    setupMFA,
+    disableMFA,
+    updateProfile,
+    changePassword,
+    updatePreferences,
+    forgotPassword,
+    resetPassword,
+    verifyEmail,
+    resendVerification,
+    refreshSession,
+    getUserSessions,
+    revokeSession,
+    clearError,
+    loadUser,
+    hasRole,
+    hasPermission,
+    hasAllPermissions,
+    hasAnyPermission,
+    isAdmin,
+    isFullyAuthenticated,
+    isSessionExpiringSoon,
+    getTimeUntilExpiry,
+    isUserActive
+  ]);
 
   return (
     <AuthContext.Provider value={value}>
