@@ -1,193 +1,10 @@
 import API_BASE_URL, { HTTP_STATUS } from '../config.js';
-
-// Enhanced token management with security improvements
-const TOKEN_KEY = 'techverse_token';
-const REFRESH_TOKEN_KEY = 'techverse_refresh_token';
-const TOKEN_EXPIRY_KEY = 'techverse_token_expiry';
-const SESSION_ID_KEY = 'techverse_session_id';
-const TOKEN_FINGERPRINT_KEY = 'techverse_token_fp';
-
-// Generate browser fingerprint for token binding
-const generateFingerprint = () => {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.textBaseline = 'top';
-  ctx.font = '14px Arial';
-  ctx.fillText('Browser fingerprint', 2, 2);
-  
-  const fingerprint = [
-    navigator.userAgent,
-    navigator.language,
-    screen.width + 'x' + screen.height,
-    new Date().getTimezoneOffset(),
-    canvas.toDataURL()
-  ].join('|');
-  
-  return btoa(fingerprint).substring(0, 32);
-};
-
-export const tokenManager = {
-  // Get access token with enhanced security checks
-  getToken: () => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
-    const fingerprint = localStorage.getItem(TOKEN_FINGERPRINT_KEY);
-    
-    if (!token) return null;
-    
-    // Verify browser fingerprint to detect token theft
-    const currentFingerprint = generateFingerprint();
-    if (fingerprint && fingerprint !== currentFingerprint) {
-      console.warn('Token fingerprint mismatch, possible token theft detected');
-      tokenManager.clearTokens();
-      return null;
-    }
-    
-    // Check if token is expired (with 5 minute buffer)
-    if (expiry && Date.now() > (parseInt(expiry) - 5 * 60 * 1000)) {
-      console.warn('Access token expired, clearing tokens');
-      tokenManager.clearTokens();
-      return null;
-    }
-    
-    return token;
-  },
-  
-  // Set access token with enhanced security
-  setToken: (token, expiresIn = '7d', sessionId = null) => {
-    // Validate token format
-    if (!token || typeof token !== 'string' || token.split('.').length !== 3) {
-      throw new Error('Invalid token format');
-    }
-    
-    try {
-      // Basic token validation (decode payload without verification)
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      if (!payload.id || !payload.email) {
-        throw new Error('Invalid token payload');
-      }
-    } catch (error) {
-      throw new Error('Invalid token structure');
-    }
-    
-    localStorage.setItem(TOKEN_KEY, token);
-    
-    // Store browser fingerprint for security
-    const fingerprint = generateFingerprint();
-    localStorage.setItem(TOKEN_FINGERPRINT_KEY, fingerprint);
-    
-    // Store session ID if provided
-    if (sessionId) {
-      localStorage.setItem(SESSION_ID_KEY, sessionId);
-    }
-    
-    // Calculate expiry time
-    let expiryTime;
-    if (typeof expiresIn === 'string') {
-      const match = expiresIn.match(/^(\d+)([dhms])$/);
-      if (match) {
-        const value = parseInt(match[1]);
-        const unit = match[2];
-        const multipliers = { d: 24 * 60 * 60 * 1000, h: 60 * 60 * 1000, m: 60 * 1000, s: 1000 };
-        expiryTime = Date.now() + (value * multipliers[unit]);
-      } else {
-        expiryTime = Date.now() + (7 * 24 * 60 * 60 * 1000); // Default 7 days
-      }
-    } else {
-      expiryTime = Date.now() + (expiresIn * 1000); // Assume seconds
-    }
-    
-    localStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
-    
-    // Log token storage for security monitoring
-    console.log('Token stored securely', {
-      expiresAt: new Date(expiryTime).toISOString(),
-      sessionId: sessionId?.substring(0, 8) + '...',
-      fingerprint: fingerprint.substring(0, 8) + '...'
-    });
-  },
-  
-  removeToken: () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(TOKEN_EXPIRY_KEY);
-  },
-  
-  // Get refresh token
-  getRefreshToken: () => localStorage.getItem(REFRESH_TOKEN_KEY),
-  
-  // Set refresh token with secure storage consideration
-  setRefreshToken: (token) => {
-    // In production, consider using secure HTTP-only cookies instead
-    if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
-      // For HTTPS, we can use localStorage more safely
-      localStorage.setItem(REFRESH_TOKEN_KEY, token);
-    } else {
-      // For development or HTTP, still use localStorage but log warning
-      console.warn('Refresh token stored in localStorage over HTTP - not secure for production');
-      localStorage.setItem(REFRESH_TOKEN_KEY, token);
-    }
-  },
-  
-  removeRefreshToken: () => localStorage.removeItem(REFRESH_TOKEN_KEY),
-  
-  // Clear all tokens and related data with enhanced cleanup
-  clearTokens: () => {
-    const keysToRemove = [
-      TOKEN_KEY,
-      REFRESH_TOKEN_KEY,
-      TOKEN_EXPIRY_KEY,
-      SESSION_ID_KEY,
-      TOKEN_FINGERPRINT_KEY,
-      'techverse_user',
-      'techverse_permissions',
-      'session_expiry',
-      'user_preferences'
-    ];
-    
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-    
-    // Clear any session storage as well
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.removeItem('techverse_temp_data');
-    }
-    
-    // Dispatch custom event for auth state change
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('authTokensCleared', {
-        detail: { timestamp: new Date().toISOString() }
-      }));
-    }
-    
-    console.log('All authentication data cleared');
-  },
-  
-  // Check if tokens exist and are valid
-  hasValidTokens: () => {
-    const token = tokenManager.getToken();
-    const refreshToken = tokenManager.getRefreshToken();
-    return !!(token && refreshToken);
-  },
-  
-  // Get token expiry time
-  getTokenExpiry: () => {
-    const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
-    return expiry ? parseInt(expiry) : null;
-  },
-  
-  // Check if token will expire soon (within 10 minutes)
-  isTokenExpiringSoon: () => {
-    const expiry = tokenManager.getTokenExpiry();
-    if (!expiry) return false;
-    return Date.now() > (expiry - 10 * 60 * 1000);
-  }
-};
+import { tokenManager } from '../../utils/tokenManager.js';
 
 // Create a custom fetch wrapper with interceptors
 class ApiClient {
   constructor(baseURL) {
     this.baseURL = baseURL;
-    this.isRefreshing = false;
-    this.failedQueue = [];
     
     // Initialize services (lazy loading to avoid circular dependencies)
     this.requestDeduplicator = null;
@@ -376,96 +193,25 @@ class ApiClient {
   }
   
   async handleTokenRefresh(originalEndpoint, originalOptions) {
-    if (this.isRefreshing) {
-      // If already refreshing, queue the request
-      return new Promise((resolve, reject) => {
-        this.failedQueue.push({ resolve, reject, endpoint: originalEndpoint, options: originalOptions });
-      });
-    }
-    
-    this.isRefreshing = true;
+    // Import token refresh manager dynamically to avoid circular dependencies
+    const { tokenRefreshManager } = await import('../../utils/tokenRefreshManager.js');
     
     try {
-      const refreshToken = tokenManager.getRefreshToken();
+      // Use the enhanced token refresh manager
+      await tokenRefreshManager.refreshToken();
       
-      if (!refreshToken) {
-        throw new Error('No refresh token available');
-      }
-      
-      console.log('Attempting to refresh access token...');
-      
-      const response = await fetch(`${this.baseURL}/auth/refresh-token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({ refreshToken }),
-        credentials: 'include' // Include cookies for HTTP-only refresh tokens
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Token refresh failed');
-      }
-      
-      const data = await response.json();
-      
-      if (!data.success || !data.data?.tokens?.accessToken) {
-        throw new Error('Invalid refresh response format');
-      }
-      
-      // Update tokens with enhanced security
-      const { accessToken, refreshToken: newRefreshToken, expiresIn } = data.data.tokens;
-      
-      tokenManager.setToken(accessToken, expiresIn);
-      if (newRefreshToken) {
-        tokenManager.setRefreshToken(newRefreshToken);
-      }
-      
-      console.log('Access token refreshed successfully');
-      
-      // Process failed queue
-      this.failedQueue.forEach(({ resolve, endpoint, options }) => {
-        resolve(this.request(endpoint, options));
-      });
-      this.failedQueue = [];
-      
-      // Retry original request
+      // Retry original request with new token
       return this.request(originalEndpoint, originalOptions);
       
     } catch (error) {
-      console.error('Token refresh failed:', error.message);
-      
-      // Clear tokens and auth state
-      tokenManager.clearTokens();
-      
-      // Process failed queue with error
-      this.failedQueue.forEach(({ reject }) => {
-        reject(error);
-      });
-      this.failedQueue = [];
-      
-      // Dispatch auth error event
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('authError', { 
-          detail: { 
-            type: 'TOKEN_REFRESH_FAILED', 
-            message: error.message 
-          } 
-        }));
-        
-        // Redirect to login page after a short delay
-        setTimeout(() => {
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login?reason=session_expired';
-          }
-        }, 1000);
+      // If refresh fails, add request to queue for potential retry
+      if (error.message !== 'No refresh token available') {
+        return tokenRefreshManager.addToFailedQueue(() => 
+          this.request(originalEndpoint, originalOptions)
+        );
       }
       
       throw error;
-    } finally {
-      this.isRefreshing = false;
     }
   }
   

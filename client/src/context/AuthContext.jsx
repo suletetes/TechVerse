@@ -1,6 +1,7 @@
 import React from 'react'
 import { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
 import authService from '../api/services/authService.js';
+import { multiTabSyncManager } from '../utils/multiTabSyncManager.js';
 
 // Initial state
 const initialState = {
@@ -213,6 +214,7 @@ export const AuthProvider = ({ children }) => {
   
   const sessionCheckInterval = useRef(null);
   const activityTimeout = useRef(null);
+  const syncUnsubscribe = useRef(null);
 
   // Constants
   const MAX_LOGIN_ATTEMPTS = 5;
@@ -261,6 +263,17 @@ export const AuthProvider = ({ children }) => {
   // Load user on app start
   useEffect(() => {
     loadUser();
+    
+    // Set up multi-tab synchronization
+    syncUnsubscribe.current = multiTabSyncManager.addSyncListener((event) => {
+      handleSyncEvent(event);
+    });
+    
+    return () => {
+      if (syncUnsubscribe.current) {
+        syncUnsubscribe.current();
+      }
+    };
   }, [loadUser]);
 
   // Setup session management when authenticated
@@ -309,6 +322,47 @@ export const AuthProvider = ({ children }) => {
     showNotification('Your session has expired. Please log in again.', 'error');
   }, []);
 
+  // Handle multi-tab sync events
+  const handleSyncEvent = useCallback((event) => {
+    switch (event.type) {
+      case 'login':
+        if (event.data.user && !state.isAuthenticated) {
+          dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: event.data });
+          showNotification('Logged in from another tab', 'info');
+        }
+        break;
+      
+      case 'logout':
+        if (state.isAuthenticated) {
+          dispatch({ type: AUTH_ACTIONS.LOGOUT });
+          showNotification('Logged out from another tab', 'info');
+        }
+        break;
+      
+      case 'tokenRefresh':
+        if (state.isAuthenticated && event.data.user) {
+          dispatch({ type: AUTH_ACTIONS.UPDATE_USER, payload: event.data.user });
+        }
+        break;
+      
+      case 'securityBreach':
+        dispatch({ type: AUTH_ACTIONS.LOGOUT });
+        showNotification('Security breach detected. Please log in again.', 'error');
+        break;
+      
+      case 'sessionStateChange':
+        if (event.data) {
+          const { isAuthenticated, user } = event.data;
+          if (isAuthenticated && user && !state.isAuthenticated) {
+            dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: { user } });
+          } else if (!isAuthenticated && state.isAuthenticated) {
+            dispatch({ type: AUTH_ACTIONS.LOGOUT });
+          }
+        }
+        break;
+    }
+  }, [state.isAuthenticated, showNotification]);
+
   // Login with enhanced security
   const login = async (credentials, options = {}) => {
     // Check if account is locked
@@ -344,6 +398,9 @@ export const AuthProvider = ({ children }) => {
       // Reset login attempts on successful login
       dispatch({ type: AUTH_ACTIONS.RESET_LOGIN_ATTEMPTS });
       dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response });
+
+      // Sync login across tabs
+      multiTabSyncManager.syncLogin(response.user || response, response.tokens);
 
       showNotification('Login successful!', 'success');
       return response;
@@ -384,6 +441,10 @@ export const AuthProvider = ({ children }) => {
       }
 
       dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response });
+      
+      // Sync login across tabs
+      multiTabSyncManager.syncLogin(response.user || response, response.tokens);
+      
       showNotification('Registration successful!', 'success');
       return response;
 
@@ -405,6 +466,9 @@ export const AuthProvider = ({ children }) => {
       clearInterval(sessionCheckInterval.current);
       clearTimeout(activityTimeout.current);
 
+      // Sync logout across tabs
+      multiTabSyncManager.syncLogout(reason);
+
       dispatch({ type: AUTH_ACTIONS.LOGOUT });
     }
   };
@@ -416,6 +480,9 @@ export const AuthProvider = ({ children }) => {
 
       dispatch({ type: AUTH_ACTIONS.CLEAR_MFA });
       dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response });
+
+      // Sync login across tabs
+      multiTabSyncManager.syncLogin(response.user || response, response.tokens);
 
       showNotification('MFA verification successful!', 'success');
       return response;
