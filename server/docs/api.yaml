@@ -1,0 +1,1339 @@
+openapi: 3.0.3
+info:
+  title: TechVerse API
+  description: |
+    The TechVerse API is a comprehensive RESTful API for an e-commerce platform built with Node.js and Express.
+    It provides endpoints for user authentication, product management, order processing, and administrative functions.
+    
+    ## Authentication
+    Most endpoints require JWT authentication. Include the token in the Authorization header:
+    `Authorization: Bearer <your-jwt-token>`
+    
+    ## Rate Limiting
+    - Authentication endpoints: 5 requests per minute
+    - Password reset: 3 requests per minute  
+    - Sensitive operations: 3 requests per hour
+    - General API: 100 requests per 15 minutes
+  version: 1.0.0
+  contact:
+    name: TechVerse API Support
+    email: support@techverse.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000/api
+    description: Development server
+  - url: https://api.techverse.com
+    description: Production server
+
+security:
+  - BearerAuth: []
+
+paths:
+  # Authentication Endpoints
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Create a new user account with email verification
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticate user and receive JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      description: Logout user and invalidate token
+      security: []
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessMessage'
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Get current authenticated user information
+      responses:
+        '200':
+          description: Current user information
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/refresh-token:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh JWT token
+      description: Refresh JWT token using refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+                  description: Valid refresh token
+              required:
+                - refreshToken
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+
+  # Product Endpoints
+  /products:
+    get:
+      tags:
+        - Products
+      summary: Get all products
+      description: Get paginated list of products with filtering options
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: category
+          in: query
+          description: Filter by category ID
+          schema:
+            type: string
+            format: objectid
+        - name: minPrice
+          in: query
+          description: Minimum price filter
+          schema:
+            type: number
+            minimum: 0
+        - name: maxPrice
+          in: query
+          description: Maximum price filter
+          schema:
+            type: number
+            minimum: 0
+        - name: sort
+          in: query
+          description: Sort field and direction
+          schema:
+            type: string
+            enum: [name, price, rating, createdAt, -name, -price, -rating, -createdAt]
+        - name: search
+          in: query
+          description: Search in product name and description
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        '200':
+          description: Products retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+    post:
+      tags:
+        - Products
+      summary: Create product (Admin)
+      description: Create a new product (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreateRequest'
+      responses:
+        '201':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Get product by ID
+      description: Get single product details by ID
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ProductIdParam'
+      responses:
+        '200':
+          description: Product retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProductDetail'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Products
+      summary: Update product (Admin)
+      description: Update product details (admin only)
+      parameters:
+        - $ref: '#/components/parameters/ProductIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdateRequest'
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Products
+      summary: Delete product (Admin)
+      description: Delete product (admin only)
+      parameters:
+        - $ref: '#/components/parameters/ProductIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessMessage'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /products/section/{section}:
+    get:
+      tags:
+        - Products
+      summary: Get products by section
+      description: Get products filtered by homepage section
+      security: []
+      parameters:
+        - name: section
+          in: path
+          required: true
+          description: Section name
+          schema:
+            type: string
+            enum: [latest, topSeller, quickPick, weeklyDeal]
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Section products retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  # Order Endpoints
+  /orders:
+    post:
+      tags:
+        - Orders
+      summary: Create order
+      description: Create a new order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /orders/user:
+    get:
+      tags:
+        - Orders
+      summary: Get user orders
+      description: Get current user's orders
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: User orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /orders/{id}:
+    get:
+      tags:
+        - Orders
+      summary: Get order by ID
+      description: Get order details by ID
+      parameters:
+        - $ref: '#/components/parameters/OrderIdParam'
+      responses:
+        '200':
+          description: Order retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/OrderDetail'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # Admin Endpoints
+  /admin/dashboard:
+    get:
+      tags:
+        - Admin
+      summary: Get dashboard stats
+      description: Get admin dashboard statistics
+      responses:
+        '200':
+          description: Dashboard stats retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DashboardStats'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/sections:
+    get:
+      tags:
+        - Admin
+      summary: Get section overview
+      description: Get overview of all homepage sections
+      responses:
+        '200':
+          description: Section overview retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SectionOverview'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/sections/{section}:
+    post:
+      tags:
+        - Admin
+      summary: Set products in section
+      description: Set products for a homepage section
+      parameters:
+        - $ref: '#/components/parameters/SectionParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productIds:
+                  type: array
+                  items:
+                    type: string
+                    format: objectid
+                  maxItems: 20
+                  description: Array of product IDs
+              required:
+                - productIds
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessMessage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+    get:
+      tags:
+        - Admin
+      summary: Get products in section
+      description: Get products assigned to a section
+      parameters:
+        - $ref: '#/components/parameters/SectionParam'
+      responses:
+        '200':
+          description: Section products retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Product'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+    delete:
+      tags:
+        - Admin
+      summary: Clear section
+      description: Remove all products from a section
+      parameters:
+        - $ref: '#/components/parameters/SectionParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessMessage'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  # Health Check Endpoints
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Basic health check
+      description: Basic API health check
+      security: []
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+  /health/detailed:
+    get:
+      tags:
+        - Health
+      summary: Detailed health check
+      description: Detailed health check including database and system metrics
+      security: []
+      responses:
+        '200':
+          description: Detailed health information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedHealthStatus'
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Page number
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    LimitParam:
+      name: limit
+      in: query
+      description: Items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 10
+
+    ProductIdParam:
+      name: id
+      in: path
+      required: true
+      description: Product ID
+      schema:
+        type: string
+        format: objectid
+
+    OrderIdParam:
+      name: id
+      in: path
+      required: true
+      description: Order ID
+      schema:
+        type: string
+        format: objectid
+
+    SectionParam:
+      name: section
+      in: path
+      required: true
+      description: Section name
+      schema:
+        type: string
+        enum: [latest, topSeller, quickPick, weeklyDeal]
+
+  schemas:
+    # Base Response Schemas
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operation completed successfully"
+      required:
+        - success
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Error message"
+        details:
+          type: string
+          example: "Additional error details"
+        code:
+          type: string
+          example: "ERROR_CODE"
+      required:
+        - success
+        - error
+
+    PaginatedResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            pagination:
+              type: object
+              properties:
+                page:
+                  type: integer
+                  example: 1
+                limit:
+                  type: integer
+                  example: 10
+                total:
+                  type: integer
+                  example: 100
+                pages:
+                  type: integer
+                  example: 10
+              required:
+                - page
+                - limit
+                - total
+                - pages
+
+    # Authentication Schemas
+    RegisterRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 2
+          maxLength: 50
+          example: "John"
+        lastName:
+          type: string
+          minLength: 2
+          maxLength: 50
+          example: "Doe"
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        password:
+          type: string
+          minLength: 6
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)'
+          example: "SecurePass123"
+        confirmPassword:
+          type: string
+          example: "SecurePass123"
+      required:
+        - firstName
+        - lastName
+        - email
+        - password
+        - confirmPassword
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        password:
+          type: string
+          example: "SecurePass123"
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+                token:
+                  type: string
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                refreshToken:
+                  type: string
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              required:
+                - user
+                - token
+
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: objectid
+          example: "60d5ecb74b24a1234567890a"
+        firstName:
+          type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        role:
+          type: string
+          enum: [user, admin]
+          example: "user"
+        isEmailVerified:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2021-06-25T10:30:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2021-06-25T10:30:00.000Z"
+      required:
+        - _id
+        - firstName
+        - lastName
+        - email
+        - role
+
+    # Product Schemas
+    Product:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: objectid
+          example: "60d5ecb74b24a1234567890b"
+        name:
+          type: string
+          example: "iPhone 13 Pro"
+        slug:
+          type: string
+          example: "iphone-13-pro"
+        description:
+          type: string
+          example: "Latest iPhone with Pro camera system"
+        price:
+          type: number
+          format: float
+          example: 999.99
+        images:
+          type: array
+          items:
+            type: string
+          example: ["/uploads/iphone-13-pro-1.jpg"]
+        category:
+          type: object
+          properties:
+            _id:
+              type: string
+              format: objectid
+            name:
+              type: string
+          example:
+            _id: "60d5ecb74b24a1234567890c"
+            name: "Smartphones"
+        stock:
+          type: integer
+          example: 50
+        status:
+          type: string
+          enum: [active, inactive]
+          example: "active"
+        sections:
+          type: array
+          items:
+            type: string
+            enum: [latest, topSeller, quickPick, weeklyDeal]
+          example: ["latest", "topSeller"]
+        rating:
+          type: number
+          format: float
+          example: 4.8
+        reviewCount:
+          type: integer
+          example: 125
+        createdAt:
+          type: string
+          format: date-time
+          example: "2021-06-25T10:30:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2021-06-25T10:30:00.000Z"
+      required:
+        - _id
+        - name
+        - slug
+        - description
+        - price
+        - category
+        - status
+
+    ProductDetail:
+      allOf:
+        - $ref: '#/components/schemas/Product'
+        - type: object
+          properties:
+            specs:
+              type: object
+              example:
+                display: "6.1-inch Super Retina XDR"
+                storage: "128GB"
+                camera: "Pro camera system"
+            features:
+              type: array
+              items:
+                type: string
+              example: ["Face ID", "Wireless charging", "5G capable"]
+            tags:
+              type: array
+              items:
+                type: string
+              example: ["apple", "smartphone", "premium"]
+
+    ProductCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+          example: "iPhone 13 Pro"
+        description:
+          type: string
+          minLength: 10
+          maxLength: 2000
+          example: "Latest iPhone with Pro camera system"
+        price:
+          type: number
+          format: float
+          minimum: 0
+          example: 999.99
+        category:
+          type: string
+          format: objectid
+          example: "60d5ecb74b24a1234567890c"
+        brand:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: "Apple"
+        stock:
+          type: integer
+          minimum: 0
+          example: 50
+        sections:
+          type: array
+          items:
+            type: string
+            enum: [latest, topSeller, quickPick, weeklyDeal]
+          maxItems: 4
+          example: ["latest", "topSeller"]
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+          example: ["apple", "smartphone", "premium"]
+        features:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+          example: ["Face ID", "Wireless charging", "5G capable"]
+      required:
+        - name
+        - description
+        - price
+        - category
+
+    ProductUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        description:
+          type: string
+          minLength: 10
+          maxLength: 2000
+        price:
+          type: number
+          format: float
+          minimum: 0
+        category:
+          type: string
+          format: objectid
+        brand:
+          type: string
+          minLength: 2
+          maxLength: 100
+        stock:
+          type: integer
+          minimum: 0
+        sections:
+          type: array
+          items:
+            type: string
+            enum: [latest, topSeller, quickPick, weeklyDeal]
+          maxItems: 4
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+        features:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+
+    # Order Schemas
+    OrderCreateRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              product:
+                type: string
+                format: objectid
+              quantity:
+                type: integer
+                minimum: 1
+                maximum: 99
+            required:
+              - product
+              - quantity
+          minItems: 1
+          maxItems: 50
+        shippingAddress:
+          $ref: '#/components/schemas/Address'
+        paymentMethod:
+          type: string
+          enum: [card, paypal, stripe]
+      required:
+        - items
+        - shippingAddress
+        - paymentMethod
+
+    Address:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 2
+          maxLength: 50
+        lastName:
+          type: string
+          minLength: 2
+          maxLength: 50
+        address:
+          type: string
+          minLength: 5
+          maxLength: 200
+        city:
+          type: string
+          minLength: 2
+          maxLength: 100
+        postcode:
+          type: string
+          pattern: '^[A-Z]{1,2}[0-9]{1,2}[A-Z]?\s?[0-9][A-Z]{2}$'
+      required:
+        - firstName
+        - lastName
+        - address
+        - city
+        - postcode
+
+    Order:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: objectid
+        orderNumber:
+          type: string
+          example: "ORD-2021-001234"
+        user:
+          type: string
+          format: objectid
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              product:
+                $ref: '#/components/schemas/Product'
+              quantity:
+                type: integer
+              price:
+                type: number
+                format: float
+              total:
+                type: number
+                format: float
+        subtotal:
+          type: number
+          format: float
+        shipping:
+          type: number
+          format: float
+        tax:
+          type: number
+          format: float
+        total:
+          type: number
+          format: float
+        status:
+          type: string
+          enum: [pending, confirmed, processing, shipped, delivered, cancelled, refunded]
+        shippingAddress:
+          $ref: '#/components/schemas/Address'
+        paymentMethod:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - _id
+        - orderNumber
+        - user
+        - items
+        - total
+        - status
+
+    OrderDetail:
+      allOf:
+        - $ref: '#/components/schemas/Order'
+        - type: object
+          properties:
+            trackingNumber:
+              type: string
+            notes:
+              type: string
+
+    # Admin Schemas
+    DashboardStats:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+          example: 1250
+        totalOrders:
+          type: integer
+          example: 3456
+        totalRevenue:
+          type: number
+          format: float
+          example: 125000.50
+        totalProducts:
+          type: integer
+          example: 789
+        recentOrders:
+          type: integer
+          example: 45
+        pendingOrders:
+          type: integer
+          example: 12
+        lowStockProducts:
+          type: integer
+          example: 8
+      required:
+        - totalUsers
+        - totalOrders
+        - totalRevenue
+        - totalProducts
+
+    SectionOverview:
+      type: object
+      properties:
+        latest:
+          $ref: '#/components/schemas/SectionInfo'
+        topSeller:
+          $ref: '#/components/schemas/SectionInfo'
+        quickPick:
+          $ref: '#/components/schemas/SectionInfo'
+        weeklyDeal:
+          $ref: '#/components/schemas/SectionInfo'
+      required:
+        - latest
+        - topSeller
+        - quickPick
+        - weeklyDeal
+
+    SectionInfo:
+      type: object
+      properties:
+        productCount:
+          type: integer
+          example: 8
+        lastUpdated:
+          type: string
+          format: date-time
+          example: "2021-06-25T10:30:00.000Z"
+      required:
+        - productCount
+        - lastUpdated
+
+    # Health Check Schemas
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "OK"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2021-06-25T10:30:00.000Z"
+        uptime:
+          type: number
+          example: 3600
+        environment:
+          type: string
+          example: "development"
+      required:
+        - status
+        - timestamp
+
+    DetailedHealthStatus:
+      allOf:
+        - $ref: '#/components/schemas/HealthStatus'
+        - type: object
+          properties:
+            database:
+              type: object
+              properties:
+                status:
+                  type: string
+                  example: "connected"
+                responseTime:
+                  type: number
+                  example: 15
+            memory:
+              type: object
+              properties:
+                used:
+                  type: number
+                  example: 125.5
+                total:
+                  type: number
+                  example: 512.0
+                percentage:
+                  type: number
+                  example: 24.5
+            version:
+              type: string
+              example: "1.0.0"
+
+  responses:
+    SuccessMessage:
+      description: Operation completed successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SuccessResponse'
+
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  code:
+                    example: "VALIDATION_ERROR"
+
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  code:
+                    example: "AUTHENTICATION_ERROR"
+
+    ForbiddenError:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  code:
+                    example: "AUTHORIZATION_ERROR"
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  code:
+                    example: "NOT_FOUND"
+
+    ConflictError:
+      description: Resource already exists
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  code:
+                    example: "DUPLICATE_ERROR"
+
+    RateLimitError:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  code:
+                    example: "RATE_LIMIT_ERROR"
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Products
+    description: Product management and browsing
+  - name: Orders
+    description: Order creation and management
+  - name: Admin
+    description: Administrative functions
+  - name: Health
+    description: API health and monitoring
