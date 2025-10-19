@@ -40,49 +40,49 @@ const PRODUCT_ACTIONS = {
   SET_LOADING: 'SET_LOADING',
   SET_ERROR: 'SET_ERROR',
   CLEAR_ERROR: 'CLEAR_ERROR',
-  
+
   // Products
   LOAD_PRODUCTS_SUCCESS: 'LOAD_PRODUCTS_SUCCESS',
   LOAD_MORE_PRODUCTS_SUCCESS: 'LOAD_MORE_PRODUCTS_SUCCESS',
-  
+
   // Featured products
   LOAD_FEATURED_PRODUCTS_SUCCESS: 'LOAD_FEATURED_PRODUCTS_SUCCESS',
-  
+
   // Top selling products
   LOAD_TOP_SELLING_SUCCESS: 'LOAD_TOP_SELLING_SUCCESS',
-  
+
   // Latest products
   LOAD_LATEST_PRODUCTS_SUCCESS: 'LOAD_LATEST_PRODUCTS_SUCCESS',
-  
+
   // Products on sale
   LOAD_PRODUCTS_ON_SALE_SUCCESS: 'LOAD_PRODUCTS_ON_SALE_SUCCESS',
-  
+
   // Quick picks
   LOAD_QUICK_PICKS_SUCCESS: 'LOAD_QUICK_PICKS_SUCCESS',
-  
+
   // Categories
   LOAD_CATEGORIES_SUCCESS: 'LOAD_CATEGORIES_SUCCESS',
-  
+
   // Single product
   LOAD_PRODUCT_SUCCESS: 'LOAD_PRODUCT_SUCCESS',
   CLEAR_CURRENT_PRODUCT: 'CLEAR_CURRENT_PRODUCT',
-  
+
   // Search
   SEARCH_PRODUCTS_SUCCESS: 'SEARCH_PRODUCTS_SUCCESS',
   SET_SEARCH_QUERY: 'SET_SEARCH_QUERY',
   CLEAR_SEARCH: 'CLEAR_SEARCH',
-  
+
   // Related products
   LOAD_RELATED_PRODUCTS_SUCCESS: 'LOAD_RELATED_PRODUCTS_SUCCESS',
-  
+
   // Reviews
   LOAD_REVIEWS_SUCCESS: 'LOAD_REVIEWS_SUCCESS',
   ADD_REVIEW_SUCCESS: 'ADD_REVIEW_SUCCESS',
-  
+
   // Filters
   SET_FILTERS: 'SET_FILTERS',
   CLEAR_FILTERS: 'CLEAR_FILTERS',
-  
+
   // Pagination
   SET_PAGINATION: 'SET_PAGINATION'
 };
@@ -92,13 +92,13 @@ const productReducer = (state, action) => {
   switch (action.type) {
     case PRODUCT_ACTIONS.SET_LOADING:
       return { ...state, isLoading: action.payload, error: null };
-    
+
     case PRODUCT_ACTIONS.SET_ERROR:
       return { ...state, error: action.payload, isLoading: false };
-    
+
     case PRODUCT_ACTIONS.CLEAR_ERROR:
       return { ...state, error: null };
-    
+
     case PRODUCT_ACTIONS.LOAD_PRODUCTS_SUCCESS:
       return {
         ...state,
@@ -113,7 +113,7 @@ const productReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case PRODUCT_ACTIONS.LOAD_MORE_PRODUCTS_SUCCESS:
       return {
         ...state,
@@ -128,7 +128,7 @@ const productReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case PRODUCT_ACTIONS.LOAD_FEATURED_PRODUCTS_SUCCESS:
       return {
         ...state,
@@ -136,7 +136,7 @@ const productReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case PRODUCT_ACTIONS.LOAD_TOP_SELLING_SUCCESS:
       return {
         ...state,
@@ -144,7 +144,7 @@ const productReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case PRODUCT_ACTIONS.LOAD_LATEST_PRODUCTS_SUCCESS:
       return {
         ...state,
@@ -152,7 +152,7 @@ const productReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case PRODUCT_ACTIONS.LOAD_PRODUCTS_ON_SALE_SUCCESS:
       return {
         ...state,
@@ -160,7 +160,7 @@ const productReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case PRODUCT_ACTIONS.LOAD_QUICK_PICKS_SUCCESS:
       return {
         ...state,
@@ -168,7 +168,7 @@ const productReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case PRODUCT_ACTIONS.LOAD_CATEGORIES_SUCCESS:
       return {
         ...state,
@@ -176,7 +176,7 @@ const productReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case PRODUCT_ACTIONS.LOAD_PRODUCT_SUCCESS:
       return {
         ...state,
@@ -184,7 +184,7 @@ const productReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case PRODUCT_ACTIONS.CLEAR_CURRENT_PRODUCT:
       return {
         ...state,
@@ -192,7 +192,7 @@ const productReducer = (state, action) => {
         relatedProducts: [],
         reviews: []
       };
-    
+
     case PRODUCT_ACTIONS.SEARCH_PRODUCTS_SUCCESS:
       return {
         ...state,
@@ -207,10 +207,10 @@ const productReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case PRODUCT_ACTIONS.SET_SEARCH_QUERY:
       return { ...state, searchQuery: action.payload };
-    
+
     case PRODUCT_ACTIONS.CLEAR_SEARCH:
       return {
         ...state,
@@ -218,7 +218,7 @@ const productReducer = (state, action) => {
         searchQuery: '',
         pagination: { ...initialState.pagination }
       };
-    
+
     case PRODUCT_ACTIONS.LOAD_RELATED_PRODUCTS_SUCCESS:
       return {
         ...state,
@@ -226,7 +226,7 @@ const productReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case PRODUCT_ACTIONS.LOAD_REVIEWS_SUCCESS:
       return {
         ...state,
@@ -234,7 +234,7 @@ const productReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case PRODUCT_ACTIONS.ADD_REVIEW_SUCCESS:
       return {
         ...state,
@@ -242,25 +242,25 @@ const productReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
+
     case PRODUCT_ACTIONS.SET_FILTERS:
       return {
         ...state,
         filters: { ...state.filters, ...action.payload }
       };
-    
+
     case PRODUCT_ACTIONS.CLEAR_FILTERS:
       return {
         ...state,
         filters: { ...initialState.filters }
       };
-    
+
     case PRODUCT_ACTIONS.SET_PAGINATION:
       return {
         ...state,
         pagination: { ...state.pagination, ...action.payload }
       };
-    
+
     default:
       return state;
   }
@@ -272,10 +272,10 @@ const ProductContext = createContext();
 // Provider component
 export const ProductProvider = ({ children }) => {
   const [state, dispatch] = useReducer(productReducer, initialState);
-  
+
   // Request deduplication - prevent multiple simultaneous calls
   const activeRequests = React.useRef(new Set());
-  
+
   // Temporary notification function - will be enhanced later
   const showNotification = useCallback((message, type = 'info') => {
     if (import.meta.env.DEV) {
@@ -287,18 +287,18 @@ export const ProductProvider = ({ children }) => {
   const loadProducts = useCallback(async (params = {}, loadMore = false) => {
     try {
       dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
-      
+
       const queryParams = {
         ...params,
         page: loadMore ? (params.page || 1) + 1 : (params.page || 1)
       };
 
       const response = await productService.getProducts(queryParams);
-      
-      const actionType = loadMore 
-        ? PRODUCT_ACTIONS.LOAD_MORE_PRODUCTS_SUCCESS 
+
+      const actionType = loadMore
+        ? PRODUCT_ACTIONS.LOAD_MORE_PRODUCTS_SUCCESS
         : PRODUCT_ACTIONS.LOAD_PRODUCTS_SUCCESS;
-      
+
       dispatch({ type: actionType, payload: response });
       return response;
     } catch (error) {
@@ -321,7 +321,7 @@ export const ProductProvider = ({ children }) => {
       console.log('Skipping duplicate request:', requestKey);
       return;
     }
-    
+
     try {
       activeRequests.current.add(requestKey);
       dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
@@ -344,7 +344,7 @@ export const ProductProvider = ({ children }) => {
       console.log('Skipping duplicate request:', requestKey);
       return;
     }
-    
+
     try {
       activeRequests.current.add(requestKey);
       dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
@@ -367,7 +367,7 @@ export const ProductProvider = ({ children }) => {
       console.log('Skipping duplicate request:', requestKey);
       return;
     }
-    
+
     try {
       activeRequests.current.add(requestKey);
       dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
@@ -390,7 +390,7 @@ export const ProductProvider = ({ children }) => {
       console.log('Skipping duplicate request:', requestKey);
       return;
     }
-    
+
     try {
       activeRequests.current.add(requestKey);
       dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
@@ -432,8 +432,8 @@ export const ProductProvider = ({ children }) => {
       showNotification(error.message, 'error');
       throw error;
     }
-  }, [showNotification]);  
-// Load single product
+  }, [showNotification]);
+  // Load single product
   const loadProduct = useCallback(async (productId) => {
     if (!productId) {
       dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: 'Product ID is required' });
@@ -480,17 +480,17 @@ export const ProductProvider = ({ children }) => {
 
     try {
       dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
-      
+
       const searchParams = {
         ...filters,
         page: loadMore ? (filters.page || 1) + 1 : 1
       };
 
       const response = await productService.searchProducts(query, searchParams);
-      
+
       dispatch({ type: PRODUCT_ACTIONS.SET_SEARCH_QUERY, payload: query });
       dispatch({ type: PRODUCT_ACTIONS.SEARCH_PRODUCTS_SUCCESS, payload: response });
-      
+
       return response;
     } catch (error) {
       dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
@@ -579,9 +579,9 @@ export const ProductProvider = ({ children }) => {
 
   // Utility functions
   const getProductById = useCallback((productId) => {
-    return state.products.find(product => product._id === productId) || 
-           state.searchResults.find(product => product._id === productId) ||
-           state.featuredProducts.find(product => product._id === productId);
+    return state.products.find(product => product._id === productId) ||
+      state.searchResults.find(product => product._id === productId) ||
+      state.featuredProducts.find(product => product._id === productId);
   }, [state.products, state.searchResults, state.featuredProducts]);
 
   const getCategoryById = useCallback((categoryId) => {
@@ -590,7 +590,7 @@ export const ProductProvider = ({ children }) => {
 
   const isProductInResults = useCallback((productId) => {
     return state.products.some(product => product._id === productId) ||
-           state.searchResults.some(product => product._id === productId);
+      state.searchResults.some(product => product._id === productId);
   }, [state.products, state.searchResults]);
 
   // Filter products by criteria
@@ -633,7 +633,7 @@ export const ProductProvider = ({ children }) => {
   // Get filtered and sorted products
   const getFilteredProducts = useCallback(() => {
     let products = state.searchQuery ? state.searchResults : state.products;
-    
+
     // Apply client-side filters if needed
     if (Object.values(state.filters).some(value => value !== null && value !== '')) {
       products = filterProducts(products, state.filters);
@@ -644,7 +644,7 @@ export const ProductProvider = ({ children }) => {
 
   const value = {
     ...state,
-    
+
     // Data loading methods
     loadProducts,
     loadMoreProducts,
@@ -660,14 +660,14 @@ export const ProductProvider = ({ children }) => {
     loadRelatedProducts,
     loadProductReviews,
     addProductReview,
-    
+
     // State management
     setFilters,
     clearFilters,
     clearSearch,
     clearCurrentProduct,
     clearError,
-    
+
     // Utility methods
     getProductById,
     getCategoryById,
