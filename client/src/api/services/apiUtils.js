@@ -11,7 +11,7 @@ class ApiUtils {
   async create(endpoint, data, options = {}) {
     try {
       const response = await apiClient.post(endpoint, data, options);
-      return handleApiResponse(response);
+      return handleApiResponse(response, { method: 'POST', url: endpoint });
     } catch (error) {
       console.error(`Error creating resource at ${endpoint}:`, error);
       throw new Error(error.message || 'Failed to create resource');
@@ -21,7 +21,7 @@ class ApiUtils {
   async read(endpoint, params = {}, options = {}) {
     try {
       const response = await apiClient.get(endpoint, { params, ...options });
-      return handleApiResponse(response);
+      return handleApiResponse(response, { method: 'GET', url: endpoint });
     } catch (error) {
       console.error(`Error reading resource at ${endpoint}:`, error);
       throw new Error(error.message || 'Failed to read resource');
@@ -31,7 +31,7 @@ class ApiUtils {
   async update(endpoint, data, options = {}) {
     try {
       const response = await apiClient.put(endpoint, data, options);
-      return handleApiResponse(response);
+      return handleApiResponse(response, { method: 'PUT', url: endpoint });
     } catch (error) {
       console.error(`Error updating resource at ${endpoint}:`, error);
       throw new Error(error.message || 'Failed to update resource');
@@ -41,7 +41,7 @@ class ApiUtils {
   async patch(endpoint, data, options = {}) {
     try {
       const response = await apiClient.patch(endpoint, data, options);
-      return handleApiResponse(response);
+      return handleApiResponse(response, { method: 'PATCH', url: endpoint });
     } catch (error) {
       console.error(`Error patching resource at ${endpoint}:`, error);
       throw new Error(error.message || 'Failed to patch resource');
@@ -51,7 +51,7 @@ class ApiUtils {
   async delete(endpoint, options = {}) {
     try {
       const response = await apiClient.delete(endpoint, options);
-      return handleApiResponse(response);
+      return handleApiResponse(response, { method: 'DELETE', url: endpoint });
     } catch (error) {
       console.error(`Error deleting resource at ${endpoint}:`, error);
       throw new Error(error.message || 'Failed to delete resource');

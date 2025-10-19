@@ -188,63 +188,125 @@ class ApiClient {
     this.baseURL = baseURL;
     this.isRefreshing = false;
     this.failedQueue = [];
-    this.retryAttempts = new Map();
-    this.maxRetries = 3;
-    this.retryDelay = 1000; // 1 second
+    
+    // Initialize services (lazy loading to avoid circular dependencies)
+    this.requestDeduplicator = null;
+    this.retryManager = null;
+  }
+
+  // Lazy load services to avoid circular dependencies
+  async getServices() {
+    if (!this.requestDeduplicator || !this.retryManager) {
+      const [
+        { default: requestDeduplicator },
+        { default: retryManager }
+      ] = await Promise.all([
+        import('../services/requestDeduplicator.js'),
+        import('../services/retryManager.js')
+      ]);
+      
+      this.requestDeduplicator = requestDeduplicator;
+      this.retryManager = retryManager;
+    }
+    
+    return {
+      requestDeduplicator: this.requestDeduplicator,
+      retryManager: this.retryManager
+    };
   }
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
     const token = tokenManager.getToken();
-    const requestId = `${options.method || 'GET'}_${endpoint}`;
+    const method = options.method || 'GET';
     
-    // Default headers with enhanced configuration
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest',
-      'Accept': 'application/json',
-      ...options.headers
+    // Generate request ID for tracking
+    const requestId = this.generateRequestId();
+    
+    // Get services
+    const { requestDeduplicator, retryManager } = await this.getServices();
+    
+    // Create request context
+    const context = {
+      url,
+      endpoint,
+      method,
+      requestId,
+      hasAuth: !!token
     };
     
-    // Add Authorization header if token exists (automatic header attachment)
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-      console.log('🔐 Authorization header attached:', `Bearer ${token.substring(0, 20)}...`);
-    } else {
-      console.log('🔓 No token available, request sent without Authorization header');
-    }
-    
-    // Add request ID for tracking and debugging
-    headers['X-Request-ID'] = this.generateRequestId();
-    
-    // Special handling for FormData (file uploads)
-    if (options.body instanceof FormData) {
-      delete headers['Content-Type']; // Let browser set it for FormData
-    }
-    
-    const config = {
-      ...options,
-      headers,
-      timeout: options.timeout || 30000
+    // Check for request deduplication
+    const dedupeOptions = {
+      dedupe: options.dedupe !== false, // Default to true
+      strategy: options.dedupeStrategy || 'default',
+      forceNew: options.forceNew || false
     };
     
-    // Log request details for debugging
-    console.log('📤 API Request:', {
-      method: options.method || 'GET',
-      url: url,
-      hasAuth: !!token,
-      requestId: headers['X-Request-ID']
-    });
+    if (requestDeduplicator.shouldDeduplicate(method, url, dedupeOptions)) {
+      const fingerprint = requestDeduplicator.generateFingerprint(
+        method,
+        url,
+        options.body,
+        options.headers
+      );
+      
+      const existingRequest = requestDeduplicator.getPendingRequest(fingerprint);
+      if (existingRequest) {
+        console.log('🔄 Returning deduplicated request:', {
+          method,
+          url: endpoint,
+          fingerprint: fingerprint.substring(0, 12) + '...'
+        });
+        return existingRequest;
+      }
+    }
     
-    try {
+    // Create the actual request function
+    const makeRequest = async () => {
+      // Default headers with enhanced configuration
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+        'X-Request-ID': requestId,
+        ...options.headers
+      };
+      
+      // Add Authorization header if token exists
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+        console.log('🔐 Authorization header attached:', `Bearer ${token.substring(0, 20)}...`);
+      } else {
+        console.log('🔓 No token available, request sent without Authorization header');
+      }
+      
+      // Special handling for FormData (file uploads)
+      if (options.body instanceof FormData) {
+        delete headers['Content-Type']; // Let browser set it for FormData
+      }
+      
+      const config = {
+        ...options,
+        headers,
+        timeout: options.timeout || 30000
+      };
+      
+      // Log request details for debugging
+      console.log('📤 API Request:', {
+        method,
+        url: endpoint,
+        hasAuth: !!token,
+        requestId
+      });
+      
       const response = await this.fetchWithTimeout(url, config);
       
       // Log response details
       console.log('📥 API Response:', {
         status: response.status,
         statusText: response.statusText,
-        url: response.url,
-        requestId: headers['X-Request-ID']
+        url: endpoint,
+        requestId
       });
       
       // Handle token refresh for 401 errors (but not for auth endpoints)
@@ -253,42 +315,28 @@ class ApiClient {
         return this.handleTokenRefresh(endpoint, options);
       }
       
-      // Handle rate limiting with exponential backoff
-      if (response.status === 429) {
-        console.log('⏳ Rate limited, retrying after delay...');
-        return this.handleRateLimit(endpoint, options, response);
-      }
-      
-      // Handle server errors with retry logic
-      if (response.status >= 500 && this.shouldRetry(requestId)) {
-        console.log(`🔄 Server error ${response.status}, retrying...`);
-        return this.handleRetry(endpoint, options, requestId);
-      }
-      
-      // Reset retry count on success
-      this.retryAttempts.delete(requestId);
-      
       return response;
-    } catch (error) {
-      console.error('❌ Network Error:', {
-        message: error.message,
-        url: url,
-        requestId: headers['X-Request-ID']
-      });
+    };
+    
+    // Execute with retry logic and deduplication
+    const requestPromise = retryManager.executeWithRetry(makeRequest, context, {
+      maxRetries: options.maxRetries,
+      retryStrategy: options.retryStrategy
+    });
+    
+    // Add to deduplication queue if applicable
+    if (requestDeduplicator.shouldDeduplicate(method, url, dedupeOptions)) {
+      const fingerprint = requestDeduplicator.generateFingerprint(
+        method,
+        url,
+        options.body,
+        options.headers
+      );
       
-      // Handle network errors with retry
-      if (this.isNetworkError(error) && this.shouldRetry(requestId)) {
-        console.log('🔄 Network error, retrying...');
-        return this.handleRetry(endpoint, options, requestId);
-      }
-      
-      // Enhance error message with more context
-      const enhancedError = new Error(`Network error: ${error.message}`);
-      enhancedError.originalError = error;
-      enhancedError.url = url;
-      enhancedError.requestId = headers['X-Request-ID'];
-      throw enhancedError;
+      requestDeduplicator.addPendingRequest(fingerprint, requestPromise, context);
     }
+    
+    return requestPromise;
   }
 
   // Fetch with timeout support
@@ -317,36 +365,12 @@ class ApiClient {
     return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  // Check if error is network-related
-  isNetworkError(error) {
-    return error.message.includes('Network') || 
-           error.message.includes('timeout') || 
-           error.message.includes('Failed to fetch');
-  }
-
-  // Check if request should be retried
-  shouldRetry(requestId) {
-    const attempts = this.retryAttempts.get(requestId) || 0;
-    return attempts < this.maxRetries;
-  }
-
-  // Handle retry logic
-  async handleRetry(endpoint, options, requestId) {
-    const attempts = this.retryAttempts.get(requestId) || 0;
-    this.retryAttempts.set(requestId, attempts + 1);
-    
-    // Exponential backoff
-    const delay = this.retryDelay * Math.pow(2, attempts);
-    await new Promise(resolve => setTimeout(resolve, delay));
-    
-    return this.request(endpoint, options);
-  }
-
-  // Handle rate limiting
+  // Handle rate limiting (still needed for immediate rate limit responses)
   async handleRateLimit(endpoint, options, response) {
     const retryAfter = response.headers.get('Retry-After');
     const delay = retryAfter ? parseInt(retryAfter) * 1000 : 5000; // Default 5 seconds
     
+    console.log('⏳ Rate limited, waiting:', { delay, retryAfter });
     await new Promise(resolve => setTimeout(resolve, delay));
     return this.request(endpoint, options);
   }
@@ -495,8 +519,8 @@ class ApiClient {
 // Create and export API client instance
 export const apiClient = new ApiClient(API_BASE_URL);
 
-// Enhanced response handler utility with consistent error translation
-export const handleApiResponse = async (response) => {
+// Enhanced response handler utility with comprehensive error translation
+export const handleApiResponse = async (response, context = {}) => {
   const contentType = response.headers.get('content-type');
   
   let data;
@@ -512,28 +536,43 @@ export const handleApiResponse = async (response) => {
   }
   
   if (!response.ok) {
-    // Create standardized error object with server error translation
-    const errorMessage = translateServerError(response.status, data);
-    const error = new Error(errorMessage);
+    // Import error handler dynamically to avoid circular dependencies
+    const { default: errorHandler } = await import('../services/errorHandler.js');
+    
+    // Create standardized error object
+    const error = new Error('API request failed');
     error.status = response.status;
     error.data = data;
-    error.code = data.code || `HTTP_${response.status}`;
+    error.code = data?.code || `HTTP_${response.status}`;
+    error.url = response.url;
     
-    // Log error for debugging
-    console.error('API Error:', {
-      status: response.status,
-      message: errorMessage,
+    // Get enhanced error information
+    const enhancedError = errorHandler.translateError(error, {
       url: response.url,
-      data: data
+      method: context.method || 'GET',
+      requestId: context.requestId
     });
     
-    throw error;
+    // Create enhanced error object that maintains Error prototype
+    const finalError = new Error(enhancedError.message);
+    finalError.status = response.status;
+    finalError.data = data;
+    finalError.code = enhancedError.code;
+    finalError.type = enhancedError.type;
+    finalError.canRetry = enhancedError.canRetry;
+    finalError.actions = enhancedError.actions;
+    finalError.timestamp = enhancedError.timestamp;
+    finalError.requestId = enhancedError.requestId;
+    finalError.url = response.url;
+    
+    throw finalError;
   }
   
   return data;
 };
 
-// Server error translation utility
+// Legacy server error translation utility (kept for backward compatibility)
+// Note: This is now handled by the ErrorHandler service
 const translateServerError = (status, data) => {
   // Extract message from various possible response formats
   const serverMessage = data?.message || data?.error || data?.details || data;
