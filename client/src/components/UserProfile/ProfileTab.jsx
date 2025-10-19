@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context';
 import { LoadingSpinner } from '../Common';
 
-const ProfileTab = () => {
+const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
     const { user, updateProfile, isLoading } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [profileData, setProfileData] = useState({

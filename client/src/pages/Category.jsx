@@ -57,7 +57,7 @@ const Category = () => {
             };
             loadProducts(allFilters);
         }
-    }, [categorySlug, loadProducts, loadProductsByCategory, loadCategories]);
+    }, [categorySlug]); // Only depend on categorySlug to avoid infinite loops
 
     // Update URL params when filters change
     useEffect(() => {
@@ -82,7 +82,7 @@ const Category = () => {
         } else {
             loadProducts({ ...localFilters, page: 1, limit: 12 });
         }
-    }, [localFilters, categorySlug, setFilters, loadProducts, loadProductsByCategory]);
+    }, [localFilters, categorySlug]); // Only depend on the actual data, not the functions
 
     // Get current category info
     const currentCategory = categories.find(cat => cat.slug === categorySlug);
@@ -90,13 +90,14 @@ const Category = () => {
 
     // Get unique brands from current products for filters
     const brands = useMemo(() => {
+        if (!Array.isArray(products)) return [];
         const uniqueBrands = [...new Set(products.map(product => product.brand).filter(Boolean))];
         return uniqueBrands.sort();
     }, [products]);
 
     // Get price range from current products
     const priceRange = useMemo(() => {
-        if (products.length === 0) return [0, 1000];
+        if (!Array.isArray(products) || products.length === 0) return [0, 1000];
         const prices = products.map(product => product.price || 0);
         return [Math.min(...prices), Math.max(...prices)];
     }, [products]);
@@ -133,7 +134,7 @@ const Category = () => {
     };
 
     // Show loading state
-    if (isLoading && products.length === 0) {
+    if (isLoading && (!Array.isArray(products) || products.length === 0)) {
         return (
             <div className="bloc bgc-5700 none full-width-bloc l-bloc" id="bloc-8">
                 <div className="container bloc-md-sm bloc-md bloc-lg-md">
@@ -208,12 +209,12 @@ const Category = () => {
                         categories={categories}
                         priceRange={priceRange}
                         onClearFilters={clearFilters}
-                        resultsCount={pagination.total || products.length}
+                        resultsCount={pagination.total || (Array.isArray(products) ? products.length : 0)}
                         isLoading={isLoading}
                     />
 
                     {/* Products Grid/List */}
-                    {products.length === 0 && !isLoading ? (
+                    {(!Array.isArray(products) || products.length === 0) && !isLoading ? (
                         <div className="col-12 text-center py-5">
                             <div className="tc-6533">
                                 <i className="fa fa-search fa-3x mb-3 opacity-50"></i>
@@ -227,7 +228,7 @@ const Category = () => {
                     ) : (
                         <>
                             {/* Loading overlay for filter changes */}
-                            {isLoading && products.length > 0 && (
+                            {isLoading && Array.isArray(products) && products.length > 0 && (
                                 <div className="col-12 mb-3">
                                     <div className="d-flex justify-content-center">
                                         <LoadingSpinner size="sm" />
@@ -238,21 +239,21 @@ const Category = () => {
                             
                             {/* Products */}
                             {viewMode === 'grid' ? (
-                                products.map((product) => (
+                                Array.isArray(products) ? products.map((product) => (
                                     <ProductCard 
                                         key={product._id} 
                                         product={product}
                                         showWishlist={true}
                                     />
-                                ))
+                                )) : []
                             ) : (
-                                products.map((product) => (
+                                Array.isArray(products) ? products.map((product) => (
                                     <ProductCardList 
                                         key={product._id} 
                                         product={product}
                                         showWishlist={true}
                                     />
-                                ))
+                                )) : []
                             )}
                         </>
                     )}

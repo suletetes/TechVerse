@@ -73,7 +73,7 @@ const Product = () => {
         return () => {
             clearCurrentProduct();
         };
-    }, [id, loadProduct, loadProductReviews, loadRelatedProducts, clearCurrentProduct]);
+    }, [id]); // Only depend on the product ID
 
     // Update selected options when product loads
     useEffect(() => {

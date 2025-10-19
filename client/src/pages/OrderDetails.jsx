@@ -99,7 +99,7 @@ const OrderDetails = () => {
                         <div className="col-lg-8 mb-4">
                             <div className="store-card fill-card mb-4">
                                 <h3 className="tc-6533 bold-text mb-4">Order Items</h3>
-                                {order.items.map((item) => (
+                                {Array.isArray(order.items) ? order.items.map((item) => (
                                     <div key={item.id} className="d-flex align-items-center p-3 border-bottom">
                                         <img
                                             src={item.image}
@@ -118,7 +118,7 @@ const OrderDetails = () => {
                                             <p className="tc-6533 bold-text h5 mb-0">£{item.price.toFixed(2)}</p>
                                         </div>
                                     </div>
-                                ))}
+                                )) : []}
                             </div>
 
                             {/* Shipping & Billing */}
