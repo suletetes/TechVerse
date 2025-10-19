@@ -79,9 +79,9 @@ describe('Authentication Flow Integration Tests', () => {
 
     // Generate auth tokens
     userToken = jwt.sign(
-      { 
-        id: testUser._id, 
-        email: testUser.email, 
+      {
+        id: testUser._id,
+        email: testUser.email,
         role: testUser.role,
         isEmailVerified: testUser.isEmailVerified,
         accountStatus: testUser.accountStatus
@@ -91,9 +91,9 @@ describe('Authentication Flow Integration Tests', () => {
     );
 
     adminToken = jwt.sign(
-      { 
-        id: adminUser._id, 
-        email: adminUser.email, 
+      {
+        id: adminUser._id,
+        email: adminUser.email,
         role: adminUser.role,
         isEmailVerified: adminUser.isEmailVerified,
         accountStatus: adminUser.accountStatus
@@ -185,10 +185,10 @@ describe('Authentication Flow Integration Tests', () => {
 
     it('should reject access with expired token', async () => {
       const expiredToken = jwt.sign(
-        { 
-          id: testUser._id, 
-          email: testUser.email, 
-          role: testUser.role 
+        {
+          id: testUser._id,
+          email: testUser.email,
+          role: testUser.role
         },
         process.env.JWT_SECRET,
         { expiresIn: '-1h' } // Expired 1 hour ago
@@ -257,10 +257,10 @@ describe('Authentication Flow Integration Tests', () => {
     it('should reject token for non-existent user', async () => {
       const nonExistentUserId = new mongoose.Types.ObjectId();
       const invalidUserToken = jwt.sign(
-        { 
-          id: nonExistentUserId, 
-          email: 'nonexistent@example.com', 
-          role: 'user' 
+        {
+          id: nonExistentUserId,
+          email: 'nonexistent@example.com',
+          role: 'user'
         },
         process.env.JWT_SECRET,
         { expiresIn: '1h' }
@@ -292,10 +292,10 @@ describe('Authentication Flow Integration Tests', () => {
       });
 
       const inactiveToken = jwt.sign(
-        { 
-          id: inactiveUser._id, 
-          email: inactiveUser.email, 
-          role: inactiveUser.role 
+        {
+          id: inactiveUser._id,
+          email: inactiveUser.email,
+          role: inactiveUser.role
         },
         process.env.JWT_SECRET,
         { expiresIn: '1h' }
@@ -325,10 +325,10 @@ describe('Authentication Flow Integration Tests', () => {
       });
 
       const suspendedToken = jwt.sign(
-        { 
-          id: suspendedUser._id, 
-          email: suspendedUser.email, 
-          role: suspendedUser.role 
+        {
+          id: suspendedUser._id,
+          email: suspendedUser.email,
+          role: suspendedUser.role
         },
         process.env.JWT_SECRET,
         { expiresIn: '1h' }

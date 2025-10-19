@@ -253,28 +253,64 @@ export const suspiciousActivityDetector = (req, res, next) => {
     // XSS attempts
     /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
     // Path traversal attempts
-    /\.\.[\/\\]/,
-    // Command injection attempts
-    /[;&|`$(){}[\]]/
+    /\.\.[\/\\]/
   ];
 
-  const checkValue = (value) => {
+  // Command injection patterns - but exclude common safe contexts
+  const commandInjectionPattern = /[;&|`${}[\]]/;
+  
+  // Fields that should be excluded from command injection checks
+  const excludedFields = [
+    'password', 
+    'currentPassword', 
+    'newPassword', 
+    'confirmPassword',
+    'userAgent',
+    'deviceInfo'
+  ];
+
+  const checkValue = (value, fieldPath = '') => {
     if (typeof value === 'string') {
-      return suspiciousPatterns.some(pattern => pattern.test(value));
+      // Check basic suspicious patterns
+      if (suspiciousPatterns.some(pattern => pattern.test(value))) {
+        return true;
+      }
+      
+      // Check command injection only if not in excluded fields
+      const isExcludedField = excludedFields.some(field => 
+        fieldPath.toLowerCase().includes(field.toLowerCase())
+      );
+      
+      if (!isExcludedField && commandInjectionPattern.test(value)) {
+        return true;
+      }
     }
+    
     if (typeof value === 'object' && value !== null) {
-      return Object.values(value).some(checkValue);
+      return Object.entries(value).some(([key, val]) => 
+        checkValue(val, fieldPath ? `${fieldPath}.${key}` : key)
+      );
     }
+    
     return false;
   };
 
-  const suspicious = [
-    ...Object.values(req.query || {}),
-    ...Object.values(req.body || {}),
-    ...Object.values(req.params || {})
-  ].some(checkValue);
+  // Check query parameters
+  const suspiciousQuery = Object.entries(req.query || {}).some(([key, value]) => 
+    checkValue(value, key)
+  );
+  
+  // Check body parameters
+  const suspiciousBody = Object.entries(req.body || {}).some(([key, value]) => 
+    checkValue(value, key)
+  );
+  
+  // Check URL parameters
+  const suspiciousParams = Object.entries(req.params || {}).some(([key, value]) => 
+    checkValue(value, key)
+  );
 
-  if (suspicious) {
+  if (suspiciousQuery || suspiciousBody || suspiciousParams) {
     logger.warn('Suspicious activity detected', {
       ip: req.ip,
       userAgent: req.get('User-Agent'),
