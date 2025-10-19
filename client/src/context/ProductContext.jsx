@@ -273,6 +273,9 @@ const ProductContext = createContext();
 export const ProductProvider = ({ children }) => {
   const [state, dispatch] = useReducer(productReducer, initialState);
   
+  // Request deduplication - prevent multiple simultaneous calls
+  const activeRequests = React.useRef(new Set());
+  
   // Temporary notification function - will be enhanced later
   const showNotification = useCallback((message, type = 'info') => {
     if (import.meta.env.DEV) {
@@ -313,7 +316,14 @@ export const ProductProvider = ({ children }) => {
 
   // Load featured products
   const loadFeaturedProducts = useCallback(async (limit = 10) => {
+    const requestKey = `featured-${limit}`;
+    if (activeRequests.current.has(requestKey)) {
+      console.log('Skipping duplicate request:', requestKey);
+      return;
+    }
+    
     try {
+      activeRequests.current.add(requestKey);
       dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
       const response = await productService.getFeaturedProducts(limit);
       dispatch({ type: PRODUCT_ACTIONS.LOAD_FEATURED_PRODUCTS_SUCCESS, payload: response });
@@ -322,12 +332,21 @@ export const ProductProvider = ({ children }) => {
       dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
       showNotification(error.message, 'error');
       throw error;
+    } finally {
+      activeRequests.current.delete(requestKey);
     }
   }, [showNotification]);
 
   // Load top selling products
   const loadTopSellingProducts = useCallback(async (limit = 10, timeframe = null) => {
+    const requestKey = `top-selling-${limit}-${timeframe}`;
+    if (activeRequests.current.has(requestKey)) {
+      console.log('Skipping duplicate request:', requestKey);
+      return;
+    }
+    
     try {
+      activeRequests.current.add(requestKey);
       dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
       const response = await productService.getTopSellingProducts(limit, timeframe);
       dispatch({ type: PRODUCT_ACTIONS.LOAD_TOP_SELLING_SUCCESS, payload: response });
@@ -336,12 +355,21 @@ export const ProductProvider = ({ children }) => {
       dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
       showNotification(error.message, 'error');
       throw error;
+    } finally {
+      activeRequests.current.delete(requestKey);
     }
   }, [showNotification]);
 
   // Load latest products
   const loadLatestProducts = useCallback(async (limit = 10) => {
+    const requestKey = `latest-${limit}`;
+    if (activeRequests.current.has(requestKey)) {
+      console.log('Skipping duplicate request:', requestKey);
+      return;
+    }
+    
     try {
+      activeRequests.current.add(requestKey);
       dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
       const response = await productService.getLatestProducts(limit);
       dispatch({ type: PRODUCT_ACTIONS.LOAD_LATEST_PRODUCTS_SUCCESS, payload: response });
@@ -350,12 +378,21 @@ export const ProductProvider = ({ children }) => {
       dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
       showNotification(error.message, 'error');
       throw error;
+    } finally {
+      activeRequests.current.delete(requestKey);
     }
   }, [showNotification]);
 
   // Load products on sale
   const loadProductsOnSale = useCallback(async (limit = 10) => {
+    const requestKey = `on-sale-${limit}`;
+    if (activeRequests.current.has(requestKey)) {
+      console.log('Skipping duplicate request:', requestKey);
+      return;
+    }
+    
     try {
+      activeRequests.current.add(requestKey);
       dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
       const response = await productService.getProductsOnSale(limit);
       dispatch({ type: PRODUCT_ACTIONS.LOAD_PRODUCTS_ON_SALE_SUCCESS, payload: response });
@@ -364,6 +401,8 @@ export const ProductProvider = ({ children }) => {
       dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
       showNotification(error.message, 'error');
       throw error;
+    } finally {
+      activeRequests.current.delete(requestKey);
     }
   }, [showNotification]);
 
