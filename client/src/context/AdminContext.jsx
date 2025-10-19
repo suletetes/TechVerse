@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useMemo } from 'react';
 import { adminService, productService } from '../api/services/index.js';
 import { useAuth } from './AuthContext.jsx';
 
@@ -878,7 +878,7 @@ export const AdminProvider = ({ children }) => {
     dispatch({ type: ADMIN_ACTIONS.CLEAR_ERROR });
   }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     ...state,
     
     // Dashboard methods
@@ -922,7 +922,35 @@ export const AdminProvider = ({ children }) => {
     
     // Utility
     clearError
-  };
+  }), [
+    state,
+    loadDashboardStats,
+    loadAnalytics,
+    loadAdminProducts,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    bulkUpdateProducts,
+    bulkDeleteProducts,
+    loadAdminOrders,
+    updateOrderStatus,
+    loadAdminUsers,
+    updateUserStatus,
+    updateUserRole,
+    loadCategories,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    exportData,
+    importData,
+    setProductFilters,
+    setOrderFilters,
+    setUserFilters,
+    clearProductFilters,
+    clearOrderFilters,
+    clearUserFilters,
+    clearError
+  ]);
 
   return (
     <AdminContext.Provider value={value}>

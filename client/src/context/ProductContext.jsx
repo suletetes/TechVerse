@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useMemo } from 'react';
 import { productService } from '../api/services/index.js';
 
 // Initial state
@@ -275,6 +275,13 @@ export const ProductProvider = ({ children }) => {
 
   // Request deduplication - prevent multiple simultaneous calls
   const activeRequests = React.useRef(new Set());
+
+  // Cleanup active requests on unmount
+  React.useEffect(() => {
+    return () => {
+      activeRequests.current.clear();
+    };
+  }, []);
 
   // Temporary notification function - will be enhanced later
   const showNotification = useCallback((message, type = 'info') => {
@@ -577,7 +584,7 @@ export const ProductProvider = ({ children }) => {
     dispatch({ type: PRODUCT_ACTIONS.CLEAR_ERROR });
   }, []);
 
-  // Utility functions
+  // Utility functions - use current state values to avoid stale closures
   const getProductById = useCallback((productId) => {
     return state.products.find(product => product._id === productId) ||
       state.searchResults.find(product => product._id === productId) ||
@@ -642,7 +649,7 @@ export const ProductProvider = ({ children }) => {
     return products;
   }, [state.products, state.searchResults, state.searchQuery, state.filters, filterProducts]);
 
-  const value = {
+  const value = useMemo(() => ({
     ...state,
 
     // Data loading methods
@@ -675,7 +682,34 @@ export const ProductProvider = ({ children }) => {
     filterProducts,
     sortProducts,
     getFilteredProducts
-  };
+  }), [
+    state,
+    loadProducts,
+    loadMoreProducts,
+    loadFeaturedProducts,
+    loadTopSellingProducts,
+    loadLatestProducts,
+    loadProductsOnSale,
+    loadQuickPicks,
+    loadCategories,
+    loadProduct,
+    loadProductsByCategory,
+    searchProducts,
+    loadRelatedProducts,
+    loadProductReviews,
+    addProductReview,
+    setFilters,
+    clearFilters,
+    clearSearch,
+    clearCurrentProduct,
+    clearError,
+    getProductById,
+    getCategoryById,
+    isProductInResults,
+    filterProducts,
+    sortProducts,
+    getFilteredProducts
+  ]);
 
   return (
     <ProductContext.Provider value={value}>

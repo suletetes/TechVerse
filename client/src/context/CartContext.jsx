@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useMemo } from 'react';
 import { userService } from '../api/services/index.js';
 import { useAuth } from './AuthContext.jsx';
 
@@ -210,7 +210,7 @@ export const CartProvider = ({ children }) => {
     }
   }, [isAuthenticated]);
 
-  const value = {
+  const value = useMemo(() => ({
     ...state,
     addToCart,
     updateCartItem,
@@ -218,7 +218,15 @@ export const CartProvider = ({ children }) => {
     clearCart,
     loadCart,
     clearError
-  };
+  }), [
+    state,
+    addToCart,
+    updateCartItem,
+    removeFromCart,
+    clearCart,
+    loadCart,
+    clearError
+  ]);
 
   return (
     <CartContext.Provider value={value}>

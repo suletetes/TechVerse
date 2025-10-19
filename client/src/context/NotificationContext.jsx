@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useReducer, useMemo } from 'react';
 
 // Initial state
 const initialState = {
@@ -96,7 +96,7 @@ export const NotificationProvider = ({ children }) => {
     return addNotification(message, 'info', duration);
   };
 
-  const value = {
+  const value = useMemo(() => ({
     ...state,
     addNotification,
     removeNotification,
@@ -105,7 +105,16 @@ export const NotificationProvider = ({ children }) => {
     showError,
     showWarning,
     showInfo
-  };
+  }), [
+    state,
+    addNotification,
+    removeNotification,
+    clearNotifications,
+    showSuccess,
+    showError,
+    showWarning,
+    showInfo
+  ]);
 
   return (
     <NotificationContext.Provider value={value}>

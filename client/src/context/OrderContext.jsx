@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useMemo } from 'react';
 import { orderService } from '../api/services/index.js';
 import { useAuth } from './AuthContext.jsx';
 
@@ -564,7 +564,7 @@ export const OrderProvider = ({ children }) => {
     return filteredOrders;
   }, [state.orders, state.filters]);
 
-  const value = {
+  const value = useMemo(() => ({
     ...state,
 
     // Data loading methods
@@ -596,7 +596,33 @@ export const OrderProvider = ({ children }) => {
     canCancelOrder,
     canRequestRefund,
     getFilteredOrders
-  };
+  }), [
+    state,
+    loadOrders,
+    loadMoreOrders,
+    createOrder,
+    loadOrder,
+    cancelOrder,
+    loadOrderTracking,
+    processPayment,
+    loadOrderSummary,
+    reorder,
+    requestRefund,
+    getOrderInvoice,
+    setFilters,
+    clearFilters,
+    clearCurrentOrder,
+    clearTracking,
+    clearError,
+    getOrderById,
+    getOrdersByStatus,
+    getOrdersInDateRange,
+    calculateOrderTotal,
+    formatOrderStatus,
+    canCancelOrder,
+    canRequestRefund,
+    getFilteredOrders
+  ]);
 
   return (
     <OrderContext.Provider value={value}>
