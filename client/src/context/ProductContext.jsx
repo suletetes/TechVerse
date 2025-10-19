@@ -444,7 +444,7 @@ export const ProductProvider = ({ children }) => {
       
       const searchParams = {
         ...filters,
-        page: loadMore ? state.pagination.page + 1 : 1
+        page: loadMore ? (filters.page || 1) + 1 : 1
       };
 
       const response = await productService.searchProducts(query, searchParams);
@@ -458,7 +458,7 @@ export const ProductProvider = ({ children }) => {
       showNotification(error.message, 'error');
       throw error;
     }
-  }, [state.pagination.page, showNotification]);
+  }, [showNotification]);
 
   // Load related products
   const loadRelatedProducts = useCallback(async (productId, limit = 4) => {

@@ -19,7 +19,7 @@ import {
   getProductReviews,
   getCategories
 } from '../controllers/productController.js';
-import { authenticate, requireAdmin, optionalAuth } from '../middleware/auth.js';
+import { authenticate, requireAdmin, optionalAuth, apiRateLimit } from '../middleware/auth.js';
 import { validate, commonValidations } from '../middleware/validation.js';
 
 const router = express.Router();
@@ -122,16 +122,16 @@ const sectionValidation = [
   ...commonValidations.pagination()
 ];
 
-// Public routes
-router.get('/', commonValidations.pagination(), validate, optionalAuth, getAllProducts);
-router.get('/search', searchValidation, validate, optionalAuth, searchProducts);
-router.get('/categories', getCategories);
-router.get('/featured', commonValidations.pagination(), validate, getFeaturedProducts);
-router.get('/top-sellers', commonValidations.pagination(), validate, getTopSellingProducts);
-router.get('/latest', commonValidations.pagination(), validate, getLatestProducts);
-router.get('/on-sale', commonValidations.pagination(), validate, getProductsOnSale);
-router.get('/weekly-deals', commonValidations.pagination(), validate, getWeeklyDeals);
-router.get('/quick-picks', commonValidations.pagination(), validate, getQuickPicks);
+// Public routes with rate limiting
+router.get('/', apiRateLimit, commonValidations.pagination(), validate, optionalAuth, getAllProducts);
+router.get('/search', apiRateLimit, searchValidation, validate, optionalAuth, searchProducts);
+router.get('/categories', apiRateLimit, getCategories);
+router.get('/featured', apiRateLimit, commonValidations.pagination(), validate, getFeaturedProducts);
+router.get('/top-sellers', apiRateLimit, commonValidations.pagination(), validate, getTopSellingProducts);
+router.get('/latest', apiRateLimit, commonValidations.pagination(), validate, getLatestProducts);
+router.get('/on-sale', apiRateLimit, commonValidations.pagination(), validate, getProductsOnSale);
+router.get('/weekly-deals', apiRateLimit, commonValidations.pagination(), validate, getWeeklyDeals);
+router.get('/quick-picks', apiRateLimit, commonValidations.pagination(), validate, getQuickPicks);
 router.get('/section/:section', sectionValidation, validate, getProductsBySection);
 router.get('/category/:categoryId', 
   [commonValidations.mongoId('categoryId'), ...commonValidations.pagination()], 
