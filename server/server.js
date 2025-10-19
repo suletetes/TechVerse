@@ -26,6 +26,15 @@ import {
   sanitizeInput
 } from './src/middleware/index.js';
 
+// Import enhanced CORS handling
+import {
+  corsErrorDetector,
+  enhancedCors,
+  corsErrorHandler,
+  preflightOptimization,
+  corsHealthCheck
+} from './src/middleware/corsHandler.js';
+
 // Import routes
 import authRoutes from './src/routes/auth.js';
 import productRoutes from './src/routes/products.js';
@@ -58,8 +67,10 @@ app.use(compression());
 // Maintenance mode check
 app.use(maintenanceMode);
 
-// CORS configuration
-app.use(cors(corsOptions));
+// Enhanced CORS configuration with error detection
+app.use(corsErrorDetector);
+app.use(preflightOptimization);
+app.use(enhancedCors);
 
 // Request size limiting
 app.use(requestSizeLimiter('10mb'));
@@ -163,6 +174,9 @@ app.get('/api/health', (req, res) => {
   const health = healthCheck.getBasicHealth();
   res.status(200).json(health);
 });
+
+// CORS health check endpoint
+app.get('/api/health/cors', corsHealthCheck);
 
 // Detailed health check endpoint
 app.get('/api/health/detailed', async (req, res) => {
@@ -278,6 +292,9 @@ app.post('/api/health/monitor/stop', (req, res) => {
 
 // 404 handler for undefined routes
 app.use(notFound);
+
+// CORS error handling (before global error handler)
+app.use(corsErrorHandler);
 
 // Global error handling middleware (must be last)
 app.use(errorHandler);

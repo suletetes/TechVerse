@@ -5,8 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node src/scripts/validateConfig.js && vite build",
+    "build:no-validate": "vite build",
     "preview": "vite preview",
+    "validate-config": "node src/scripts/validateConfig.js",
+    "validate-build": "node ../scripts/validate-build-config.js",
+    "detect-drift": "node ../scripts/detect-config-drift.js",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",

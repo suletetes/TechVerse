@@ -5,8 +5,10 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
+    "start": "node src/scripts/validateConfig.js && node server.js",
+    "start:no-validate": "node server.js",
     "dev": "nodemon server.js",
+    "validate-config": "node src/scripts/validateConfig.js",
     "seed": "node src/scripts/seed.js",
     "seed:dev": "NODE_ENV=development node src/scripts/seed.js",
     "test": "vitest",
