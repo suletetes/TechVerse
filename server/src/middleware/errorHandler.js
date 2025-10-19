@@ -174,12 +174,15 @@ const errorHandler = (err, req, res, next) => {
   const message = error.message || 'Internal Server Error';
   const code = error.code || 'INTERNAL_ERROR';
 
-  // Prepare response
+  // Prepare response - never expose sensitive information in production
   const response = {
     success: false,
-    message,
+    message: process.env.NODE_ENV === 'production' && statusCode >= 500 
+      ? 'Internal Server Error' // Generic message for server errors in production
+      : message,
     code,
     ...(error.errors && { errors: error.errors }),
+    // Only include debug information in development
     ...(process.env.NODE_ENV === 'development' && {
       stack: err.stack,
       originalError: {
@@ -190,36 +193,43 @@ const errorHandler = (err, req, res, next) => {
     })
   };
 
-  // Add request ID for tracking
+  // Add request ID for tracking (safe to expose)
   if (req.requestId) {
     response.requestId = req.requestId;
+  }
+
+  // Add timestamp for production debugging (safe to expose)
+  if (process.env.NODE_ENV === 'production') {
+    response.timestamp = new Date().toISOString();
   }
 
   // Send error response
   res.status(statusCode).json(response);
 };
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err, promise) => {
-  logger.error('Unhandled Promise Rejection', {
-    error: err.message,
-    stack: err.stack,
-    promise
+// Handle unhandled promise rejections (only in production)
+if (process.env.NODE_ENV === 'production') {
+  process.on('unhandledRejection', (err, promise) => {
+    logger.error('Unhandled Promise Rejection', {
+      error: err.message,
+      stack: err.stack,
+      promise
+    });
+    
+    // Close server & exit process
+    process.exit(1);
   });
-  
-  // Close server & exit process
-  process.exit(1);
-});
 
-// Handle uncaught exceptions
-process.on('uncaughtException', (err) => {
-  logger.error('Uncaught Exception', {
-    error: err.message,
-    stack: err.stack
+  // Handle uncaught exceptions (only in production)
+  process.on('uncaughtException', (err) => {
+    logger.error('Uncaught Exception', {
+      error: err.message,
+      stack: err.stack
+    });
+    
+    // Close server & exit process
+    process.exit(1);
   });
-  
-  // Close server & exit process
-  process.exit(1);
-});
+}
 
 export { errorHandler as default, AppError, asyncHandler, notFound };

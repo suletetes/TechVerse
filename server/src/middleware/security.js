@@ -4,25 +4,54 @@ import cors from 'cors';
 import { AppError } from './errorHandler.js';
 import logger from '../utils/logger.js';
 
-// CORS configuration
+// CORS configuration with enhanced security
 export const corsOptions = {
   origin: (origin, callback) => {
-    const allowedOrigins = [
-      process.env.CLIENT_URL,
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://localhost:4173'
-    ].filter(Boolean);
+    // In production, only allow CLIENT_URL
+    if (process.env.NODE_ENV === 'production') {
+      const allowedOrigins = [process.env.CLIENT_URL].filter(Boolean);
+      
+      // Don't allow requests with no origin in production
+      if (!origin) {
+        logger.warn('CORS blocked request with no origin in production', { 
+          userAgent: 'Unknown',
+          timestamp: new Date().toISOString()
+        });
+        return callback(new AppError('Origin required in production', 403, 'CORS_NO_ORIGIN'));
+      }
 
-    // Allow requests with no origin (mobile apps, etc.)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        logger.warn('CORS blocked request in production', { 
+          origin,
+          allowedOrigins,
+          timestamp: new Date().toISOString()
+        });
+        callback(new AppError('Not allowed by CORS policy', 403, 'CORS_ERROR'));
+      }
     } else {
-      logger.warn('CORS blocked request', { origin });
-      callback(new AppError('Not allowed by CORS', 403, 'CORS_ERROR'));
+      // Development mode - allow common development ports
+      const allowedOrigins = [
+        process.env.CLIENT_URL,
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://localhost:4173'
+      ].filter(Boolean);
+
+      // Allow requests with no origin in development (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        logger.warn('CORS blocked request in development', { 
+          origin,
+          allowedOrigins
+        });
+        callback(new AppError('Not allowed by CORS', 403, 'CORS_ERROR'));
+      }
     }
   },
   credentials: true,
@@ -36,31 +65,65 @@ export const corsOptions = {
     'X-API-Key',
     'X-Request-ID'
   ],
-  exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
-  maxAge: 86400 // 24 hours
+  exposedHeaders: ['X-Total-Count', 'X-Page-Count', 'X-Request-ID'],
+  maxAge: process.env.NODE_ENV === 'production' ? 86400 : 300, // 24 hours in prod, 5 minutes in dev
+  optionsSuccessStatus: 200 // For legacy browser support
 };
 
-// Helmet security configuration
+// Enhanced Helmet security configuration
 export const helmetConfig = {
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-      imgSrc: ["'self'", 'data:', 'https:', 'http:'],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'", 'https://api.stripe.com'],
+      styleSrc: [
+        "'self'", 
+        "'unsafe-inline'", // Required for some UI frameworks
+        'https://fonts.googleapis.com'
+      ],
+      fontSrc: [
+        "'self'", 
+        'https://fonts.gstatic.com'
+      ],
+      imgSrc: [
+        "'self'", 
+        'data:', 
+        'https:', 
+        process.env.NODE_ENV === 'development' ? 'http:' : null
+      ].filter(Boolean),
+      scriptSrc: [
+        "'self'",
+        process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : null // For dev tools
+      ].filter(Boolean),
+      connectSrc: [
+        "'self'", 
+        'https://api.stripe.com',
+        process.env.CLIENT_URL
+      ].filter(Boolean),
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
-      upgradeInsecureRequests: []
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
     }
   },
-  crossOriginEmbedderPolicy: false,
+  crossOriginEmbedderPolicy: false, // May break some integrations
+  crossOriginOpenerPolicy: { policy: 'same-origin' },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  dnsPrefetchControl: { allow: false },
+  frameguard: { action: 'deny' },
+  hidePoweredBy: true,
   hsts: {
-    maxAge: 31536000,
+    maxAge: 31536000, // 1 year
     includeSubDomains: true,
     preload: true
-  }
+  },
+  ieNoOpen: true,
+  noSniff: true,
+  originAgentCluster: true,
+  permittedCrossDomainPolicies: false,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  xssFilter: true
 };
 
 // Request ID middleware
