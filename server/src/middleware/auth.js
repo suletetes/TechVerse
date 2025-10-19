@@ -529,31 +529,43 @@ export const apiRateLimit = rateLimit({
   }
 });
 
-// Enhanced strict rate limiting for auth endpoints
+// Enhanced strict rate limiting for auth endpoints with progressive penalties
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: (req) => {
-    // Different limits based on endpoint
-    if (req.originalUrl.includes('/login')) return 5;
-    if (req.originalUrl.includes('/register')) return 3;
-    if (req.originalUrl.includes('/forgot-password')) return 3;
-    if (req.originalUrl.includes('/reset-password')) return 5;
-    return 10; // Default for other auth endpoints
+    // Different limits based on endpoint and environment
+    const limits = {
+      '/login': process.env.NODE_ENV === 'production' ? 5 : 10,
+      '/register': process.env.NODE_ENV === 'production' ? 3 : 5,
+      '/forgot-password': process.env.NODE_ENV === 'production' ? 3 : 5,
+      '/reset-password': process.env.NODE_ENV === 'production' ? 5 : 10,
+      '/refresh-token': process.env.NODE_ENV === 'production' ? 10 : 20
+    };
+    
+    const endpoint = req.originalUrl.split('?')[0];
+    for (const [path, limit] of Object.entries(limits)) {
+      if (endpoint.includes(path)) return limit;
+    }
+    
+    return process.env.NODE_ENV === 'production' ? 10 : 20; // Default
   },
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful requests
   keyGenerator: (req) => {
-    // Include endpoint in key for more granular limiting
-    const endpoint = req.originalUrl.split('?')[0]; // Remove query params
-    return `auth:${req.ip}:${endpoint}`;
+    // Include endpoint and user identifier for more granular limiting
+    const endpoint = req.originalUrl.split('?')[0];
+    const userIdentifier = req.body?.email || req.ip;
+    return `auth:${req.ip}:${userIdentifier}:${endpoint}`;
   },
   handler: (req, res) => {
     const endpoint = req.originalUrl.split('?')[0];
+    const userIdentifier = req.body?.email || 'unknown';
     
     logger.warn('Authentication rate limit exceeded', {
       ip: req.ip,
       endpoint: endpoint,
+      userIdentifier: userIdentifier.replace(/(.{3}).*(@.*)/, '$1***$2'), // Mask email
       userAgent: req.get('User-Agent'),
       timestamp: new Date().toISOString(),
       headers: {
@@ -567,11 +579,10 @@ export const authRateLimit = rateLimit({
       message: 'Too many authentication attempts. Please try again in 15 minutes.',
       code: 'AUTH_RATE_LIMIT_EXCEEDED',
       retryAfter: 900, // 15 minutes in seconds
-      endpoint: endpoint
+      endpoint: endpoint,
+      timestamp: new Date().toISOString()
     });
-  },
-  // onLimitReached removed in express-rate-limit v7
-  // Logging is now handled in the handler function
+  }
 });
 
 // Enhanced input validation for authentication endpoints
