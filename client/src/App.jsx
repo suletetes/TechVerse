@@ -3,6 +3,8 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary, RouterErrorBoundary } from './components';
 import { AppProviders } from './context';
+import RouteGuard, { AdminRoute, UserRoute, AuthenticatedRoute } from './components/auth/RouteGuard.jsx';
+import { UserRoles } from './services/authService.js';
 import {
     Contact,
     HomeLayout,
@@ -46,6 +48,7 @@ const router = createBrowserRouter([
         element: <HomeLayout />,
         errorElement: <RouterErrorBoundary />,
         children: [
+            // Public routes
             {
                 index: true,
                 element: <Home />,
@@ -59,51 +62,10 @@ const router = createBrowserRouter([
                 element: <Product />,
             },
             {
-                path: 'admin',
-                element: <AdminProfile />,
-            },
-            {
-                path: 'admin/orders',
-                element: <AdminOrderManagement />,
-            },
-            {
-                path: 'admin/products',
-                element: <AdminProductManagement />,
-            },
-            {
-                path: 'user',
-                element: <UserProfile />,
-            },
-            {
-                path: 'user/order/:orderId',
-                element: <OrderDetails />,
-            },
-            {
-                path: 'user/order/:orderId/tracking',
-                element: <OrderTracking />,
-            },
-            {
-                path: 'user/order/:orderId/review',
-                element: <OrderReview />,
-            },
-            {
-                path: 'order-confirmation',
-                element: <OrderConfirmation />,
-            }, {
-                path: 'payment',
-                element: <PaymentPage />,
-            },
-            {
-                path: 'wishlist',
-                element: <Wishlist />,
-            }, {
-                path: 'cart',
-                element: <Cart />,
-            },
-            {
                 path: 'login',
                 element: <Login />,
-            }, {
+            },
+            {
                 path: 'signup',
                 element: <Signup />,
             },
@@ -130,13 +92,124 @@ const router = createBrowserRouter([
             {
                 path: 'ShippingPolicy',
                 element: <ShippingPolicy />,
-            }, {
+            },
+            {
                 path: 'faq',
                 element: <Faq />,
             },
             {
                 path: 'Stores',
                 element: <Stores />,
+            },
+
+            // Admin routes - protected with AdminRoute guard
+            {
+                path: 'admin',
+                element: (
+                    <AdminRoute>
+                        <AdminProfile />
+                    </AdminRoute>
+                ),
+            },
+            {
+                path: 'admin/orders',
+                element: (
+                    <AdminRoute>
+                        <AdminOrderManagement />
+                    </AdminRoute>
+                ),
+            },
+            {
+                path: 'admin/products',
+                element: (
+                    <AdminRoute>
+                        <AdminProductManagement />
+                    </AdminRoute>
+                ),
+            },
+
+            // User routes - protected with UserRoute guard
+            {
+                path: 'user',
+                element: (
+                    <UserRoute>
+                        <UserProfile />
+                    </UserRoute>
+                ),
+            },
+            {
+                path: 'user/order/:orderId',
+                element: (
+                    <UserRoute>
+                        <OrderDetails />
+                    </UserRoute>
+                ),
+            },
+            {
+                path: 'user/order/:orderId/tracking',
+                element: (
+                    <UserRoute>
+                        <OrderTracking />
+                    </UserRoute>
+                ),
+            },
+            {
+                path: 'user/order/:orderId/review',
+                element: (
+                    <UserRoute>
+                        <OrderReview />
+                    </UserRoute>
+                ),
+            },
+
+            // Authenticated routes - require login but any role
+            {
+                path: 'order-confirmation',
+                element: (
+                    <AuthenticatedRoute>
+                        <OrderConfirmation />
+                    </AuthenticatedRoute>
+                ),
+            },
+            {
+                path: 'payment',
+                element: (
+                    <AuthenticatedRoute>
+                        <PaymentPage />
+                    </AuthenticatedRoute>
+                ),
+            },
+            {
+                path: 'wishlist',
+                element: (
+                    <AuthenticatedRoute>
+                        <Wishlist />
+                    </AuthenticatedRoute>
+                ),
+            },
+            {
+                path: 'cart',
+                element: (
+                    <AuthenticatedRoute>
+                        <Cart />
+                    </AuthenticatedRoute>
+                ),
+            },
+
+            // Error routes
+            {
+                path: 'unauthorized',
+                element: (
+                    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+                        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
+                            <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+                            <p className="text-gray-600 mb-6">You don't have permission to access this page.</p>
+                            <a href="/" className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors">
+                                Go Home
+                            </a>
+                        </div>
+                    </div>
+                ),
             },
             {
                 path: '*',
