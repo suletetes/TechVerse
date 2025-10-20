@@ -1,9 +1,15 @@
 import React from 'react';
+import errorReportingService from './ErrorReportingService.js';
 
 class ErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { hasError: false, error: null, errorInfo: null };
+        this.state = { 
+            hasError: false, 
+            error: null, 
+            errorInfo: null,
+            errorId: null
+        };
     }
 
     static getDerivedStateFromError(error) {
@@ -12,28 +18,79 @@ class ErrorBoundary extends React.Component {
     }
 
     componentDidCatch(error, errorInfo) {
+        const errorId = `app_error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
         // Log error details for debugging
         console.error('ErrorBoundary caught an error:', error, errorInfo);
 
         this.setState({
             error: error,
-            errorInfo: errorInfo
+            errorInfo: errorInfo,
+            errorId: errorId
         });
 
-        // In production, you might want to log this to an error reporting service
-        if (import.meta.env.PROD) {
-            // Example: logErrorToService(error, errorInfo);
+        // Report error to error reporting service
+        const errorReport = {
+            id: errorId,
+            section: 'application',
+            type: 'component',
+            message: error.message,
+            stack: error.stack,
+            componentStack: errorInfo.componentStack,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            userId: this.props.userId || 'anonymous',
+            props: this.props.reportProps ? JSON.stringify(this.props) : undefined
+        };
+
+        errorReportingService.reportError(errorReport);
+
+        // Call custom error handler if provided
+        if (this.props.onError) {
+            this.props.onError(error, errorInfo, errorId);
         }
     }
 
+    handleRetry = () => {
+        this.setState({
+            hasError: false,
+            error: null,
+            errorInfo: null,
+            errorId: null
+        });
+    };
+
     render() {
         if (this.state.hasError) {
+            // Use custom fallback if provided
+            if (this.props.fallback) {
+                return this.props.fallback(
+                    this.state.error, 
+                    this.state.errorInfo, 
+                    this.handleRetry,
+                    this.state.errorId
+                );
+            }
+
             const isDevelopment = import.meta.env.DEV;
 
             if (isDevelopment) {
-                return <DevelopmentErrorUI error={this.state.error} errorInfo={this.state.errorInfo} />;
+                return (
+                    <DevelopmentErrorUI 
+                        error={this.state.error} 
+                        errorInfo={this.state.errorInfo}
+                        errorId={this.state.errorId}
+                        onRetry={this.handleRetry}
+                    />
+                );
             } else {
-                return <ProductionErrorUI />;
+                return (
+                    <ProductionErrorUI 
+                        errorId={this.state.errorId}
+                        onRetry={this.handleRetry}
+                    />
+                );
             }
         }
 
@@ -42,7 +99,7 @@ class ErrorBoundary extends React.Component {
 }
 
 // Development Error UI - Shows detailed error information
-const DevelopmentErrorUI = ({ error, errorInfo }) => {
+const DevelopmentErrorUI = ({ error, errorInfo, errorId, onRetry }) => {
     return (
         <div className="bloc bgc-5700 full-width-bloc l-bloc" style={{ minHeight: '100vh' }}>
             <div className="container bloc-lg">
@@ -131,7 +188,7 @@ const DevelopmentErrorUI = ({ error, errorInfo }) => {
 };
 
 // Production Error UI - Shows user-friendly error message
-const ProductionErrorUI = () => {
+const ProductionErrorUI = ({ errorId, onRetry }) => {
     return (
         <section className="bloc l-bloc full-width-bloc bgc-5700" id="bloc-error">
             <div className="container bloc-lg">
@@ -154,11 +211,24 @@ const ProductionErrorUI = () => {
                                     We're sorry, but something unexpected happened. Our team has been notified and is working to fix the issue.
                                 </p>
 
+                                {/* Error ID for Support */}
+                                {errorId && (
+                                    <div className="mb-4">
+                                        <small className="text-muted">
+                                            Error ID: <code>{errorId}</code>
+                                        </small>
+                                        <br />
+                                        <small className="text-muted">
+                                            Please include this ID when contacting support.
+                                        </small>
+                                    </div>
+                                )}
+
                                 {/* Action Buttons */}
                                 <div className="d-flex flex-column flex-md-row gap-3 justify-content-center mb-4">
                                     <button
                                         className="btn btn-rd btn-c-2101 btn-lg d-flex align-items-center justify-content-center px-4"
-                                        onClick={() => window.location.reload()}
+                                        onClick={onRetry}
                                     >
                                         <svg width="20" height="20" viewBox="0 0 24 24" className="me-2" fill="white">
                                             <polyline points="23 4 23 10 17 10" />
@@ -167,9 +237,20 @@ const ProductionErrorUI = () => {
                                         </svg>
                                         Try Again
                                     </button>
+                                    <button
+                                        className="btn btn-outline-primary btn-rd btn-lg d-flex align-items-center justify-content-center px-4"
+                                        onClick={() => window.location.reload()}
+                                    >
+                                        <svg width="20" height="20" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <polyline points="23 4 23 10 17 10" />
+                                            <polyline points="1 20 1 14 7 14" />
+                                            <path d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                                        </svg>
+                                        Reload Page
+                                    </button>
                                     <a
                                         href="/"
-                                        className="btn btn-outline-primary btn-rd btn-lg d-flex align-items-center justify-content-center px-4"
+                                        className="btn btn-outline-secondary btn-rd btn-lg d-flex align-items-center justify-content-center px-4"
                                     >
                                         <svg width="20" height="20" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
                                             <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
