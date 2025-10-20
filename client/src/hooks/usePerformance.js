@@ -31,6 +31,93 @@ export const usePerformanceMonitor = () => {
   return { metrics, logPerformance };
 };
 
+// Enhanced performance monitoring hook with system-wide metrics
+export const useSystemPerformance = () => {
+  const [performanceData, setPerformanceData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [alerts, setAlerts] = useState([]);
+
+  useEffect(() => {
+    let performanceMonitor = null;
+    let unsubscribeAlert = null;
+
+    const initializeMonitoring = async () => {
+      try {
+        const { default: monitor } = await import('../api/services/performanceMonitor.js');
+        performanceMonitor = monitor;
+
+        // Subscribe to performance alerts
+        unsubscribeAlert = monitor.onAlert((alert) => {
+          setAlerts(prev => [alert, ...prev.slice(0, 9)]); // Keep last 10 alerts
+        });
+
+        // Update performance data every 5 seconds
+        const updateData = () => {
+          const data = monitor.getPerformanceReport();
+          setPerformanceData(data);
+          setIsLoading(false);
+        };
+
+        updateData();
+        const interval = setInterval(updateData, 5000);
+
+        return () => {
+          clearInterval(interval);
+          if (unsubscribeAlert) unsubscribeAlert();
+        };
+      } catch (error) {
+        console.error('Failed to initialize performance monitoring:', error);
+        setIsLoading(false);
+      }
+    };
+
+    const cleanup = initializeMonitoring();
+    return () => {
+      if (cleanup && typeof cleanup.then === 'function') {
+        cleanup.then(cleanupFn => cleanupFn && cleanupFn());
+      }
+    };
+  }, []);
+
+  const getApiStats = useCallback((endpoint) => {
+    if (!performanceData) return null;
+    return endpoint ? performanceData.api[endpoint] : performanceData.api;
+  }, [performanceData]);
+
+  const getMemoryStats = useCallback(() => {
+    return performanceData?.memory || null;
+  }, [performanceData]);
+
+  const getWebVitals = useCallback(() => {
+    return performanceData?.webVitals || null;
+  }, [performanceData]);
+
+  const getBottlenecks = useCallback((type, severity) => {
+    if (!performanceData) return [];
+    let bottlenecks = performanceData.bottlenecks || [];
+    
+    if (type) bottlenecks = bottlenecks.filter(b => b.type === type);
+    if (severity) bottlenecks = bottlenecks.filter(b => b.severity === severity);
+    
+    return bottlenecks;
+  }, [performanceData]);
+
+  const clearAlerts = useCallback(() => {
+    setAlerts([]);
+  }, []);
+
+  return {
+    performanceData,
+    isLoading,
+    alerts,
+    getApiStats,
+    getMemoryStats,
+    getWebVitals,
+    getBottlenecks,
+    clearAlerts
+  };
+};
+
 // Debounced value hook
 export const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);

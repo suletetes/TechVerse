@@ -20,6 +20,19 @@ class ApiUtils {
 
   async read(endpoint, params = {}, options = {}) {
     try {
+      // Check if batching is enabled and endpoint supports it
+      if (options.batch !== false) {
+        const { default: requestBatcher } = await import('./requestBatcher.js');
+        
+        if (requestBatcher.isBatchable(endpoint)) {
+          return requestBatcher.executeWithBatching(endpoint, {
+            method: 'GET',
+            params,
+            ...options
+          });
+        }
+      }
+
       const response = await apiClient.get(endpoint, { params, ...options });
       return handleApiResponse(response, { method: 'GET', url: endpoint });
     } catch (error) {
@@ -322,6 +335,73 @@ class ApiUtils {
       requestQueue: this.requestQueue.size,
       retryQueue: this.retryQueue.size
     };
+  }
+
+  // Prefetch utilities
+  async prefetchForRoute(route) {
+    try {
+      const { default: prefetchManager } = await import('./prefetchManager.js');
+      return prefetchManager.prefetchForRoute(route, 'manual');
+    } catch (error) {
+      console.warn('Prefetch failed:', error);
+    }
+  }
+
+  async prefetchEndpoint(endpoint, options = {}) {
+    try {
+      const { default: prefetchManager } = await import('./prefetchManager.js');
+      return prefetchManager.prefetchEndpoint(endpoint, options);
+    } catch (error) {
+      console.warn('Endpoint prefetch failed:', error);
+    }
+  }
+
+  // Cache utilities
+  async invalidateCache(pattern) {
+    try {
+      const { default: cacheManager } = await import('./cacheManager.js');
+      return cacheManager.invalidate(pattern);
+    } catch (error) {
+      console.warn('Cache invalidation failed:', error);
+    }
+  }
+
+  async getCacheStats() {
+    try {
+      const { default: cacheManager } = await import('./cacheManager.js');
+      return cacheManager.getStats();
+    } catch (error) {
+      console.warn('Failed to get cache stats:', error);
+      return null;
+    }
+  }
+
+  // Performance utilities
+  async getPerformanceStats() {
+    try {
+      const [
+        { default: cacheManager },
+        { default: requestDeduplicator },
+        { default: prefetchManager },
+        { default: requestBatcher }
+      ] = await Promise.all([
+        import('./cacheManager.js'),
+        import('./requestDeduplicator.js'),
+        import('./prefetchManager.js'),
+        import('./requestBatcher.js')
+      ]);
+
+      return {
+        cache: cacheManager.getStats(),
+        deduplication: requestDeduplicator.getStats(),
+        prefetch: prefetchManager.getStats(),
+        batching: requestBatcher.getStats(),
+        apiUtils: this.getQueueStats()
+      };
+    } catch (error) {
+      console.warn('Failed to get performance stats:', error);
+      return null;
+    }
   }
 }
 

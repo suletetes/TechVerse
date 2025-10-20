@@ -17,3 +17,5 @@ export {
   ProgressLoading 
 } from './LoadingStates.jsx';
 export { OfflineIndicator, OfflineBanner, ConnectionQualityIndicator } from './OfflineIndicator.jsx';
+export { default as PerformanceDashboard } from './PerformanceDashboard.jsx';
+export { default as PerformanceIndicator } from './PerformanceIndicator.jsx';

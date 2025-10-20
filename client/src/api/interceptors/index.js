@@ -44,6 +44,9 @@ class ApiClient {
     // Generate request ID for tracking
     const requestId = this.generateRequestId();
     
+    // Start performance tracking
+    const startTime = performance.now();
+    
     // Get services
     const { requestDeduplicator, retryManager, cacheManager } = await this.getServices();
     
@@ -67,6 +70,21 @@ class ApiClient {
           url: endpoint,
           cacheKey: cacheKey.substring(0, 50) + '...'
         });
+        
+        // Record cached request performance
+        const endTime = performance.now();
+        try {
+          const { default: performanceMonitor } = await import('../services/performanceMonitor.js');
+          performanceMonitor.recordApiCall(endpoint, method, startTime, endTime, {
+            status: 200,
+            cached: true,
+            retried: false,
+            transferSize: 0
+          });
+        } catch (error) {
+          console.warn('Performance monitoring failed:', error);
+        }
+        
         return Promise.resolve(cachedData);
       }
     }
@@ -159,6 +177,20 @@ class ApiClient {
       maxRetries: options.maxRetries,
       retryStrategy: options.retryStrategy
     }).then(async (response) => {
+      // Record performance metrics
+      const endTime = performance.now();
+      try {
+        const { default: performanceMonitor } = await import('../services/performanceMonitor.js');
+        performanceMonitor.recordApiCall(endpoint, method, startTime, endTime, {
+          status: response.status,
+          cached: false,
+          retried: context.retryCount > 0,
+          transferSize: response.headers.get('content-length') || 0
+        });
+      } catch (error) {
+        console.warn('Performance monitoring failed:', error);
+      }
+      
       // Handle the response and cache if appropriate
       const responseData = await handleApiResponse(response, context);
       
@@ -174,6 +206,22 @@ class ApiClient {
       }
       
       return responseData;
+    }).catch(async (error) => {
+      // Record failed request performance
+      const endTime = performance.now();
+      try {
+        const { default: performanceMonitor } = await import('../services/performanceMonitor.js');
+        performanceMonitor.recordApiCall(endpoint, method, startTime, endTime, {
+          status: error.status || 0,
+          cached: false,
+          retried: context.retryCount > 0,
+          error: true
+        });
+      } catch (perfError) {
+        console.warn('Performance monitoring failed:', perfError);
+      }
+      
+      throw error;
     });
     
     // Add to deduplication queue if applicable
