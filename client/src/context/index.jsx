@@ -8,6 +8,8 @@ import { ProductProvider } from './ProductContext.jsx';
 import { OrderProvider } from './OrderContext.jsx';
 import { AdminProvider } from './AdminContext.jsx';
 import { WishlistProvider } from './WishlistContext.jsx';
+import { LoadingProvider } from './LoadingContext.jsx';
+import { OfflineProvider } from './OfflineContext.jsx';
 
 // Import selective subscription utilities
 export { 
@@ -40,6 +42,8 @@ export { ProductProvider, useProduct } from './ProductContext.jsx';
 export { OrderProvider, useOrder } from './OrderContext.jsx';
 export { AdminProvider, useAdmin } from './AdminContext.jsx';
 export { WishlistProvider, useWishlist } from './WishlistContext.jsx';
+export { LoadingProvider, useLoading, useComponentLoading } from './LoadingContext.jsx';
+export { OfflineProvider, useOffline } from './OfflineContext.jsx';
 
 // Performance monitoring wrapper
 const PerformanceMonitoredProvider = ({ name, children, provider: Provider, ...props }) => {
@@ -55,14 +59,18 @@ const PerformanceMonitoredProvider = ({ name, children, provider: Provider, ...p
 // Combined providers for easy setup with performance optimizations
 export const AppProviders = ({ children }) => {
   return (
-    <PerformanceMonitoredProvider name="Notification" provider={NotificationProvider}>
-      <PerformanceMonitoredProvider name="Auth" provider={AuthProvider}>
-        <PerformanceMonitoredProvider name="Product" provider={ProductProvider}>
-          <PerformanceMonitoredProvider name="Cart" provider={CartProvider}>
-            <PerformanceMonitoredProvider name="Wishlist" provider={WishlistProvider}>
-              <PerformanceMonitoredProvider name="Order" provider={OrderProvider}>
-                <PerformanceMonitoredProvider name="Admin" provider={AdminProvider}>
-                  {children}
+    <PerformanceMonitoredProvider name="Offline" provider={OfflineProvider}>
+      <PerformanceMonitoredProvider name="Loading" provider={LoadingProvider}>
+        <PerformanceMonitoredProvider name="Notification" provider={NotificationProvider}>
+          <PerformanceMonitoredProvider name="Auth" provider={AuthProvider}>
+            <PerformanceMonitoredProvider name="Product" provider={ProductProvider}>
+              <PerformanceMonitoredProvider name="Cart" provider={CartProvider}>
+                <PerformanceMonitoredProvider name="Wishlist" provider={WishlistProvider}>
+                  <PerformanceMonitoredProvider name="Order" provider={OrderProvider}>
+                    <PerformanceMonitoredProvider name="Admin" provider={AdminProvider}>
+                      {children}
+                    </PerformanceMonitoredProvider>
+                  </PerformanceMonitoredProvider>
                 </PerformanceMonitoredProvider>
               </PerformanceMonitoredProvider>
             </PerformanceMonitoredProvider>
@@ -76,20 +84,24 @@ export const AppProviders = ({ children }) => {
 // Optimized providers with selective subscription
 export const OptimizedAppProviders = ({ children }) => {
   return (
-    <NotificationProvider>
-      <AuthProvider>
-        <ProductProvider>
-          <CartProvider>
-            <WishlistProvider>
-              <OrderProvider>
-                <AdminProvider>
-                  {children}
-                </AdminProvider>
-              </OrderProvider>
-            </WishlistProvider>
-          </CartProvider>
-        </ProductProvider>
-      </AuthProvider>
-    </NotificationProvider>
+    <OfflineProvider>
+      <LoadingProvider>
+        <NotificationProvider>
+          <AuthProvider>
+            <ProductProvider>
+              <CartProvider>
+                <WishlistProvider>
+                  <OrderProvider>
+                    <AdminProvider>
+                      {children}
+                    </AdminProvider>
+                  </OrderProvider>
+                </WishlistProvider>
+              </CartProvider>
+            </ProductProvider>
+          </AuthProvider>
+        </NotificationProvider>
+      </LoadingProvider>
+    </OfflineProvider>
   );
 };
