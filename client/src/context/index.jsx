@@ -10,6 +10,7 @@ import { AdminProvider } from './AdminContext.jsx';
 import { WishlistProvider } from './WishlistContext.jsx';
 import { LoadingProvider } from './LoadingContext.jsx';
 import { OfflineProvider } from './OfflineContext.jsx';
+import { PerformanceProvider } from './PerformanceContext.jsx';
 
 // Import selective subscription utilities
 export { 
@@ -44,6 +45,7 @@ export { AdminProvider, useAdmin } from './AdminContext.jsx';
 export { WishlistProvider, useWishlist } from './WishlistContext.jsx';
 export { LoadingProvider, useLoading, useComponentLoading } from './LoadingContext.jsx';
 export { OfflineProvider, useOffline } from './OfflineContext.jsx';
+export { PerformanceProvider, usePerformanceContext, withPerformanceMonitoring } from './PerformanceContext.jsx';
 
 // Performance monitoring wrapper
 const PerformanceMonitoredProvider = ({ name, children, provider: Provider, ...props }) => {
@@ -59,16 +61,18 @@ const PerformanceMonitoredProvider = ({ name, children, provider: Provider, ...p
 // Combined providers for easy setup with performance optimizations
 export const AppProviders = ({ children }) => {
   return (
-    <PerformanceMonitoredProvider name="Offline" provider={OfflineProvider}>
-      <PerformanceMonitoredProvider name="Loading" provider={LoadingProvider}>
-        <PerformanceMonitoredProvider name="Notification" provider={NotificationProvider}>
-          <PerformanceMonitoredProvider name="Auth" provider={AuthProvider}>
-            <PerformanceMonitoredProvider name="Product" provider={ProductProvider}>
-              <PerformanceMonitoredProvider name="Cart" provider={CartProvider}>
-                <PerformanceMonitoredProvider name="Wishlist" provider={WishlistProvider}>
-                  <PerformanceMonitoredProvider name="Order" provider={OrderProvider}>
-                    <PerformanceMonitoredProvider name="Admin" provider={AdminProvider}>
-                      {children}
+    <PerformanceMonitoredProvider name="Performance" provider={PerformanceProvider}>
+      <PerformanceMonitoredProvider name="Offline" provider={OfflineProvider}>
+        <PerformanceMonitoredProvider name="Loading" provider={LoadingProvider}>
+          <PerformanceMonitoredProvider name="Notification" provider={NotificationProvider}>
+            <PerformanceMonitoredProvider name="Auth" provider={AuthProvider}>
+              <PerformanceMonitoredProvider name="Product" provider={ProductProvider}>
+                <PerformanceMonitoredProvider name="Cart" provider={CartProvider}>
+                  <PerformanceMonitoredProvider name="Wishlist" provider={WishlistProvider}>
+                    <PerformanceMonitoredProvider name="Order" provider={OrderProvider}>
+                      <PerformanceMonitoredProvider name="Admin" provider={AdminProvider}>
+                        {children}
+                      </PerformanceMonitoredProvider>
                     </PerformanceMonitoredProvider>
                   </PerformanceMonitoredProvider>
                 </PerformanceMonitoredProvider>
