@@ -13,22 +13,26 @@ class ApiClient {
 
   // Lazy load services to avoid circular dependencies
   async getServices() {
-    if (!this.requestDeduplicator || !this.retryManager) {
+    if (!this.requestDeduplicator || !this.retryManager || !this.cacheManager) {
       const [
         { default: requestDeduplicator },
-        { default: retryManager }
+        { default: retryManager },
+        { default: cacheManager }
       ] = await Promise.all([
         import('../services/requestDeduplicator.js'),
-        import('../services/retryManager.js')
+        import('../services/retryManager.js'),
+        import('../services/cacheManager.js')
       ]);
       
       this.requestDeduplicator = requestDeduplicator;
       this.retryManager = retryManager;
+      this.cacheManager = cacheManager;
     }
     
     return {
       requestDeduplicator: this.requestDeduplicator,
-      retryManager: this.retryManager
+      retryManager: this.retryManager,
+      cacheManager: this.cacheManager
     };
   }
 
@@ -41,7 +45,7 @@ class ApiClient {
     const requestId = this.generateRequestId();
     
     // Get services
-    const { requestDeduplicator, retryManager } = await this.getServices();
+    const { requestDeduplicator, retryManager, cacheManager } = await this.getServices();
     
     // Create request context
     const context = {
@@ -51,6 +55,21 @@ class ApiClient {
       requestId,
       hasAuth: !!token
     };
+    
+    // Check cache first for GET requests
+    if (method === 'GET' && cacheManager.shouldCache(method, url, options)) {
+      const cacheKey = cacheManager.generateCacheKey(method, url, options.params);
+      const cachedData = cacheManager.get(cacheKey);
+      
+      if (cachedData) {
+        console.log('📦 Returning cached data:', {
+          method,
+          url: endpoint,
+          cacheKey: cacheKey.substring(0, 50) + '...'
+        });
+        return Promise.resolve(cachedData);
+      }
+    }
     
     // Check for request deduplication
     const dedupeOptions = {
@@ -139,6 +158,22 @@ class ApiClient {
     const requestPromise = retryManager.executeWithRetry(makeRequest, context, {
       maxRetries: options.maxRetries,
       retryStrategy: options.retryStrategy
+    }).then(async (response) => {
+      // Handle the response and cache if appropriate
+      const responseData = await handleApiResponse(response, context);
+      
+      // Cache successful GET responses
+      if (method === 'GET' && response.ok && cacheManager.shouldCache(method, url, options)) {
+        const cacheKey = cacheManager.generateCacheKey(method, url, options.params);
+        cacheManager.set(cacheKey, responseData, { url: endpoint });
+      }
+      
+      // Invalidate related cache entries for write operations
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        this.invalidateRelatedCache(endpoint, cacheManager);
+      }
+      
+      return responseData;
     });
     
     // Add to deduplication queue if applicable
@@ -180,6 +215,27 @@ class ApiClient {
   // Generate unique request ID
   generateRequestId() {
     return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // Invalidate related cache entries based on endpoint
+  invalidateRelatedCache(endpoint, cacheManager) {
+    const invalidationRules = {
+      '/products': [/\/products/, /\/categories/, /\/search/, /\/dashboard/],
+      '/categories': [/\/categories/, /\/products/, /\/dashboard/],
+      '/profile': [/\/profile/, /\/dashboard/],
+      '/orders': [/\/orders/, /\/dashboard/, /\/analytics/],
+      '/auth': [/\/profile/, /\/dashboard/] // Clear user-specific data on auth changes
+    };
+
+    // Find matching invalidation rules
+    for (const [pattern, cachePatterns] of Object.entries(invalidationRules)) {
+      if (endpoint.includes(pattern)) {
+        cachePatterns.forEach(cachePattern => {
+          cacheManager.invalidate(cachePattern);
+        });
+        break;
+      }
+    }
   }
 
   // Handle rate limiting (still needed for immediate rate limit responses)
