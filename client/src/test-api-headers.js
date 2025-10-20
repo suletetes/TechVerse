@@ -3,7 +3,8 @@
  * Run this in browser console to verify headers and configuration
  */
 
-import { apiClient, tokenManager } from './api/interceptors/index.js';
+import { apiClient } from './api/interceptors/index.js';
+import { tokenManager } from './utils/tokenManager.js';
 
 // Test function to verify API configuration
 window.testApiConfig = async function() {

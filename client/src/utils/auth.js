@@ -6,7 +6,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import { apiClient, tokenManager } from '../api/interceptors/index.js';
+import { apiClient } from '../api/interceptors/index.js';
+import { tokenManager } from './tokenManager.js';
 
 // Authentication state management
 class AuthManager {

@@ -8,7 +8,8 @@
  * 4. Token management
  */
 
-import { apiClient, tokenManager, handleApiResponse } from '../api/interceptors/index.js';
+import { apiClient, handleApiResponse } from '../api/interceptors/index.js';
+import { tokenManager } from '../utils/tokenManager.js';
 import API_BASE_URL from '../api/config.js';
 
 // Test results collector
