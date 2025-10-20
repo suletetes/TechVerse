@@ -1,30 +1,36 @@
-import { apiClient, handleApiResponse } from '../interceptors/index.js';
+import BaseApiService from '../core/BaseApiService.js';
 import { tokenManager } from '../../utils/tokenManager.js';
 import { API_ENDPOINTS } from '../config.js';
 
-class AuthService {
+class AuthService extends BaseApiService {
+  constructor() {
+    super({
+      serviceName: 'AuthService',
+      endpoints: API_ENDPOINTS.AUTH,
+      cacheEnabled: false, // Auth operations shouldn't be cached
+      retryEnabled: true
+    });
+  }
   // Register new user
   async register(userData) {
-    const response = await apiClient.post(API_ENDPOINTS.AUTH.REGISTER, userData);
-    const data = await handleApiResponse(response);
+    const result = await this.create(this.endpoints.REGISTER, userData);
 
-    if (data.token) {
-      tokenManager.setToken(data.token);
-      if (data.refreshToken) {
-        tokenManager.setRefreshToken(data.refreshToken);
+    if (result.success && result.data?.token) {
+      tokenManager.setToken(result.data.token);
+      if (result.data.refreshToken) {
+        tokenManager.setRefreshToken(result.data.refreshToken);
       }
     }
 
-    return data;
+    return result;
   }
 
   // Login user with enhanced security
   async login(credentials) {
-    const response = await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
-    const data = await handleApiResponse(response);
+    const result = await this.create(this.endpoints.LOGIN, credentials);
 
-    if (data.success && data.data?.tokens && !data.mfaRequired) {
-      const { tokens, user, security } = data.data;
+    if (result.success && result.data?.tokens && !result.data.mfaRequired) {
+      const { tokens, user, security } = result.data;
 
       // Store tokens with enhanced security
       tokenManager.setToken(
@@ -61,13 +67,13 @@ class AuthService {
       });
     }
 
-    return data;
+    return result;
   }
 
   // Logout user with session cleanup
   async logout(logoutData = {}) {
     try {
-      await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT, logoutData);
+      await this.create(this.endpoints.LOGOUT, logoutData);
     } catch (error) {
       // Continue with logout even if API call fails
       console.warn('Logout API call failed:', error.message);
@@ -80,110 +86,100 @@ class AuthService {
 
   // Get user profile
   async getProfile() {
-    const response = await apiClient.get(API_ENDPOINTS.AUTH.PROFILE);
-    return handleApiResponse(response);
+    return this.read(this.endpoints.PROFILE);
   }
 
   // Update user profile
   async updateProfile(profileData) {
-    const response = await apiClient.put(API_ENDPOINTS.AUTH.PROFILE, profileData);
-    return handleApiResponse(response);
+    return this.update(this.endpoints.PROFILE, profileData);
   }
 
   // Change password
   async changePassword(passwordData) {
-    const response = await apiClient.post(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, passwordData);
-    return handleApiResponse(response);
+    return this.create(this.endpoints.CHANGE_PASSWORD, passwordData);
   }
 
   // Forgot password
   async forgotPassword(email) {
-    const response = await apiClient.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
-    return handleApiResponse(response);
+    return this.create(this.endpoints.FORGOT_PASSWORD, { email });
   }
 
   // Reset password
   async resetPassword(token, password) {
-    const response = await apiClient.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, { token, password });
-    return handleApiResponse(response);
+    return this.create(this.endpoints.RESET_PASSWORD, { token, password });
   }
 
   // Verify email
   async verifyEmail(token) {
-    const response = await apiClient.get(`${API_ENDPOINTS.AUTH.VERIFY_EMAIL}/${token}`);
-    return handleApiResponse(response);
+    return this.read(`${this.endpoints.VERIFY_EMAIL}/${token}`);
   }
 
   // Resend verification email
   async resendVerification(email) {
-    const response = await apiClient.post(API_ENDPOINTS.AUTH.RESEND_VERIFICATION, { email });
-    return handleApiResponse(response);
+    return this.create(this.endpoints.RESEND_VERIFICATION, { email });
   }
 
   // MFA Methods
   async verifyMFA(code, mfaToken) {
-    const response = await apiClient.post(API_ENDPOINTS.AUTH.VERIFY_MFA, {
+    const result = await this.create(this.endpoints.VERIFY_MFA, {
       code,
       mfaToken
     });
-    const data = await handleApiResponse(response);
 
-    if (data.token) {
-      tokenManager.setToken(data.token);
-      if (data.refreshToken) {
-        tokenManager.setRefreshToken(data.refreshToken);
+    if (result.success && result.data?.token) {
+      tokenManager.setToken(result.data.token);
+      if (result.data.refreshToken) {
+        tokenManager.setRefreshToken(result.data.refreshToken);
       }
     }
 
-    return data;
+    return result;
   }
 
   async setupMFA() {
-    const response = await apiClient.post(API_ENDPOINTS.AUTH.SETUP_MFA);
-    return handleApiResponse(response);
+    return this.create(this.endpoints.SETUP_MFA);
   }
 
   async disableMFA(password) {
-    const response = await apiClient.post(API_ENDPOINTS.AUTH.DISABLE_MFA, { password });
-    return handleApiResponse(response);
+    return this.create(this.endpoints.DISABLE_MFA, { password });
   }
 
   async resendMFA() {
-    const response = await apiClient.post(API_ENDPOINTS.AUTH.RESEND_MFA);
-    return handleApiResponse(response);
+    return this.create(this.endpoints.RESEND_MFA);
   }
 
   // User preferences
   async updatePreferences(preferences) {
-    const response = await apiClient.put(API_ENDPOINTS.AUTH.PREFERENCES, preferences);
-    const data = await handleApiResponse(response);
+    const result = await this.update(this.endpoints.PREFERENCES, preferences);
 
-    // Cache preferences locally
-    localStorage.setItem('user_preferences', JSON.stringify(preferences));
+    // Cache preferences locally on success
+    if (result.success) {
+      localStorage.setItem('user_preferences', JSON.stringify(preferences));
+    }
 
-    return data;
+    return result;
   }
 
   async getPreferences() {
     try {
-      const response = await apiClient.get(API_ENDPOINTS.AUTH.PREFERENCES);
-      return handleApiResponse(response);
+      return await this.read(this.endpoints.PREFERENCES);
     } catch (error) {
       // Fallback to cached preferences
       const cached = localStorage.getItem('user_preferences');
-      return cached ? JSON.parse(cached) : {};
+      return {
+        success: true,
+        data: cached ? JSON.parse(cached) : {}
+      };
     }
   }
 
   // Session management
   async getUserSessions() {
-    const response = await apiClient.get(API_ENDPOINTS.AUTH.SESSIONS);
-    return handleApiResponse(response);
+    return this.read(this.endpoints.SESSIONS);
   }
 
   async revokeSession(sessionId) {
-    const response = await apiClient.delete(`${API_ENDPOINTS.AUTH.SESSIONS}/${sessionId}`);
-    return handleApiResponse(response);
+    return this.delete(`${this.endpoints.SESSIONS}/${sessionId}`);
   }
 
   async refreshToken() {
@@ -192,13 +188,12 @@ class AuthService {
       throw new Error('No refresh token available');
     }
 
-    const response = await apiClient.post(API_ENDPOINTS.AUTH.REFRESH, {
+    const result = await this.create(this.endpoints.REFRESH, {
       refreshToken
     });
-    const data = await handleApiResponse(response);
 
-    if (data.success && data.data?.tokens) {
-      const { tokens, user } = data.data;
+    if (result.success && result.data?.tokens) {
+      const { tokens, user } = result.data;
 
       // Update tokens with enhanced security
       tokenManager.setToken(
@@ -230,7 +225,7 @@ class AuthService {
       });
     }
 
-    return data;
+    return result;
   }
 
   // Check if user is authenticated
