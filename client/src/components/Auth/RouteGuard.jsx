@@ -86,7 +86,7 @@ const RouteGuard = ({
     const updateAuthState = () => {
       const isAuthenticated = unifiedAuthService.isAuthenticated();
       const user = unifiedAuthService.getCurrentUser();
-      
+
       setAuthState({
         isLoading: false,
         isAuthenticated,
@@ -125,11 +125,11 @@ const RouteGuard = ({
   if (requireAuth && !authState.isAuthenticated) {
     const loginPath = redirectTo || '/login';
     const returnUrl = location.pathname + location.search;
-    
+
     if (onAccessDenied) {
       onAccessDenied('authentication_required', { returnUrl });
     }
-    
+
     return <Navigate to={`${loginPath}?returnUrl=${encodeURIComponent(returnUrl)}`} replace />;
   }
 
@@ -143,12 +143,12 @@ const RouteGuard = ({
   // Check email verification requirement
   if (requireEmailVerified && !unifiedAuthService.isEmailVerified()) {
     const verifyPath = redirectTo || '/verify-email';
-    
+
     if (onAccessDenied) {
       onAccessDenied('email_verification_required', { user });
     }
-    
-    return CustomFallback ? 
+
+    return CustomFallback ?
       <CustomFallback reason="Please verify your email address to continue" /> :
       <Navigate to={verifyPath} replace />;
   }
@@ -156,22 +156,22 @@ const RouteGuard = ({
   // Check role requirements
   if (requireRole.length > 0) {
     const hasRequiredRole = requireRole.some(role => unifiedAuthService.hasRole(role));
-    
+
     if (!hasRequiredRole) {
       const accessDeniedReason = `Access denied. Required role: ${requireRole.join(' or ')}. Your role: ${user?.role || 'none'}`;
-      
+
       if (onAccessDenied) {
-        onAccessDenied('insufficient_role', { 
-          requiredRoles: requireRole, 
+        onAccessDenied('insufficient_role', {
+          requiredRoles: requireRole,
           userRole: user?.role,
-          user 
+          user
         });
       }
-      
+
       if (CustomFallback) {
         return <CustomFallback reason={accessDeniedReason} />;
       }
-      
+
       return <AccessDeniedFallback reason={accessDeniedReason} />;
     }
   }
@@ -181,24 +181,24 @@ const RouteGuard = ({
     const checkPermissions = requireAllPermissions
       ? requirePermission.every(permission => unifiedAuthService.hasPermission(permission))
       : requirePermission.some(permission => unifiedAuthService.hasPermission(permission));
-    
+
     if (!checkPermissions) {
       const permissionType = requireAllPermissions ? 'all' : 'any';
       const accessDeniedReason = `Access denied. Required permissions (${permissionType}): ${requirePermission.join(', ')}`;
-      
+
       if (onAccessDenied) {
-        onAccessDenied('insufficient_permissions', { 
-          requiredPermissions: requirePermission, 
+        onAccessDenied('insufficient_permissions', {
+          requiredPermissions: requirePermission,
           requireAllPermissions,
           userPermissions: user?.permissions || [],
-          user 
+          user
         });
       }
-      
+
       if (CustomFallback) {
         return <CustomFallback reason={accessDeniedReason} />;
       }
-      
+
       return <AccessDeniedFallback reason={accessDeniedReason} />;
     }
   }
@@ -228,8 +228,8 @@ export const AuthenticatedRoute = ({ children, ...props }) => (
 );
 
 export const AdminRoute = ({ children, ...props }) => (
-  <RouteGuard 
-    requireAuth={true} 
+  <RouteGuard
+    requireAuth={true}
     requireRole={[UserRoles.ADMIN, UserRoles.SUPER_ADMIN]}
     {...props}
   >
@@ -238,8 +238,8 @@ export const AdminRoute = ({ children, ...props }) => (
 );
 
 export const UserRoute = ({ children, ...props }) => (
-  <RouteGuard 
-    requireAuth={true} 
+  <RouteGuard
+    requireAuth={true}
     requireRole={[UserRoles.USER]}
     {...props}
   >
@@ -248,8 +248,8 @@ export const UserRoute = ({ children, ...props }) => (
 );
 
 export const VerifiedRoute = ({ children, ...props }) => (
-  <RouteGuard 
-    requireAuth={true} 
+  <RouteGuard
+    requireAuth={true}
     requireEmailVerified={true}
     {...props}
   >
@@ -261,7 +261,7 @@ export const VerifiedRoute = ({ children, ...props }) => (
  * Permission-based route guards
  */
 export const PermissionRoute = ({ permissions, requireAll = true, children, ...props }) => (
-  <RouteGuard 
+  <RouteGuard
     requireAuth={true}
     requirePermission={permissions}
     requireAllPermissions={requireAll}
@@ -329,7 +329,7 @@ export const useRouteAccess = (requirements = {}) => {
         const checkPermissions = requireAllPermissions
           ? requirePermission.every(permission => unifiedAuthService.hasPermission(permission))
           : requirePermission.some(permission => unifiedAuthService.hasPermission(permission));
-        
+
         if (!checkPermissions) {
           setAccess({
             canAccess: false,
