@@ -1,50 +1,86 @@
 import React, { useState } from 'react';
 
-const WriteReview = ({ onSubmit, initialValues = {}, context, productInfo }) => {
+const WriteReview = ({ productId, onSubmit, initialValues = {}, context, productInfo }) => {
     const [formData, setFormData] = useState({
-        name: initialValues.name || '',
-        email: initialValues.email || '',
         rating: initialValues.rating || 0,
         title: initialValues.title || '',
-        review: initialValues.review || '',
-        verifiedPurchase: initialValues.verifiedPurchase ?? false,
-        productId: productInfo?.id || context?.productId || null,
-        productName: productInfo?.name || context?.productName || 'Tablet Air'
+        comment: initialValues.comment || initialValues.review || '',
+        pros: initialValues.pros || [],
+        cons: initialValues.cons || [],
+        productId: productId || productInfo?.id || context?.productId || null,
+        productName: productInfo?.name || context?.productName || 'Product'
     });
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState(null);
+
     const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
+        const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: value
         }));
+        
+        // Clear error when user starts typing
+        if (submitError) {
+            setSubmitError(null);
+        }
     };
 
     const handleRatingClick = (rating) => {
         setFormData(prev => ({ ...prev, rating }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (onSubmit) {
-            onSubmit({ 
-                ...formData, 
-                context,
-                timestamp: new Date().toISOString(),
-                id: Date.now() // Simple ID generation for demo
-            });
+        
+        if (formData.rating === 0) {
+            setSubmitError('Please select a rating');
+            return;
         }
-        // Reset form
-        setFormData({
-            name: initialValues.name || '',
-            email: initialValues.email || '',
-            rating: initialValues.rating || 0,
-            title: '',
-            review: '',
-            verifiedPurchase: initialValues.verifiedPurchase ?? false,
-            productId: productInfo?.id || context?.productId || null,
-            productName: productInfo?.name || context?.productName || 'Tablet Air'
-        });
+        
+        if (!formData.title.trim()) {
+            setSubmitError('Please enter a review title');
+            return;
+        }
+        
+        if (!formData.comment.trim()) {
+            setSubmitError('Please write your review');
+            return;
+        }
+
+        setIsSubmitting(true);
+        setSubmitError(null);
+
+        try {
+            if (onSubmit) {
+                // Prepare data in backend format
+                const reviewData = {
+                    rating: formData.rating,
+                    title: formData.title.trim(),
+                    comment: formData.comment.trim(),
+                    pros: formData.pros.filter(pro => pro.trim()),
+                    cons: formData.cons.filter(con => con.trim())
+                };
+
+                await onSubmit(reviewData);
+                
+                // Reset form on successful submission
+                setFormData({
+                    rating: 0,
+                    title: '',
+                    comment: '',
+                    pros: [],
+                    cons: [],
+                    productId: productId || productInfo?.id || context?.productId || null,
+                    productName: productInfo?.name || context?.productName || 'Product'
+                });
+            }
+        } catch (error) {
+            setSubmitError(error.message || 'Failed to submit review. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -64,32 +100,14 @@ const WriteReview = ({ onSubmit, initialValues = {}, context, productInfo }) => 
                 </div>
             </div>
             <form onSubmit={handleSubmit}>
-                <div className="row">
-                    <div className="col-md-6 mb-3">
-                        <label className="form-label fw-semibold">Your Name</label>
-                        <input 
-                            type="text" 
-                            className="form-control"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            placeholder="Enter your name"
-                            required
-                        />
+                {submitError && (
+                    <div className="alert alert-danger mb-3">
+                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        </svg>
+                        {submitError}
                     </div>
-                    <div className="col-md-6 mb-3">
-                        <label className="form-label fw-semibold">Email Address</label>
-                        <input 
-                            type="email" 
-                            className="form-control"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="Enter your email"
-                            required
-                        />
-                    </div>
-                </div>
+                )}
 
                 <div className="mb-3">
                     <label className="form-label fw-semibold">Rating *</label>
@@ -137,54 +155,89 @@ const WriteReview = ({ onSubmit, initialValues = {}, context, productInfo }) => 
                     <label className="form-label fw-semibold">Your Review</label>
                     <textarea
                         className="form-control"
-                        name="review"
-                        value={formData.review}
+                        name="comment"
+                        value={formData.comment}
                         onChange={handleInputChange}
                         rows="4"
                         placeholder="Tell us about your experience with this product..."
                         required
                     ></textarea>
+                    <div className="form-text">
+                        Minimum 10 characters. {formData.comment.length}/1000
+                    </div>
                 </div>
 
-                <div className="form-check mb-3">
-                    <input 
-                        className="form-check-input" 
-                        type="checkbox" 
-                        id="verifiedPurchase"
-                        name="verifiedPurchase"
-                        checked={formData.verifiedPurchase}
-                        onChange={handleInputChange}
-                    />
-                    <label className="form-check-label" htmlFor="verifiedPurchase">
-                        I confirm this is a verified purchase
-                    </label>
+                {/* Optional: Pros and Cons */}
+                <div className="row mb-3">
+                    <div className="col-md-6">
+                        <label className="form-label fw-semibold">What did you like? (Optional)</label>
+                        <textarea
+                            className="form-control"
+                            name="pros"
+                            value={formData.pros.join('\n')}
+                            onChange={(e) => setFormData(prev => ({
+                                ...prev,
+                                pros: e.target.value.split('\n').filter(item => item.trim())
+                            }))}
+                            rows="3"
+                            placeholder="List the positive aspects (one per line)"
+                        ></textarea>
+                    </div>
+                    <div className="col-md-6">
+                        <label className="form-label fw-semibold">What could be improved? (Optional)</label>
+                        <textarea
+                            className="form-control"
+                            name="cons"
+                            value={formData.cons.join('\n')}
+                            onChange={(e) => setFormData(prev => ({
+                                ...prev,
+                                cons: e.target.value.split('\n').filter(item => item.trim())
+                            }))}
+                            rows="3"
+                            placeholder="List areas for improvement (one per line)"
+                        ></textarea>
+                    </div>
                 </div>
 
                 <div className="d-flex gap-2">
                     <button 
                         type="submit" 
                         className="btn btn-primary btn-rd px-4"
-                        disabled={formData.rating === 0}
+                        disabled={formData.rating === 0 || isSubmitting || !formData.title.trim() || !formData.comment.trim()}
                     >
-                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                            <path fill="currentColor"
-                                  d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                        </svg>
-                        Submit Review
+                        {isSubmitting ? (
+                            <>
+                                <div className="spinner-border spinner-border-sm me-2" role="status">
+                                    <span className="visually-hidden">Submitting...</span>
+                                </div>
+                                Submitting...
+                            </>
+                        ) : (
+                            <>
+                                <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                                    <path fill="currentColor"
+                                          d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                                Submit Review
+                            </>
+                        )}
                     </button>
                     <button 
                         type="button" 
                         className="btn btn-outline-secondary btn-rd px-3"
-                        onClick={() => setFormData({
-                            name: initialValues.name || '',
-                            email: initialValues.email || '',
-                            rating: initialValues.rating || 0,
-                            title: '',
-                            review: '',
-                            verifiedPurchase: initialValues.verifiedPurchase ?? false,
-                            productId: productInfo?.id || context?.productId || null,
-                            productName: productInfo?.name || context?.productName || 'Tablet Air'
-                        })}
+                        disabled={isSubmitting}
+                        onClick={() => {
+                            setFormData({
+                                rating: 0,
+                                title: '',
+                                comment: '',
+                                pros: [],
+                                cons: [],
+                                productId: productId || productInfo?.id || context?.productId || null,
+                                productName: productInfo?.name || context?.productName || 'Product'
+                            });
+                            setSubmitError(null);
+                        }}
                     >
                         Clear
                     </button>
