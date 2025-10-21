@@ -85,8 +85,8 @@ describe('ReviewsSection Component', () => {
         });
 
         it('handles empty reviews array', () => {
-            render(<ReviewsSection productId="1" reviews={[]} />);
-            expect(screen.getByText('Summary: 0 reviews')).toBeInTheDocument();
+            render(<ReviewsSection productId="1" reviews={[]} isLoading={false} />);
+            expect(screen.getByTestId('reviews-summary')).toHaveTextContent('Summary: 0 reviews');
         });
     });
 
