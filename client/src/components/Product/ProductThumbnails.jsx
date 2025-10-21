@@ -1,12 +1,43 @@
 import React from 'react';
 
 const ProductThumbnails = ({
+    product,
     mediaGallery,
     selectedMedia,
     onMediaSelect,
     onPreviousMedia,
     onNextMedia
 }) => {
+    // Handle backend image data structure
+    const processImages = () => {
+        // Use mediaGallery if provided, otherwise use product images
+        if (mediaGallery && mediaGallery.length > 0) {
+            return mediaGallery;
+        }
+
+        // Convert backend product images to media gallery format
+        const productImages = product?.images || [];
+        return productImages.map((image, index) => ({
+            id: image._id || `image-${index}`,
+            type: 'image',
+            src: image.url,
+            alt: image.alt || product?.name || 'Product image',
+            thumbnail: image.url,
+            isPrimary: image.isPrimary || index === 0
+        }));
+    };
+
+    const processedMedia = processImages();
+
+    // Don't render if no media available
+    if (processedMedia.length === 0) {
+        return null;
+    }
+
+    // Don't render thumbnails if only one image
+    if (processedMedia.length === 1) {
+        return null;
+    }
     return (
         <div className="store-card outline-card fill-card">
             <div className="p-3">
@@ -53,7 +84,7 @@ const ProductThumbnails = ({
                         }}
                         id="thumbnail-container"
                     >
-                        {mediaGallery.map((media, index) => (
+                        {processedMedia.map((media, index) => (
                             <div key={media.id} className="flex-shrink-0" style={{width: '80px'}}>
                                 <div
                                     className={`position-relative cursor-pointer rounded-3 overflow-hidden border-2 transition-all ${selectedMedia === media.id ? 'border-primary shadow-sm scale-105' : 'border-light hover:border-secondary'}`}
@@ -66,10 +97,14 @@ const ProductThumbnails = ({
                                     }}
                                 >
                                     <img
-                                        src={media.thumbnail || media.poster}
+                                        src={media.thumbnail || media.poster || media.src}
                                         alt={media.alt}
                                         className="img-fluid w-100 h-100"
                                         style={{objectFit: 'cover'}}
+                                        onError={(e) => {
+                                            // Fallback to placeholder if thumbnail fails to load
+                                            e.target.src = '/img/lazyload-ph.png';
+                                        }}
                                     />
                                     {media.type === 'video' && (
                                         <div className="position-absolute top-50 start-50 translate-middle">
@@ -105,7 +140,7 @@ const ProductThumbnails = ({
                     <button
                         className="btn btn-sm btn-outline-primary rounded-pill px-3"
                         onClick={() => {
-                            const firstImage = mediaGallery.find(m => m.type === 'image');
+                            const firstImage = processedMedia.find(m => m.type === 'image');
                             if (firstImage) onMediaSelect(firstImage.id);
                         }}
                     >
@@ -113,20 +148,22 @@ const ProductThumbnails = ({
                             <path fill="currentColor"
                                   d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
                         </svg>
-                        Images ({mediaGallery.filter(m => m.type === 'image').length})
+                        Images ({processedMedia.filter(m => m.type === 'image').length})
                     </button>
-                    <button
-                        className="btn btn-sm btn-outline-success rounded-pill px-3"
-                        onClick={() => {
-                            const firstVideo = mediaGallery.find(m => m.type === 'video');
-                            if (firstVideo) onMediaSelect(firstVideo.id);
-                        }}
-                    >
-                        <svg width="14" height="14" viewBox="0 0 24 24" className="me-1">
-                            <path fill="currentColor" d="M8 5v14l11-7z"/>
-                        </svg>
-                        Videos ({mediaGallery.filter(m => m.type === 'video').length})
-                    </button>
+                    {processedMedia.some(m => m.type === 'video') && (
+                        <button
+                            className="btn btn-sm btn-outline-success rounded-pill px-3"
+                            onClick={() => {
+                                const firstVideo = processedMedia.find(m => m.type === 'video');
+                                if (firstVideo) onMediaSelect(firstVideo.id);
+                            }}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" className="me-1">
+                                <path fill="currentColor" d="M8 5v14l11-7z"/>
+                            </svg>
+                            Videos ({processedMedia.filter(m => m.type === 'video').length})
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
