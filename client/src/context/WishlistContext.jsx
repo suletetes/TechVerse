@@ -1,12 +1,15 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo } from 'react';
 import { userService } from '../api/services/index.js';
+import wishlistService from '../api/services/wishlistService.js';
 import { useAuth } from './AuthContext.jsx';
+import { useNotification } from './NotificationContext.jsx';
 
 // Initial state
 const initialState = {
   items: [],
   isLoading: false,
   error: null,
+  lastSyncTime: null,
   pagination: {
     page: 1,
     limit: 20,
@@ -25,7 +28,8 @@ const WISHLIST_ACTIONS = {
   LOAD_MORE_WISHLIST_SUCCESS: 'LOAD_MORE_WISHLIST_SUCCESS',
   ADD_TO_WISHLIST_SUCCESS: 'ADD_TO_WISHLIST_SUCCESS',
   REMOVE_FROM_WISHLIST_SUCCESS: 'REMOVE_FROM_WISHLIST_SUCCESS',
-  CLEAR_WISHLIST: 'CLEAR_WISHLIST'
+  CLEAR_WISHLIST: 'CLEAR_WISHLIST',
+  SYNC_SUCCESS: 'SYNC_SUCCESS'
 };
 
 // Reducer
@@ -99,6 +103,14 @@ const wishlistReducer = (state, action) => {
         error: null
       };
 
+    case WISHLIST_ACTIONS.SYNC_SUCCESS:
+      return {
+        ...state,
+        lastSyncTime: new Date().toISOString(),
+        isLoading: false,
+        error: null
+      };
+
     default:
       return state;
   }
@@ -110,44 +122,67 @@ const WishlistContext = createContext();
 // Provider component
 export const WishlistProvider = ({ children }) => {
   const [state, dispatch] = useReducer(wishlistReducer, initialState);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { showNotification } = useNotification();
 
-  // Temporary notification function - will be enhanced later
-  const showNotification = useCallback((message, type = 'info') => {
-    if (import.meta.env.DEV) {
-      console.log(`[WISHLIST ${type.toUpperCase()}] ${message}`);
-    }
-  }, []);
-
-  // Load wishlist
+  // Load wishlist from backend or localStorage
   const loadWishlist = useCallback(async (params = {}, loadMore = false) => {
-    if (!isAuthenticated) {
-      dispatch({ type: WISHLIST_ACTIONS.SET_ERROR, payload: 'User not authenticated' });
-      return;
-    }
-
     try {
       dispatch({ type: WISHLIST_ACTIONS.SET_LOADING, payload: true });
 
-      const queryParams = {
-        ...params,
-        page: loadMore ? state.pagination.page + 1 : (params.page || 1)
-      };
+      if (isAuthenticated) {
+        // Load from backend for authenticated users
+        const wishlistItems = await wishlistService.getWishlistWithDetails();
+        
+        // Transform backend response to match expected format
+        const response = {
+          items: wishlistItems,
+          data: wishlistItems,
+          page: params.page || 1,
+          limit: params.limit || 20,
+          total: wishlistItems.length,
+          totalPages: Math.ceil(wishlistItems.length / (params.limit || 20)),
+          hasMore: false // Backend doesn't paginate wishlist currently
+        };
 
-      const response = await userService.getWishlist(queryParams);
+        const actionType = loadMore
+          ? WISHLIST_ACTIONS.LOAD_MORE_WISHLIST_SUCCESS
+          : WISHLIST_ACTIONS.LOAD_WISHLIST_SUCCESS;
 
-      const actionType = loadMore
-        ? WISHLIST_ACTIONS.LOAD_MORE_WISHLIST_SUCCESS
-        : WISHLIST_ACTIONS.LOAD_WISHLIST_SUCCESS;
+        dispatch({ type: actionType, payload: response });
+        return response;
+      } else {
+        // Load from localStorage for guest users
+        const savedWishlist = localStorage.getItem('guestWishlist');
+        const wishlistItems = savedWishlist ? JSON.parse(savedWishlist) : [];
+        
+        const response = {
+          items: wishlistItems,
+          data: wishlistItems,
+          page: 1,
+          limit: 20,
+          total: wishlistItems.length,
+          totalPages: 1,
+          hasMore: false
+        };
 
-      dispatch({ type: actionType, payload: response });
-      return response;
+        dispatch({ type: WISHLIST_ACTIONS.LOAD_WISHLIST_SUCCESS, payload: response });
+        return response;
+      }
     } catch (error) {
+      console.error('Error loading wishlist:', error);
       dispatch({ type: WISHLIST_ACTIONS.SET_ERROR, payload: error.message });
       showNotification(error.message, 'error');
+      
+      // Fallback to localStorage if backend fails
+      if (isAuthenticated) {
+        const savedWishlist = localStorage.getItem('guestWishlist');
+        const wishlistItems = savedWishlist ? JSON.parse(savedWishlist) : [];
+        dispatch({ type: WISHLIST_ACTIONS.LOAD_WISHLIST_SUCCESS, payload: { items: wishlistItems } });
+      }
       throw error;
     }
-  }, [isAuthenticated, state.pagination.page, showNotification]);
+  }, [isAuthenticated, showNotification]);
 
   // Load more wishlist items
   const loadMoreWishlist = useCallback(async () => {
@@ -156,22 +191,14 @@ export const WishlistProvider = ({ children }) => {
   }, [loadWishlist, state.pagination.hasMore, state.isLoading]);
 
   // Add to wishlist
-  const addToWishlist = useCallback(async (productId) => {
-    if (!isAuthenticated) {
-      dispatch({ type: WISHLIST_ACTIONS.SET_ERROR, payload: 'Please login to add items to wishlist' });
-      return;
-    }
-
+  const addToWishlist = useCallback(async (productId, product = null) => {
     if (!productId) {
       dispatch({ type: WISHLIST_ACTIONS.SET_ERROR, payload: 'Product ID is required' });
       return;
     }
 
     // Check if item is already in wishlist
-    const isAlreadyInWishlist = state.items.some(item =>
-      item.product._id === productId || item.product === productId
-    );
-
+    const isAlreadyInWishlist = wishlistService.isInWishlist(productId, state.items);
     if (isAlreadyInWishlist) {
       showNotification('Item is already in your wishlist', 'info');
       return;
@@ -179,31 +206,40 @@ export const WishlistProvider = ({ children }) => {
 
     try {
       dispatch({ type: WISHLIST_ACTIONS.SET_LOADING, payload: true });
-      const response = await userService.addToWishlist(productId);
 
-      // If response contains the full item, use it; otherwise create a basic item
-      const wishlistItem = response.item || response.data || {
-        product: { _id: productId },
-        addedAt: new Date().toISOString()
-      };
+      if (isAuthenticated) {
+        // Use backend API for authenticated users
+        const updatedWishlist = await wishlistService.addToWishlist(productId);
+        
+        // Reload wishlist to get updated data with product details
+        await loadWishlist();
+        showNotification('Added to wishlist!', 'success');
+      } else {
+        // Handle guest wishlist locally
+        const guestWishlistItem = {
+          _id: `guest_${productId}_${Date.now()}`,
+          product: product || { _id: productId },
+          addedAt: new Date().toISOString()
+        };
 
-      dispatch({ type: WISHLIST_ACTIONS.ADD_TO_WISHLIST_SUCCESS, payload: wishlistItem });
-      showNotification('Added to wishlist!', 'success');
-      return response;
+        const savedWishlist = localStorage.getItem('guestWishlist');
+        const currentWishlist = savedWishlist ? JSON.parse(savedWishlist) : [];
+        const updatedWishlist = [guestWishlistItem, ...currentWishlist];
+        
+        localStorage.setItem('guestWishlist', JSON.stringify(updatedWishlist));
+        dispatch({ type: WISHLIST_ACTIONS.ADD_TO_WISHLIST_SUCCESS, payload: guestWishlistItem });
+        showNotification('Added to wishlist! Sign in to sync across devices.', 'success');
+      }
     } catch (error) {
+      console.error('Error adding to wishlist:', error);
       dispatch({ type: WISHLIST_ACTIONS.SET_ERROR, payload: error.message });
-      showNotification(error.message, 'error');
+      showNotification(error.message || 'Failed to add to wishlist', 'error');
       throw error;
     }
-  }, [isAuthenticated, state.items, showNotification]);
+  }, [isAuthenticated, state.items, showNotification, loadWishlist]);
 
   // Remove from wishlist
   const removeFromWishlist = useCallback(async (productId) => {
-    if (!isAuthenticated) {
-      dispatch({ type: WISHLIST_ACTIONS.SET_ERROR, payload: 'User not authenticated' });
-      return;
-    }
-
     if (!productId) {
       dispatch({ type: WISHLIST_ACTIONS.SET_ERROR, payload: 'Product ID is required' });
       return;
@@ -211,40 +247,80 @@ export const WishlistProvider = ({ children }) => {
 
     try {
       dispatch({ type: WISHLIST_ACTIONS.SET_LOADING, payload: true });
-      await userService.removeFromWishlist(productId);
-      dispatch({ type: WISHLIST_ACTIONS.REMOVE_FROM_WISHLIST_SUCCESS, payload: productId });
-      showNotification('Removed from wishlist', 'success');
+
+      if (isAuthenticated) {
+        // Use backend API for authenticated users
+        await wishlistService.removeFromWishlist(productId);
+        dispatch({ type: WISHLIST_ACTIONS.REMOVE_FROM_WISHLIST_SUCCESS, payload: productId });
+        showNotification('Removed from wishlist', 'success');
+      } else {
+        // Handle guest wishlist locally
+        const savedWishlist = localStorage.getItem('guestWishlist');
+        const currentWishlist = savedWishlist ? JSON.parse(savedWishlist) : [];
+        const updatedWishlist = currentWishlist.filter(item => {
+          const itemProductId = typeof item.product === 'string' ? item.product : item.product._id;
+          return itemProductId !== productId;
+        });
+        
+        localStorage.setItem('guestWishlist', JSON.stringify(updatedWishlist));
+        dispatch({ type: WISHLIST_ACTIONS.REMOVE_FROM_WISHLIST_SUCCESS, payload: productId });
+        showNotification('Removed from wishlist', 'success');
+      }
     } catch (error) {
+      console.error('Error removing from wishlist:', error);
       dispatch({ type: WISHLIST_ACTIONS.SET_ERROR, payload: error.message });
-      showNotification(error.message, 'error');
+      showNotification(error.message || 'Failed to remove from wishlist', 'error');
       throw error;
     }
   }, [isAuthenticated, showNotification]);
 
-  // Toggle wishlist item
-  const toggleWishlist = useCallback(async (productId) => {
-    const isInWishlist = state.items.some(item =>
-      item.product._id === productId || item.product === productId
-    );
+  // Sync local wishlist with backend (for guest to user conversion)
+  const syncWishlistWithBackend = useCallback(async () => {
+    if (!isAuthenticated) return;
+    
+    try {
+      const localWishlist = localStorage.getItem('guestWishlist');
+      if (localWishlist) {
+        const localWishlistData = JSON.parse(localWishlist);
+        if (localWishlistData.length > 0) {
+          const productIds = localWishlistData.map(item => 
+            typeof item.product === 'string' ? item.product : item.product._id
+          );
+          
+          await wishlistService.syncWishlist(productIds);
+          localStorage.removeItem('guestWishlist');
+          await loadWishlist(); // Reload to get synced data
+          showNotification('Wishlist synced successfully', 'success');
+        }
+      }
+      dispatch({ type: WISHLIST_ACTIONS.SYNC_SUCCESS, payload: {} });
+    } catch (error) {
+      console.error('Error syncing wishlist:', error);
+      dispatch({ type: WISHLIST_ACTIONS.SET_ERROR, payload: error.message });
+      showNotification('Failed to sync wishlist', 'error');
+    }
+  }, [isAuthenticated, loadWishlist, showNotification]);
 
-    if (isInWishlist) {
+  // Toggle wishlist item
+  const toggleWishlist = useCallback(async (productId, product = null) => {
+    const isCurrentlyInWishlist = wishlistService.isInWishlist(productId, state.items);
+
+    if (isCurrentlyInWishlist) {
       return removeFromWishlist(productId);
     } else {
-      return addToWishlist(productId);
+      return addToWishlist(productId, product);
     }
   }, [state.items, addToWishlist, removeFromWishlist]);
 
   // Check if product is in wishlist
   const isInWishlist = useCallback((productId) => {
     if (!productId) return false;
-    return state.items.some(item =>
-      item.product._id === productId || item.product === productId
-    );
+    return wishlistService.isInWishlist(productId, state.items);
   }, [state.items]);
 
   // Get wishlist item count
   const getWishlistCount = useCallback(() => {
-    return state.items.length;
+    return wishlistService.getWishlistCount(state.items);
   }, [state.items]);
 
   // Clear wishlist (local state only)
@@ -271,14 +347,28 @@ export const WishlistProvider = ({ children }) => {
       .slice(0, limit);
   }, [state.items]);
 
-  // Load wishlist on mount and auth change
+  // Load wishlist on mount and authentication changes
+  useEffect(() => {
+    loadWishlist();
+  }, [isAuthenticated, user]);
+
+  // Auto-sync wishlist when user logs in
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      syncWishlistWithBackend();
+    }
+  }, [isAuthenticated, user]);
+
+  // Auto-sync wishlist periodically for authenticated users
   useEffect(() => {
     if (isAuthenticated) {
-      loadWishlist();
-    } else {
-      clearWishlist();
+      const syncInterval = setInterval(() => {
+        loadWishlist(); // Refresh wishlist data
+      }, 10 * 60 * 1000); // Sync every 10 minutes
+
+      return () => clearInterval(syncInterval);
     }
-  }, [isAuthenticated]); // Remove function dependencies to prevent infinite loops
+  }, [isAuthenticated]);
 
   const value = useMemo(() => ({
     ...state,
@@ -291,6 +381,7 @@ export const WishlistProvider = ({ children }) => {
     addToWishlist,
     removeFromWishlist,
     toggleWishlist,
+    syncWishlistWithBackend,
 
     // Utility methods
     isInWishlist,
@@ -308,6 +399,7 @@ export const WishlistProvider = ({ children }) => {
     addToWishlist,
     removeFromWishlist,
     toggleWishlist,
+    syncWishlistWithBackend,
     isInWishlist,
     getWishlistCount,
     getWishlistByCategory,

@@ -54,11 +54,11 @@ const router = createBrowserRouter([
                 element: <Home />,
             },
             {
-                path: 'category',
+                path: 'category/:categorySlug?',
                 element: <Category />,
             },
             {
-                path: 'product',
+                path: 'product/:id',
                 element: <Product />,
             },
             {
@@ -114,7 +114,7 @@ const router = createBrowserRouter([
             {
                 path: 'admin/orders',
                 element: (
-                    <AdminRoute>
+                    <AdminRoute requiredPermissions={['manage_orders', 'view_admin_panel']}>
                         <AdminOrderManagement />
                     </AdminRoute>
                 ),
@@ -122,7 +122,7 @@ const router = createBrowserRouter([
             {
                 path: 'admin/products',
                 element: (
-                    <AdminRoute>
+                    <AdminRoute requiredPermissions={['manage_products', 'view_admin_panel']}>
                         <AdminProductManagement />
                     </AdminRoute>
                 ),

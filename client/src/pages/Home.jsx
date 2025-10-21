@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect } from "react";
 import { useProduct } from "../context";
 import {
     Header,
@@ -10,55 +10,20 @@ import {
 } from "../components";
 
 const Home = () => {
-    const {
-        topSellingProducts,
-        latestProducts,
-        productsOnSale,
-        quickPicks,
-        loadTopSellingProducts,
-        loadLatestProducts,
-        loadProductsOnSale,
-        loadQuickPicks,
-        loadCategories,
-        isLoading,
-        error
-    } = useProduct();
+    const { loadCategories } = useProduct();
 
-    // Load all product types and categories on mount
+    // Load categories on mount (still needed for other parts of the app)
     useEffect(() => {
-        const loadAllData = async () => {
+        const loadInitialData = async () => {
             try {
-                await Promise.all([
-                    loadLatestProducts(12),
-                    loadTopSellingProducts(12),
-                    loadQuickPicks(8),
-                    loadProductsOnSale(10),
-                    loadCategories()
-                ]);
+                await loadCategories();
             } catch (error) {
-                console.error('Error loading home page data:', error);
+                console.error('Error loading categories:', error);
             }
         };
         
-        loadAllData();
-    }, []); // Empty dependency array - only run on mount
-
-    // Retry functions for individual sections
-    const retryLatestProducts = useCallback(() => {
-        loadLatestProducts(12);
-    }, []); // Remove function dependencies to prevent infinite loops
-
-    const retryTopSellingProducts = useCallback(() => {
-        loadTopSellingProducts(12);
-    }, []);
-
-    const retryQuickPicks = useCallback(() => {
-        loadQuickPicks(8);
-    }, []);
-
-    const retryProductsOnSale = useCallback(() => {
-        loadProductsOnSale(10);
-    }, []);
+        loadInitialData();
+    }, [loadCategories]);
 
     return (
         <>
@@ -68,19 +33,19 @@ const Home = () => {
 
             {/* latest-products */}
             <LatestProducts
-                products={latestProducts}
-                isLoading={isLoading}
-                error={error}
-                onRetry={retryLatestProducts}
+                limit={12}
+                autoLoad={true}
+                onSuccess={(data) => console.log('Latest products loaded:', data.length)}
+                onError={(error) => console.error('Latest products error:', error)}
             />
             {/* latest-products END */}
 
             {/* top-seller-products */}
             <TopSellerProducts
-                products={topSellingProducts}
-                isLoading={isLoading}
-                error={error}
-                onRetry={retryTopSellingProducts}
+                limit={12}
+                autoLoad={true}
+                onSuccess={(data) => console.log('Top seller products loaded:', data.length)}
+                onError={(error) => console.error('Top seller products error:', error)}
             />
             {/* top-seller-products END */}
 
@@ -90,19 +55,19 @@ const Home = () => {
 
             {/* quick-picks */}
             <QuickPicks
-                products={quickPicks}
-                isLoading={isLoading}
-                error={error}
-                onRetry={retryQuickPicks}
+                limit={8}
+                autoLoad={true}
+                onSuccess={(data) => console.log('Quick picks loaded:', data.length)}
+                onError={(error) => console.error('Quick picks error:', error)}
             />
             {/* quick-picks END */}
 
             {/* weekly-deals */}
             <WeeklyDeals
-                products={productsOnSale}
-                isLoading={isLoading}
-                error={error}
-                onRetry={retryProductsOnSale}
+                limit={10}
+                autoLoad={true}
+                onSuccess={(data) => console.log('Weekly deals loaded:', data.length)}
+                onError={(error) => console.error('Weekly deals error:', error)}
             />
             {/* weekly-deals END */}
 

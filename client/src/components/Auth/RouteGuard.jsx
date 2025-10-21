@@ -7,7 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { unifiedAuthService, UserRoles } from '../../services/authService.js';
+import unifiedAuthService, { UserRoles } from '../../services/authService.js';
 
 /**
  * RouteGuard Component Props Interface
@@ -83,16 +83,50 @@ const RouteGuard = ({
 
   // Subscribe to auth state changes
   useEffect(() => {
-    const updateAuthState = () => {
-      const isAuthenticated = unifiedAuthService.isAuthenticated();
-      const user = unifiedAuthService.getCurrentUser();
+    const updateAuthState = async () => {
+      try {
+        const isAuthenticated = unifiedAuthService.isAuthenticated();
+        let user = unifiedAuthService.getCurrentUser();
+        
+        // If we have a token but no user data, try to fetch it from backend
+        if (isAuthenticated && !user) {
+          try {
+            const profileResponse = await unifiedAuthService.getProfile();
+            if (profileResponse.success && profileResponse.data?.user) {
+              user = profileResponse.data.user;
+              // Update stored user data
+              localStorage.setItem('techverse_user', JSON.stringify(user));
+            }
+          } catch (error) {
+            console.warn('Failed to fetch user profile:', error);
+            // If profile fetch fails with 401, the user is not actually authenticated
+            if (error.status === 401) {
+              setAuthState({
+                isLoading: false,
+                isAuthenticated: false,
+                user: null,
+                error: 'Session expired'
+              });
+              return;
+            }
+          }
+        }
 
-      setAuthState({
-        isLoading: false,
-        isAuthenticated,
-        user,
-        error: null
-      });
+        setAuthState({
+          isLoading: false,
+          isAuthenticated,
+          user,
+          error: null
+        });
+      } catch (error) {
+        console.error('Error updating auth state:', error);
+        setAuthState({
+          isLoading: false,
+          isAuthenticated: false,
+          user: null,
+          error: error.message
+        });
+      }
     };
 
     // Initial state check
@@ -108,11 +142,26 @@ const RouteGuard = ({
       updateAuthState();
     };
 
+    // Listen for authentication errors from API interceptors
+    const handleAuthError = (event) => {
+      const { type, reason } = event.detail;
+      if (type === 'AUTHENTICATION_FAILED' || type === 'AUTHORIZATION_FAILED') {
+        setAuthState(prev => ({
+          ...prev,
+          isAuthenticated: false,
+          user: null,
+          error: reason || 'Authentication failed'
+        }));
+      }
+    };
+
     window.addEventListener('authStateChange', handleAuthStateChange);
+    window.addEventListener('authError', handleAuthError);
 
     return () => {
       unsubscribe();
       window.removeEventListener('authStateChange', handleAuthStateChange);
+      window.removeEventListener('authError', handleAuthError);
     };
   }, []);
 
@@ -227,25 +276,52 @@ export const AuthenticatedRoute = ({ children, ...props }) => (
   </RouteGuard>
 );
 
-export const AdminRoute = ({ children, ...props }) => (
-  <RouteGuard
-    requireAuth={true}
-    requireRole={[UserRoles.ADMIN, UserRoles.SUPER_ADMIN]}
-    {...props}
-  >
-    {children}
-  </RouteGuard>
-);
+export const AdminRoute = ({ children, requiredPermissions = [], ...props }) => {
+  const handleAdminAccessDenied = (reason, context) => {
+    console.warn('Admin access denied:', { reason, context });
+    
+    // Dispatch admin access denied event
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('adminAccessDenied', {
+        detail: {
+          reason,
+          context,
+          timestamp: new Date().toISOString()
+        }
+      }));
+    }
+  };
 
-export const UserRoute = ({ children, ...props }) => (
-  <RouteGuard
-    requireAuth={true}
-    requireRole={[UserRoles.USER]}
-    {...props}
-  >
-    {children}
-  </RouteGuard>
-);
+  return (
+    <RouteGuard
+      requireAuth={true}
+      requireRole={[UserRoles.ADMIN, UserRoles.SUPER_ADMIN]}
+      requirePermission={requiredPermissions}
+      requireAllPermissions={true}
+      onAccessDenied={handleAdminAccessDenied}
+      redirectTo="/unauthorized?type=admin"
+      {...props}
+    >
+      {children}
+    </RouteGuard>
+  );
+};
+
+export const UserRoute = ({ children, allowAdmin = true, ...props }) => {
+  const allowedRoles = allowAdmin 
+    ? [UserRoles.USER, UserRoles.ADMIN, UserRoles.SUPER_ADMIN]
+    : [UserRoles.USER];
+
+  return (
+    <RouteGuard
+      requireAuth={true}
+      requireRole={allowedRoles}
+      {...props}
+    >
+      {children}
+    </RouteGuard>
+  );
+};
 
 export const VerifiedRoute = ({ children, ...props }) => (
   <RouteGuard
