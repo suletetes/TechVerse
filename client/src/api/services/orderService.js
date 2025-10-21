@@ -1,119 +1,68 @@
-import { apiClient, handleApiResponse } from '../interceptors/index.js';
+/**
+ * Order Service extending BaseApiService
+ * Implements requirements 2.1, 4.2, 4.3
+ */
+
+import BaseApiService from '../core/BaseApiService.js';
 import { API_ENDPOINTS } from '../config.js';
 
-class OrderService {
+class OrderService extends BaseApiService {
   constructor() {
-    this.cache = new Map();
-    this.cacheTimeout = 1 * 60 * 1000; // 1 minute for order data
+    super({
+      serviceName: 'OrderService',
+      endpoints: API_ENDPOINTS.ORDERS,
+      cacheEnabled: true,
+      retryEnabled: true,
+      defaultOptions: {
+        timeout: 20000 // Orders might take longer to process
+      }
+    });
   }
 
   // Create new order
   async createOrder(orderData) {
-    try {
-      // Validate order data
-      this.validateOrderData(orderData);
+    // Validate order data
+    this.validateOrderData(orderData);
 
-      const response = await apiClient.post(API_ENDPOINTS.ORDERS.BASE, orderData);
-      const data = await handleApiResponse(response);
-      
-      // Clear user orders cache
-      this.clearUserOrdersCache();
-      
-      return data;
-    } catch (error) {
-      console.error('Error creating order:', error);
-      throw new Error(error.message || 'Failed to create order');
-    }
+    return this.create(this.endpoints.BASE, orderData);
   }
 
   // Get user orders with pagination and filtering
   async getUserOrders(params = {}) {
-    try {
-      const {
-        page = 1,
-        limit = 10,
-        status,
-        startDate,
-        endDate,
-        sort = 'createdAt',
-        order = 'desc',
-        ...otherParams
-      } = params;
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      startDate,
+      endDate,
+      sort = 'createdAt',
+      order = 'desc',
+      ...otherParams
+    } = params;
 
-      const queryParams = {
-        page,
-        limit,
-        sort,
-        order,
-        ...otherParams
-      };
+    const queryParams = {
+      sort,
+      order,
+      ...otherParams
+    };
 
-      // Add optional filters
-      if (status) queryParams.status = status;
-      if (startDate) queryParams.startDate = startDate;
-      if (endDate) queryParams.endDate = endDate;
+    // Add optional filters
+    if (status) queryParams.status = status;
+    if (startDate) queryParams.startDate = startDate;
+    if (endDate) queryParams.endDate = endDate;
 
-      const cacheKey = `user_orders_${JSON.stringify(queryParams)}`;
-      
-      // Check cache first
-      if (this.cache.has(cacheKey)) {
-        const cached = this.cache.get(cacheKey);
-        if (Date.now() - cached.timestamp < this.cacheTimeout) {
-          return cached.data;
-        }
-        this.cache.delete(cacheKey);
-      }
-
-      const response = await apiClient.get(API_ENDPOINTS.ORDERS.USER_ORDERS, { 
-        params: queryParams 
-      });
-      const data = await handleApiResponse(response);
-      
-      // Cache the result
-      this.cache.set(cacheKey, {
-        data,
-        timestamp: Date.now()
-      });
-      
-      return data;
-    } catch (error) {
-      console.error('Error fetching user orders:', error);
-      throw new Error(error.message || 'Failed to fetch orders');
-    }
+    return this.getPaginated(this.endpoints.USER_ORDERS, page, limit, {
+      params: queryParams
+    });
   }
 
-  // Get order by ID with caching
+  // Get order by ID
   async getOrderById(id) {
     if (!id) {
       throw new Error('Order ID is required');
     }
 
-    const cacheKey = `order_${id}`;
-    
-    // Check cache first
-    if (this.cache.has(cacheKey)) {
-      const cached = this.cache.get(cacheKey);
-      if (Date.now() - cached.timestamp < this.cacheTimeout) {
-        return cached.data;
-      }
-      this.cache.delete(cacheKey);
-    }
-
-    try {
-      const response = await apiClient.get(`${API_ENDPOINTS.ORDERS.BASE}/${id}`);
-      const data = await handleApiResponse(response);
-      
-      // Cache the result
-      this.cache.set(cacheKey, {
-        data,
-        timestamp: Date.now()
-      });
-      
-      return data;
-    } catch (error) {
-      console.error(`Error fetching order ${id}:`, error);
-      throw new Error(error.message || 'Failed to fetch order');
-    }
+    return this.read(`${this.endpoints.BASE}/${id}`);
   }
 
   // Cancel order
@@ -122,20 +71,9 @@ class OrderService {
       throw new Error('Order ID is required');
     }
 
-    try {
-      const response = await apiClient.put(`${API_ENDPOINTS.ORDERS.BASE}/${id}/cancel`, { 
-        reason: reason.trim() 
-      });
-      const data = await handleApiResponse(response);
-      
-      // Clear order cache
-      this.clearOrderCache(id);
-      
-      return data;
-    } catch (error) {
-      console.error(`Error cancelling order ${id}:`, error);
-      throw new Error(error.message || 'Failed to cancel order');
-    }
+    return this.update(`${this.endpoints.BASE}/${id}/cancel`, {
+      reason: reason.trim()
+    });
   }
 
   // Get order tracking information
@@ -144,32 +82,10 @@ class OrderService {
       throw new Error('Order ID is required');
     }
 
-    const cacheKey = `order_tracking_${id}`;
-    
-    // Check cache first (shorter cache for tracking)
-    if (this.cache.has(cacheKey)) {
-      const cached = this.cache.get(cacheKey);
-      if (Date.now() - cached.timestamp < 30000) { // 30 seconds cache
-        return cached.data;
-      }
-      this.cache.delete(cacheKey);
-    }
-
-    try {
-      const response = await apiClient.get(API_ENDPOINTS.ORDERS.TRACKING(id));
-      const data = await handleApiResponse(response);
-      
-      // Cache the result
-      this.cache.set(cacheKey, {
-        data,
-        timestamp: Date.now()
-      });
-      
-      return data;
-    } catch (error) {
-      console.error(`Error fetching tracking for order ${id}:`, error);
-      throw new Error(error.message || 'Failed to fetch order tracking');
-    }
+    return this.read(this.endpoints.TRACKING(id), {}, {
+      // Shorter cache for tracking info
+      cacheTimeout: 30000
+    });
   }
 
   // Process payment for order
@@ -178,61 +94,23 @@ class OrderService {
       throw new Error('Order ID is required');
     }
 
-    try {
-      // Validate payment data
-      this.validatePaymentData(paymentData);
+    // Validate payment data
+    this.validatePaymentData(paymentData);
 
-      const response = await apiClient.post(
-        `${API_ENDPOINTS.ORDERS.BASE}/${orderId}/payment`, 
-        paymentData
-      );
-      const data = await handleApiResponse(response);
-      
-      // Clear order cache
-      this.clearOrderCache(orderId);
-      
-      return data;
-    } catch (error) {
-      console.error(`Error processing payment for order ${orderId}:`, error);
-      throw new Error(error.message || 'Failed to process payment');
-    }
+    return this.create(`${this.endpoints.BASE}/${orderId}/payment`, paymentData);
   }
 
   // Get order summary/statistics
   async getOrderSummary(params = {}) {
-    try {
-      const {
-        period = '30d', // 7d, 30d, 90d, 1y
-        ...otherParams
-      } = params;
+    const {
+      period = '30d', // 7d, 30d, 90d, 1y
+      ...otherParams
+    } = params;
 
-      const cacheKey = `order_summary_${period}`;
-      
-      // Check cache first
-      if (this.cache.has(cacheKey)) {
-        const cached = this.cache.get(cacheKey);
-        if (Date.now() - cached.timestamp < this.cacheTimeout) {
-          return cached.data;
-        }
-        this.cache.delete(cacheKey);
-      }
-
-      const response = await apiClient.get(`${API_ENDPOINTS.ORDERS.BASE}/summary`, {
-        params: { period, ...otherParams }
-      });
-      const data = await handleApiResponse(response);
-      
-      // Cache the result
-      this.cache.set(cacheKey, {
-        data,
-        timestamp: Date.now()
-      });
-      
-      return data;
-    } catch (error) {
-      console.error('Error fetching order summary:', error);
-      throw new Error(error.message || 'Failed to fetch order summary');
-    }
+    return this.read(`${this.endpoints.BASE}/summary`, {
+      period,
+      ...otherParams
+    });
   }
 
   // Reorder (create new order from existing order)
@@ -241,18 +119,7 @@ class OrderService {
       throw new Error('Order ID is required');
     }
 
-    try {
-      const response = await apiClient.post(`${API_ENDPOINTS.ORDERS.BASE}/${orderId}/reorder`);
-      const data = await handleApiResponse(response);
-      
-      // Clear user orders cache
-      this.clearUserOrdersCache();
-      
-      return data;
-    } catch (error) {
-      console.error(`Error reordering from order ${orderId}:`, error);
-      throw new Error(error.message || 'Failed to reorder');
-    }
+    return this.create(`${this.endpoints.BASE}/${orderId}/reorder`);
   }
 
   // Request order refund
@@ -261,28 +128,17 @@ class OrderService {
       throw new Error('Order ID is required');
     }
 
-    try {
-      const { reason, items, amount } = refundData;
+    const { reason, items, amount } = refundData;
 
-      if (!reason || reason.trim().length < 10) {
-        throw new Error('Refund reason must be at least 10 characters');
-      }
-
-      const response = await apiClient.post(`${API_ENDPOINTS.ORDERS.BASE}/${orderId}/refund`, {
-        reason: reason.trim(),
-        items,
-        amount
-      });
-      const data = await handleApiResponse(response);
-      
-      // Clear order cache
-      this.clearOrderCache(orderId);
-      
-      return data;
-    } catch (error) {
-      console.error(`Error requesting refund for order ${orderId}:`, error);
-      throw new Error(error.message || 'Failed to request refund');
+    if (!reason || reason.trim().length < 10) {
+      throw new Error('Refund reason must be at least 10 characters');
     }
+
+    return this.create(`${this.endpoints.BASE}/${orderId}/refund`, {
+      reason: reason.trim(),
+      items,
+      amount
+    });
   }
 
   // Get order invoice
@@ -291,24 +147,13 @@ class OrderService {
       throw new Error('Order ID is required');
     }
 
-    try {
-      const response = await apiClient.get(`${API_ENDPOINTS.ORDERS.BASE}/${orderId}/invoice`, {
-        params: { format },
-        headers: {
-          'Accept': format === 'pdf' ? 'application/pdf' : 'application/json'
-        }
-      });
-
-      if (format === 'pdf') {
-        // Return blob for PDF download
-        return response.blob();
-      } else {
-        return handleApiResponse(response);
+    return this.read(`${this.endpoints.BASE}/${orderId}/invoice`, {
+      format
+    }, {
+      headers: {
+        'Accept': format === 'pdf' ? 'application/pdf' : 'application/json'
       }
-    } catch (error) {
-      console.error(`Error fetching invoice for order ${orderId}:`, error);
-      throw new Error(error.message || 'Failed to fetch invoice');
-    }
+    });
   }
 
   // Admin: Update order status
@@ -326,21 +171,67 @@ class OrderService {
       throw new Error('Invalid order status');
     }
 
-    try {
-      const response = await apiClient.put(`${API_ENDPOINTS.ORDERS.BASE}/${orderId}/status`, {
-        status,
-        notes: notes.trim()
-      });
-      const data = await handleApiResponse(response);
-      
-      // Clear order cache
-      this.clearOrderCache(orderId);
-      
-      return data;
-    } catch (error) {
-      console.error(`Error updating status for order ${orderId}:`, error);
-      throw new Error(error.message || 'Failed to update order status');
+    return this.update(`${this.endpoints.BASE}/${orderId}/status`, {
+      status,
+      notes: notes.trim()
+    });
+  }
+
+  // Get order history for a user
+  async getOrderHistory(userId, params = {}) {
+    if (!userId) {
+      throw new Error('User ID is required');
     }
+
+    const {
+      page = 1,
+      limit = 20,
+      ...otherParams
+    } = params;
+
+    return this.getPaginated(`${this.endpoints.BASE}/user/${userId}`, page, limit, {
+      params: otherParams
+    });
+  }
+
+  // Bulk operations for admin
+  async bulkUpdateOrderStatus(orderIds, status, notes = '') {
+    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+      throw new Error('Order IDs array is required');
+    }
+
+    if (!status) {
+      throw new Error('Order status is required');
+    }
+
+    return this.batchUpdate(this.endpoints.BASE, {
+      orderIds,
+      updateData: { status, notes: notes.trim() }
+    });
+  }
+
+  // Export orders (admin)
+  async exportOrders(params = {}) {
+    return this.read(`${this.endpoints.BASE}/export`, params, {
+      headers: {
+        'Accept': 'application/octet-stream'
+      }
+    });
+  }
+
+  // Get order analytics (admin)
+  async getOrderAnalytics(params = {}) {
+    const {
+      period = '30d',
+      groupBy = 'day',
+      ...otherParams
+    } = params;
+
+    return this.read(`${this.endpoints.BASE}/analytics`, {
+      period,
+      groupBy,
+      ...otherParams
+    });
   }
 
   // Validation Methods
@@ -408,35 +299,6 @@ class OrderService {
   }
 
   // Utility Methods
-  clearOrderCache(orderId) {
-    if (orderId) {
-      this.cache.delete(`order_${orderId}`);
-      this.cache.delete(`order_tracking_${orderId}`);
-    }
-    this.clearUserOrdersCache();
-  }
-
-  clearUserOrdersCache() {
-    // Clear all user orders cache entries
-    for (const key of this.cache.keys()) {
-      if (key.startsWith('user_orders_') || key.startsWith('order_summary_')) {
-        this.cache.delete(key);
-      }
-    }
-  }
-
-  clearCache() {
-    this.cache.clear();
-  }
-
-  getCacheStats() {
-    return {
-      size: this.cache.size,
-      keys: Array.from(this.cache.keys())
-    };
-  }
-
-  // Helper method to format order status for display
   formatOrderStatus(status) {
     const statusMap = {
       'pending': 'Pending',
@@ -450,7 +312,6 @@ class OrderService {
     return statusMap[status] || status;
   }
 
-  // Helper method to calculate order total
   calculateOrderTotal(items, shipping = 0, tax = 0, discount = 0) {
     const subtotal = items.reduce((total, item) => {
       return total + (item.price * item.quantity);
@@ -463,6 +324,25 @@ class OrderService {
       discount,
       total: subtotal + shipping + tax - discount
     };
+  }
+
+  // Get order status timeline
+  async getOrderStatusTimeline(orderId) {
+    if (!orderId) {
+      throw new Error('Order ID is required');
+    }
+
+    return this.read(`${this.endpoints.BASE}/${orderId}/timeline`);
+  }
+
+  // Estimate delivery date
+  async estimateDelivery(orderData) {
+    return this.create(`${this.endpoints.BASE}/estimate-delivery`, orderData);
+  }
+
+  // Calculate shipping cost
+  async calculateShipping(shippingData) {
+    return this.create(`${this.endpoints.BASE}/calculate-shipping`, shippingData);
   }
 }
 

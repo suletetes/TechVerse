@@ -1,6 +1,6 @@
 /**
- * Admin Service extending BaseApiService with response transformation
- * Consolidated from duplicate implementations
+ * Admin Service extending BaseApiService
+ * Implements requirements 2.1, 4.2, 4.3
  */
 
 import BaseApiService from '../core/BaseApiService.js';
@@ -13,7 +13,6 @@ class AdminService extends BaseApiService {
       endpoints: API_ENDPOINTS.ADMIN,
       cacheEnabled: true,
       retryEnabled: true,
-      transformationType: 'auto',
       defaultOptions: {
         timeout: 30000 // Admin operations might take longer
       }
@@ -35,78 +34,62 @@ class AdminService extends BaseApiService {
 
   // Product Management
   async getAdminProducts(params = {}) {
-    try {
-      const {
-        page = 1,
-        limit = 20,
-        sort = 'createdAt',
-        order = 'desc',
-        status,
-        category,
-        search,
-        ...otherParams
-      } = params;
+    const {
+      page = 1,
+      limit = 20,
+      sort = 'createdAt',
+      order = 'desc',
+      status,
+      category,
+      search,
+      ...otherParams
+    } = params;
 
-      const queryParams = {
-        page,
-        limit,
-        sort,
-        order,
-        ...otherParams
-      };
+    const queryParams = {
+      sort,
+      order,
+      ...otherParams
+    };
 
-      // Add optional filters
-      if (status) queryParams.status = status;
-      if (category) queryParams.category = category;
-      if (search) queryParams.search = search;
+    // Add optional filters
+    if (status) queryParams.status = status;
+    if (category) queryParams.category = category;
+    if (search) queryParams.search = search;
 
-      const response = await apiClient.get(API_ENDPOINTS.ADMIN.PRODUCTS, {
-        params: queryParams
-      });
-      return handleApiResponse(response);
-    } catch (error) {
-      console.error('Error fetching admin products:', error);
-      throw new Error(error.message || 'Failed to fetch products');
-    }
+    return this.getPaginated(this.endpoints.PRODUCTS, page, limit, {
+      params: queryParams
+    });
   }
 
   // Order Management
   async getAdminOrders(params = {}) {
-    try {
-      const {
-        page = 1,
-        limit = 20,
-        sort = 'createdAt',
-        order = 'desc',
-        status,
-        startDate,
-        endDate,
-        search,
-        ...otherParams
-      } = params;
+    const {
+      page = 1,
+      limit = 20,
+      sort = 'createdAt',
+      order = 'desc',
+      status,
+      startDate,
+      endDate,
+      search,
+      ...otherParams
+    } = params;
 
-      const queryParams = {
-        page,
-        limit,
-        sort,
-        order,
-        ...otherParams
-      };
+    const queryParams = {
+      sort,
+      order,
+      ...otherParams
+    };
 
-      // Add optional filters
-      if (status) queryParams.status = status;
-      if (startDate) queryParams.startDate = startDate;
-      if (endDate) queryParams.endDate = endDate;
-      if (search) queryParams.search = search;
+    // Add optional filters
+    if (status) queryParams.status = status;
+    if (startDate) queryParams.startDate = startDate;
+    if (endDate) queryParams.endDate = endDate;
+    if (search) queryParams.search = search;
 
-      const response = await apiClient.get(API_ENDPOINTS.ADMIN.ORDERS, {
-        params: queryParams
-      });
-      return handleApiResponse(response);
-    } catch (error) {
-      console.error('Error fetching admin orders:', error);
-      throw new Error(error.message || 'Failed to fetch orders');
-    }
+    return this.getPaginated(this.endpoints.ORDERS, page, limit, {
+      params: queryParams
+    });
   }
 
   async updateOrderStatus(orderId, status, notes = '') {
@@ -118,53 +101,39 @@ class AdminService extends BaseApiService {
       throw new Error('Order status is required');
     }
 
-    try {
-      const response = await apiClient.put(`${API_ENDPOINTS.ADMIN.ORDERS}/${orderId}/status`, {
-        status,
-        notes: notes.trim()
-      });
-      return handleApiResponse(response);
-    } catch (error) {
-      console.error(`Error updating order ${orderId} status:`, error);
-      throw new Error(error.message || 'Failed to update order status');
-    }
+    return this.update(`${this.endpoints.ORDERS}/${orderId}/status`, {
+      status,
+      notes: notes.trim()
+    });
   }
 
   // User Management
   async getAdminUsers(params = {}) {
-    try {
-      const {
-        page = 1,
-        limit = 20,
-        sort = 'createdAt',
-        order = 'desc',
-        role,
-        status,
-        search,
-        ...otherParams
-      } = params;
+    const {
+      page = 1,
+      limit = 20,
+      sort = 'createdAt',
+      order = 'desc',
+      role,
+      status,
+      search,
+      ...otherParams
+    } = params;
 
-      const queryParams = {
-        page,
-        limit,
-        sort,
-        order,
-        ...otherParams
-      };
+    const queryParams = {
+      sort,
+      order,
+      ...otherParams
+    };
 
-      // Add optional filters
-      if (role) queryParams.role = role;
-      if (status) queryParams.status = status;
-      if (search) queryParams.search = search;
+    // Add optional filters
+    if (role) queryParams.role = role;
+    if (status) queryParams.status = status;
+    if (search) queryParams.search = search;
 
-      const response = await apiClient.get(API_ENDPOINTS.ADMIN.USERS, {
-        params: queryParams
-      });
-      return handleApiResponse(response);
-    } catch (error) {
-      console.error('Error fetching admin users:', error);
-      throw new Error(error.message || 'Failed to fetch users');
-    }
+    return this.getPaginated(this.endpoints.USERS, page, limit, {
+      params: queryParams
+    });
   }
 
   async updateUserStatus(userId, status) {
@@ -176,15 +145,9 @@ class AdminService extends BaseApiService {
       throw new Error('User status is required');
     }
 
-    try {
-      const response = await apiClient.put(`${API_ENDPOINTS.ADMIN.USERS}/${userId}/status`, {
-        status
-      });
-      return handleApiResponse(response);
-    } catch (error) {
-      console.error(`Error updating user ${userId} status:`, error);
-      throw new Error(error.message || 'Failed to update user status');
-    }
+    return this.update(`${this.endpoints.USERS}/${userId}/status`, {
+      status
+    });
   }
 
   async updateUserRole(userId, role) {
@@ -196,65 +159,23 @@ class AdminService extends BaseApiService {
       throw new Error('User role is required');
     }
 
-    try {
-      const response = await apiClient.put(`${API_ENDPOINTS.ADMIN.USERS}/${userId}/role`, {
-        role
-      });
-      return handleApiResponse(response);
-    } catch (error) {
-      console.error(`Error updating user ${userId} role:`, error);
-      throw new Error(error.message || 'Failed to update user role');
-    }
+    return this.update(`${this.endpoints.USERS}/${userId}/role`, {
+      role
+    });
   }
 
   // Category Management
   async getCategories() {
-    const cacheKey = 'admin_categories';
-    
-    // Check cache first
-    if (this.cache.has(cacheKey)) {
-      const cached = this.cache.get(cacheKey);
-      if (Date.now() - cached.timestamp < this.cacheTimeout) {
-        return cached.data;
-      }
-      this.cache.delete(cacheKey);
-    }
-
-    try {
-      const response = await apiClient.get(API_ENDPOINTS.ADMIN.CATEGORIES);
-      const data = await handleApiResponse(response);
-      
-      // Cache the result
-      this.cache.set(cacheKey, {
-        data,
-        timestamp: Date.now()
-      });
-      
-      return data;
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      throw new Error(error.message || 'Failed to fetch categories');
-    }
+    return this.read(this.endpoints.CATEGORIES);
   }
 
   async createCategory(categoryData) {
-    try {
-      // Validate category data
-      if (!categoryData.name || !categoryData.name.trim()) {
-        throw new Error('Category name is required');
-      }
-
-      const response = await apiClient.post(API_ENDPOINTS.ADMIN.CATEGORIES, categoryData);
-      const data = await handleApiResponse(response);
-      
-      // Clear categories cache
-      this.cache.delete('admin_categories');
-      
-      return data;
-    } catch (error) {
-      console.error('Error creating category:', error);
-      throw new Error(error.message || 'Failed to create category');
+    // Validate category data
+    if (!categoryData.name || !categoryData.name.trim()) {
+      throw new Error('Category name is required');
     }
+
+    return this.create(this.endpoints.CATEGORIES, categoryData);
   }
 
   async updateCategory(categoryId, categoryData) {
@@ -262,18 +183,7 @@ class AdminService extends BaseApiService {
       throw new Error('Category ID is required');
     }
 
-    try {
-      const response = await apiClient.put(`${API_ENDPOINTS.ADMIN.CATEGORIES}/${categoryId}`, categoryData);
-      const data = await handleApiResponse(response);
-      
-      // Clear categories cache
-      this.cache.delete('admin_categories');
-      
-      return data;
-    } catch (error) {
-      console.error(`Error updating category ${categoryId}:`, error);
-      throw new Error(error.message || 'Failed to update category');
-    }
+    return this.update(`${this.endpoints.CATEGORIES}/${categoryId}`, categoryData);
   }
 
   async deleteCategory(categoryId) {
@@ -281,56 +191,22 @@ class AdminService extends BaseApiService {
       throw new Error('Category ID is required');
     }
 
-    try {
-      const response = await apiClient.delete(`${API_ENDPOINTS.ADMIN.CATEGORIES}/${categoryId}`);
-      const data = await handleApiResponse(response);
-      
-      // Clear categories cache
-      this.cache.delete('admin_categories');
-      
-      return data;
-    } catch (error) {
-      console.error(`Error deleting category ${categoryId}:`, error);
-      throw new Error(error.message || 'Failed to delete category');
-    }
+    return this.delete(`${this.endpoints.CATEGORIES}/${categoryId}`);
   }
 
   // Analytics
   async getAnalytics(params = {}) {
-    try {
-      const {
-        type = 'overview', // overview, sales, products, users
-        period = '30d',
-        ...otherParams
-      } = params;
+    const {
+      type = 'overview', // overview, sales, products, users
+      period = '30d',
+      ...otherParams
+    } = params;
 
-      const cacheKey = `analytics_${type}_${period}`;
-      
-      // Check cache first
-      if (this.cache.has(cacheKey)) {
-        const cached = this.cache.get(cacheKey);
-        if (Date.now() - cached.timestamp < this.cacheTimeout) {
-          return cached.data;
-        }
-        this.cache.delete(cacheKey);
-      }
-
-      const response = await apiClient.get(API_ENDPOINTS.ADMIN.ANALYTICS, {
-        params: { type, period, ...otherParams }
-      });
-      const data = await handleApiResponse(response);
-      
-      // Cache the result
-      this.cache.set(cacheKey, {
-        data,
-        timestamp: Date.now()
-      });
-      
-      return data;
-    } catch (error) {
-      console.error('Error fetching analytics:', error);
-      throw new Error(error.message || 'Failed to fetch analytics');
-    }
+    return this.read(this.endpoints.ANALYTICS, {
+      type,
+      period,
+      ...otherParams
+    });
   }
 
   // Bulk Operations
@@ -339,16 +215,10 @@ class AdminService extends BaseApiService {
       throw new Error('Product IDs array is required');
     }
 
-    try {
-      const response = await apiClient.put(`${API_ENDPOINTS.ADMIN.PRODUCTS}/bulk`, {
-        productIds,
-        updateData
-      });
-      return handleApiResponse(response);
-    } catch (error) {
-      console.error('Error bulk updating products:', error);
-      throw new Error(error.message || 'Failed to bulk update products');
-    }
+    return this.batchUpdate(this.endpoints.PRODUCTS, {
+      productIds,
+      updateData
+    });
   }
 
   async bulkDeleteProducts(productIds) {
@@ -356,15 +226,29 @@ class AdminService extends BaseApiService {
       throw new Error('Product IDs array is required');
     }
 
-    try {
-      const response = await apiClient.delete(`${API_ENDPOINTS.ADMIN.PRODUCTS}/bulk`, {
-        data: { productIds }
-      });
-      return handleApiResponse(response);
-    } catch (error) {
-      console.error('Error bulk deleting products:', error);
-      throw new Error(error.message || 'Failed to bulk delete products');
+    return this.batchDelete(this.endpoints.PRODUCTS, productIds);
+  }
+
+  async bulkUpdateOrders(orderIds, updateData) {
+    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+      throw new Error('Order IDs array is required');
     }
+
+    return this.batchUpdate(this.endpoints.ORDERS, {
+      orderIds,
+      updateData
+    });
+  }
+
+  async bulkUpdateUsers(userIds, updateData) {
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      throw new Error('User IDs array is required');
+    }
+
+    return this.batchUpdate(this.endpoints.USERS, {
+      userIds,
+      updateData
+    });
   }
 
   // Export/Import
@@ -373,19 +257,11 @@ class AdminService extends BaseApiService {
       throw new Error('Export type is required');
     }
 
-    try {
-      const response = await apiClient.get(`${API_ENDPOINTS.ADMIN.DASHBOARD}/export/${type}`, {
-        params,
-        headers: {
-          'Accept': 'application/octet-stream'
-        }
-      });
-      
-      return response.blob();
-    } catch (error) {
-      console.error(`Error exporting ${type} data:`, error);
-      throw new Error(error.message || `Failed to export ${type} data`);
-    }
+    return this.read(`${this.endpoints.DASHBOARD}/export/${type}`, params, {
+      headers: {
+        'Accept': 'application/octet-stream'
+      }
+    });
   }
 
   async importData(type, file) {
@@ -397,28 +273,163 @@ class AdminService extends BaseApiService {
       throw new Error('File is required');
     }
 
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
+    return this.uploadFile(`${this.endpoints.DASHBOARD}/import/${type}`, file);
+  }
 
-      const response = await apiClient.upload(`${API_ENDPOINTS.ADMIN.DASHBOARD}/import/${type}`, formData);
-      return handleApiResponse(response);
-    } catch (error) {
-      console.error(`Error importing ${type} data:`, error);
-      throw new Error(error.message || `Failed to import ${type} data`);
+  // Advanced Analytics
+  async getSalesAnalytics(params = {}) {
+    const {
+      period = '30d',
+      groupBy = 'day',
+      ...otherParams
+    } = params;
+
+    return this.read(`${this.endpoints.ANALYTICS}/sales`, {
+      period,
+      groupBy,
+      ...otherParams
+    });
+  }
+
+  async getProductAnalytics(params = {}) {
+    const {
+      period = '30d',
+      metric = 'views',
+      ...otherParams
+    } = params;
+
+    return this.read(`${this.endpoints.ANALYTICS}/products`, {
+      period,
+      metric,
+      ...otherParams
+    });
+  }
+
+  async getUserAnalytics(params = {}) {
+    const {
+      period = '30d',
+      metric = 'registrations',
+      ...otherParams
+    } = params;
+
+    return this.read(`${this.endpoints.ANALYTICS}/users`, {
+      period,
+      metric,
+      ...otherParams
+    });
+  }
+
+  // System Management
+  async getSystemHealth() {
+    return this.read(`${this.endpoints.DASHBOARD}/health`);
+  }
+
+  async getSystemLogs(params = {}) {
+    const {
+      level = 'error',
+      limit = 100,
+      ...otherParams
+    } = params;
+
+    return this.read(`${this.endpoints.DASHBOARD}/logs`, {
+      level,
+      limit,
+      ...otherParams
+    });
+  }
+
+  async clearSystemCache(cacheType = 'all') {
+    return this.create(`${this.endpoints.DASHBOARD}/cache/clear`, {
+      type: cacheType
+    });
+  }
+
+  // Configuration Management
+  async getSystemConfig() {
+    return this.read(`${this.endpoints.DASHBOARD}/config`);
+  }
+
+  async updateSystemConfig(configData) {
+    return this.update(`${this.endpoints.DASHBOARD}/config`, configData);
+  }
+
+  // Notification Management
+  async getNotifications(params = {}) {
+    const {
+      page = 1,
+      limit = 20,
+      type,
+      status,
+      ...otherParams
+    } = params;
+
+    const queryParams = { ...otherParams };
+    if (type) queryParams.type = type;
+    if (status) queryParams.status = status;
+
+    return this.getPaginated(`${this.endpoints.DASHBOARD}/notifications`, page, limit, {
+      params: queryParams
+    });
+  }
+
+  async createNotification(notificationData) {
+    return this.create(`${this.endpoints.DASHBOARD}/notifications`, notificationData);
+  }
+
+  async markNotificationAsRead(notificationId) {
+    if (!notificationId) {
+      throw new Error('Notification ID is required');
     }
+
+    return this.update(`${this.endpoints.DASHBOARD}/notifications/${notificationId}/read`);
   }
 
-  // Utility Methods
-  clearCache() {
-    this.cache.clear();
+  // Report Generation
+  async generateReport(reportType, params = {}) {
+    if (!reportType) {
+      throw new Error('Report type is required');
+    }
+
+    return this.create(`${this.endpoints.DASHBOARD}/reports/${reportType}`, params);
   }
 
-  getCacheStats() {
-    return {
-      size: this.cache.size,
-      keys: Array.from(this.cache.keys())
-    };
+  async getReportStatus(reportId) {
+    if (!reportId) {
+      throw new Error('Report ID is required');
+    }
+
+    return this.read(`${this.endpoints.DASHBOARD}/reports/status/${reportId}`);
+  }
+
+  async downloadReport(reportId) {
+    if (!reportId) {
+      throw new Error('Report ID is required');
+    }
+
+    return this.read(`${this.endpoints.DASHBOARD}/reports/download/${reportId}`, {}, {
+      headers: {
+        'Accept': 'application/octet-stream'
+      }
+    });
+  }
+
+  // Inventory Management
+  async getInventoryStatus(params = {}) {
+    return this.read(`${this.endpoints.PRODUCTS}/inventory`, params);
+  }
+
+  async updateInventory(productId, inventoryData) {
+    if (!productId) {
+      throw new Error('Product ID is required');
+    }
+
+    return this.update(`${this.endpoints.PRODUCTS}/${productId}/inventory`, inventoryData);
+  }
+
+  async getLowStockProducts(threshold = 10) {
+    return this.read(`${this.endpoints.PRODUCTS}/low-stock`, {
+      threshold
+    });
   }
 }
 

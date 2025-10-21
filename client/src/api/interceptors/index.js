@@ -10,7 +10,7 @@ class ApiClient {
     // Initialize services (lazy loading to avoid circular dependencies)
     this.requestDeduplicator = null;
     this.retryManager = null;
-    this.cacheManager = null;
+    this.intelligentCache = null;
     
     // Request interceptors
     this.requestInterceptors = [];
@@ -110,26 +110,26 @@ class ApiClient {
 
   // Lazy load services to avoid circular dependencies
   async getServices() {
-    if (!this.requestDeduplicator || !this.retryManager || !this.cacheManager) {
+    if (!this.requestDeduplicator || !this.retryManager || !this.intelligentCache) {
       const [
         { default: requestDeduplicator },
         { default: retryManager },
-        { default: cacheManager }
+        { default: intelligentCache }
       ] = await Promise.all([
         import('../services/requestDeduplicator.js'),
         import('../services/retryManager.js'),
-        import('../services/cacheManager.js')
+        import('../services/intelligentCache.js')
       ]);
       
       this.requestDeduplicator = requestDeduplicator;
       this.retryManager = retryManager;
-      this.cacheManager = cacheManager;
+      this.intelligentCache = intelligentCache;
     }
     
     return {
       requestDeduplicator: this.requestDeduplicator,
       retryManager: this.retryManager,
-      cacheManager: this.cacheManager
+      intelligentCache: this.intelligentCache
     };
   }
 
@@ -164,7 +164,7 @@ class ApiClient {
     const startTime = performance.now();
     
     // Get services
-    const { requestDeduplicator, retryManager, cacheManager } = await this.getServices();
+    const { requestDeduplicator, retryManager, intelligentCache } = await this.getServices();
     
     // Create request context
     const context = {
@@ -177,9 +177,9 @@ class ApiClient {
     };
     
     // Check cache first for GET requests
-    if (method === 'GET' && cacheManager.shouldCache(method, url, options)) {
-      const cacheKey = cacheManager.generateCacheKey(method, url, options.params);
-      const cachedData = cacheManager.get(cacheKey);
+    if (method === 'GET') {
+      const cacheKey = intelligentCache.normalizeKey(`${method}:${url}:${JSON.stringify(options.params || {})}`);
+      const cachedData = intelligentCache.getFromCache(cacheKey);
       
       if (cachedData) {
         console.log('📦 Returning cached data:', {
@@ -298,14 +298,14 @@ class ApiClient {
       }
       
       // Cache successful GET responses
-      if (method === 'GET' && response.ok && cacheManager.shouldCache(method, url, requestConfig)) {
-        const cacheKey = cacheManager.generateCacheKey(method, url, requestConfig.params);
-        cacheManager.set(cacheKey, responseData, { url: endpoint });
+      if (method === 'GET' && response.ok) {
+        const cacheKey = intelligentCache.normalizeKey(`${method}:${url}:${JSON.stringify(requestConfig.params || {})}`);
+        intelligentCache.set(cacheKey, responseData, { url: endpoint });
       }
       
       // Invalidate related cache entries for write operations
       if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-        this.invalidateRelatedCache(endpoint, cacheManager);
+        this.invalidateRelatedCache(endpoint, intelligentCache);
       }
       
       return responseData;
@@ -382,7 +382,7 @@ class ApiClient {
   }
 
   // Invalidate related cache entries based on endpoint
-  invalidateRelatedCache(endpoint, cacheManager) {
+  invalidateRelatedCache(endpoint, intelligentCache) {
     const invalidationRules = {
       '/products': [/\/products/, /\/categories/, /\/search/, /\/dashboard/],
       '/categories': [/\/categories/, /\/products/, /\/dashboard/],
@@ -395,7 +395,7 @@ class ApiClient {
     for (const [pattern, cachePatterns] of Object.entries(invalidationRules)) {
       if (endpoint.includes(pattern)) {
         cachePatterns.forEach(cachePattern => {
-          cacheManager.invalidate(cachePattern);
+          intelligentCache.invalidate(cachePattern);
         });
         break;
       }

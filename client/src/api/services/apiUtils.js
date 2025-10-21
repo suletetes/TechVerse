@@ -359,8 +359,8 @@ class ApiUtils {
   // Cache utilities
   async invalidateCache(pattern) {
     try {
-      const { default: cacheManager } = await import('./cacheManager.js');
-      return cacheManager.invalidate(pattern);
+      const { default: intelligentCache } = await import('./intelligentCache.js');
+      return intelligentCache.invalidate(pattern);
     } catch (error) {
       console.warn('Cache invalidation failed:', error);
     }
@@ -368,8 +368,8 @@ class ApiUtils {
 
   async getCacheStats() {
     try {
-      const { default: cacheManager } = await import('./cacheManager.js');
-      return cacheManager.getStats();
+      const { default: intelligentCache } = await import('./intelligentCache.js');
+      return intelligentCache.getStats();
     } catch (error) {
       console.warn('Failed to get cache stats:', error);
       return null;
@@ -380,19 +380,19 @@ class ApiUtils {
   async getPerformanceStats() {
     try {
       const [
-        { default: cacheManager },
+        { default: intelligentCache },
         { default: requestDeduplicator },
         { default: prefetchManager },
         { default: requestBatcher }
       ] = await Promise.all([
-        import('./cacheManager.js'),
+        import('./intelligentCache.js'),
         import('./requestDeduplicator.js'),
         import('./prefetchManager.js'),
         import('./requestBatcher.js')
       ]);
 
       return {
-        cache: cacheManager.getStats(),
+        cache: intelligentCache.getStats(),
         deduplication: requestDeduplicator.getStats(),
         prefetch: prefetchManager.getStats(),
         batching: requestBatcher.getStats(),

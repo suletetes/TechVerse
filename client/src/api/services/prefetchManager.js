@@ -244,15 +244,15 @@ class PrefetchManager {
       // Import services dynamically to avoid circular dependencies
       const [
         { apiClient },
-        { default: cacheManager }
+        { default: intelligentCache }
       ] = await Promise.all([
         import('../interceptors/index.js'),
-        import('./cacheManager.js')
+        import('./intelligentCache.js')
       ]);
 
       // Check if already cached
-      const cacheKey = cacheManager.generateCacheKey('GET', endpoint);
-      if (cacheManager.get(cacheKey)) {
+      const cacheKey = intelligentCache.normalizeKey(`GET:${endpoint}`);
+      if (intelligentCache.getFromCache(cacheKey)) {
         if (this.config.enableLogging) {
           console.log('📦 Prefetch skipped (already cached):', { endpoint });
         }
@@ -345,12 +345,12 @@ class PrefetchManager {
 
     if (criticalEndpoints) {
       // Import cache manager to invalidate stale data
-      const { default: cacheManager } = await import('./cacheManager.js');
+      const { default: intelligentCache } = await import('./intelligentCache.js');
       
       // Invalidate cached data for critical endpoints
       criticalEndpoints.forEach(endpoint => {
-        const cacheKey = cacheManager.generateCacheKey('GET', endpoint);
-        cacheManager.delete(cacheKey);
+        const cacheKey = intelligentCache.normalizeKey(`GET:${endpoint}`);
+        intelligentCache.invalidate(cacheKey);
       });
 
       // Prefetch fresh data
