@@ -78,14 +78,24 @@ const Product = () => {
     // Update selected options when product loads
     useEffect(() => {
         if (currentProduct) {
-            // Set default color and storage from product data
-            if (currentProduct.colors && currentProduct.colors.length > 0) {
-                setSelectedColor(currentProduct.colors[0].id);
+            // Set default color and storage from product variants
+            const variants = currentProduct.variants || [];
+            const colorVariant = variants.find(v => v.name.toLowerCase().includes('color') || v.name.toLowerCase().includes('colour'));
+            const storageVariant = variants.find(v => v.name.toLowerCase().includes('storage') || v.name.toLowerCase().includes('memory'));
+            
+            if (colorVariant && colorVariant.options.length > 0) {
+                setSelectedColor(colorVariant.options[0]._id || colorVariant.options[0].value);
             }
-            if (currentProduct.storageOptions && currentProduct.storageOptions.length > 0) {
-                setSelectedStorage(currentProduct.storageOptions[0].id);
+            if (storageVariant && storageVariant.options.length > 0) {
+                setSelectedStorage(storageVariant.options[0]._id || storageVariant.options[0].value);
             }
-            if (currentProduct.mediaGallery && currentProduct.mediaGallery.length > 0) {
+            
+            // Set default media selection from product images
+            if (currentProduct.images && currentProduct.images.length > 0) {
+                const primaryImage = currentProduct.images.find(img => img.isPrimary);
+                const defaultImage = primaryImage || currentProduct.images[0];
+                setSelectedMedia(defaultImage._id || `image-0`);
+            } else if (currentProduct.mediaGallery && currentProduct.mediaGallery.length > 0) {
                 setSelectedMedia(currentProduct.mediaGallery[0].id);
             }
         }
@@ -136,16 +146,32 @@ const Product = () => {
         );
     }
 
-    // Get product data from context
-    const colorOptions = currentProduct.colors || [];
-    const storageOptions = currentProduct.storageOptions || [];
+    // Get product data from context - handle backend structure
+    const variants = currentProduct.variants || [];
+    const colorVariant = variants.find(v => v.name.toLowerCase().includes('color') || v.name.toLowerCase().includes('colour'));
+    const storageVariant = variants.find(v => v.name.toLowerCase().includes('storage') || v.name.toLowerCase().includes('memory'));
+    
+    const colorOptions = colorVariant?.options || currentProduct.colors || [];
+    const storageOptions = storageVariant?.options || currentProduct.storageOptions || [];
     const mediaGallery = currentProduct.mediaGallery || [];
     const productInWishlist = isInWishlist(currentProduct._id);
 
     const getCurrentPrice = () => {
-        if (storageOptions.length === 0) return currentProduct.price || 0;
-        const storage = storageOptions.find(s => s.id === selectedStorage);
-        return storage ? storage.price : currentProduct.price || 0;
+        const basePrice = currentProduct.price || 0;
+        
+        if (storageOptions.length === 0) return basePrice;
+        
+        // Handle backend variant structure
+        const selectedStorageOption = storageOptions.find(s => 
+            s._id === selectedStorage || s.value === selectedStorage || s.id === selectedStorage
+        );
+        
+        if (selectedStorageOption) {
+            // Backend uses priceModifier, frontend might use price directly
+            return basePrice + (selectedStorageOption.priceModifier || 0);
+        }
+        
+        return basePrice;
     };
 
     const handleAddToCart = async () => {
@@ -214,15 +240,39 @@ const Product = () => {
     };
 
     const handlePreviousMedia = () => {
-        const currentIndex = mediaGallery.findIndex(media => media.id === selectedMedia);
-        const previousIndex = currentIndex > 0 ? currentIndex - 1 : mediaGallery.length - 1;
-        handleMediaSelect(mediaGallery[previousIndex].id);
+        // Handle both mediaGallery and product images
+        const images = mediaGallery.length > 0 
+            ? mediaGallery 
+            : (currentProduct?.images || []).map((img, index) => ({
+                id: img._id || `image-${index}`,
+                ...img
+            }));
+            
+        if (images.length === 0) return;
+        
+        const currentIndex = images.findIndex(media => 
+            media.id === selectedMedia || media._id === selectedMedia
+        );
+        const previousIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
+        handleMediaSelect(images[previousIndex].id || images[previousIndex]._id);
     };
 
     const handleNextMedia = () => {
-        const currentIndex = mediaGallery.findIndex(media => media.id === selectedMedia);
-        const nextIndex = currentIndex < mediaGallery.length - 1 ? currentIndex + 1 : 0;
-        handleMediaSelect(mediaGallery[nextIndex].id);
+        // Handle both mediaGallery and product images
+        const images = mediaGallery.length > 0 
+            ? mediaGallery 
+            : (currentProduct?.images || []).map((img, index) => ({
+                id: img._id || `image-${index}`,
+                ...img
+            }));
+            
+        if (images.length === 0) return;
+        
+        const currentIndex = images.findIndex(media => 
+            media.id === selectedMedia || media._id === selectedMedia
+        );
+        const nextIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
+        handleMediaSelect(images[nextIndex].id || images[nextIndex]._id);
     };
 
     const handleSubmitReview = async (reviewData) => {
@@ -280,6 +330,7 @@ const Product = () => {
                         className="text-start offset-lg-1 mb-2 col-lg-6 mb-md-2 mb-lg-0 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1">
                         {/* Main Media Display */}
                         <ProductMediaGallery
+                            product={currentProduct}
                             mediaGallery={mediaGallery}
                             selectedMedia={selectedMedia}
                             isVideoPlaying={isVideoPlaying}
@@ -291,6 +342,7 @@ const Product = () => {
 
                         {/* Media Thumbnails */}
                         <ProductThumbnails
+                            product={currentProduct}
                             mediaGallery={mediaGallery}
                             selectedMedia={selectedMedia}
                             onMediaSelect={handleMediaSelect}
@@ -299,10 +351,16 @@ const Product = () => {
                         />
 
                         {/* Quick Technical Specs */}
-                        <TechnicalSpecs />
+                        <TechnicalSpecs 
+                            product={currentProduct}
+                            specifications={currentProduct.specifications}
+                        />
 
                         {/* Key Features */}
-                        <KeyFeatures />
+                        <KeyFeatures 
+                            product={currentProduct}
+                            features={currentProduct.features}
+                        />
                     </div>
 
                     {/* Right Column - Product Details and Customer Reviews */}
@@ -332,6 +390,7 @@ const Product = () => {
                                     <>
                                         <div className="divider-h"></div>
                                         <ProductOptions
+                                            product={currentProduct}
                                             colorOptions={colorOptions}
                                             storageOptions={storageOptions}
                                             selectedColor={selectedColor}
@@ -345,22 +404,25 @@ const Product = () => {
                                 <div className="divider-h"></div>
 
                                 <ProductQuantity
+                                    product={currentProduct}
                                     quantity={quantity}
                                     onQuantityChange={setQuantity}
-                                    maxQuantity={currentProduct.stockCount || 10}
-                                    inStock={currentProduct.inStock}
+                                    maxQuantity={currentProduct.stockCount || currentProduct.stock?.quantity || 10}
+                                    inStock={currentProduct.inStock || currentProduct.stock?.quantity > 0}
                                 />
 
                                 <ProductActions
+                                    product={currentProduct}
                                     totalPrice={getCurrentPrice() * quantity}
                                     onBuyNow={handleBuyNow}
                                     onAddToCart={handleAddToCart}
                                     isAddingToCart={isAddingToCart || cartLoading}
-                                    inStock={currentProduct.inStock}
+                                    inStock={currentProduct.inStock || currentProduct.stock?.quantity > 0}
                                     isAuthenticated={isAuthenticated}
                                 />
 
                                 <ProductIncludes 
+                                    product={currentProduct}
                                     includes={currentProduct.includes}
                                 />
                             </div>
@@ -368,6 +430,7 @@ const Product = () => {
 
                         {/* Product Highlights */}
                         <ProductHighlights 
+                            product={currentProduct}
                             highlights={currentProduct.highlights}
                         />
                     </div>
@@ -399,6 +462,7 @@ const Product = () => {
                         <div
                             className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
                             <DetailedSpecs 
+                                product={currentProduct}
                                 productName={currentProduct.name}
                                 specifications={currentProduct.specifications}
                             />

@@ -342,6 +342,75 @@ class ProductService extends BaseApiService {
       period
     });
   }
+
+  // Homepage section management methods
+  
+  // Get products by section
+  async getProductsBySection(section, limit = 10) {
+    const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+    if (!validSections.includes(section)) {
+      throw new Error('Invalid section name');
+    }
+
+    return this.read(`${this.endpoints.BASE}/section/${section}`, { limit });
+  }
+
+  // Add product to section
+  async addProductToSection(productId, section) {
+    if (!productId) {
+      throw new Error('Product ID is required');
+    }
+
+    const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+    if (!validSections.includes(section)) {
+      throw new Error('Invalid section name');
+    }
+
+    return this.update(`${this.endpoints.BASE}/${productId}/sections`, {
+      action: 'add',
+      section
+    });
+  }
+
+  // Remove product from section
+  async removeProductFromSection(productId, section) {
+    if (!productId) {
+      throw new Error('Product ID is required');
+    }
+
+    const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+    if (!validSections.includes(section)) {
+      throw new Error('Invalid section name');
+    }
+
+    return this.update(`${this.endpoints.BASE}/${productId}/sections`, {
+      action: 'remove',
+      section
+    });
+  }
+
+  // Update product sections (replace all sections)
+  async updateProductSections(productId, sections) {
+    if (!productId) {
+      throw new Error('Product ID is required');
+    }
+
+    const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+    const invalidSections = sections.filter(s => !validSections.includes(s));
+    if (invalidSections.length > 0) {
+      throw new Error(`Invalid section names: ${invalidSections.join(', ')}`);
+    }
+
+    return this.update(`${this.endpoints.BASE}/${productId}/sections`, {
+      action: 'replace',
+      sections
+    });
+  }
+
+  // Get all homepage sections with their assigned products
+  async getHomepageSections() {
+    return this.read(`${this.endpoints.BASE}/homepage-sections`);
+  }
 }
 
 export default new ProductService();

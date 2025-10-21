@@ -1,6 +1,11 @@
 import React from 'react';
 
 const ProductIncludes = ({ includes, product }) => {
+    // Return null if no product provided
+    if (!product) {
+        return null;
+    }
+    
     // Handle backend data structure
     const productIncludes = includes || product?.includes || [];
     const features = product?.features || [];
