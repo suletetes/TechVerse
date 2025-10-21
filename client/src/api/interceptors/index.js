@@ -62,12 +62,13 @@ class ApiClient {
       return config;
     });
     
-    // Response interceptor for token refresh
+    // Response interceptor for token refresh and enhanced error handling
     this.addResponseInterceptor(
       (response) => response, // Success handler
       async (error) => { // Error handler
         const originalRequest = error.config;
         
+        // Handle 401 Unauthorized responses
         if (error.status === HTTP_STATUS.UNAUTHORIZED && 
             !originalRequest._retry && 
             !originalRequest.url.includes('/auth/')) {
@@ -75,6 +76,13 @@ class ApiClient {
           originalRequest._retry = true;
           
           try {
+            // Check if we're in security cooldown
+            if (tokenManager.isInSecurityCooldown && tokenManager.isInSecurityCooldown()) {
+              console.warn('Authentication blocked due to security cooldown');
+              this.handleAuthenticationFailure('security_cooldown');
+              throw error;
+            }
+            
             await tokenRefreshManager.refreshToken();
             
             // Retry original request with new token
@@ -85,8 +93,14 @@ class ApiClient {
             }
           } catch (refreshError) {
             console.error('Token refresh failed:', refreshError);
-            // Let the original error propagate
+            this.handleAuthenticationFailure('token_refresh_failed', refreshError);
+            throw error;
           }
+        }
+        
+        // Handle 403 Forbidden responses (insufficient permissions)
+        if (error.status === HTTP_STATUS.FORBIDDEN) {
+          this.handleAuthorizationFailure(error);
         }
         
         throw error;
@@ -436,6 +450,82 @@ class ApiClient {
     }
   }
   
+  /**
+   * Handle authentication failures (401 errors)
+   */
+  handleAuthenticationFailure(reason, error = null) {
+    console.warn('Authentication failure detected:', { reason, error: error?.message });
+    
+    // Dispatch authentication error event
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('authError', {
+        detail: {
+          type: 'AUTHENTICATION_FAILED',
+          reason,
+          message: error?.message || 'Authentication required',
+          status: 401,
+          timestamp: new Date().toISOString()
+        }
+      }));
+      
+      // Redirect to login with appropriate reason
+      const currentPath = window.location.pathname;
+      const isAdminRoute = currentPath.startsWith('/admin');
+      
+      // Don't redirect if already on login page
+      if (currentPath !== '/login') {
+        const redirectUrl = `/login?reason=${reason}&returnUrl=${encodeURIComponent(currentPath)}`;
+        
+        // For admin routes, show additional context
+        if (isAdminRoute) {
+          const adminRedirectUrl = `/login?reason=${reason}&admin=true&returnUrl=${encodeURIComponent(currentPath)}`;
+          setTimeout(() => {
+            window.location.href = adminRedirectUrl;
+          }, 1000);
+        } else {
+          setTimeout(() => {
+            window.location.href = redirectUrl;
+          }, 1000);
+        }
+      }
+    }
+  }
+  
+  /**
+   * Handle authorization failures (403 errors)
+   */
+  handleAuthorizationFailure(error) {
+    console.warn('Authorization failure detected:', error);
+    
+    // Dispatch authorization error event
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('authError', {
+        detail: {
+          type: 'AUTHORIZATION_FAILED',
+          message: error.data?.message || 'Insufficient permissions',
+          status: 403,
+          timestamp: new Date().toISOString()
+        }
+      }));
+      
+      // Redirect to unauthorized page or appropriate location
+      const currentPath = window.location.pathname;
+      const isAdminRoute = currentPath.startsWith('/admin');
+      
+      if (isAdminRoute) {
+        // For admin routes, redirect to main admin page or login
+        setTimeout(() => {
+          window.location.href = '/unauthorized?type=admin';
+        }, 1000);
+      } else {
+        // For user routes, redirect to unauthorized page
+        setTimeout(() => {
+          window.location.href = '/unauthorized';
+        }, 1000);
+      }
+    }
+  }
+
   /**
    * Update configuration
    */

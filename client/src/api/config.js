@@ -1,164 +1,86 @@
-// API Configuration
-import config from '../config/environment.js';
+/**
+ * API Configuration - Updated to use centralized configuration
+ * This file now imports from the centralized config manager and endpoints
+ */
 
-const API_BASE_URL = config.API_BASE_URL;
+import configManager from '../config/ConfigManager.js';
+import { API_ENDPOINTS as CENTRALIZED_ENDPOINTS, EndpointUtils } from '../config/endpoints.js';
+import { HTTP_STATUS } from '../shared/constants/consolidated.js';
 
-// Ensure API_BASE_URL is properly formatted
-const formatApiBaseUrl = (url) => {
-  if (!url) {
-    throw new Error('API_BASE_URL is required');
-  }
-  
-  // Remove trailing slash if present
-  return url.replace(/\/$/, '');
-};
+// Get API configuration from centralized config manager
+const getApiConfig = () => configManager.getApiConfig();
+const getEnvironmentConfig = () => configManager.getEnvironmentConfig();
 
 // Validated and formatted base URL
-export const FORMATTED_API_BASE_URL = formatApiBaseUrl(API_BASE_URL);
+export const FORMATTED_API_BASE_URL = configManager.get('api.baseUrl');
 
-// API endpoints - Updated to match backend implementation
+// Use centralized API endpoints with backward compatibility
 export const API_ENDPOINTS = {
-  // Authentication
-  AUTH: {
-    LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
-    LOGOUT: '/auth/logout',
-    REFRESH: '/auth/refresh-token',
-    PROFILE: '/auth/profile',
-    ME: '/auth/me',
-    FORGOT_PASSWORD: '/auth/forgot-password',
-    RESET_PASSWORD: '/auth/reset-password',
-    CHANGE_PASSWORD: '/auth/change-password',
-    VERIFY_EMAIL: '/auth/verify-email',
-    RESEND_VERIFICATION: '/auth/resend-verification',
-    VERIFY_MFA: '/auth/verify-mfa',
-    SETUP_MFA: '/auth/setup-mfa',
-    DISABLE_MFA: '/auth/disable-mfa',
-    RESEND_MFA: '/auth/resend-mfa',
-    PREFERENCES: '/auth/preferences',
-    SESSIONS: '/auth/sessions'
-  },
-
-  // Products - Updated to match backend routes
+  ...CENTRALIZED_ENDPOINTS,
+  
+  // Add any legacy endpoints that need to be maintained for backward compatibility
   PRODUCTS: {
-    BASE: '/products',
-    SEARCH: '/products/search',
-    CATEGORIES: '/products/categories',
-    FEATURED: '/products/featured',
-    TOP_SELLERS: '/products/top-sellers',
-    LATEST: '/products/latest',
-    ON_SALE: '/products/on-sale',
-    WEEKLY_DEALS: '/products/weekly-deals',
-    QUICK_PICKS: '/products/quick-picks',
+    ...CENTRALIZED_ENDPOINTS.PRODUCTS,
+    // Legacy function-based endpoints
     SECTION: (section) => `/products/section/${section}`,
     BY_CATEGORY: (categoryId) => `/products/category/${categoryId}`,
     BY_ID: (id) => `/products/${id}`,
     REVIEWS: (id) => `/products/${id}/reviews`,
     RELATED: (id) => `/products/${id}/related`
   },
-
-  // Orders
+  
   ORDERS: {
-    BASE: '/orders',
-    USER_ORDERS: '/orders/user',
+    ...CENTRALIZED_ENDPOINTS.ORDERS,
+    // Legacy function-based endpoints
     BY_ID: (id) => `/orders/${id}`,
     CANCEL: (id) => `/orders/${id}/cancel`,
-    TRACKING: (id) => `/orders/${id}/tracking`,
-    PAYMENT: (id) => `/orders/${id}/payment`,
-    STATUS: (id) => `/orders/${id}/status`,
-    REFUND: (id) => `/orders/${id}/refund`
+    TRACKING: (id) => `/orders/${id}/tracking`
   },
-
-  // Users
+  
   USERS: {
-    BASE: '/users',
-    PROFILE: '/users/profile',
-    ADDRESSES: '/users/addresses',
+    ...CENTRALIZED_ENDPOINTS.USERS,
+    // Legacy function-based endpoints
     ADDRESS_BY_ID: (id) => `/users/addresses/${id}`,
-    PAYMENT_METHODS: '/users/payment-methods',
     PAYMENT_METHOD_BY_ID: (id) => `/users/payment-methods/${id}`,
-    WISHLIST: '/users/wishlist',
     WISHLIST_PRODUCT: (productId) => `/users/wishlist/${productId}`,
-    CART: '/users/cart',
     CART_ITEM: (itemId) => `/users/cart/${itemId}`
   },
-
-  // Admin - Updated to match backend routes
+  
   ADMIN: {
-    DASHBOARD: '/admin/dashboard',
-    ANALYTICS: '/admin/analytics',
-    PRODUCTS: '/admin/products',
-    ORDERS: '/admin/orders',
-    ORDER_STATS: '/admin/orders/stats',
-    USERS: '/admin/users',
+    ...CENTRALIZED_ENDPOINTS.ADMIN,
+    // Legacy function-based endpoints
     USER_BY_ID: (id) => `/admin/users/${id}`,
     USER_STATUS: (id) => `/admin/users/${id}/status`,
-    CATEGORIES: '/admin/categories',
     CATEGORY_BY_ID: (id) => `/admin/categories/${id}`,
-    SECTIONS: '/admin/sections',
     SECTION: (section) => `/admin/sections/${section}`,
-    SECTION_PRODUCT: (section, productId) => `/admin/sections/${section}/products/${productId}`,
-    PRODUCTS_AVAILABLE: '/admin/products/available',
-    PRODUCTS_SECTIONS: '/admin/products/sections'
-  },
-
-  // File Upload
-  UPLOAD: {
-    IMAGE: '/upload/image',
-    IMAGES: '/upload/images',
-    DELETE_IMAGE: '/upload/image',
-    IMAGE_INFO: '/upload/image/info',
-    TEST: '/upload/test'
-  },
-
-  // Health Check
-  HEALTH: {
-    BASE: '/health',
-    DETAILED: '/health/detailed',
-    DATABASE: '/health/database',
-    MONITOR_STATUS: '/health/monitor/status',
-    MONITOR_STATS: '/health/monitor/stats',
-    MONITOR_HISTORY: '/health/monitor/history',
-    MONITOR_START: '/health/monitor/start',
-    MONITOR_STOP: '/health/monitor/stop'
+    SECTION_PRODUCT: (section, productId) => `/admin/sections/${section}/products/${productId}`
   }
 };
 
-// HTTP status codes
-export const HTTP_STATUS = {
-  OK: 200,
-  CREATED: 201,
-  NO_CONTENT: 204,
-  BAD_REQUEST: 400,
-  UNAUTHORIZED: 401,
-  FORBIDDEN: 403,
-  NOT_FOUND: 404,
-  CONFLICT: 409,
-  UNPROCESSABLE_ENTITY: 422,
-  INTERNAL_SERVER_ERROR: 500
-};
+// Re-export HTTP status codes from centralized constants
+export { HTTP_STATUS } from '../shared/constants/consolidated.js';
 
-// Request timeout and retry configuration
-export const REQUEST_TIMEOUT = config.REQUEST_TIMEOUT;
-export const RETRY_ATTEMPTS = config.RETRY_ATTEMPTS;
-export const RETRY_DELAY = config.RETRY_DELAY;
-export const CACHE_TTL = config.CACHE_TTL;
+// Get configuration values from centralized config manager
+export const REQUEST_TIMEOUT = configManager.get('api.timeout');
+export const RETRY_ATTEMPTS = configManager.get('api.retryAttempts');
+export const RETRY_DELAY = configManager.get('api.retryDelay');
+export const CACHE_TTL = configManager.get('storage.cacheExpiry');
 
-// Environment-specific settings
-export const DEBUG_MODE = config.DEBUG_MODE;
-export const ENABLE_LOGGING = config.ENABLE_LOGGING;
-export const ENABLE_MOCK_API = config.ENABLE_MOCK_API;
+// Environment-specific settings from centralized config
+export const DEBUG_MODE = configManager.get('DEBUG_MODE');
+export const ENABLE_LOGGING = configManager.get('ENABLE_LOGGING');
+export const ENABLE_MOCK_API = configManager.get('ENABLE_MOCK_API');
 
-// Error handling configuration
+// Error handling configuration using centralized config
 export const ERROR_CONFIG = {
-  SHOW_STACK_TRACE: config.DEBUG_MODE,
-  LOG_ERRORS: config.ENABLE_LOGGING,
+  SHOW_STACK_TRACE: configManager.get('DEBUG_MODE'),
+  LOG_ERRORS: configManager.get('ENABLE_LOGGING'),
   RETRY_ON_NETWORK_ERROR: true,
-  RETRY_ON_SERVER_ERROR: config.ENVIRONMENT !== 'production',
-  SHOW_DETAILED_ERRORS: config.DEBUG_MODE
+  RETRY_ON_SERVER_ERROR: configManager.get('build.environment') !== 'production',
+  SHOW_DETAILED_ERRORS: configManager.get('DEBUG_MODE')
 };
 
-// Enhanced API configuration for better service integration
+// Enhanced API configuration using centralized config manager
 export const API_CONFIG = {
   BASE_URL: FORMATTED_API_BASE_URL,
   TIMEOUT: REQUEST_TIMEOUT,
@@ -167,28 +89,38 @@ export const API_CONFIG = {
   CACHE_TTL: CACHE_TTL,
   DEBUG_MODE: DEBUG_MODE,
   ENABLE_LOGGING: ENABLE_LOGGING,
-  ERROR_CONFIG: ERROR_CONFIG
+  ERROR_CONFIG: ERROR_CONFIG,
+  ENABLE_CACHING: configManager.get('api.enableCaching'),
+  ENABLE_BATCHING: configManager.get('api.enableBatching'),
+  ENABLE_PREFETCHING: configManager.get('api.enablePrefetching')
 };
 
-// Utility function to build full endpoint URL
-export const buildEndpointUrl = (endpoint) => {
+// Use centralized endpoint utilities
+export const buildEndpointUrl = (endpoint, params = {}) => {
   if (typeof endpoint === 'function') {
     throw new Error('Endpoint function must be called with parameters first');
   }
-  return `${FORMATTED_API_BASE_URL}${endpoint}`;
+  return EndpointUtils.buildUrl(endpoint, params);
 };
 
-// Utility function to validate endpoint
+// Use centralized endpoint validation
 export const validateEndpoint = (endpoint) => {
-  if (!endpoint || typeof endpoint !== 'string') {
-    throw new Error('Invalid endpoint: must be a non-empty string');
+  const errors = EndpointUtils.validateEndpoint(endpoint);
+  if (errors.length > 0) {
+    throw new Error(`Invalid endpoint: ${errors.join(', ')}`);
   }
-  
-  if (!endpoint.startsWith('/')) {
-    throw new Error('Invalid endpoint: must start with "/"');
-  }
-  
   return true;
 };
+
+// Additional utility functions using centralized config
+export const getEndpointMetadata = (endpoint) => EndpointUtils.getMetadata(endpoint);
+export const requiresAuth = (endpoint) => EndpointUtils.requiresAuth(endpoint);
+export const requiresAdmin = (endpoint) => EndpointUtils.requiresAdmin(endpoint);
+
+// Configuration change listener
+export const onConfigChange = (listener) => configManager.addListener(listener);
+
+// Get current configuration summary
+export const getConfigSummary = () => configManager.getSummary();
 
 export default FORMATTED_API_BASE_URL;

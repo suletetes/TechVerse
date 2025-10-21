@@ -1,7 +1,8 @@
 // Enhanced Helper Utilities
 // Consolidates common helper functions and utilities
 
-import { STORAGE_KEYS, ERROR_CODES } from '../constants/index.js';
+// Enhanced Helper Utilities
+// Consolidates common helper functions and utilities
 
 // Deep clone utility
 export const deepClone = (obj) => {
