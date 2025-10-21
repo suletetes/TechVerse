@@ -2,11 +2,42 @@ import React from 'react'
 
 import ProductCard from './ProductCard';
 import { HorizontalScroll, SkeletonCard, ErrorState } from '../Common';
+import { useHomepageSection, SECTION_TYPES } from '../../hooks/useHomepageSection.js';
 
-const TopSellerProducts = ({ products = [], isLoading = false, error = null, onRetry = null }) => {
+const TopSellerProducts = ({
+    limit = 12,
+    autoLoad = true,
+    onSuccess,
+    onError,
+    // Legacy props for backward compatibility
+    products: legacyProducts,
+    isLoading: legacyLoading,
+    error: legacyError,
+    onRetry: legacyRetry
+}) => {
+    // Use the new hook for data fetching
+    const {
+        data: hookProducts,
+        loading: hookLoading,
+        error: hookError,
+        retry: hookRetry,
+        isEmpty,
+        hasData
+    } = useHomepageSection(SECTION_TYPES.TOP_SELLERS, {
+        limit,
+        autoLoad,
+        onSuccess,
+        onError
+    });
+
+    // Use hook data if available, otherwise fall back to legacy props
+    const products = hookProducts.length > 0 ? hookProducts : (legacyProducts || []);
+    const isLoading = hookLoading || legacyLoading || false;
+    const error = hookError || legacyError || null;
+    const onRetry = hookRetry || legacyRetry || (() => { });
     // Ensure products is an array
     const safeProducts = Array.isArray(products) ? products : [];
-    
+
     // Transform API data to component format
     const transformedProducts = safeProducts.map(product => ({
         id: product._id,
