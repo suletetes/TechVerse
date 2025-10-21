@@ -1,47 +1,36 @@
-import { apiClient, handleApiResponse } from '../interceptors/index.js';
+/**
+ * Admin Service extending BaseApiService with response transformation
+ * Consolidated from duplicate implementations
+ */
+
+import BaseApiService from '../core/BaseApiService.js';
 import { API_ENDPOINTS } from '../config.js';
 
-class AdminService {
+class AdminService extends BaseApiService {
   constructor() {
-    this.cache = new Map();
-    this.cacheTimeout = 2 * 60 * 1000; // 2 minutes for admin data
+    super({
+      serviceName: 'AdminService',
+      endpoints: API_ENDPOINTS.ADMIN,
+      cacheEnabled: true,
+      retryEnabled: true,
+      transformationType: 'auto',
+      defaultOptions: {
+        timeout: 30000 // Admin operations might take longer
+      }
+    });
   }
 
   // Dashboard Analytics
   async getDashboardStats(params = {}) {
-    try {
-      const {
-        period = '30d', // 7d, 30d, 90d, 1y
-        ...otherParams
-      } = params;
+    const {
+      period = '30d', // 7d, 30d, 90d, 1y
+      ...otherParams
+    } = params;
 
-      const cacheKey = `dashboard_stats_${period}`;
-      
-      // Check cache first
-      if (this.cache.has(cacheKey)) {
-        const cached = this.cache.get(cacheKey);
-        if (Date.now() - cached.timestamp < this.cacheTimeout) {
-          return cached.data;
-        }
-        this.cache.delete(cacheKey);
-      }
-
-      const response = await apiClient.get(API_ENDPOINTS.ADMIN.DASHBOARD, {
-        params: { period, ...otherParams }
-      });
-      const data = await handleApiResponse(response);
-      
-      // Cache the result
-      this.cache.set(cacheKey, {
-        data,
-        timestamp: Date.now()
-      });
-      
-      return data;
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      throw new Error(error.message || 'Failed to fetch dashboard statistics');
-    }
+    return this.read(this.endpoints.DASHBOARD, {
+      period,
+      ...otherParams
+    });
   }
 
   // Product Management

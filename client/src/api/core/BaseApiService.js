@@ -1,10 +1,12 @@
 /**
  * Base API Service class with standardized request/response patterns
- * Implements requirements 2.1, 2.2, 2.3, 4.2
+ * Enhanced with response transformation layer for backend-frontend compatibility
+ * Implements requirements 2.1, 2.2, 2.3, 4.2, 3.3
  */
 
 import HttpClient from './HttpClient.js';
-import { API_ENDPOINTS } from '../config.js';
+import { API_ENDPOINTS, API_CONFIG } from '../config.js';
+import { transformResponse } from '../services/responseTransformer.js';
 
 class BaseApiService {
   constructor(config = {}) {
@@ -15,7 +17,7 @@ class BaseApiService {
     // Create HTTP client instance
     this.httpClient = new HttpClient({
       baseURL: this.baseURL,
-      timeout: config.timeout,
+      timeout: config.timeout || API_CONFIG.TIMEOUT,
       defaultHeaders: config.defaultHeaders,
       ...config.httpClientConfig
     });
@@ -24,6 +26,14 @@ class BaseApiService {
     this.serviceName = config.serviceName || 'BaseService';
     this.cacheEnabled = config.cacheEnabled !== false;
     this.retryEnabled = config.retryEnabled !== false;
+    
+    // Response transformation configuration
+    this.transformationType = config.transformationType || 'auto';
+    this.enableTransformation = config.enableTransformation !== false;
+    
+    // Debug configuration
+    this.debugMode = config.debugMode || API_CONFIG.DEBUG_MODE;
+    this.enableLogging = config.enableLogging || API_CONFIG.ENABLE_LOGGING;
   }
 
   /**
@@ -48,7 +58,7 @@ class BaseApiService {
   }
 
   /**
-   * Process successful response
+   * Process successful response with transformation
    */
   async processResponse(response, config) {
     const contentType = response.headers.get('content-type');
@@ -65,19 +75,42 @@ class BaseApiService {
       data = null;
     }
 
-    // Return standardized response format
-    return {
-      success: true,
-      data,
+    // Create standardized response format
+    let standardizedResponse = {
+      success: data?.success !== undefined ? data.success : true,
+      data: data?.data !== undefined ? data.data : data,
+      message: data?.message,
       status: response.status,
       statusText: response.statusText,
       headers: this.extractHeaders(response.headers),
       config
     };
+
+    // Apply response transformation if enabled
+    if (this.enableTransformation && data) {
+      try {
+        const transformedResponse = transformResponse(standardizedResponse, this.transformationType);
+        
+        if (this.debugMode && this.enableLogging) {
+          console.log(`🔄 Response transformed (${this.serviceName}):`, {
+            original: standardizedResponse,
+            transformed: transformedResponse,
+            type: this.transformationType
+          });
+        }
+        
+        standardizedResponse = transformedResponse;
+      } catch (transformError) {
+        console.error('Response transformation failed:', transformError);
+        // Continue with untransformed response
+      }
+    }
+
+    return standardizedResponse;
   }
 
   /**
-   * Process error response
+   * Process error response with transformation
    */
   async processError(error, config) {
     // Create standardized error object
@@ -95,6 +128,17 @@ class BaseApiService {
     if (this.retryEnabled && this.shouldRetry(error)) {
       standardizedError.canRetry = true;
       standardizedError.retryAfter = this.getRetryDelay(error);
+    }
+
+    // Apply error transformation if enabled
+    if (this.enableTransformation) {
+      try {
+        const transformedError = transformResponse(standardizedError, 'error');
+        Object.assign(standardizedError, transformedError);
+      } catch (transformError) {
+        console.error('Error transformation failed:', transformError);
+        // Continue with untransformed error
+      }
     }
 
     return standardizedError;
@@ -478,6 +522,38 @@ class BaseApiService {
    */
   configure(options) {
     Object.assign(this.defaultOptions, options);
+    
+    // Update transformation settings if provided
+    if (options.transformationType !== undefined) {
+      this.transformationType = options.transformationType;
+    }
+    if (options.enableTransformation !== undefined) {
+      this.enableTransformation = options.enableTransformation;
+    }
+  }
+
+  /**
+   * Set transformation type for this service
+   */
+  setTransformationType(type) {
+    this.transformationType = type;
+  }
+
+  /**
+   * Enable or disable response transformation
+   */
+  setTransformationEnabled(enabled) {
+    this.enableTransformation = enabled;
+  }
+
+  /**
+   * Get current transformation configuration
+   */
+  getTransformationConfig() {
+    return {
+      type: this.transformationType,
+      enabled: this.enableTransformation
+    };
   }
 
   /**

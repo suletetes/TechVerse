@@ -1,5 +1,6 @@
-import API_BASE_URL, { HTTP_STATUS } from '../config.js';
+import { FORMATTED_API_BASE_URL, HTTP_STATUS, API_CONFIG, validateEndpoint } from '../config.js';
 import { tokenManager } from '../../utils/tokenManager.js';
+import { tokenRefreshManager } from '../../utils/tokenRefreshManager.js';
 
 // Create a custom fetch wrapper with interceptors
 class ApiClient {
@@ -9,6 +10,102 @@ class ApiClient {
     // Initialize services (lazy loading to avoid circular dependencies)
     this.requestDeduplicator = null;
     this.retryManager = null;
+    this.cacheManager = null;
+    
+    // Request interceptors
+    this.requestInterceptors = [];
+    this.responseInterceptors = [];
+    
+    // Configuration
+    this.config = {
+      timeout: API_CONFIG.TIMEOUT,
+      retryAttempts: API_CONFIG.RETRY_ATTEMPTS,
+      retryDelay: API_CONFIG.RETRY_DELAY,
+      enableLogging: API_CONFIG.ENABLE_LOGGING,
+      debugMode: API_CONFIG.DEBUG_MODE
+    };
+    
+    // Initialize default interceptors
+    this.initializeDefaultInterceptors();
+  }
+  
+  /**
+   * Initialize default request and response interceptors
+   */
+  initializeDefaultInterceptors() {
+    // Request interceptor for authentication
+    this.addRequestInterceptor(async (config) => {
+      const token = tokenManager.getToken();
+      if (token) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+        
+        if (this.config.debugMode) {
+          console.log('🔐 Authorization header attached:', `Bearer ${token.substring(0, 20)}...`);
+        }
+      }
+      return config;
+    });
+    
+    // Request interceptor for common headers
+    this.addRequestInterceptor((config) => {
+      config.headers = {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+        ...config.headers
+      };
+      
+      // Add request ID for tracking
+      config.headers['X-Request-ID'] = this.generateRequestId();
+      
+      return config;
+    });
+    
+    // Response interceptor for token refresh
+    this.addResponseInterceptor(
+      (response) => response, // Success handler
+      async (error) => { // Error handler
+        const originalRequest = error.config;
+        
+        if (error.status === HTTP_STATUS.UNAUTHORIZED && 
+            !originalRequest._retry && 
+            !originalRequest.url.includes('/auth/')) {
+          
+          originalRequest._retry = true;
+          
+          try {
+            await tokenRefreshManager.refreshToken();
+            
+            // Retry original request with new token
+            const newToken = tokenManager.getToken();
+            if (newToken) {
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              return this.request(originalRequest.endpoint, originalRequest);
+            }
+          } catch (refreshError) {
+            console.error('Token refresh failed:', refreshError);
+            // Let the original error propagate
+          }
+        }
+        
+        throw error;
+      }
+    );
+  }
+  
+  /**
+   * Add request interceptor
+   */
+  addRequestInterceptor(interceptor) {
+    this.requestInterceptors.push(interceptor);
+  }
+  
+  /**
+   * Add response interceptor
+   */
+  addResponseInterceptor(successHandler, errorHandler) {
+    this.responseInterceptors.push({ successHandler, errorHandler });
   }
 
   // Lazy load services to avoid circular dependencies
@@ -37,12 +134,31 @@ class ApiClient {
   }
 
   async request(endpoint, options = {}) {
+    // Validate endpoint
+    validateEndpoint(endpoint);
+    
     const url = `${this.baseURL}${endpoint}`;
-    const token = tokenManager.getToken();
     const method = options.method || 'GET';
     
-    // Generate request ID for tracking
-    const requestId = this.generateRequestId();
+    // Create request configuration
+    let requestConfig = {
+      endpoint,
+      url,
+      method,
+      headers: {},
+      timeout: options.timeout || this.config.timeout,
+      ...options
+    };
+    
+    // Apply request interceptors
+    for (const interceptor of this.requestInterceptors) {
+      try {
+        requestConfig = await interceptor(requestConfig);
+      } catch (error) {
+        console.error('Request interceptor error:', error);
+        throw error;
+      }
+    }
     
     // Start performance tracking
     const startTime = performance.now();
@@ -55,8 +171,9 @@ class ApiClient {
       url,
       endpoint,
       method,
-      requestId,
-      hasAuth: !!token
+      requestId: requestConfig.headers['X-Request-ID'],
+      hasAuth: !!requestConfig.headers.Authorization,
+      config: requestConfig
     };
     
     // Check cache first for GET requests
@@ -117,56 +234,31 @@ class ApiClient {
     
     // Create the actual request function
     const makeRequest = async () => {
-      // Default headers with enhanced configuration
-      const headers = {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json',
-        'X-Request-ID': requestId,
-        ...options.headers
-      };
-      
-      // Add Authorization header if token exists
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-        console.log('🔐 Authorization header attached:', `Bearer ${token.substring(0, 20)}...`);
-      } else {
-        console.log('🔓 No token available, request sent without Authorization header');
-      }
-      
       // Special handling for FormData (file uploads)
-      if (options.body instanceof FormData) {
-        delete headers['Content-Type']; // Let browser set it for FormData
+      if (requestConfig.body instanceof FormData) {
+        delete requestConfig.headers['Content-Type']; // Let browser set it for FormData
       }
-      
-      const config = {
-        ...options,
-        headers,
-        timeout: options.timeout || 30000
-      };
       
       // Log request details for debugging
-      console.log('📤 API Request:', {
-        method,
-        url: endpoint,
-        hasAuth: !!token,
-        requestId
-      });
+      if (this.config.enableLogging) {
+        console.log('📤 API Request:', {
+          method,
+          url: endpoint,
+          hasAuth: !!requestConfig.headers.Authorization,
+          requestId: context.requestId
+        });
+      }
       
-      const response = await this.fetchWithTimeout(url, config);
+      const response = await this.fetchWithTimeout(url, requestConfig);
       
       // Log response details
-      console.log('📥 API Response:', {
-        status: response.status,
-        statusText: response.statusText,
-        url: endpoint,
-        requestId
-      });
-      
-      // Handle token refresh for 401 errors (but not for auth endpoints)
-      if (response.status === HTTP_STATUS.UNAUTHORIZED && token && !endpoint.includes('/auth/')) {
-        console.log('🔄 Token expired, attempting refresh...');
-        return this.handleTokenRefresh(endpoint, options);
+      if (this.config.enableLogging) {
+        console.log('📥 API Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: endpoint,
+          requestId: context.requestId
+        });
       }
       
       return response;
@@ -174,8 +266,8 @@ class ApiClient {
     
     // Execute with retry logic and deduplication
     const requestPromise = retryManager.executeWithRetry(makeRequest, context, {
-      maxRetries: options.maxRetries,
-      retryStrategy: options.retryStrategy
+      maxRetries: requestConfig.maxRetries || this.config.retryAttempts,
+      retryStrategy: requestConfig.retryStrategy
     }).then(async (response) => {
       // Record performance metrics
       const endTime = performance.now();
@@ -192,11 +284,22 @@ class ApiClient {
       }
       
       // Handle the response and cache if appropriate
-      const responseData = await handleApiResponse(response, context);
+      let responseData = await handleApiResponse(response, context);
+      
+      // Apply response interceptors
+      for (const interceptor of this.responseInterceptors) {
+        try {
+          if (interceptor.successHandler) {
+            responseData = await interceptor.successHandler(responseData, response, context);
+          }
+        } catch (error) {
+          console.error('Response interceptor error:', error);
+        }
+      }
       
       // Cache successful GET responses
-      if (method === 'GET' && response.ok && cacheManager.shouldCache(method, url, options)) {
-        const cacheKey = cacheManager.generateCacheKey(method, url, options.params);
+      if (method === 'GET' && response.ok && cacheManager.shouldCache(method, url, requestConfig)) {
+        const cacheKey = cacheManager.generateCacheKey(method, url, requestConfig.params);
         cacheManager.set(cacheKey, responseData, { url: endpoint });
       }
       
@@ -221,7 +324,20 @@ class ApiClient {
         console.warn('Performance monitoring failed:', perfError);
       }
       
-      throw error;
+      // Apply error response interceptors
+      let finalError = error;
+      for (const interceptor of this.responseInterceptors) {
+        try {
+          if (interceptor.errorHandler) {
+            finalError = await interceptor.errorHandler(finalError, context);
+          }
+        } catch (interceptorError) {
+          console.error('Error response interceptor failed:', interceptorError);
+          // Continue with original error
+        }
+      }
+      
+      throw finalError;
     });
     
     // Add to deduplication queue if applicable
@@ -296,10 +412,11 @@ class ApiClient {
     return this.request(endpoint, options);
   }
   
+  /**
+   * Handle token refresh (now handled by response interceptors)
+   * @deprecated Use response interceptors instead
+   */
   async handleTokenRefresh(originalEndpoint, originalOptions) {
-    // Import token refresh manager dynamically to avoid circular dependencies
-    const { tokenRefreshManager } = await import('../../utils/tokenRefreshManager.js');
-    
     try {
       // Use the enhanced token refresh manager
       await tokenRefreshManager.refreshToken();
@@ -317,6 +434,20 @@ class ApiClient {
       
       throw error;
     }
+  }
+  
+  /**
+   * Update configuration
+   */
+  updateConfig(newConfig) {
+    this.config = { ...this.config, ...newConfig };
+  }
+  
+  /**
+   * Get current configuration
+   */
+  getConfig() {
+    return { ...this.config };
   }
   
   // HTTP methods
@@ -367,7 +498,7 @@ class ApiClient {
 }
 
 // Create and export API client instance
-export const apiClient = new ApiClient(API_BASE_URL);
+export const apiClient = new ApiClient(FORMATTED_API_BASE_URL);
 
 // Enhanced response handler utility with comprehensive error translation
 export const handleApiResponse = async (response, context = {}) => {
