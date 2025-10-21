@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import uploadService from '../../api/services/uploadService';
 
 const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = [] }) => {
     const [currentStep, setCurrentStep] = useState(1);
@@ -60,6 +61,74 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     const [errors, setErrors] = useState({});
     const [newFeature, setNewFeature] = useState('');
     const [newTag, setNewTag] = useState('');
+
+    // Validation function matching backend requirements
+    const validateForm = () => {
+        const newErrors = {};
+        
+        // Required fields validation
+        if (!formData.name || formData.name.trim().length === 0) {
+            newErrors.name = 'Product name is required';
+        } else if (formData.name.trim().length > 200) {
+            newErrors.name = 'Product name cannot exceed 200 characters';
+        }
+        
+        if (!formData.longDescription && !formData.shortDescription) {
+            newErrors.description = 'Product description is required';
+        } else if (formData.longDescription && formData.longDescription.length > 2000) {
+            newErrors.longDescription = 'Description cannot exceed 2000 characters';
+        }
+        
+        if (formData.shortDescription && formData.shortDescription.length > 500) {
+            newErrors.shortDescription = 'Short description cannot exceed 500 characters';
+        }
+        
+        if (!formData.price || parseFloat(formData.price) <= 0) {
+            newErrors.price = 'Product price is required and must be greater than 0';
+        }
+        
+        if (!formData.brand || formData.brand.trim().length === 0) {
+            newErrors.brand = 'Product brand is required';
+        }
+        
+        if (!formData.category) {
+            newErrors.category = 'Product category is required';
+        }
+        
+        // Optional field validations
+        if (formData.originalPrice && parseFloat(formData.originalPrice) < 0) {
+            newErrors.originalPrice = 'Compare price cannot be negative';
+        }
+        
+        if (formData.costPrice && parseFloat(formData.costPrice) < 0) {
+            newErrors.costPrice = 'Cost price cannot be negative';
+        }
+        
+        if (formData.stock && parseInt(formData.stock) < 0) {
+            newErrors.stock = 'Stock quantity cannot be negative';
+        }
+        
+        // Weight validation
+        if (formData.weight && parseFloat(formData.weight) < 0) {
+            newErrors.weight = 'Weight cannot be negative';
+        }
+        
+        // Dimensions validation
+        if (formData.dimensions) {
+            if (formData.dimensions.length && parseFloat(formData.dimensions.length) < 0) {
+                newErrors.dimensionsLength = 'Length cannot be negative';
+            }
+            if (formData.dimensions.width && parseFloat(formData.dimensions.width) < 0) {
+                newErrors.dimensionsWidth = 'Width cannot be negative';
+            }
+            if (formData.dimensions.height && parseFloat(formData.dimensions.height) < 0) {
+                newErrors.dimensionsHeight = 'Height cannot be negative';
+            }
+        }
+        
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     // Initialize category and dynamic specs
     useEffect(() => {
@@ -194,30 +263,104 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }));
     };
 
-    const handleImageUpload = (e, type = 'main') => {
+    const handleImageUpload = async (e, type = 'main') => {
         const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                if (type === 'main') {
-                    handleInputChange('mainImage', event.target.result);
-                } else {
-                    // Handle additional images for media gallery
-                    const newMedia = {
-                        id: `image-${Date.now()}`,
-                        type: 'image',
-                        src: event.target.result,
-                        thumbnail: event.target.result,
-                        alt: formData.name || 'Product Image',
-                        title: file.name
-                    };
+        if (!file) return;
+
+        // Validate file
+        const validation = uploadService.validateFile(file);
+        if (!validation.isValid) {
+            alert(`Upload failed: ${validation.errors.join(', ')}`);
+            return;
+        }
+
+        try {
+            // Create preview URL for immediate display
+            const previewUrl = uploadService.createPreviewUrl(file);
+            
+            if (type === 'main') {
+                // Set preview immediately
+                handleInputChange('mainImage', previewUrl);
+                
+                // Upload to backend
+                const response = await uploadService.uploadSingleImage(file, {
+                    alt: formData.name || 'Product Image',
+                    category: 'products',
+                    isPrimary: true,
+                    onProgress: (progressEvent) => {
+                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        console.log(`Upload progress: ${percentCompleted}%`);
+                    }
+                });
+
+                // Update with backend URL
+                const uploadedImage = response.data?.image || response.image;
+                if (uploadedImage?.url) {
+                    handleInputChange('mainImage', uploadedImage.url);
+                    // Cleanup preview URL
+                    uploadService.cleanupPreviewUrl(previewUrl);
+                }
+            } else {
+                // Handle additional images for media gallery
+                const tempMedia = {
+                    id: `temp-${Date.now()}`,
+                    type: 'image',
+                    src: previewUrl,
+                    thumbnail: previewUrl,
+                    alt: formData.name || 'Product Image',
+                    title: file.name,
+                    uploading: true
+                };
+
+                // Add to gallery immediately with preview
+                setFormData(prev => ({
+                    ...prev,
+                    mediaGallery: [...prev.mediaGallery, tempMedia]
+                }));
+
+                // Upload to backend
+                const response = await uploadService.uploadSingleImage(file, {
+                    alt: formData.name || 'Product Image',
+                    category: 'products',
+                    onProgress: (progressEvent) => {
+                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        console.log(`Upload progress: ${percentCompleted}%`);
+                    }
+                });
+
+                // Update with backend URL
+                const uploadedImage = response.data?.image || response.image;
+                if (uploadedImage?.url) {
                     setFormData(prev => ({
                         ...prev,
-                        mediaGallery: [...prev.mediaGallery, newMedia]
+                        mediaGallery: prev.mediaGallery.map(media => 
+                            media.id === tempMedia.id 
+                                ? {
+                                    ...media,
+                                    id: `image-${Date.now()}`,
+                                    src: uploadedImage.url,
+                                    thumbnail: uploadedImage.url,
+                                    uploading: false,
+                                    publicId: uploadedImage.publicId
+                                }
+                                : media
+                        )
                     }));
+                    // Cleanup preview URL
+                    uploadService.cleanupPreviewUrl(previewUrl);
                 }
-            };
-            reader.readAsDataURL(file);
+            }
+        } catch (error) {
+            console.error('Upload failed:', error);
+            alert(`Upload failed: ${error.message}`);
+            
+            // Remove failed upload from gallery if it was added
+            if (type !== 'main') {
+                setFormData(prev => ({
+                    ...prev,
+                    mediaGallery: prev.mediaGallery.filter(media => !media.uploading)
+                }));
+            }
         }
     };
 
@@ -303,13 +446,132 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     };
 
     const handleSave = (isDraft = false) => {
+        // Validate form before saving (skip validation for drafts)
+        if (!isDraft && !validateForm()) {
+            return;
+        }
+        
+        // Transform frontend form data to backend expected structure
         const productData = {
-            ...formData,
+            // Basic required fields
+            name: formData.name.trim(),
+            description: formData.longDescription || formData.shortDescription || '',
+            shortDescription: formData.shortDescription || '',
+            price: parseFloat(formData.price) || 0,
+            brand: formData.brand.trim(),
+            category: formData.category, // Should be ObjectId
+            
+            // Optional pricing fields
+            comparePrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
+            cost: formData.costPrice ? parseFloat(formData.costPrice) : undefined,
+            
+            // SKU and barcode
+            sku: formData.sku || undefined,
+            barcode: formData.barcode || undefined,
+            
+            // Stock information - transform to backend structure
+            stock: {
+                quantity: parseInt(formData.stock) || 0,
+                lowStockThreshold: 10, // Default value
+                trackQuantity: true
+            },
+            
+            // Images - transform mediaGallery to backend images structure
+            images: formData.mediaGallery
+                .filter(media => media.type === 'image')
+                .map((media, index) => ({
+                    url: media.src || media.url,
+                    alt: media.alt || formData.name,
+                    isPrimary: index === 0 || media.isPrimary || false,
+                    publicId: media.publicId || null
+                })),
+            
+            // Variants - transform productOptions to backend variants structure
+            variants: Object.entries(formData.productOptions || {}).map(([key, option]) => ({
+                name: option.name || key,
+                options: option.availableOptions?.map(opt => ({
+                    value: opt.name || opt.value,
+                    priceModifier: opt.priceModifier || 0,
+                    stock: opt.stock || 0
+                })) || []
+            })).filter(variant => variant.options.length > 0),
+            
+            // Specifications - transform technicalSpecs and dynamicSpecs
+            specifications: [
+                // Transform technicalSpecs
+                ...Object.entries(formData.technicalSpecs || {}).map(([key, value]) => ({
+                    name: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+                    value: value.toString(),
+                    category: 'technical'
+                })),
+                // Transform dynamicSpecs
+                ...Object.entries(formData.dynamicSpecs || {}).map(([key, value]) => ({
+                    name: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+                    value: value.toString(),
+                    category: selectedCategory?.name?.toLowerCase() || 'general'
+                }))
+            ].filter(spec => spec.value && spec.value.trim()),
+            
+            // Features - ensure it's an array of strings
+            features: Array.isArray(formData.keyFeatures) 
+                ? formData.keyFeatures.filter(f => f && f.trim())
+                : [],
+            
+            // Tags - ensure it's an array of strings
+            tags: Array.isArray(formData.tags) 
+                ? formData.tags.filter(t => t && t.trim())
+                : [],
+            
+            // Weight - transform to backend structure
+            weight: formData.weight ? {
+                value: parseFloat(formData.weight),
+                unit: 'g' // Default unit
+            } : undefined,
+            
+            // Dimensions - transform to backend structure
+            dimensions: (formData.dimensions?.length || formData.dimensions?.width || formData.dimensions?.height) ? {
+                length: parseFloat(formData.dimensions.length) || 0,
+                width: parseFloat(formData.dimensions.width) || 0,
+                height: parseFloat(formData.dimensions.height) || 0,
+                unit: 'cm' // Default unit
+            } : undefined,
+            
+            // Shipping information
+            shipping: {
+                free: formData.shippingRequired === false || formData.shippingClass === 'free',
+                weight: formData.shippingWeight ? parseFloat(formData.shippingWeight) : undefined,
+                dimensions: formData.dimensions ? {
+                    length: parseFloat(formData.dimensions.length) || 0,
+                    width: parseFloat(formData.dimensions.width) || 0,
+                    height: parseFloat(formData.dimensions.height) || 0
+                } : undefined
+            },
+            
+            // SEO information
+            seo: {
+                title: formData.seoTitle || formData.name,
+                description: formData.seoDescription || formData.shortDescription,
+                keywords: Array.isArray(formData.tags) ? formData.tags : []
+            },
+            
+            // Status and visibility
             status: isDraft ? 'draft' : 'active',
-            id: editProduct?.id || Date.now(),
-            createdAt: editProduct?.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            visibility: 'public', // Default visibility
+            featured: Boolean(formData.featured),
+            
+            // Sections - if featured, add to featured section
+            sections: formData.featured ? ['featured'] : [],
+            
+            // Remove frontend-specific fields that don't exist in backend
+            // id, createdAt, updatedAt will be handled by backend
         };
+        
+        // Remove undefined values to avoid sending unnecessary data
+        Object.keys(productData).forEach(key => {
+            if (productData[key] === undefined) {
+                delete productData[key];
+            }
+        });
         
         onSave(productData);
     };

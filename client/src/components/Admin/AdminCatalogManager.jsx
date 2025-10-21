@@ -1,18 +1,96 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminCategoryManager from './AdminCategoryManager';
 import AdminSpecificationManager from './AdminSpecificationManager';
+import productService from '../../api/services/productService';
 
 const AdminCatalogManager = ({ 
-    categories = [],
-    products = [],
-    specifications = {},
     onSaveCategory,
     onDeleteCategory,
     onSaveSpecifications
 }) => {
     const [activeTab, setActiveTab] = useState('categories');
+    const [categories, setCategories] = useState([]);
+    const [products, setProducts] = useState([]);
+    const [specifications, setSpecifications] = useState({});
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [lastUpdated, setLastUpdated] = useState(null);
 
-    // Calculate product counts for categories
+    // Load data from backend
+    useEffect(() => {
+        loadCatalogData();
+    }, []);
+
+    const loadCatalogData = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            // Load categories and products in parallel
+            const [categoriesResponse, productsResponse] = await Promise.all([
+                productService.getCategories(),
+                productService.getProducts({ limit: 1000 }) // Get all products for accurate counts
+            ]);
+
+            // Process categories
+            const backendCategories = categoriesResponse.data || categoriesResponse || [];
+            const processedCategories = backendCategories.map(category => ({
+                id: category._id,
+                name: category.name,
+                slug: category.slug,
+                description: category.description || '',
+                image: category.image || `/img/category-${category.slug}.jpg`,
+                isActive: category.isActive !== false,
+                sortOrder: category.displayOrder || 0,
+                productCount: 0, // Will be calculated below
+                parentId: category.parent?._id || null,
+                seoTitle: category.seo?.title || `${category.name} - Shop Now`,
+                seoDescription: category.seo?.description || `Discover our ${category.name} collection`,
+                relatedCategories: [],
+                categoryFeatures: {
+                    freeShipping: true,
+                    warranty: '1 Year Warranty',
+                    returnPolicy: '30-day return policy'
+                }
+            }));
+
+            // Process products
+            const backendProducts = productsResponse.data?.products || productsResponse.products || [];
+            const processedProducts = backendProducts.map(product => ({
+                id: product._id,
+                name: product.name,
+                category: product.category?.name || product.category,
+                categoryId: product.category?._id || product.category,
+                price: product.price,
+                status: product.status,
+                stock: product.stock?.quantity || 0,
+                images: product.images || [],
+                createdAt: product.createdAt,
+                updatedAt: product.updatedAt
+            }));
+
+            // Calculate product counts for categories
+            const categoriesWithCounts = processedCategories.map(category => ({
+                ...category,
+                productCount: processedProducts.filter(product => 
+                    product.categoryId === category.id || 
+                    product.category === category.name
+                ).length
+            }));
+
+            setCategories(categoriesWithCounts);
+            setProducts(processedProducts);
+            setLastUpdated(new Date());
+
+        } catch (err) {
+            console.error('Failed to load catalog data:', err);
+            setError('Failed to load catalog data. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Calculate product counts for categories (helper function)
     const getProductCountForCategory = (categoryName) => {
         return products.filter(product => 
             product.category === categoryName || 
@@ -20,7 +98,84 @@ const AdminCatalogManager = ({
         ).length;
     };
 
-    // Sample data for demonstration with dynamic product counts
+    // Refresh data when products are modified
+    const handleDataRefresh = () => {
+        loadCatalogData();
+    };
+
+    // Wrapper functions to handle real-time updates
+    const handleSaveCategoryWrapper = async (categoryData) => {
+        try {
+            if (onSaveCategory) {
+                await onSaveCategory(categoryData);
+            }
+            // Refresh data to reflect changes
+            await loadCatalogData();
+        } catch (error) {
+            console.error('Failed to save category:', error);
+            alert('Failed to save category. Please try again.');
+        }
+    };
+
+    const handleDeleteCategoryWrapper = async (categoryId) => {
+        try {
+            if (onDeleteCategory) {
+                await onDeleteCategory(categoryId);
+            }
+            // Refresh data to reflect changes
+            await loadCatalogData();
+        } catch (error) {
+            console.error('Failed to delete category:', error);
+            alert('Failed to delete category. Please try again.');
+        }
+    };
+
+    const handleSaveSpecificationsWrapper = async (specData) => {
+        try {
+            if (onSaveSpecifications) {
+                await onSaveSpecifications(specData);
+            }
+            // Update local state
+            setSpecifications(prev => ({ ...prev, ...specData }));
+        } catch (error) {
+            console.error('Failed to save specifications:', error);
+            alert('Failed to save specifications. Please try again.');
+        }
+    };
+
+    // Show loading state
+    if (isLoading) {
+        return (
+            <div className="catalog-manager">
+                <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                    <div className="text-center">
+                        <div className="spinner-border text-primary mb-3" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                        <p className="text-muted">Loading catalog data...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Show error state
+    if (error) {
+        return (
+            <div className="catalog-manager">
+                <div className="alert alert-danger m-4">
+                    <h4>Error Loading Catalog Data</h4>
+                    <p>{error}</p>
+                    <button 
+                        className="btn btn-outline-danger"
+                        onClick={loadCatalogData}
+                    >
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        );
+    }
     const sampleCategories = [
         {
             id: 1,

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import productService from '../../api/services/productService';
 import '../../assets/css/admin-homepage-manager.css';
 
 const AdminHomepageManager = () => {
@@ -6,20 +7,75 @@ const AdminHomepageManager = () => {
     const [selectedProducts, setSelectedProducts] = useState({});
     const [showProductSelector, setShowProductSelector] = useState(false);
     const [currentEditingSection, setCurrentEditingSection] = useState('');
+    const [availableProducts, setAvailableProducts] = useState([]);
+    const [sectionAssignments, setSectionAssignments] = useState({
+        latest: [],
+        topSellers: [],
+        quickPicks: [],
+        weeklyDeals: []
+    });
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Available products pool
-    const availableProducts = [
-        { id: 1, name: 'Ultra HD QLED TV', price: 2999, category: 'TVs', image: 'img/tv-product.jpg', rating: 4.8, sales: 234 },
-        { id: 2, name: 'Laptop Air', price: 999, category: 'Laptops', image: 'img/laptop-product.jpg', rating: 4.5, sales: 567 },
-        { id: 3, name: 'Tablet Pro', price: 1099, category: 'Tablets', image: 'img/tablet-product.jpg', rating: 4.7, sales: 432 },
-        { id: 4, name: 'Phone Pro', price: 999, category: 'Phones', image: 'img/phone-product.jpg', rating: 4.6, sales: 789 },
-        { id: 5, name: 'Tablet Air', price: 699, category: 'Tablets', image: 'img/tablet-product.jpg', rating: 4.4, sales: 345 },
-        { id: 6, name: 'Phone Air', price: 699, category: 'Phones', image: 'img/phone-product.jpg', rating: 4.3, sales: 456 },
-        { id: 7, name: 'Laptop Pro', price: 2599, category: 'Laptops', image: 'img/laptop-product.jpg', rating: 4.9, sales: 123 },
-        { id: 8, name: '8K QLED TV', price: 3999, category: 'TVs', image: 'img/tv-product.jpg', rating: 4.9, sales: 89 },
-        { id: 9, name: 'Gaming Laptop', price: 1899, category: 'Laptops', image: 'img/laptop-product.jpg', rating: 4.6, sales: 234 },
-        { id: 10, name: 'Smart Watch', price: 399, category: 'Wearables', image: 'img/watch-product.jpg', rating: 4.2, sales: 678 }
-    ];
+    // Load data from backend on component mount
+    useEffect(() => {
+        loadHomepageData();
+    }, []);
+
+    const loadHomepageData = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            // Load all products for the product selector
+            const productsResponse = await productService.getProducts({ limit: 100 });
+            const products = productsResponse.data?.products || productsResponse.products || [];
+            
+            // Transform backend product data to component format
+            const transformedProducts = products.map(product => ({
+                id: product._id,
+                name: product.name,
+                price: product.price,
+                category: product.category?.name || 'Uncategorized',
+                image: product.images?.[0]?.url || 'img/lazyload-ph.png',
+                rating: product.rating?.average || 0,
+                sales: product.sales?.totalSold || 0,
+                sections: product.sections || []
+            }));
+            
+            setAvailableProducts(transformedProducts);
+
+            // Load section assignments
+            const sectionData = {};
+            const sections = ['latest', 'topSellers', 'quickPicks', 'weeklyDeals'];
+            
+            for (const section of sections) {
+                try {
+                    // Map frontend section names to backend section names
+                    const backendSectionName = {
+                        'latest': 'latest',
+                        'topSellers': 'topSeller',
+                        'quickPicks': 'quickPick',
+                        'weeklyDeals': 'weeklyDeal'
+                    }[section];
+                    
+                    const sectionResponse = await productService.getProductsBySection(backendSectionName);
+                    const sectionProducts = sectionResponse.data?.products || sectionResponse.products || [];
+                    sectionData[section] = sectionProducts.map(p => p._id);
+                } catch (sectionError) {
+                    console.warn(`Failed to load ${section} section:`, sectionError);
+                    sectionData[section] = [];
+                }
+            }
+            
+            setSectionAssignments(sectionData);
+        } catch (err) {
+            console.error('Failed to load homepage data:', err);
+            setError('Failed to load homepage data. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // Icon components
     const SectionIcons = {
@@ -81,21 +137,40 @@ const AdminHomepageManager = () => {
         }
     };
 
-    // Current assignments (sample data)
-    const [sectionAssignments, setSectionAssignments] = useState({
-        latest: [1, 2, 3, 4, 5, 6, 7, 8],
-        topSellers: [8, 3, 6, 7, 1, 4, 5, 2, 1],
-        quickPicks: [1, 3, 4, 7, 8, 6, 9, 5, 4],
-        weeklyDeals: [9, 5, 6]
-    });
-
-    const handleAddProduct = (sectionKey, productId) => {
+    const handleAddProduct = async (sectionKey, productId) => {
         const section = homepageSections[sectionKey];
         const currentProducts = sectionAssignments[sectionKey] || [];
         
         if (currentProducts.length >= section.maxProducts) {
             alert(`Maximum ${section.maxProducts} products allowed in ${section.title}`);
             return;
+        }
+
+        try {
+            // Map frontend section names to backend section names
+            const backendSectionName = {
+                'latest': 'latest',
+                'topSellers': 'topSeller',
+                'quickPicks': 'quickPick',
+                'weeklyDeals': 'weeklyDeal'
+            }[sectionKey];
+
+            // Add product to section via API
+            await productService.addProductToSection(productId, backendSectionName);
+
+            // Update local state
+            setSectionAssignments(prev => ({
+                ...prev,
+                [sectionKey]: [...currentProducts, productId]
+            }));
+
+            // Close product selector
+            setShowProductSelector(false);
+            setCurrentEditingSection('');
+            
+        } catch (error) {
+            console.error('Failed to add product to section:', error);
+            alert('Failed to add product to section. Please try again.');
         }
 
         if (currentProducts.includes(productId)) {
@@ -109,11 +184,29 @@ const AdminHomepageManager = () => {
         }));
     };
 
-    const handleRemoveProduct = (sectionKey, productId) => {
-        setSectionAssignments(prev => ({
-            ...prev,
-            [sectionKey]: prev[sectionKey].filter(id => id !== productId)
-        }));
+    const handleRemoveProduct = async (sectionKey, productId) => {
+        try {
+            // Map frontend section names to backend section names
+            const backendSectionName = {
+                'latest': 'latest',
+                'topSellers': 'topSeller',
+                'quickPicks': 'quickPick',
+                'weeklyDeals': 'weeklyDeal'
+            }[sectionKey];
+
+            // Remove product from section via API
+            await productService.removeProductFromSection(productId, backendSectionName);
+
+            // Update local state
+            setSectionAssignments(prev => ({
+                ...prev,
+                [sectionKey]: prev[sectionKey].filter(id => id !== productId)
+            }));
+            
+        } catch (error) {
+            console.error('Failed to remove product from section:', error);
+            alert('Failed to remove product from section. Please try again.');
+        }
     };
 
     const handleReorderProducts = (sectionKey, fromIndex, toIndex) => {
@@ -153,6 +246,40 @@ const AdminHomepageManager = () => {
         console.log('Opening homepage preview with current assignments');
         alert('Opening homepage preview... (Demo mode)');
     };
+
+    // Show loading state
+    if (isLoading) {
+        return (
+            <div className="homepage-manager">
+                <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                    <div className="text-center">
+                        <div className="spinner-border text-primary mb-3" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                        <p className="text-muted">Loading homepage sections...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Show error state
+    if (error) {
+        return (
+            <div className="homepage-manager">
+                <div className="alert alert-danger m-4">
+                    <h4>Error Loading Homepage Data</h4>
+                    <p>{error}</p>
+                    <button 
+                        className="btn btn-outline-danger"
+                        onClick={loadHomepageData}
+                    >
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="homepage-manager">
