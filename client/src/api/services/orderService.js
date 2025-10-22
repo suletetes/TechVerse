@@ -10,6 +10,7 @@ class OrderService extends BaseApiService {
   constructor() {
     super({
       serviceName: 'OrderService',
+      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
       endpoints: API_ENDPOINTS.ORDERS,
       cacheEnabled: true,
       retryEnabled: true,

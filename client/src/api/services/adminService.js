@@ -10,6 +10,7 @@ class AdminService extends BaseApiService {
   constructor() {
     super({
       serviceName: 'AdminService',
+      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
       endpoints: API_ENDPOINTS.ADMIN,
       cacheEnabled: true,
       retryEnabled: true,

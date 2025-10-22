@@ -10,6 +10,7 @@ class UploadService extends BaseApiService {
   constructor() {
     super({
       serviceName: 'UploadService',
+      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
       endpoints: API_ENDPOINTS.UPLOAD || {
         BASE: '/api/upload',
         SINGLE: '/api/upload/image',

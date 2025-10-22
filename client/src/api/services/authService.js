@@ -6,6 +6,7 @@ class AuthService extends BaseApiService {
   constructor() {
     super({
       serviceName: 'AuthService',
+      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
       endpoints: API_ENDPOINTS.AUTH,
       cacheEnabled: false, // Auth operations shouldn't be cached
       retryEnabled: true

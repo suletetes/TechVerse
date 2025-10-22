@@ -10,6 +10,7 @@ class ProductService extends BaseApiService {
   constructor() {
     super({
       serviceName: 'ProductService',
+      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
       endpoints: API_ENDPOINTS.PRODUCTS,
       cacheEnabled: true,
       retryEnabled: true,
@@ -248,7 +249,7 @@ class ProductService extends BaseApiService {
 
   // Get products on sale
   async getProductsOnSale(limit = 10) {
-    return this.read(this.endpoints.ON_SALE, { limit });
+    return this.read(this.endpoints.WEEKLY_DEALS, { limit });
   }
 
   // Get quick picks
