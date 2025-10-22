@@ -87,14 +87,14 @@ const createAuthErrorResponse = (code, message, additionalData = {}) => ({
 export const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.header('Authorization');
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      logger.warn('Authentication failed: No token provided', { 
-        ip: req.ip, 
+      logger.warn('Authentication failed: No token provided', {
+        ip: req.ip,
         userAgent: req.get('User-Agent'),
-        endpoint: req.originalUrl 
+        endpoint: req.originalUrl
       });
-      
+
       return res.status(401).json({
         success: false,
         message: 'Access denied. No valid token provided.',
@@ -104,16 +104,16 @@ export const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    
+
     // Check token format and length
     if (token.length < SECURITY_CONFIG.MIN_TOKEN_LENGTH) {
-      logger.warn('Authentication failed: Invalid token format', { 
+      logger.warn('Authentication failed: Invalid token format', {
         ip: req.ip,
         tokenLength: token.length,
         endpoint: req.originalUrl,
         userAgent: req.get('User-Agent')
       });
-      
+
       return res.status(401).json({
         success: false,
         message: 'Invalid token format.',
@@ -121,7 +121,7 @@ export const authenticate = async (req, res, next) => {
         timestamp: new Date().toISOString()
       });
     }
-    
+
     // Verify token with enhanced error handling and security validation
     let decoded;
     try {
@@ -132,7 +132,7 @@ export const authenticate = async (req, res, next) => {
         clockTolerance: SECURITY_CONFIG.CLOCK_TOLERANCE_SECONDS
       });
     } catch (jwtError) {
-      logger.warn('JWT verification failed', { 
+      logger.warn('JWT verification failed', {
         error: jwtError.name,
         message: jwtError.message,
         ip: req.ip,
@@ -140,7 +140,7 @@ export const authenticate = async (req, res, next) => {
         endpoint: req.originalUrl,
         tokenLength: token.length
       });
-      
+
       if (jwtError.name === 'TokenExpiredError') {
         return res.status(401).json({
           success: false,
@@ -151,7 +151,7 @@ export const authenticate = async (req, res, next) => {
           timestamp: new Date().toISOString()
         });
       }
-      
+
       if (jwtError.name === 'JsonWebTokenError') {
         return res.status(401).json({
           success: false,
@@ -160,7 +160,7 @@ export const authenticate = async (req, res, next) => {
           timestamp: new Date().toISOString()
         });
       }
-      
+
       if (jwtError.name === 'NotBeforeError') {
         return res.status(401).json({
           success: false,
@@ -187,19 +187,19 @@ export const authenticate = async (req, res, next) => {
           timestamp: new Date().toISOString()
         });
       }
-      
+
       throw jwtError;
     }
-    
+
     // Enhanced token payload validation
     if (!decoded.id || !decoded.email || !decoded.role) {
-      logger.warn('Authentication failed: Invalid token payload', { 
+      logger.warn('Authentication failed: Invalid token payload', {
         userId: decoded.id,
         hasEmail: !!decoded.email,
         hasRole: !!decoded.role,
-        ip: req.ip 
+        ip: req.ip
       });
-      
+
       return res.status(401).json({
         success: false,
         message: 'Invalid token payload.',
@@ -210,16 +210,16 @@ export const authenticate = async (req, res, next) => {
     // Validate token age (prevent very old tokens)
     const tokenAge = Date.now() / 1000 - decoded.iat;
     const maxTokenAge = SECURITY_CONFIG.MAX_TOKEN_AGE_DAYS * 24 * 60 * 60; // Convert days to seconds
-    
+
     if (tokenAge > maxTokenAge) {
-      logger.warn('Authentication failed: Token too old', { 
+      logger.warn('Authentication failed: Token too old', {
         userId: decoded.id,
         tokenAge: Math.floor(tokenAge / 86400), // days
         maxAge: SECURITY_CONFIG.MAX_TOKEN_AGE_DAYS,
         ip: req.ip,
         endpoint: req.originalUrl
       });
-      
+
       return res.status(401).json({
         success: false,
         message: 'Token is too old. Please login again.',
@@ -227,18 +227,18 @@ export const authenticate = async (req, res, next) => {
         timestamp: new Date().toISOString()
       });
     }
-    
+
     // Find user and exclude sensitive fields
     const user = await User.findById(decoded.id)
       .select('-password -emailVerificationToken -passwordResetToken')
       .lean();
-    
+
     if (!user) {
-      logger.warn('Authentication failed: User not found', { 
+      logger.warn('Authentication failed: User not found', {
         userId: decoded.id,
-        ip: req.ip 
+        ip: req.ip
       });
-      
+
       return res.status(401).json({
         success: false,
         message: 'Invalid token. User not found.',
@@ -248,11 +248,11 @@ export const authenticate = async (req, res, next) => {
 
     // Enhanced account status checks
     if (!user.isActive) {
-      logger.warn('Authentication failed: Account inactive', { 
+      logger.warn('Authentication failed: Account inactive', {
         userId: user._id,
-        ip: req.ip 
+        ip: req.ip
       });
-      
+
       return res.status(401).json({
         success: false,
         message: 'Account is deactivated. Please contact support.',
@@ -263,12 +263,12 @@ export const authenticate = async (req, res, next) => {
     // Check if account is locked
     if (user.lockUntil && user.lockUntil > Date.now()) {
       const lockTimeRemaining = Math.ceil((user.lockUntil - Date.now()) / (1000 * 60));
-      logger.warn('Authentication failed: Account locked', { 
+      logger.warn('Authentication failed: Account locked', {
         userId: user._id,
         lockUntil: user.lockUntil,
-        ip: req.ip 
+        ip: req.ip
       });
-      
+
       return res.status(423).json({
         success: false,
         message: `Account is temporarily locked. Try again in ${lockTimeRemaining} minutes.`,
@@ -280,12 +280,12 @@ export const authenticate = async (req, res, next) => {
 
     // Check account status
     if (user.accountStatus === 'suspended') {
-      logger.warn('Authentication failed: Account suspended', { 
+      logger.warn('Authentication failed: Account suspended', {
         userId: user._id,
         suspensionReason: user.suspensionReason,
-        ip: req.ip 
+        ip: req.ip
       });
-      
+
       return res.status(401).json({
         success: false,
         message: 'Account is suspended. Please contact support.',
@@ -295,11 +295,11 @@ export const authenticate = async (req, res, next) => {
     }
 
     if (user.accountStatus === 'pending') {
-      logger.warn('Authentication failed: Email not verified', { 
+      logger.warn('Authentication failed: Email not verified', {
         userId: user._id,
-        ip: req.ip 
+        ip: req.ip
       });
-      
+
       return res.status(401).json({
         success: false,
         message: 'Please verify your email address to activate your account.',
@@ -308,11 +308,11 @@ export const authenticate = async (req, res, next) => {
     }
 
     if (user.accountStatus === 'closed') {
-      logger.warn('Authentication failed: Account closed', { 
+      logger.warn('Authentication failed: Account closed', {
         userId: user._id,
-        ip: req.ip 
+        ip: req.ip
       });
-      
+
       return res.status(401).json({
         success: false,
         message: 'Account has been closed. Please contact support.',
@@ -323,7 +323,7 @@ export const authenticate = async (req, res, next) => {
     // Security: Check for suspicious activity
     const currentIp = req.ip;
     const currentUserAgent = req.get('User-Agent');
-    
+
     // Log if IP or User-Agent changed (for security monitoring)
     if (user.ipAddress && user.ipAddress !== currentIp) {
       logger.info('IP address changed for user', {
@@ -335,11 +335,11 @@ export const authenticate = async (req, res, next) => {
     }
 
     // Update last activity with enhanced tracking
-    await User.findByIdAndUpdate(user._id, { 
+    await User.findByIdAndUpdate(user._id, {
       lastActivity: new Date(),
       ipAddress: currentIp,
       userAgent: currentUserAgent
-    }, { 
+    }, {
       new: false // Don't return the updated document for performance
     });
 
@@ -353,15 +353,15 @@ export const authenticate = async (req, res, next) => {
       ipAddress: currentIp,
       userAgent: currentUserAgent
     };
-    
-    logger.debug('User authenticated successfully', { 
+
+    logger.debug('User authenticated successfully', {
       userId: user._id,
       role: user.role,
-      ip: currentIp 
+      ip: currentIp
     });
-    
+
     next();
-    
+
   } catch (error) {
     logger.error('Authentication service error', {
       error: error.message,
@@ -390,19 +390,19 @@ export const requireAdmin = (req, res, next) => {
   }
 
   if (req.user.role !== 'admin') {
-    logger.warn('Admin access denied', { 
-      userId: req.user._id, 
+    logger.warn('Admin access denied', {
+      userId: req.user._id,
       role: req.user.role,
-      endpoint: req.originalUrl 
+      endpoint: req.originalUrl
     });
-    
+
     return res.status(403).json({
       success: false,
       message: 'Access denied. Administrator privileges required.',
       code: 'ADMIN_REQUIRED'
     });
   }
-  
+
   logger.debug('Admin access granted', { userId: req.user._id });
   next();
 };
@@ -417,14 +417,14 @@ export const requireRole = (roles) => {
     }
 
     const allowedRoles = Array.isArray(roles) ? roles : [roles];
-    
+
     if (!allowedRoles.includes(req.user.role)) {
       logAuthEvent('warn', 'Role access denied', req, {
         userId: req.user._id,
         userRole: req.user.role,
         requiredRoles: allowedRoles
       });
-      
+
       return res.status(403).json(
         createAuthErrorResponse(
           AuthErrorCodes.INSUFFICIENT_ROLE,
@@ -433,7 +433,7 @@ export const requireRole = (roles) => {
         )
       );
     }
-    
+
     next();
   };
 };
@@ -449,16 +449,16 @@ export const requirePermission = (permissions) => {
 
     const requiredPermissions = Array.isArray(permissions) ? permissions : [permissions];
     const userPermissions = req.user.permissions || [];
-    
+
     // Admin users have all permissions
     if (req.user.role === UserRoles.ADMIN || req.user.role === UserRoles.SUPER_ADMIN) {
       return next();
     }
-    
-    const hasPermission = requiredPermissions.some(permission => 
+
+    const hasPermission = requiredPermissions.some(permission =>
       userPermissions.includes(permission)
     );
-    
+
     if (!hasPermission) {
       logAuthEvent('warn', 'Permission access denied', req, {
         userId: req.user._id,
@@ -466,20 +466,20 @@ export const requirePermission = (permissions) => {
         userPermissions,
         requiredPermissions
       });
-      
+
       return res.status(403).json(
         createAuthErrorResponse(
           AuthErrorCodes.INSUFFICIENT_PERMISSIONS,
           `Access denied. Required permissions: ${requiredPermissions.join(' or ')}.`,
-          { 
-            requiredPermissions, 
+          {
+            requiredPermissions,
             userPermissions,
-            userRole: req.user.role 
+            userRole: req.user.role
           }
         )
       );
     }
-    
+
     next();
   };
 };
@@ -495,21 +495,21 @@ export const requireAllPermissions = (permissions) => {
 
     const requiredPermissions = Array.isArray(permissions) ? permissions : [permissions];
     const userPermissions = req.user.permissions || [];
-    
+
     // Admin users have all permissions
     if (req.user.role === UserRoles.ADMIN || req.user.role === UserRoles.SUPER_ADMIN) {
       return next();
     }
-    
-    const hasAllPermissions = requiredPermissions.every(permission => 
+
+    const hasAllPermissions = requiredPermissions.every(permission =>
       userPermissions.includes(permission)
     );
-    
+
     if (!hasAllPermissions) {
-      const missingPermissions = requiredPermissions.filter(permission => 
+      const missingPermissions = requiredPermissions.filter(permission =>
         !userPermissions.includes(permission)
       );
-      
+
       logAuthEvent('warn', 'Insufficient permissions', req, {
         userId: req.user._id,
         userRole: req.user.role,
@@ -517,21 +517,21 @@ export const requireAllPermissions = (permissions) => {
         requiredPermissions,
         missingPermissions
       });
-      
+
       return res.status(403).json(
         createAuthErrorResponse(
           AuthErrorCodes.INSUFFICIENT_PERMISSIONS,
           `Access denied. Missing permissions: ${missingPermissions.join(', ')}.`,
-          { 
-            requiredPermissions, 
+          {
+            requiredPermissions,
             missingPermissions,
             userPermissions,
-            userRole: req.user.role 
+            userRole: req.user.role
           }
         )
       );
     }
-    
+
     next();
   };
 };
@@ -540,24 +540,24 @@ export const requireAllPermissions = (permissions) => {
 export const optionalAuth = async (req, res, next) => {
   try {
     const authHeader = req.header('Authorization');
-    
+
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.replace('Bearer ', '');
-      
+
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(decoded.id)
           .select('-password -emailVerificationToken -passwordResetToken')
           .lean();
-        
-        if (user && user.isActive && user.accountStatus === 'active' && 
-            (!user.lockUntil || user.lockUntil <= Date.now())) {
+
+        if (user && user.isActive && user.accountStatus === 'active' &&
+          (!user.lockUntil || user.lockUntil <= Date.now())) {
           req.user = user;
           req.userId = user._id;
-          
+
           // Update last activity for authenticated users
-          await User.findByIdAndUpdate(user._id, { 
-            lastActivity: new Date() 
+          await User.findByIdAndUpdate(user._id, {
+            lastActivity: new Date()
           });
         }
       } catch (tokenError) {
@@ -567,7 +567,7 @@ export const optionalAuth = async (req, res, next) => {
         });
       }
     }
-    
+
     next();
   } catch (error) {
     logger.error('Optional authentication error', error);
@@ -595,7 +595,7 @@ export const requireOwnershipOrAdmin = (resourceUserField = 'user') => {
 
       // Get resource user ID from various sources
       let resourceUserId = null;
-      
+
       if (req.resource && req.resource[resourceUserField]) {
         resourceUserId = req.resource[resourceUserField].toString();
       } else if (req.params.userId) {
@@ -623,7 +623,7 @@ export const requireOwnershipOrAdmin = (resourceUserField = 'user') => {
         message: 'Access denied. You can only access your own resources.',
         code: 'OWNERSHIP_REQUIRED'
       });
-      
+
     } catch (error) {
       logger.error('Ownership check error', error);
       return res.status(500).json({
@@ -688,7 +688,7 @@ export const sensitiveOperationLimit = rateLimit({
       userAgent: req.get('User-Agent'),
       timestamp: new Date().toISOString()
     });
-    
+
     res.status(429).json({
       success: false,
       message: 'Too many sensitive operations. Please try again in 15 minutes.',
@@ -730,12 +730,12 @@ export const authRateLimit = rateLimit({
       '/reset-password': process.env.NODE_ENV === 'production' ? 5 : 10,
       '/refresh-token': process.env.NODE_ENV === 'production' ? 10 : 20
     };
-    
+
     const endpoint = req.originalUrl.split('?')[0];
     for (const [path, limit] of Object.entries(limits)) {
       if (endpoint.includes(path)) return limit;
     }
-    
+
     return process.env.NODE_ENV === 'production' ? 10 : 20; // Default
   },
   standardHeaders: true,
@@ -750,7 +750,7 @@ export const authRateLimit = rateLimit({
   handler: (req, res) => {
     const endpoint = req.originalUrl.split('?')[0];
     const userIdentifier = req.body?.email || 'unknown';
-    
+
     logger.warn('Authentication rate limit exceeded', {
       ip: req.ip,
       endpoint: endpoint,
@@ -762,7 +762,7 @@ export const authRateLimit = rateLimit({
         'x-real-ip': req.get('X-Real-IP')
       }
     });
-    
+
     res.status(429).json({
       success: false,
       message: 'Too many authentication attempts. Please try again in 15 minutes.',
@@ -785,14 +785,14 @@ export const validateAuthInput = (req, res, next) => {
     if (!emailRegex.test(email)) {
       errors.push('Invalid email format');
     }
-    
+
     // Check for suspicious email patterns
     const suspiciousPatterns = [
       /(.)\1{4,}/, // Repeated characters
       /^[0-9]+@/, // Starts with numbers only
       /@[0-9]+\.[0-9]+$/ // IP address domain
     ];
-    
+
     if (suspiciousPatterns.some(pattern => pattern.test(email))) {
       logger.warn('Suspicious email pattern detected', {
         email: email.replace(/(.{3}).*(@.*)/, '$1***$2'),
@@ -807,11 +807,11 @@ export const validateAuthInput = (req, res, next) => {
     if (password.length < 6) {
       errors.push('Password must be at least 6 characters long');
     }
-    
+
     if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
       errors.push('Password must contain at least one uppercase letter, one lowercase letter, and one number');
     }
-    
+
     // Check for common weak passwords
     const commonPasswords = ['password', '123456', 'password123', 'admin', 'qwerty'];
     if (commonPasswords.includes(password.toLowerCase())) {
@@ -823,7 +823,7 @@ export const validateAuthInput = (req, res, next) => {
   const sqlInjectionPatterns = [
     /('|\\')|(;|\\;)|(--)|(\s*(union|select|insert|delete|update|drop|create|alter|exec|execute)\s*)/i
   ];
-  
+
   const checkSqlInjection = (value) => {
     return sqlInjectionPatterns.some(pattern => pattern.test(value));
   };
@@ -863,7 +863,7 @@ export const requireAccountAge = (minDays = 1) => {
     }
 
     const accountAge = (Date.now() - new Date(req.user.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-    
+
     if (accountAge < minDays) {
       return res.status(403).json({
         success: false,
@@ -881,7 +881,7 @@ export const loadResource = (Model, paramName = 'id', populateFields = '') => {
   return async (req, res, next) => {
     try {
       const resourceId = req.params[paramName];
-      
+
       if (!resourceId) {
         return res.status(400).json({
           success: false,
@@ -891,13 +891,13 @@ export const loadResource = (Model, paramName = 'id', populateFields = '') => {
       }
 
       let query = Model.findById(resourceId);
-      
+
       if (populateFields) {
         query = query.populate(populateFields);
       }
 
       const resource = await query;
-      
+
       if (!resource) {
         return res.status(404).json({
           success: false,
@@ -908,10 +908,10 @@ export const loadResource = (Model, paramName = 'id', populateFields = '') => {
 
       req.resource = resource;
       next();
-      
+
     } catch (error) {
       logger.error('Load resource error', error);
-      
+
       if (error.name === 'CastError') {
         return res.status(400).json({
           success: false,
@@ -943,8 +943,8 @@ export default {
   requireAccountAge,
   loadResource
 };
-/
-/ Security audit and monitoring
+
+// Security audit and monitoring
 export const auditSecurityEvent = (eventType, req, additionalData = {}) => {
   const auditData = {
     eventType,
@@ -983,7 +983,7 @@ export const auditSensitiveOperation = (operationType) => {
     // Audit the operation attempt
     auditSecurityEvent('SENSITIVE_OPERATION_ATTEMPT', req, {
       operationType,
-      requestBody: req.method === 'POST' || req.method === 'PUT' ? 
+      requestBody: req.method === 'POST' || req.method === 'PUT' ?
         JSON.stringify(req.body).substring(0, 500) : undefined // Limit body size in logs
     });
 
@@ -996,7 +996,7 @@ export const auditSensitiveOperation = (operationType) => {
 export const detectBruteForce = (req, res, next) => {
   const clientId = req.ip;
   const endpoint = req.originalUrl.split('?')[0];
-  
+
   // This is a simplified implementation
   // In production, you'd want to use Redis or a proper rate limiting service
   if (!req.app.locals.bruteForceAttempts) {
@@ -1005,7 +1005,7 @@ export const detectBruteForce = (req, res, next) => {
 
   const key = `${clientId}:${endpoint}`;
   const attempts = req.app.locals.bruteForceAttempts.get(key) || { count: 0, firstAttempt: Date.now() };
-  
+
   // Reset counter if window has passed
   if (Date.now() - attempts.firstAttempt > SECURITY_CONFIG.RATE_LIMIT_WINDOW) {
     attempts.count = 0;
@@ -1041,12 +1041,12 @@ export const validateSession = async (req, res, next) => {
   try {
     // Check if session is still valid in database
     const user = await User.findById(req.user._id).select('lastActivity sessionVersion').lean();
-    
+
     if (!user) {
       logAuthEvent('warn', 'Session validation failed: User not found', req, {
         userId: req.user._id
       });
-      
+
       return res.status(401).json(
         createAuthErrorResponse(AuthErrorCodes.USER_NOT_FOUND, 'Session invalid. Please login again.')
       );
@@ -1059,21 +1059,21 @@ export const validateSession = async (req, res, next) => {
         userId: req.user._id,
         lastActivity: user.lastActivity
       });
-      
+
       return res.status(401).json(
         createAuthErrorResponse(AuthErrorCodes.TOKEN_EXPIRED, 'Session expired due to inactivity. Please login again.')
       );
     }
 
     // Check session version (for forced logouts)
-    if (user.sessionVersion && req.authContext.sessionVersion && 
-        user.sessionVersion !== req.authContext.sessionVersion) {
+    if (user.sessionVersion && req.authContext.sessionVersion &&
+      user.sessionVersion !== req.authContext.sessionVersion) {
       logAuthEvent('warn', 'Session invalidated by server', req, {
         userId: req.user._id,
         userSessionVersion: user.sessionVersion,
         tokenSessionVersion: req.authContext.sessionVersion
       });
-      
+
       return res.status(401).json(
         createAuthErrorResponse(AuthErrorCodes.TOKEN_EXPIRED, 'Session has been invalidated. Please login again.')
       );
@@ -1086,7 +1086,7 @@ export const validateSession = async (req, res, next) => {
       stack: error.stack,
       userId: req.user._id
     });
-    
+
     return res.status(500).json(
       createAuthErrorResponse(AuthErrorCodes.AUTH_SERVICE_ERROR, 'Session validation error.')
     );
@@ -1100,39 +1100,4 @@ export const comprehensiveAuth = [
   validateSession
 ];
 
-// Export all middleware functions with consistent naming
-export default {
-  // Core authentication
-  authenticate,
-  comprehensiveAuth,
-  optionalAuth,
-  
-  // Role and permission checks
-  requireAdmin,
-  requireRole,
-  requirePermission,
-  requireAllPermissions,
-  requireOwnershipOrAdmin,
-  requireEmailVerification,
-  requireAccountAge,
-  
-  // Rate limiting
-  apiRateLimit,
-  authRateLimit,
-  sensitiveOperationLimit,
-  
-  // Validation and security
-  validateAuthInput,
-  validateSession,
-  detectBruteForce,
-  auditSensitiveOperation,
-  
-  // Utilities
-  loadResource,
-  auditSecurityEvent,
-  
-  // Constants
-  AuthErrorCodes,
-  UserRoles,
-  SECURITY_CONFIG
-};
+// All middleware functions are already exported above
