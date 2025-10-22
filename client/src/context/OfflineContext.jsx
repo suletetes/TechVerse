@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback } from 'react';
 import { useNetworkStatus } from '../hooks/useNetworkStatus.js';
-import { useNotification } from './NotificationContext.jsx';
+import NotificationContext from './NotificationContext.jsx';
 
 // Initial state
 const initialState = {
@@ -105,7 +105,12 @@ const OfflineContext = createContext();
 export const OfflineProvider = ({ children }) => {
   const [state, dispatch] = useReducer(offlineReducer, initialState);
   const { isOnline, connectionQuality } = useNetworkStatus();
-  const { showWarning, showSuccess, showError } = useNotification();
+  
+  // Safely access notification context without throwing error
+  const notificationContext = useContext(NotificationContext);
+  const showWarning = notificationContext?.showWarning || (() => {});
+  const showSuccess = notificationContext?.showSuccess || (() => {});
+  const showError = notificationContext?.showError || (() => {});
 
   // Determine effective offline status
   const effectiveOfflineStatus = useMemo(() => {

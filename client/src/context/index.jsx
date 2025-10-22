@@ -62,9 +62,9 @@ const PerformanceMonitoredProvider = ({ name, children, provider: Provider, ...p
 export const AppProviders = ({ children }) => {
   return (
     <PerformanceMonitoredProvider name="Performance" provider={PerformanceProvider}>
-      <PerformanceMonitoredProvider name="Offline" provider={OfflineProvider}>
-        <PerformanceMonitoredProvider name="Loading" provider={LoadingProvider}>
-          <PerformanceMonitoredProvider name="Notification" provider={NotificationProvider}>
+      <PerformanceMonitoredProvider name="Loading" provider={LoadingProvider}>
+        <PerformanceMonitoredProvider name="Notification" provider={NotificationProvider}>
+          <PerformanceMonitoredProvider name="Offline" provider={OfflineProvider}>
             <PerformanceMonitoredProvider name="Auth" provider={AuthProvider}>
               <PerformanceMonitoredProvider name="Product" provider={ProductProvider}>
                 <PerformanceMonitoredProvider name="Cart" provider={CartProvider}>
@@ -88,9 +88,9 @@ export const AppProviders = ({ children }) => {
 // Optimized providers with selective subscription
 export const OptimizedAppProviders = ({ children }) => {
   return (
-    <OfflineProvider>
-      <LoadingProvider>
-        <NotificationProvider>
+    <LoadingProvider>
+      <NotificationProvider>
+        <OfflineProvider>
           <AuthProvider>
             <ProductProvider>
               <CartProvider>
@@ -104,8 +104,8 @@ export const OptimizedAppProviders = ({ children }) => {
               </CartProvider>
             </ProductProvider>
           </AuthProvider>
-        </NotificationProvider>
-      </LoadingProvider>
-    </OfflineProvider>
+        </OfflineProvider>
+      </NotificationProvider>
+    </LoadingProvider>
   );
 };

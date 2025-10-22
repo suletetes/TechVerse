@@ -300,32 +300,11 @@ const AdminCatalogManager = ({
         }
     };
 
-    const handleSaveCategoryWrapper = (categoryData) => {
-        console.log('Saving category:', categoryData);
-        if (onSaveCategory) {
-            onSaveCategory(categoryData);
-        } else {
-            alert('Category saved successfully! (Demo mode)');
-        }
-    };
 
-    const handleDeleteCategoryWrapper = (categoryId) => {
-        console.log('Deleting category:', categoryId);
-        if (onDeleteCategory) {
-            onDeleteCategory(categoryId);
-        } else {
-            alert('Category deleted successfully! (Demo mode)');
-        }
-    };
 
-    const handleSaveSpecificationsWrapper = (categoryName, specifications) => {
-        console.log('Saving specifications for category:', categoryName, specifications);
-        if (onSaveSpecifications) {
-            onSaveSpecifications(categoryName, specifications);
-        } else {
-            alert(`Specifications saved for ${categoryName}! (Demo mode)`);
-        }
-    };
+
+
+
 
     return (
         <div className="catalog-manager">

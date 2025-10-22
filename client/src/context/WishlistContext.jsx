@@ -2,7 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, useCallback, u
 import { userService } from '../api/services/index.js';
 import wishlistService from '../api/services/wishlistService.js';
 import { useAuth } from './AuthContext.jsx';
-import { useNotification } from './NotificationContext.jsx';
+import NotificationContext from './NotificationContext.jsx';
 
 // Initial state
 const initialState = {
@@ -123,7 +123,10 @@ const WishlistContext = createContext();
 export const WishlistProvider = ({ children }) => {
   const [state, dispatch] = useReducer(wishlistReducer, initialState);
   const { isAuthenticated, user } = useAuth();
-  const { showNotification } = useNotification();
+  
+  // Safely access notification context without throwing error
+  const notificationContext = useContext(NotificationContext);
+  const showNotification = notificationContext?.showNotification || (() => {});
 
   // Load wishlist from backend or localStorage
   const loadWishlist = useCallback(async (params = {}, loadMore = false) => {
