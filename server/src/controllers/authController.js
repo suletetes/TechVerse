@@ -209,55 +209,42 @@ export const register = asyncHandler(async (req, res, next) => {
   sendTokenResponse(user, 201, res, req, 'Registration successful. Please check your email to verify your account.');
 });
 
-// @desc    Login user
+// @desc    Login user (now uses Passport Local Strategy)
 // @route   POST /api/auth/login
 // @access  Public
+// Note: This method is called after successful Passport local authentication
 export const login = asyncHandler(async (req, res, next) => {
-  const { email, password } = req.body;
-
-  // Find user and include password for comparison
-  const user = await User.findByEmail(email).select('+password');
+  // User is already authenticated by Passport local strategy at this point
+  const user = req.user;
 
   if (!user) {
-    return next(new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS'));
+    return next(new AppError('Authentication failed', 401, 'AUTH_FAILED'));
   }
-
-  // Check if account is locked
-  if (user.isLocked) {
-    await user.incLoginAttempts();
-    const lockTimeRemaining = Math.ceil((user.lockUntil - Date.now()) / (1000 * 60));
-    return next(new AppError(
-      `Account locked due to too many failed login attempts. Try again in ${lockTimeRemaining} minutes.`,
-      423,
-      'ACCOUNT_LOCKED'
-    ));
-  }
-
-  // Check password
-  const isPasswordValid = await user.comparePassword(password);
-
-  if (!isPasswordValid) {
-    await user.incLoginAttempts();
-    return next(new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS'));
-  }
-
-  // Check account status
-  if (!user.isActive) {
-    return next(new AppError('Account is deactivated. Please contact support.', 401, 'ACCOUNT_INACTIVE'));
-  }
-
-  if (user.accountStatus === 'suspended') {
-    return next(new AppError('Account is suspended. Please contact support.', 401, 'ACCOUNT_SUSPENDED'));
-  }
-
-  // Reset login attempts on successful login
-  await user.resetLoginAttempts();
 
   // Add session tracking
   const sessionId = crypto.randomBytes(32).toString('hex');
-  await user.addSession(sessionId, req.ip, req.get('User-Agent'));
+  
+  // Check if user model has addSession method, if not update directly
+  try {
+    if (typeof user.addSession === 'function') {
+      await user.addSession(sessionId, req.ip, req.get('User-Agent'));
+    } else {
+      // Fallback: update user directly
+      await User.findByIdAndUpdate(user._id, {
+        lastLogin: new Date(),
+        lastActivity: new Date(),
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+    }
+  } catch (error) {
+    logger.warn('Session tracking failed, continuing with login', {
+      userId: user._id,
+      error: error.message
+    });
+  }
 
-  logger.info('User logged in successfully', {
+  logger.info('User logged in successfully via Passport Local', {
     userId: user._id,
     email: user.email,
     sessionId: sessionId.substring(0, 8) + '...',

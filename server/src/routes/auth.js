@@ -21,6 +21,21 @@ import {
   linkGitHubAccount,
   unlinkSocialAccount
 } from '../controllers/oauthController.js';
+import {
+  getSessionInfo,
+  getSessionStats,
+  cleanupSessions,
+  destroyAllUserSessions,
+  destroyUserSessions,
+  refreshSession,
+  createSessionFromJWT
+} from '../controllers/sessionController.js';
+import {
+  getSessionStatus,
+  testSessionFunctionality,
+  forceSessionCleanup,
+  getActiveSessionsCount
+} from '../controllers/sessionManagementController.js';
 import { 
   authenticate, 
   authenticateLocal,
@@ -28,10 +43,12 @@ import {
   authenticateGoogleCallback,
   authenticateGitHub,
   authenticateGitHubCallback,
+  requireAdmin,
   sensitiveOperationLimit, 
   authRateLimit,
   validateAuthInput 
 } from '../middleware/passportAuth.js';
+import { hybridAuth, sessionAuth, logout as hybridLogout } from '../middleware/hybridAuth.js';
 import { validate } from '../middleware/validation.js';
 
 const router = express.Router();
@@ -150,5 +167,26 @@ router.post('/change-password', authenticate, changePasswordValidation, validate
 router.post('/link/google', authenticate, linkGoogleAccount);
 router.post('/link/github', authenticate, linkGitHubAccount);
 router.delete('/unlink/:provider', authenticate, unlinkSocialAccount);
+
+// Session management routes
+router.get('/session', hybridAuth, getSessionInfo);
+router.post('/session/refresh', hybridAuth, refreshSession);
+router.post('/session/create', authenticate, createSessionFromJWT);
+router.post('/session/destroy-all', hybridAuth, destroyAllUserSessions);
+router.post('/logout-all', hybridAuth, destroyAllUserSessions); // Alias for destroy-all
+
+// Admin session management routes
+router.get('/session/stats', hybridAuth, requireAdmin, getSessionStats);
+router.post('/session/cleanup', sessionAuth, requireAdmin, cleanupSessions);
+router.post('/session/destroy-user/:userId', sessionAuth, requireAdmin, destroyUserSessions);
+
+// Enhanced session management endpoints
+router.get('/session/status', hybridAuth, requireAdmin, getSessionStatus);
+router.post('/session/test', hybridAuth, requireAdmin, testSessionFunctionality);
+router.post('/session/force-cleanup', sessionAuth, requireAdmin, forceSessionCleanup);
+router.get('/session/count', hybridAuth, requireAdmin, getActiveSessionsCount);
+
+// Enhanced logout route
+router.post('/logout-hybrid', hybridAuth, hybridLogout);
 
 export default router;

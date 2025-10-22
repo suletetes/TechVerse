@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import passwordService from '../services/passwordService.js';
 
 const addressSchema = new mongoose.Schema({
   type: {
@@ -247,6 +248,7 @@ const userSchema = new mongoose.Schema({
   
   // Social login
   googleId: String,
+  githubId: String,
   facebookId: String,
   
   // Analytics
@@ -295,20 +297,39 @@ userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
   try {
-    const salt = await bcrypt.genSalt(12);
-    this.password = await bcrypt.hash(this.password, salt);
+    // Use Argon2 for new password hashes
+    this.password = await passwordService.hashPassword(this.password);
     next();
   } catch (error) {
     next(error);
   }
 });
 
-// Method to compare password
+// Method to compare password (supports both Argon2 and bcrypt)
 userSchema.methods.comparePassword = async function(candidatePassword) {
   if (!this.password) {
     throw new Error('Password not set for this user');
   }
-  return await bcrypt.compare(candidatePassword, this.password);
+  return await passwordService.verifyPassword(candidatePassword, this.password);
+};
+
+// Method to check if password hash needs upgrade
+userSchema.methods.needsPasswordUpgrade = function() {
+  return passwordService.needsUpgrade(this.password);
+};
+
+// Method to upgrade password hash (requires plain text password)
+userSchema.methods.upgradePasswordHash = async function(plainTextPassword) {
+  if (!this.password) {
+    throw new Error('No existing password hash to upgrade');
+  }
+  
+  const newHash = await passwordService.migrateHash(plainTextPassword, this.password);
+  if (newHash) {
+    this.password = newHash;
+    return true;
+  }
+  return false;
 };
 
 // Method to generate JWT token

@@ -4,8 +4,13 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import compression from 'compression';
 
+// Load environment variables first
+dotenv.config();
+
 import connectDB from './src/config/database.js';
 import logger from './src/utils/logger.js';
+import passport, { initializePassport } from './src/config/passport.js';
+import sessionConfig from './src/config/session.js';
 
 // Import middleware
 import {
@@ -43,8 +48,8 @@ import userRoutes from './src/routes/users.js';
 import adminRoutes from './src/routes/admin.js';
 import uploadRoutes from './src/routes/upload.js';
 
-// Load environment variables
-dotenv.config();
+// Initialize Passport strategies
+initializePassport();
 
 // Connect to MongoDB
 connectDB();
@@ -89,6 +94,8 @@ app.use(express.urlencoded({
 
 // Input sanitization
 app.use(sanitizeInput);
+
+// Session and Passport will be initialized in async startup function
 
 // Security checks
 app.use(suspiciousActivityDetector);
@@ -159,7 +166,10 @@ app.use('/img', express.static(path.join(__dirname, '../client/public/img'), {
 app.use('/api/', apiRateLimit);
 
 // API routes
+console.log('🔍 Registering auth routes...');
+console.log('Auth routes stack:', authRoutes.stack?.map(r => r.route?.path).filter(Boolean));
 app.use('/api/auth', authRoutes);
+console.log('✅ Auth routes registered');
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
@@ -320,24 +330,89 @@ const gracefulShutdown = (signal) => {
   }, 30000);
 };
 
-// Start server
-const server = app.listen(PORT, async () => {
-  // Log server startup information
-  healthCheck.logServerStartup(PORT, NODE_ENV);
-
-  // Perform startup health checks
+// Async server initialization
+async function initializeServer() {
   try {
-    const healthCheckResult = await healthCheck.performStartupHealthCheck();
+    // Initialize session management
+    logger.info('Initializing session management...');
     
-    if (!healthCheckResult.success) {
-      logger.error('Server started but health checks failed', null, healthCheckResult);
-      console.error('⚠️ Server started with health check warnings. Check logs for details.');
-    }
+    // Try to initialize session manager first
+    const sessionManagerInitialized = await import('./src/utils/sessionManager.js')
+      .then(module => module.default.initialize())
+      .catch(error => {
+        logger.warn('Session manager initialization failed, using fallback', {
+          error: error.message
+        });
+        return false;
+      });
+
+    // Initialize session middleware
+    const sessionMiddleware = await sessionConfig.initialize();
+    app.use(sessionMiddleware);
+    
+    logger.info('Session management initialized successfully', {
+      redisAvailable: sessionManagerInitialized,
+      store: sessionManagerInitialized ? 'Redis' : 'Memory'
+    });
+
+    // Initialize Passport
+    app.use(passport.initialize());
+    app.use(passport.session()); // Enable session support for Passport
+    logger.info('Passport initialized with session support');
+
   } catch (error) {
-    logger.error('Failed to perform startup health checks', error);
-    console.error('⚠️ Could not perform startup health checks:', error.message);
+    logger.error('Failed to initialize session management', {
+      error: error.message,
+      stack: error.stack
+    });
+    
+    // In development, continue without sessions; in production, fail
+    if (NODE_ENV === 'production') {
+      logger.error('Session initialization failed in production, exiting...');
+      process.exit(1);
+    } else {
+      logger.warn('Continuing without session management in development mode');
+      // Initialize Passport without sessions
+      app.use(passport.initialize());
+    }
   }
-});
+}
+
+// Start server
+async function startServer() {
+  try {
+    await initializeServer();
+    
+    const server = app.listen(PORT, async () => {
+      // Log server startup information
+      healthCheck.logServerStartup(PORT, NODE_ENV);
+
+      // Perform startup health checks
+      try {
+        const healthCheckResult = await healthCheck.performStartupHealthCheck();
+        
+        if (!healthCheckResult.success) {
+          logger.error('Server started but health checks failed', null, healthCheckResult);
+          console.error('⚠️ Server started with health check warnings. Check logs for details.');
+        }
+      } catch (error) {
+        logger.error('Failed to perform startup health checks', error);
+        console.error('⚠️ Could not perform startup health checks:', error.message);
+      }
+    });
+
+    return server;
+  } catch (error) {
+    logger.error('Failed to start server', {
+      error: error.message,
+      stack: error.stack
+    });
+    process.exit(1);
+  }
+}
+
+// Start the server
+const server = await startServer();
 
 // Handle server errors
 server.on('error', (error) => {
