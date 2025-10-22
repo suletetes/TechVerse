@@ -19,7 +19,7 @@ import {
   getProductReviews,
   getCategories
 } from '../controllers/productController.js';
-import { authenticate, requireAdmin, optionalAuth, apiRateLimit } from '../middleware/auth.js';
+import { authenticate, requireAdmin, optionalAuth, apiRateLimit } from '../middleware/passportAuth.js';
 import { validate, commonValidations } from '../middleware/validation.js';
 
 const router = express.Router();

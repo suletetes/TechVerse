@@ -22,7 +22,7 @@ import {
   bulkUpdateProductSections,
   getAnalytics
 } from '../controllers/adminController.js';
-import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { authenticate, requireAdmin } from '../middleware/passportAuth.js';
 import { validate, commonValidations } from '../middleware/validation.js';
 
 const router = express.Router();

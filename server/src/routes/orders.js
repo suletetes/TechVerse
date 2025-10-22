@@ -10,7 +10,7 @@ import {
   processPayment,
   refundOrder
 } from '../controllers/orderController.js';
-import { authenticate, requireAdmin, requireOwnershipOrAdmin } from '../middleware/auth.js';
+import { authenticate, requireAdmin, requireOwnershipOrAdmin } from '../middleware/passportAuth.js';
 import { validate, commonValidations } from '../middleware/validation.js';
 
 const router = express.Router();

@@ -14,12 +14,24 @@ import {
   getProfile,
   updateProfile
 } from '../controllers/authController.js';
+import {
+  googleCallback,
+  githubCallback,
+  linkGoogleAccount,
+  linkGitHubAccount,
+  unlinkSocialAccount
+} from '../controllers/oauthController.js';
 import { 
   authenticate, 
+  authenticateLocal,
+  authenticateGoogle,
+  authenticateGoogleCallback,
+  authenticateGitHub,
+  authenticateGitHubCallback,
   sensitiveOperationLimit, 
   authRateLimit,
   validateAuthInput 
-} from '../middleware/auth.js';
+} from '../middleware/passportAuth.js';
 import { validate } from '../middleware/validation.js';
 
 const router = express.Router();
@@ -114,7 +126,7 @@ const updateProfileValidation = [
 
 // Public routes with enhanced security
 router.post('/register', authRateLimit, validateAuthInput, registerValidation, validate, register);
-router.post('/login', authRateLimit, validateAuthInput, loginValidation, validate, login);
+router.post('/login', authRateLimit, validateAuthInput, loginValidation, validate, authenticateLocal, login);
 router.post('/logout', logout);
 router.post('/refresh-token', authRateLimit, refreshToken);
 router.post('/forgot-password', authRateLimit, validateAuthInput, forgotPasswordValidation, validate, forgotPassword);
@@ -122,10 +134,21 @@ router.post('/reset-password', authRateLimit, validateAuthInput, resetPasswordVa
 router.get('/verify-email/:token', verifyEmail);
 router.post('/resend-verification', authRateLimit, validateAuthInput, forgotPasswordValidation, validate, resendVerification);
 
+// OAuth routes
+router.get('/google', authenticateGoogle);
+router.get('/google/callback', authenticateGoogleCallback, googleCallback);
+router.get('/github', authenticateGitHub);
+router.get('/github/callback', authenticateGitHubCallback, githubCallback);
+
 // Protected routes
 router.get('/me', authenticate, getMe);
 router.get('/profile', authenticate, getProfile);
 router.put('/profile', authenticate, updateProfileValidation, validate, updateProfile);
 router.post('/change-password', authenticate, changePasswordValidation, validate, sensitiveOperationLimit, changePassword);
+
+// OAuth account management routes
+router.post('/link/google', authenticate, linkGoogleAccount);
+router.post('/link/github', authenticate, linkGitHubAccount);
+router.delete('/unlink/:provider', authenticate, unlinkSocialAccount);
 
 export default router;

@@ -7,7 +7,7 @@ import {
   getImageInfo,
   testImageAccessibility
 } from '../controllers/uploadController.js';
-import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { authenticate, requireAdmin } from '../middleware/passportAuth.js';
 import { validate } from '../middleware/validation.js';
 import ImageService from '../services/imageService.js';
 

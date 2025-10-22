@@ -18,7 +18,7 @@ import {
   removeFromCart,
   clearCart
 } from '../controllers/userController.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate } from '../middleware/passportAuth.js';
 import { validate, commonValidations } from '../middleware/validation.js';
 
 const router = express.Router();
