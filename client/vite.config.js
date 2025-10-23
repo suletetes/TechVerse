@@ -17,4 +17,25 @@ export default defineConfig({
     port: 4173,
     host: true,
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.js'],
+    css: true,
+    reporters: ['verbose'],
+    coverage: {
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'src/test/',
+        'src/mocks/',
+        '**/*.d.ts',
+        '**/*.config.js',
+        'dist/'
+      ]
+    }
+  },
+  define: {
+    global: 'globalThis',
+  },
 })

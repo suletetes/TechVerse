@@ -113,9 +113,8 @@ describe('AuthContext', () => {
       });
 
       expect(authService.login).toHaveBeenCalledWith({
-        ...mockCredentials,
-        deviceInfo: expect.any(Object),
-        rememberMe: false
+        email: mockCredentials.email,
+        password: mockCredentials.password
       });
       expect(result.current.user).toEqual(mockResponse.user);
       expect(result.current.isAuthenticated).toBe(true);
@@ -210,8 +209,10 @@ describe('AuthContext', () => {
       });
 
       expect(authService.register).toHaveBeenCalledWith({
-        ...mockUserData,
-        deviceInfo: expect.any(Object)
+        firstName: mockUserData.firstName,
+        lastName: mockUserData.lastName,
+        email: mockUserData.email,
+        password: mockUserData.password
       });
       expect(result.current.user).toEqual(mockResponse.user);
       expect(mockShowNotification).toHaveBeenCalledWith('Registration successful!', 'success');
