@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback, useRef } from 'react';
 import { userService } from '../api/services/index.js';
 import { useAuth } from './AuthContext.jsx';
 import { useDataSync } from '../hooks/useDataSync.js';
@@ -97,6 +97,7 @@ const CartContext = createContext();
 export const CartProvider = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const { isAuthenticated } = useAuth();
+  const loadingRef = useRef(false);
 
   // Data synchronization for cart
   const { optimisticUpdate, forceRefresh, getCachedData } = useDataSync('cart', {
@@ -133,23 +134,32 @@ export const CartProvider = ({ children }) => {
   });
 
   // Load cart from API
-  const loadCart = async () => {
+  const loadCart = useCallback(async () => {
     if (!isAuthenticated) {
       dispatch({ type: CART_ACTIONS.LOAD_CART_FAILURE, payload: 'User not authenticated' });
       return;
     }
 
+    // Prevent multiple simultaneous loads
+    if (loadingRef.current) {
+      return;
+    }
+
     try {
+      loadingRef.current = true;
       dispatch({ type: CART_ACTIONS.LOAD_CART_START });
       const response = await userService.getCart();
       dispatch({ type: CART_ACTIONS.LOAD_CART_SUCCESS, payload: response.data });
     } catch (error) {
+      console.error('Error loading cart:', error);
       dispatch({ type: CART_ACTIONS.LOAD_CART_FAILURE, payload: error.message });
+    } finally {
+      loadingRef.current = false;
     }
-  };
+  }, [isAuthenticated]);
 
   // Add item to cart with optimistic updates
-  const addToCart = async (productId, quantity = 1, variants = []) => {
+  const addToCart = useCallback(async (productId, quantity = 1, variants = []) => {
     if (!isAuthenticated) {
       dispatch({ type: CART_ACTIONS.SET_ERROR, payload: 'Please login to add items to cart' });
       return;
@@ -192,13 +202,14 @@ export const CartProvider = ({ children }) => {
 
       return { success: true };
     } catch (error) {
+      console.error('Error adding to cart:', error);
       dispatch({ type: CART_ACTIONS.ADD_ITEM_FAILURE, payload: error.message });
       throw error;
     }
-  };
+  }, [isAuthenticated, state.items, optimisticUpdate, loadCart]);
 
   // Update cart item quantity
-  const updateCartItem = async (itemId, quantity) => {
+  const updateCartItem = useCallback(async (itemId, updateData) => {
     if (!isAuthenticated) {
       dispatch({ type: CART_ACTIONS.SET_ERROR, payload: 'User not authenticated' });
       return;
@@ -206,7 +217,7 @@ export const CartProvider = ({ children }) => {
 
     try {
       dispatch({ type: CART_ACTIONS.UPDATE_ITEM_START });
-      await userService.updateCartItem(itemId, { quantity });
+      await userService.updateCartItem(itemId, updateData);
       dispatch({ type: CART_ACTIONS.UPDATE_ITEM_SUCCESS });
       
       // Reload cart to get updated data
@@ -214,13 +225,14 @@ export const CartProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
+      console.error('Error updating cart item:', error);
       dispatch({ type: CART_ACTIONS.UPDATE_ITEM_FAILURE, payload: error.message });
       throw error;
     }
-  };
+  }, [isAuthenticated, loadCart]);
 
   // Remove item from cart
-  const removeFromCart = async (itemId) => {
+  const removeFromCart = useCallback(async (itemId) => {
     if (!isAuthenticated) {
       dispatch({ type: CART_ACTIONS.SET_ERROR, payload: 'User not authenticated' });
       return;
@@ -236,13 +248,14 @@ export const CartProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
+      console.error('Error removing from cart:', error);
       dispatch({ type: CART_ACTIONS.REMOVE_ITEM_FAILURE, payload: error.message });
       throw error;
     }
-  };
+  }, [isAuthenticated, loadCart]);
 
   // Clear entire cart
-  const clearCart = async () => {
+  const clearCart = useCallback(async () => {
     if (!isAuthenticated) {
       dispatch({ type: CART_ACTIONS.SET_ERROR, payload: 'User not authenticated' });
       return;
@@ -255,22 +268,26 @@ export const CartProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
+      console.error('Error clearing cart:', error);
       dispatch({ type: CART_ACTIONS.CLEAR_CART_FAILURE, payload: error.message });
       throw error;
     }
-  };
+  }, [isAuthenticated]);
 
   // Clear error
-  const clearError = () => {
+  const clearError = useCallback(() => {
     dispatch({ type: CART_ACTIONS.CLEAR_ERROR });
-  };
+  }, []);
 
   // Load cart on mount and auth change
   useEffect(() => {
     if (isAuthenticated) {
       loadCart();
+    } else {
+      // Clear cart when user logs out
+      dispatch({ type: CART_ACTIONS.CLEAR_CART_SUCCESS });
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, loadCart]);
 
   const value = useMemo(() => ({
     ...state,

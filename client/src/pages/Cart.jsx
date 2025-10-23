@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart, useAuth } from '../context';
 import { LoadingSpinner } from '../components/Common';
@@ -18,12 +18,8 @@ const Cart = () => {
         loadCart 
     } = useCart();
 
-    // Load cart on component mount
-    useEffect(() => {
-        if (isAuthenticated) {
-            loadCart();
-        }
-    }, [isAuthenticated, loadCart]);
+    const [promoCode, setPromoCode] = useState('');
+    const [isUpdating, setIsUpdating] = useState(false);
 
     // Redirect to login if not authenticated
     useEffect(() => {
@@ -37,42 +33,59 @@ const Cart = () => {
         }
     }, [isAuthenticated, navigate]);
 
-    const updateQuantity = async (itemId, newQuantity) => {
+    const updateQuantity = useCallback(async (itemId, newQuantity) => {
         if (newQuantity === 0) {
             await removeFromCart(itemId);
             return;
         }
         try {
+            setIsUpdating(true);
             await updateCartItem(itemId, { quantity: newQuantity });
         } catch (error) {
             console.error('Error updating quantity:', error);
+        } finally {
+            setIsUpdating(false);
         }
-    };
+    }, [updateCartItem, removeFromCart]);
 
-    const removeItem = async (itemId) => {
+    const removeItem = useCallback(async (itemId) => {
         try {
+            setIsUpdating(true);
             await removeFromCart(itemId);
         } catch (error) {
             console.error('Error removing item:', error);
+        } finally {
+            setIsUpdating(false);
         }
-    };
+    }, [removeFromCart]);
 
-    const handleClearCart = async () => {
+    const handleClearCart = useCallback(async () => {
         if (window.confirm('Are you sure you want to clear your cart?')) {
             try {
+                setIsUpdating(true);
                 await clearCart();
             } catch (error) {
                 console.error('Error clearing cart:', error);
+            } finally {
+                setIsUpdating(false);
             }
         }
-    };
+    }, [clearCart]);
 
-    // Show loading state
-    if (isLoading && items.length === 0) {
+    const handlePromoCode = useCallback(() => {
+        // TODO: Implement promo code functionality
+        console.log('Applying promo code:', promoCode);
+    }, [promoCode]);
+
+    // Show loading state only on initial load
+    if (isLoading && items.length === 0 && !error) {
         return (
             <div className="container py-5">
                 <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
-                    <LoadingSpinner size="lg" />
+                    <div className="text-center">
+                        <LoadingSpinner size="lg" />
+                        <p className="mt-3 text-muted">Loading your cart...</p>
+                    </div>
                 </div>
             </div>
         );
@@ -94,11 +107,13 @@ const Cart = () => {
     }
 
     // Show empty cart
-    if (!isLoading && items.length === 0) {
+    if (!isLoading && items.length === 0 && !error) {
         return (
             <div className="container py-5 text-center">
                 <div className="py-5">
-                    <i className="fas fa-shopping-cart fa-4x text-muted mb-4"></i>
+                    <svg width="80" height="80" viewBox="0 0 24 24" className="text-muted mb-4">
+                        <path fill="currentColor" d="M17,18C15.89,18 15,18.89 15,20A2,2 0 0,0 17,22A2,2 0 0,0 19,20C19,18.89 18.1,18 17,18M1,2V4H3L6.6,11.59L5.24,14.04C5.09,14.32 5,14.65 5,15A2,2 0 0,0 7,17H19V15H7.42A0.25,0.25 0 0,1 7.17,14.75C7.17,14.7 7.18,14.66 7.2,14.63L8.1,13H15.55C16.3,13 16.96,12.58 17.3,11.97L20.88,5H5.21L4.27,3H1M7,18C5.89,18 5,18.89 5,20A2,2 0 0,0 7,22A2,2 0 0,0 9,20C9,18.89 8.1,18 7,18Z" />
+                    </svg>
                     <h3>Your cart is empty</h3>
                     <p className="text-muted mb-4">Add some products to get started!</p>
                     <Link to="/category" className="btn btn-primary btn-lg">
@@ -109,8 +124,13 @@ const Cart = () => {
         );
     }
 
-    // Calculate totals
-    const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    // Calculate totals safely
+    const subtotal = Array.isArray(items) ? items.reduce((sum, item) => {
+        const price = item.price || 0;
+        const quantity = item.quantity || 0;
+        return sum + (price * quantity);
+    }, 0) : 0;
+    
     const shipping = subtotal > 50 ? 0 : 9.99;
     const tax = subtotal * 0.2; // 20% VAT
     const finalTotal = subtotal + shipping + tax;
@@ -127,20 +147,26 @@ const Cart = () => {
 
                     {/* Cart Items */}
                     <div className="col-lg-8 mb-4 mb-lg-0">
-                        <div className="store-card fill-card">
+                        <div className="store-card fill-card position-relative">
+                            {(isLoading || isUpdating) && (
+                                <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75" style={{ zIndex: 10 }}>
+                                    <LoadingSpinner size="md" />
+                                </div>
+                            )}
                             <div className="d-flex justify-content-between align-items-center mb-4">
                                 <h3 className="tc-6533 bold-text mb-0">Cart Items ({itemCount})</h3>
-                                {items.length > 0 && (
+                                {Array.isArray(items) && items.length > 0 && (
                                     <button 
                                         className="btn btn-outline-danger btn-sm"
                                         onClick={handleClearCart}
+                                        disabled={isLoading || isUpdating}
                                     >
-                                        Clear Cart
+                                        {isUpdating ? 'Clearing...' : 'Clear Cart'}
                                     </button>
                                 )}
                             </div>
 
-                            {items.map((item, index) => (
+                            {Array.isArray(items) && items.map((item, index) => (
                                 <div key={item._id}>
                                     <div className="row align-items-center py-3">
                                         {/* Product Image */}
@@ -171,16 +197,16 @@ const Cart = () => {
                                                 <button
                                                     className="btn btn-sm btn-outline-secondary"
                                                     onClick={() => updateQuantity(item._id, item.quantity - 1)}
-                                                    disabled={isLoading}
+                                                    disabled={isLoading || isUpdating}
                                                     style={{ width: '32px', height: '32px' }}
                                                 >
                                                     -
                                                 </button>
-                                                <span className="mx-3 tc-6533 bold-text">{item.quantity}</span>
+                                                <span className="mx-3 tc-6533 bold-text">{item.quantity || 0}</span>
                                                 <button
                                                     className="btn btn-sm btn-outline-secondary"
                                                     onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                                                    disabled={isLoading}
+                                                    disabled={isLoading || isUpdating}
                                                     style={{ width: '32px', height: '32px' }}
                                                 >
                                                     +
@@ -198,7 +224,7 @@ const Cart = () => {
                                             <button
                                                 className="btn btn-sm btn-outline-danger"
                                                 onClick={() => removeItem(item._id)}
-                                                disabled={isLoading}
+                                                disabled={isLoading || isUpdating}
                                                 title="Remove item"
                                             >
                                                 ×
@@ -260,8 +286,15 @@ const Cart = () => {
                                         type="text"
                                         className="form-control"
                                         placeholder="Enter code"
+                                        value={promoCode}
+                                        onChange={(e) => setPromoCode(e.target.value)}
                                     />
-                                    <button className="btn btn-outline-secondary" type="button">
+                                    <button 
+                                        className="btn btn-outline-secondary" 
+                                        type="button"
+                                        onClick={handlePromoCode}
+                                        disabled={!promoCode.trim()}
+                                    >
                                         Apply
                                     </button>
                                 </div>
