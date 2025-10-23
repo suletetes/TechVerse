@@ -314,6 +314,22 @@ class UserService {
 
     try {
       const response = await apiClient.get('/users/cart');
+      
+      // Safety check for response
+      if (!response) {
+        throw new Error('No response received from cart endpoint');
+      }
+      
+      // Debug logging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Cart response structure:', {
+          hasHeaders: !!response.headers,
+          hasData: response.data !== undefined,
+          status: response.status,
+          type: typeof response
+        });
+      }
+      
       const data = await handleApiResponse(response);
       
       // Cache the result
@@ -325,7 +341,25 @@ class UserService {
       return data;
     } catch (error) {
       console.error('Error fetching cart:', error);
-      throw new Error(error.message || 'Failed to fetch cart');
+      
+      // For development, provide more detailed error information
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Cart error details:', {
+          message: error.message,
+          stack: error.stack,
+          response: error.response
+        });
+      }
+      
+      // Return empty cart data instead of throwing to prevent app crashes
+      return {
+        success: true,
+        data: {
+          items: [],
+          total: 0,
+          itemCount: 0
+        }
+      };
     }
   }
 

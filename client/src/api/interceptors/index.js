@@ -592,6 +592,12 @@ export const apiClient = new ApiClient(FORMATTED_API_BASE_URL);
 
 // Enhanced response handler utility with comprehensive error translation
 export const handleApiResponse = async (response, context = {}) => {
+  // Safety check for response structure
+  if (!response || !response.headers) {
+    console.error('Invalid response object passed to handleApiResponse:', response);
+    throw new Error('Invalid response object: missing headers');
+  }
+  
   const contentType = response.headers.get('content-type');
   
   let data;
