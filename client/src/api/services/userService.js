@@ -247,7 +247,7 @@ class UserService {
     try {
       const { page = 1, limit = 20 } = params;
       
-      const response = await apiClient.get(API_ENDPOINTS.USERS.WISHLIST, {
+      const response = await apiClient.get('/users/wishlist', {
         params: { page, limit }
       });
       return handleApiResponse(response);
@@ -263,7 +263,7 @@ class UserService {
     }
 
     try {
-      const response = await apiClient.post(`${API_ENDPOINTS.USERS.WISHLIST}/${productId}`);
+      const response = await apiClient.post(`/users/wishlist/${productId}`);
       return handleApiResponse(response);
     } catch (error) {
       console.error(`Error adding product ${productId} to wishlist:`, error);
@@ -277,7 +277,7 @@ class UserService {
     }
 
     try {
-      const response = await apiClient.delete(`${API_ENDPOINTS.USERS.WISHLIST}/${productId}`);
+      const response = await apiClient.delete(`/users/wishlist/${productId}`);
       return handleApiResponse(response);
     } catch (error) {
       console.error(`Error removing product ${productId} from wishlist:`, error);
@@ -313,7 +313,7 @@ class UserService {
     }
 
     try {
-      const response = await apiClient.get(API_ENDPOINTS.USERS.CART);
+      const response = await apiClient.get('/users/cart');
       const data = await handleApiResponse(response);
       
       // Cache the result
@@ -341,7 +341,7 @@ class UserService {
         throw new Error('Quantity must be greater than 0');
       }
 
-      const response = await apiClient.post(API_ENDPOINTS.USERS.CART, {
+      const response = await apiClient.post('/users/cart', {
         productId,
         quantity: parseInt(quantity),
         options
@@ -371,7 +371,7 @@ class UserService {
         throw new Error('Quantity must be greater than 0');
       }
 
-      const response = await apiClient.put(`${API_ENDPOINTS.USERS.CART}/${itemId}`, {
+      const response = await apiClient.put(`/users/cart/${itemId}`, {
         ...updateData,
         ...(quantity && { quantity: parseInt(quantity) })
       });
@@ -394,7 +394,7 @@ class UserService {
     }
 
     try {
-      const response = await apiClient.delete(`${API_ENDPOINTS.USERS.CART}/${itemId}`);
+      const response = await apiClient.delete(`/users/cart/${itemId}`);
       const data = await handleApiResponse(response);
       
       // Clear cart cache
@@ -409,7 +409,7 @@ class UserService {
 
   async clearCart() {
     try {
-      const response = await apiClient.delete(API_ENDPOINTS.USERS.CART);
+      const response = await apiClient.delete('/users/cart');
       const data = await handleApiResponse(response);
       
       // Clear cart cache

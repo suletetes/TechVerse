@@ -231,7 +231,7 @@ const productReducer = (state, action) => {
     case PRODUCT_ACTIONS.LOAD_REVIEWS_SUCCESS:
       return {
         ...state,
-        reviews: action.payload.data || action.payload || [],
+        reviews: action.payload.data?.reviews || action.payload.reviews || action.payload || [],
         isLoading: false,
         error: null
       };

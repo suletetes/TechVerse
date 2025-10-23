@@ -24,13 +24,13 @@ export const API_ENDPOINTS = {
     RESET_PASSWORD: '/auth/reset-password',
     VERIFY_EMAIL: '/auth/verify-email',
     RESEND_VERIFICATION: '/auth/resend-verification',
-    
+
     // MFA endpoints
     SETUP_MFA: '/auth/mfa/setup',
     VERIFY_MFA: '/auth/mfa/verify',
     DISABLE_MFA: '/auth/mfa/disable',
     RESEND_MFA: '/auth/mfa/resend',
-    
+
     // Session management
     SESSIONS: '/auth/sessions',
     PREFERENCES: '/auth/preferences'
@@ -99,37 +99,37 @@ export const API_ENDPOINTS = {
     // Dashboard
     DASHBOARD: '/admin/dashboard',
     ANALYTICS: '/admin/analytics',
-    
+
     // Product management
     PRODUCTS: '/admin/products',
     PRODUCT_CREATE: '/admin/products/create',
     PRODUCT_UPDATE: '/admin/products/:id',
     PRODUCT_DELETE: '/admin/products/:id',
     PRODUCT_BULK: '/admin/products/bulk',
-    
+
     // Category management
     CATEGORIES: '/admin/categories',
     CATEGORY_CREATE: '/admin/categories/create',
     CATEGORY_UPDATE: '/admin/categories/:id',
     CATEGORY_DELETE: '/admin/categories/:id',
-    
+
     // Order management
     ORDERS: '/admin/orders',
     ORDER_UPDATE: '/admin/orders/:id',
     ORDER_FULFILL: '/admin/orders/:id/fulfill',
     ORDER_REFUND: '/admin/orders/:id/refund',
-    
+
     // User management
     USERS: '/admin/users',
     USER_UPDATE: '/admin/users/:id',
     USER_SUSPEND: '/admin/users/:id/suspend',
     USER_ACTIVATE: '/admin/users/:id/activate',
-    
+
     // Homepage management
     HOMEPAGE_SECTIONS: '/admin/homepage/sections',
     HOMEPAGE_ASSIGN: '/admin/homepage/assign',
     HOMEPAGE_UNASSIGN: '/admin/homepage/unassign',
-    
+
     // Settings
     SETTINGS: '/admin/settings',
     SYSTEM_INFO: '/admin/system/info',
@@ -339,14 +339,14 @@ export const ENDPOINT_GROUPS = {
     API_ENDPOINTS.AUTH.REFRESH,
     API_ENDPOINTS.AUTH.LOGOUT
   ],
-  
+
   PRODUCT_CATALOG: [
     API_ENDPOINTS.PRODUCTS.BASE,
     API_ENDPOINTS.PRODUCTS.CATEGORIES,
     API_ENDPOINTS.PRODUCTS.BRANDS,
     API_ENDPOINTS.PRODUCTS.SEARCH
   ],
-  
+
   HOMEPAGE_SECTIONS: [
     API_ENDPOINTS.PRODUCTS.FEATURED,
     API_ENDPOINTS.PRODUCTS.LATEST,
@@ -354,14 +354,14 @@ export const ENDPOINT_GROUPS = {
     API_ENDPOINTS.PRODUCTS.QUICK_PICKS,
     API_ENDPOINTS.PRODUCTS.WEEKLY_DEALS
   ],
-  
+
   USER_MANAGEMENT: [
     API_ENDPOINTS.USERS.PROFILE,
     API_ENDPOINTS.USERS.ADDRESSES,
     API_ENDPOINTS.USERS.PAYMENT_METHODS,
     API_ENDPOINTS.USERS.PREFERENCES
   ],
-  
+
   ORDER_MANAGEMENT: [
     API_ENDPOINTS.ORDERS.BASE,
     API_ENDPOINTS.ORDERS.HISTORY,

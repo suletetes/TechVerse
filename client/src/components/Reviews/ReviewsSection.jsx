@@ -22,7 +22,7 @@ const ReviewsSection = ({
     isLoading = false
 }) => {
     // Handle backend review data structure
-    const processedReviews = reviews.filter(review => review && review.rating).map(review => ({
+    const processedReviews = (Array.isArray(reviews) ? reviews : []).filter(review => review && review.rating).map(review => ({
         id: review._id || review.id,
         name: review.user?.firstName && review.user?.lastName 
             ? `${review.user.firstName} ${review.user.lastName}`
