@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 const AdminOrders = ({ 
-    recentOrders, 
+    recentOrders = [], 
     getStatusColor, 
     formatCurrency,
     bulkActions,
@@ -29,7 +29,9 @@ const AdminOrders = ({
         setExpandedOrders(newExpanded);
     };
 
-    const filteredOrders = recentOrders.filter(order => {
+    // Ensure recentOrders is an array
+    const safeOrders = Array.isArray(recentOrders) ? recentOrders : [];
+    const filteredOrders = safeOrders.filter(order => {
         if (searchTerm && !order.id.toLowerCase().includes(searchTerm.toLowerCase()) && 
             !order.customer.toLowerCase().includes(searchTerm.toLowerCase())) {
             return false;

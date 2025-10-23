@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const AdminUsers = ({ users, getStatusColor, formatCurrency, onAddUser, onEditUser, onDeleteUser }) => {
+const AdminUsers = ({ users = [], getStatusColor, formatCurrency, onAddUser, onEditUser, onDeleteUser }) => {
     const [showAddForm, setShowAddForm] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
@@ -80,9 +80,9 @@ const AdminUsers = ({ users, getStatusColor, formatCurrency, onAddUser, onEditUs
         const userData = {
             ...newUser,
             id: editingUser || Date.now(),
-            joinDate: editingUser ? users.find(u => u.id === editingUser)?.joinDate : new Date().toISOString().split('T')[0],
-            orders: editingUser ? users.find(u => u.id === editingUser)?.orders : 0,
-            totalSpent: editingUser ? users.find(u => u.id === editingUser)?.totalSpent : 0
+            joinDate: editingUser ? (Array.isArray(users) ? users.find(u => u.id === editingUser)?.joinDate : null) || new Date().toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            orders: editingUser ? (Array.isArray(users) ? users.find(u => u.id === editingUser)?.orders : 0) || 0 : 0,
+            totalSpent: editingUser ? (Array.isArray(users) ? users.find(u => u.id === editingUser)?.totalSpent : 0) || 0 : 0
         };
 
         if (editingUser) {
@@ -95,7 +95,9 @@ const AdminUsers = ({ users, getStatusColor, formatCurrency, onAddUser, onEditUs
         setEditingUser(null);
     };
 
-    const filteredUsers = users.filter(user => {
+    // Ensure users is an array and provide safe filtering
+    const safeUsers = Array.isArray(users) ? users : [];
+    const filteredUsers = safeUsers.filter(user => {
         if (searchTerm && !user.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
             !user.email.toLowerCase().includes(searchTerm.toLowerCase())) {
             return false;
@@ -381,7 +383,7 @@ const AdminUsers = ({ users, getStatusColor, formatCurrency, onAddUser, onEditUs
             <div className="col-md-3 mb-3">
                 <div className="card border-0 bg-success bg-opacity-10">
                     <div className="card-body text-center">
-                        <h4 className="text-success mb-1">{users.filter(u => u.status === 'Active').length}</h4>
+                        <h4 className="text-success mb-1">{safeUsers.filter(u => u.status === 'Active').length}</h4>
                         <small className="text-muted">Active Users</small>
                     </div>
                 </div>
@@ -389,7 +391,7 @@ const AdminUsers = ({ users, getStatusColor, formatCurrency, onAddUser, onEditUs
             <div className="col-md-3 mb-3">
                 <div className="card border-0 bg-warning bg-opacity-10">
                     <div className="card-body text-center">
-                        <h4 className="text-warning mb-1">{users.filter(u => u.status === 'VIP').length}</h4>
+                        <h4 className="text-warning mb-1">{safeUsers.filter(u => u.status === 'VIP').length}</h4>
                         <small className="text-muted">VIP Users</small>
                     </div>
                 </div>
@@ -398,7 +400,7 @@ const AdminUsers = ({ users, getStatusColor, formatCurrency, onAddUser, onEditUs
                 <div className="card border-0 bg-info bg-opacity-10">
                     <div className="card-body text-center">
                         <h4 className="text-info mb-1">
-                            {users.filter(u => {
+                            {safeUsers.filter(u => {
                                 const joinDate = new Date(u.joinDate);
                                 const thirtyDaysAgo = new Date();
                                 thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);

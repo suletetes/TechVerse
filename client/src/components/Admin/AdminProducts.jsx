@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 const AdminProducts = ({ 
-    products, 
+    products = [], 
     categories = [], 
     specifications = {},
     setActiveTab, 
@@ -11,7 +11,7 @@ const AdminProducts = ({
     onDeleteProduct,
     onDuplicateProduct 
 }) => {
-    const [filteredProducts, setFilteredProducts] = useState(products);
+    const [filteredProducts, setFilteredProducts] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
@@ -50,7 +50,9 @@ const AdminProducts = ({
 
     // Filter and sort products
     useEffect(() => {
-        let filtered = [...products];
+        // Ensure products is an array
+        const safeProducts = Array.isArray(products) ? products : [];
+        let filtered = [...safeProducts];
 
         // Search filter
         if (searchTerm) {
@@ -95,8 +97,8 @@ const AdminProducts = ({
     // Pagination
     const indexOfLastProduct = currentPage * productsPerPage;
     const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-    const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
-    const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+    const currentProducts = Array.isArray(filteredProducts) ? filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct) : [];
+    const totalPages = Math.ceil((Array.isArray(filteredProducts) ? filteredProducts.length : 0) / productsPerPage);
 
     const handleEdit = (productId) => {
         console.log('Edit product:', productId);
@@ -116,7 +118,7 @@ const AdminProducts = ({
     };
 
     const handleDuplicate = (productId) => {
-        const productToDuplicate = products.find(p => p.id === productId);
+        const productToDuplicate = Array.isArray(products) ? products.find(p => p.id === productId) : null;
         if (productToDuplicate && onDuplicateProduct) {
             onDuplicateProduct(productToDuplicate);
         } else {
@@ -262,12 +264,12 @@ const AdminProducts = ({
                                 <div className="col-md-6">
                                     <div className="d-flex align-items-center">
                                         <span className="text-muted me-3">
-                                            Showing {indexOfFirstProduct + 1}-{Math.min(indexOfLastProduct, filteredProducts.length)} of {filteredProducts.length} products
+                                            Showing {indexOfFirstProduct + 1}-{Math.min(indexOfLastProduct, Array.isArray(filteredProducts) ? filteredProducts.length : 0)} of {Array.isArray(filteredProducts) ? filteredProducts.length : 0} products
                                         </span>
                                         {selectedCategory && (
                                             <div className="d-flex align-items-center">
                                                 <span className="badge bg-primary me-2">
-                                                    {categoryOptions.find(c => c.value === selectedCategory)?.label}
+                                                    {Array.isArray(categoryOptions) ? categoryOptions.find(c => c.value === selectedCategory)?.label : selectedCategory}
                                                 </span>
                                                 {getCategorySpecs(selectedCategory) > 0 && (
                                                     <small className="text-muted">
@@ -281,16 +283,16 @@ const AdminProducts = ({
                                 <div className="col-md-6">
                                     <div className="d-flex gap-2 justify-content-md-end">
                                         <span className="badge bg-success bg-opacity-15 text-success">
-                                            {products.filter(p => p.status === 'active').length} Active
+                                            {Array.isArray(products) ? products.filter(p => p.status === 'active').length : 0} Active
                                         </span>
                                         <span className="badge bg-warning bg-opacity-15 text-warning">
-                                            {products.filter(p => p.stock < 10 && p.stock > 0).length} Low Stock
+                                            {Array.isArray(products) ? products.filter(p => p.stock < 10 && p.stock > 0).length : 0} Low Stock
                                         </span>
                                         <span className="badge bg-danger bg-opacity-15 text-danger">
-                                            {products.filter(p => p.stock === 0).length} Out of Stock
+                                            {Array.isArray(products) ? products.filter(p => p.stock === 0).length : 0} Out of Stock
                                         </span>
                                         <span className="badge bg-info bg-opacity-15 text-info">
-                                            {categories.length} Categories
+                                            {Array.isArray(categories) ? categories.length : 0} Categories
                                         </span>
                                     </div>
                                 </div>
@@ -490,7 +492,7 @@ const AdminProducts = ({
             )}
 
             {/* Empty State */}
-            {filteredProducts.length === 0 && (
+            {(!Array.isArray(filteredProducts) || filteredProducts.length === 0) && (
                 <div className="text-center py-5">
                     <svg width="64" height="64" viewBox="0 0 24 24" className="text-muted mb-3">
                         <path fill="currentColor" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6Z" />
@@ -498,7 +500,7 @@ const AdminProducts = ({
                     <h5 className="text-muted">No products found</h5>
                     <p className="text-muted">
                         {selectedCategory 
-                            ? `No products found in the "${categoryOptions.find(c => c.value === selectedCategory)?.label}" category`
+                            ? `No products found in the "${Array.isArray(categoryOptions) ? categoryOptions.find(c => c.value === selectedCategory)?.label : selectedCategory}" category`
                             : 'Try adjusting your search or filter criteria'
                         }
                     </p>
@@ -518,7 +520,7 @@ const AdminProducts = ({
                                 className="btn btn-outline-secondary"
                                 onClick={() => setActiveTab('catalog')}
                             >
-                                Manage "{categoryOptions.find(c => c.value === selectedCategory)?.label}" Category
+                                Manage "{Array.isArray(categoryOptions) ? categoryOptions.find(c => c.value === selectedCategory)?.label : selectedCategory}" Category
                             </button>
                         )}
                     </div>
@@ -526,13 +528,13 @@ const AdminProducts = ({
             )}
 
             {/* Category Management Quick Actions */}
-            {selectedCategory && filteredProducts.length > 0 && (
+            {selectedCategory && Array.isArray(filteredProducts) && filteredProducts.length > 0 && (
                 <div className="mt-4 p-3 bg-light rounded-3">
                     <div className="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 className="mb-1">Category: {categoryOptions.find(c => c.value === selectedCategory)?.label}</h6>
+                            <h6 className="mb-1">Category: {Array.isArray(categoryOptions) ? categoryOptions.find(c => c.value === selectedCategory)?.label : selectedCategory}</h6>
                             <small className="text-muted">
-                                {filteredProducts.length} products • {getCategorySpecs(selectedCategory)} specifications available
+                                {Array.isArray(filteredProducts) ? filteredProducts.length : 0} products • {getCategorySpecs(selectedCategory)} specifications available
                             </small>
                         </div>
                         <div className="d-flex gap-2">

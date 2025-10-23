@@ -350,7 +350,7 @@ const AdminProfile = () => {
                         dashboardStats={dashboardStats}
                         dateRange={dateRange}
                         setDateRange={setDateRange}
-                        recentOrders={adminOrders?.slice(0, 10) || []}
+                        recentOrders={Array.isArray(adminOrders) ? adminOrders.slice(0, 10) : []}
                         setActiveTab={setActiveTab}
                         getStatusColor={getStatusColor}
                         formatCurrency={formatCurrency}
@@ -390,7 +390,7 @@ const AdminProfile = () => {
                 return (
                     <AdminAddProduct
                         categories={categories}
-                        editProduct={adminProducts.find(p => p._id === editProductId)}
+                        editProduct={Array.isArray(adminProducts) ? adminProducts.find(p => p._id === editProductId) : null}
                         onSave={handleUpdateProduct}
                         onCancel={() => handleTabChange('products')}
                         isLoading={isProductsLoading}
@@ -530,7 +530,7 @@ const AdminProfile = () => {
                         dashboardStats={dashboardStats}
                         dateRange="7days"
                         setDateRange={() => {}}
-                        recentOrders={adminOrders?.slice(0, 10) || []}
+                        recentOrders={Array.isArray(adminOrders) ? adminOrders.slice(0, 10) : []}
                         setActiveTab={setActiveTab}
                         getStatusColor={getStatusColor}
                         formatCurrency={formatCurrency}

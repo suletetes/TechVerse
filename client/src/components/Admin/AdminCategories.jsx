@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const AdminCategories = ({ categories, setActiveTab, onSave, onDelete }) => {
+const AdminCategories = ({ categories = [], setActiveTab, onSave, onDelete }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [showAddForm, setShowAddForm] = useState(false);
@@ -46,7 +46,9 @@ const AdminCategories = ({ categories, setActiveTab, onSave, onDelete }) => {
         ]
     });
 
-    const filteredCategories = categories.filter(category =>
+    // Ensure categories is an array
+    const safeCategories = Array.isArray(categories) ? categories : [];
+    const filteredCategories = safeCategories.filter(category =>
         category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         category.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -348,7 +350,7 @@ const AdminCategories = ({ categories, setActiveTab, onSave, onDelete }) => {
                                     onChange={(e) => setNewCategory(prev => ({ ...prev, parentId: e.target.value || null }))}
                                 >
                                     <option value="">No Parent (Top Level)</option>
-                                    {categories.filter(c => c.id !== editingCategory).map(category => (
+                                    {safeCategories.filter(c => c.id !== editingCategory).map(category => (
                                         <option key={category.id} value={category.id}>
                                             {category.name}
                                         </option>
