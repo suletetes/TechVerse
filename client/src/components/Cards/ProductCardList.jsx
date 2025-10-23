@@ -15,7 +15,10 @@ const ProductCardList = ({ product }) => {
                 {/* Category Badge */}
                 <div className="position-absolute top-0 start-0 m-2">
                     <span className="badge bg-primary">
-                        {product.category.charAt(0).toUpperCase() + product.category.slice(1)}
+                        {product.category && typeof product.category === 'string' 
+                            ? product.category.charAt(0).toUpperCase() + product.category.slice(1)
+                            : product.category?.name || 'Category'
+                        }
                     </span>
                 </div>
                 

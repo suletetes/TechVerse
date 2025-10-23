@@ -196,11 +196,11 @@ const OptimizedProductCard = memo(({
 
           <div className="product-price">
             <span className="current-price">
-              ${product.price.toFixed(2)}
+              ${typeof product.price === 'number' ? product.price.toFixed(2) : product.price || '0.00'}
             </span>
             {isOnSale && (
               <span className="original-price">
-                ${product.comparePrice.toFixed(2)}
+                ${typeof product.comparePrice === 'number' ? product.comparePrice.toFixed(2) : product.comparePrice || '0.00'}
               </span>
             )}
           </div>

@@ -23,12 +23,12 @@ const AdminProducts = ({
     // Dynamic categories from catalog management system
     const categoryOptions = [
         { value: '', label: 'All Categories' },
-        ...categories.map(cat => ({
+        ...(Array.isArray(categories) ? categories.map(cat => ({
             value: cat.slug || cat.name.toLowerCase(),
             label: cat.name,
             count: cat.productCount || 0,
             isActive: cat.isActive
-        }))
+        })) : [])
     ];
 
     const statusOptions = [
@@ -55,8 +55,8 @@ const AdminProducts = ({
         // Search filter
         if (searchTerm) {
             filtered = filtered.filter(product =>
-                product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.id.toString().includes(searchTerm) ||
+                (product.name && product.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (product.id && product.id.toString().includes(searchTerm)) ||
                 (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()))
             );
         }
@@ -153,9 +153,9 @@ const AdminProducts = ({
     };
 
     const getCategoryInfo = (categorySlug) => {
-        return categories.find(cat => 
+        return Array.isArray(categories) ? categories.find(cat => 
             (cat.slug || cat.name.toLowerCase()) === categorySlug
-        );
+        ) : null;
     };
 
     return (
