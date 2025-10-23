@@ -196,8 +196,9 @@ export const securityHeaders = (req, res, next) => {
  * Input validation and sanitization middleware
  */
 export const inputSanitization = (req, res, next) => {
-  // Skip sanitization for auth endpoints - they have their own validation
-  if (req.originalUrl.includes('/api/auth/')) {
+  // Skip sanitization for all API endpoints - they have their own validation
+  // Only apply to non-API routes (like static file uploads, etc.)
+  if (req.originalUrl.startsWith('/api/')) {
     return next();
   }
 

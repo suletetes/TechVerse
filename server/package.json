@@ -42,6 +42,7 @@
     "@node-rs/argon2": "^2.0.2",
     "@sentry/node": "^10.21.0",
     "@sentry/tracing": "^7.120.4",
+    "@types/web-push": "^3.6.4",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.41.0",
     "compression": "^1.7.4",
@@ -66,11 +67,15 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
+    "rate-limit-redis": "^4.2.3",
     "sharp": "^0.33.0",
+    "socket.io": "^4.8.1",
     "speakeasy": "^2.0.0",
     "stripe": "^14.7.0",
+    "web-push": "^3.6.7",
     "winston": "^3.18.3",
-    "winston-daily-rotate-file": "^5.0.0"
+    "winston-daily-rotate-file": "^5.0.0",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^2.1.9",

@@ -21,6 +21,7 @@ import {
 } from '../controllers/productController.js';
 import { authenticate, requireAdmin, optionalAuth, apiRateLimit } from '../middleware/passportAuth.js';
 import { validate, commonValidations } from '../middleware/validation.js';
+import { Product } from '../models/index.js';
 
 const router = express.Router();
 
@@ -68,7 +69,18 @@ const productValidation = [
 ];
 
 const reviewValidation = [
-  commonValidations.mongoId('id'),
+  param('id')
+    .custom((value) => {
+      // Check if it's a valid MongoDB ObjectId
+      if (/^[0-9a-fA-F]{24}$/.test(value)) {
+        return true;
+      }
+      // Check if it's a valid slug (letters, numbers, hyphens)
+      if (/^[a-z0-9-]+$/.test(value) && value.length >= 2 && value.length <= 100) {
+        return true;
+      }
+      throw new Error('Product identifier must be a valid MongoDB ObjectId or slug');
+    }),
   body('rating')
     .isInt({ min: 1, max: 5 })
     .withMessage('Rating must be between 1 and 5'),
@@ -139,12 +151,91 @@ router.get('/category/:categoryId',
   optionalAuth, 
   getProductsByCategory
 );
-router.get('/:id', commonValidations.mongoId('id'), validate, optionalAuth, getProductById);
+// Custom validation for product ID or slug
+const productIdOrSlugValidation = [
+  param('id')
+    .custom((value) => {
+      // Check if it's a valid MongoDB ObjectId
+      if (/^[0-9a-fA-F]{24}$/.test(value)) {
+        return true;
+      }
+      // Check if it's a valid slug (letters, numbers, hyphens)
+      if (/^[a-z0-9-]+$/.test(value) && value.length >= 2 && value.length <= 100) {
+        return true;
+      }
+      throw new Error('Product identifier must be a valid MongoDB ObjectId or slug');
+    })
+];
+
+router.get('/:id', productIdOrSlugValidation, validate, optionalAuth, getProductById);
 router.get('/:id/reviews', 
-  [commonValidations.mongoId('id'), ...commonValidations.pagination()], 
+  [productIdOrSlugValidation[0], ...commonValidations.pagination()], 
   validate, 
   getProductReviews
 );
+
+// Get related products
+router.get('/:id/related', productIdOrSlugValidation, validate, async (req, res, next) => {
+  const { id } = req.params;
+  const { limit = 4 } = req.query;
+
+  try {
+    // First find the product to get its ID
+    let product = null;
+    
+    // Check if it's a valid MongoDB ObjectId format
+    if (/^[0-9a-fA-F]{24}$/.test(id)) {
+      product = await Product.findById(id).select('_id relatedProducts category');
+    }
+    
+    // If not found by ID or not a valid ObjectId, try to find by slug
+    if (!product) {
+      product = await Product.findBySlug(id).select('_id relatedProducts category');
+    }
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found',
+        code: 'PRODUCT_NOT_FOUND'
+      });
+    }
+
+    let relatedProducts = [];
+
+    // If product has manually set related products, use those
+    if (product.relatedProducts && product.relatedProducts.length > 0) {
+      relatedProducts = await Product.find({
+        _id: { $in: product.relatedProducts },
+        status: 'active',
+        visibility: 'public'
+      })
+      .select('name price images rating slug')
+      .limit(parseInt(limit));
+    } else {
+      // Otherwise, find products in the same category
+      relatedProducts = await Product.find({
+        category: product.category,
+        _id: { $ne: product._id },
+        status: 'active',
+        visibility: 'public'
+      })
+      .select('name price images rating slug')
+      .sort({ 'rating.average': -1, createdAt: -1 })
+      .limit(parseInt(limit));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Related products retrieved successfully',
+      data: {
+        products: relatedProducts
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Protected routes (authenticated users)
 router.post('/:id/reviews', reviewValidation, validate, authenticate, addProductReview);

@@ -114,13 +114,19 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
 export const getProductById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-  // Try to find by ID first, then by slug
-  let product = await Product.findById(id)
-    .populate('category', 'name slug')
-    .populate('relatedProducts', 'name price images rating')
-    .populate('crossSells', 'name price images rating')
-    .populate('upsells', 'name price images rating');
+  let product = null;
 
+  // Check if it's a valid MongoDB ObjectId format
+  if (/^[0-9a-fA-F]{24}$/.test(id)) {
+    // Try to find by ID first
+    product = await Product.findById(id)
+      .populate('category', 'name slug')
+      .populate('relatedProducts', 'name price images rating')
+      .populate('crossSells', 'name price images rating')
+      .populate('upsells', 'name price images rating');
+  }
+
+  // If not found by ID or not a valid ObjectId, try to find by slug
   if (!product) {
     product = await Product.findBySlug(id)
       .populate('category', 'name slug')
@@ -481,8 +487,15 @@ export const addProductReview = asyncHandler(async (req, res, next) => {
   const { id: productId } = req.params;
   const { rating, title, comment, pros, cons } = req.body;
 
-  // Check if product exists
-  const product = await Product.findById(productId);
+  // Check if product exists - try by ID first, then by slug
+  let product = null;
+  if (/^[0-9a-fA-F]{24}$/.test(productId)) {
+    product = await Product.findById(productId);
+  }
+  if (!product) {
+    product = await Product.findBySlug(productId);
+  }
+  
   if (!product) {
     return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
   }
@@ -500,7 +513,7 @@ export const addProductReview = asyncHandler(async (req, res, next) => {
   // Create review
   const reviewData = {
     user: req.user._id,
-    product: productId,
+    product: product._id,
     rating,
     title,
     comment,
@@ -524,7 +537,7 @@ export const addProductReview = asyncHandler(async (req, res, next) => {
 
   logger.info('Product review added', {
     reviewId: review._id,
-    productId,
+    productId: product._id,
     userId: req.user._id,
     rating,
     ip: req.ip
@@ -552,8 +565,15 @@ export const getProductReviews = asyncHandler(async (req, res, next) => {
     verified
   } = req.query;
 
-  // Check if product exists
-  const product = await Product.findById(productId);
+  // Check if product exists - try by ID first, then by slug
+  let product = null;
+  if (/^[0-9a-fA-F]{24}$/.test(productId)) {
+    product = await Product.findById(productId);
+  }
+  if (!product) {
+    product = await Product.findBySlug(productId);
+  }
+  
   if (!product) {
     return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
   }
@@ -567,15 +587,15 @@ export const getProductReviews = asyncHandler(async (req, res, next) => {
     verified: verified === 'true' ? true : undefined
   };
 
-  // Get reviews
-  const reviews = await Review.findByProduct(productId, options);
+  // Get reviews using the actual product ObjectId
+  const reviews = await Review.findByProduct(product._id, options);
   const totalReviews = await Review.countDocuments({
-    product: productId,
+    product: product._id,
     status: 'approved'
   });
 
   // Get rating breakdown
-  const ratingBreakdown = await Review.getProductRatingBreakdown(productId);
+  const ratingBreakdown = await Review.getProductRatingBreakdown(product._id);
 
   // Calculate pagination
   const totalPages = Math.ceil(totalReviews / options.limit);

@@ -200,7 +200,7 @@ const validateDeploymentReadiness = () => {
 /**
  * Validate configuration consistency
  */
-const validateConfigConsistency = () => {
+const validateConfigConsistency = async () => {
   console.log('🔍 Validating configuration consistency...');
   
   const issues = [];

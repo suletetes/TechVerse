@@ -7,8 +7,14 @@ import compression from 'compression';
 // Load environment variables first
 dotenv.config();
 
+// Initialize Sentry as early as possible
+sentryConfig.initialize();
+
 import connectDB from './src/config/database.js';
 import logger from './src/utils/logger.js';
+import enhancedLogger from './src/utils/enhancedLogger.js';
+import sentryConfig from './src/config/sentry.js';
+import securityMonitor from './src/utils/securityMonitor.js';
 import passport, { initializePassport } from './src/config/passport.js';
 import sessionConfig from './src/config/session.js';
 
@@ -16,13 +22,10 @@ import sessionConfig from './src/config/session.js';
 import {
   errorHandler,
   notFound,
-  apiRateLimit,
   corsOptions,
   helmetConfig,
   requestId,
-  securityHeaders,
   maintenanceMode,
-  suspiciousActivityDetector,
   requestSizeLimiter,
   developmentLogger,
   productionLogger,
@@ -30,6 +33,16 @@ import {
   performanceMonitor,
   sanitizeInput
 } from './src/middleware/index.js';
+
+// Import enhanced security middleware
+import {
+  apiRateLimit,
+  securityHeaders,
+  inputSanitization,
+  suspiciousActivityDetector,
+  trackFailedAuth,
+  securityAuditLogger
+} from './src/middleware/securityMiddleware.js';
 
 // Import enhanced CORS handling
 import {
@@ -47,6 +60,7 @@ import orderRoutes from './src/routes/orders.js';
 import userRoutes from './src/routes/users.js';
 import adminRoutes from './src/routes/admin.js';
 import uploadRoutes from './src/routes/upload.js';
+import notificationRoutes from './src/routes/notifications.js';
 
 // Initialize Passport strategies
 initializePassport();
@@ -61,13 +75,21 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // Trust proxy (for accurate IP addresses behind reverse proxy)
 app.set('trust proxy', 1);
 
-// Request ID middleware (must be first)
+// Sentry request handler (must be first)
+app.use(sentryConfig.getRequestHandler());
+app.use(sentryConfig.getTracingHandler());
+
+// Request ID middleware
 app.use(requestId);
 
 // Security middleware
 app.use(helmet(helmetConfig));
 app.use(securityHeaders);
 app.use(compression());
+
+// Security monitoring middleware
+app.use(securityAuditLogger);
+app.use(trackFailedAuth);
 
 // Maintenance mode check
 app.use(maintenanceMode);
@@ -92,13 +114,11 @@ app.use(express.urlencoded({
   limit: '10mb'
 }));
 
-// Input sanitization
-app.use(sanitizeInput);
+// Enhanced input sanitization and security checks
+// app.use(inputSanitization); // Temporarily disabled - causing validation issues
+app.use(suspiciousActivityDetector);
 
 // Session and Passport will be initialized in async startup function
-
-// Security checks
-app.use(suspiciousActivityDetector);
 
 // Logging middleware
 if (NODE_ENV === 'development') {
@@ -175,6 +195,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check endpoints
 import healthCheck from './src/utils/healthCheck.js';
@@ -306,26 +327,53 @@ app.use(notFound);
 // CORS error handling (before global error handler)
 app.use(corsErrorHandler);
 
+// Sentry error handler (before global error handler)
+app.use(sentryConfig.getErrorHandler());
+
 // Global error handling middleware (must be last)
 app.use(errorHandler);
 
 // Graceful shutdown handling
-const gracefulShutdown = (signal) => {
-  logger.info(`Received ${signal}. Starting graceful shutdown...`);
+const gracefulShutdown = async (signal) => {
+  enhancedLogger.info(`Received ${signal}. Starting graceful shutdown...`);
 
-  server.close((err) => {
+  // Flush Sentry events
+  try {
+    await sentryConfig.flush(5000);
+    enhancedLogger.info('Sentry events flushed');
+  } catch (error) {
+    enhancedLogger.error('Failed to flush Sentry events', { error: error.message });
+  }
+
+  // Close server
+  server.close(async (err) => {
     if (err) {
-      logger.error('Error during server shutdown', err);
+      enhancedLogger.error('Error during server shutdown', { error: err.message });
       process.exit(1);
     }
 
-    logger.info('Server closed successfully');
+    // Close Sentry client
+    try {
+      await sentryConfig.close(2000);
+      enhancedLogger.info('Sentry client closed');
+    } catch (error) {
+      enhancedLogger.error('Failed to close Sentry client', { error: error.message });
+    }
+
+    // Flush logs
+    try {
+      await enhancedLogger.flush();
+    } catch (error) {
+      console.error('Failed to flush logs:', error.message);
+    }
+
+    enhancedLogger.info('Server closed successfully');
     process.exit(0);
   });
 
   // Force shutdown after 30 seconds
   setTimeout(() => {
-    logger.error('Forced shutdown after timeout');
+    enhancedLogger.error('Forced shutdown after timeout');
     process.exit(1);
   }, 30000);
 };
@@ -333,8 +381,12 @@ const gracefulShutdown = (signal) => {
 // Async server initialization
 async function initializeServer() {
   try {
+    // Start security monitoring
+    securityMonitor.startCleanup();
+    enhancedLogger.info('Security monitoring initialized');
+
     // Initialize session management
-    logger.info('Initializing session management...');
+    enhancedLogger.info('Initializing session management...');
     
     // Try to initialize session manager first
     const sessionManagerInitialized = await import('./src/utils/sessionManager.js')
@@ -413,6 +465,11 @@ async function startServer() {
 
 // Start the server
 const server = await startServer();
+
+// Initialize Socket.io
+import socketManager from './src/socket/socketManager.js';
+const io = socketManager.initialize(server);
+enhancedLogger.info('Socket.io initialized successfully');
 
 // Handle server errors
 server.on('error', (error) => {

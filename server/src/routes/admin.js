@@ -22,6 +22,13 @@ import {
   bulkUpdateProductSections,
   getAnalytics
 } from '../controllers/adminController.js';
+import {
+  getSecurityDashboard,
+  getSecurityAlerts,
+  testSecurityMonitoring,
+  getSecurityConfig,
+  clearSecurityEvents
+} from '../controllers/securityController.js';
 import { authenticate, requireAdmin } from '../middleware/passportAuth.js';
 import { validate, commonValidations } from '../middleware/validation.js';
 
@@ -133,5 +140,12 @@ router.delete('/sections/:section/products/:productId',
 // Product management for sections
 router.get('/products/available', getAvailableProducts);
 router.put('/products/sections', bulkSectionUpdateValidation, validate, bulkUpdateProductSections);
+
+// Security monitoring routes
+router.get('/security/dashboard', getSecurityDashboard);
+router.get('/security/alerts', getSecurityAlerts);
+router.post('/security/test', testSecurityMonitoring);
+router.get('/security/config', getSecurityConfig);
+router.post('/security/clear', clearSecurityEvents);
 
 export default router;
