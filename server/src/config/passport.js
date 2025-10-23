@@ -156,8 +156,8 @@ export const initializePassport = () => {
     passReqToCallback: true
   }, async (req, email, password, done) => {
     try {
-      // Find user by email
-      const user = await User.findOne({ email: email.toLowerCase() });
+      // Find user by email (include password field)
+      const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
 
       if (!user) {
         logger.warn('Local authentication failed: User not found', {

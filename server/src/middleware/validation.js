@@ -14,10 +14,18 @@ export const validate = (req, res, next) => {
       location: error.location
     }));
     
+    // Enhanced debugging
+    console.log('=== VALIDATION FAILED DEBUG ===');
+    console.log('Request body:', req.body);
+    console.log('Validation errors:', errorMessages);
+    console.log('Raw errors:', errors.array());
+    console.log('==============================');
+    
     logger.warn('Validation failed', {
       endpoint: req.originalUrl,
       method: req.method,
       errors: errorMessages,
+      requestBody: req.body,
       userId: req.user?._id
     });
     

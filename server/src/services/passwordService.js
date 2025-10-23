@@ -39,7 +39,7 @@ class PasswordService {
       const hashedPassword = await hash(password, this.argon2Options);
       
       // Add prefix to identify Argon2 hashes
-      const prefixedHash = `$argon2id$${hashedPassword}`;
+      const prefixedHash = `$argon2id${hashedPassword}`;
 
       logger.debug('Password hashed successfully with Argon2', {
         passwordLength: password.length,
@@ -51,15 +51,14 @@ class PasswordService {
     } catch (error) {
       logger.error('Password hashing failed', {
         error: error.message,
-        stack: error.stack,
-        algorithm: 'argon2id'
+        passwordLength: password?.length || 0
       });
-      throw new Error('Password hashing failed');
+      throw error;
     }
   }
 
   /**
-   * Verify a password against a hash (supports both Argon2 and bcrypt)
+   * Verify a password against a hash
    * @param {string} password - Plain text password
    * @param {string} hash - Stored password hash
    * @returns {Promise<boolean>} - True if password matches
@@ -71,9 +70,9 @@ class PasswordService {
       }
 
       // Check if it's an Argon2 hash (has our custom prefix)
-      if (hash.startsWith('$argon2id$')) {
+      if (hash.startsWith('$argon2id')) {
         // Remove our custom prefix and verify with Argon2
-        const actualHash = hash.substring('$argon2id$'.length);
+        const actualHash = hash.substring('$argon2id'.length);
         const isValid = await verify(actualHash, password);
         
         logger.debug('Password verification completed', {
@@ -119,33 +118,22 @@ class PasswordService {
   }
 
   /**
-   * Check if a hash needs to be upgraded to Argon2
-   * @param {string} hash - Stored password hash
-   * @returns {boolean} - True if hash should be upgraded
+   * Check if a password hash needs upgrade
+   * @param {string} hash - Password hash to check
+   * @returns {boolean} - True if hash needs upgrade
    */
   needsUpgrade(hash) {
     if (!hash) return false;
     
-    // If it's already an Argon2 hash with our prefix, no upgrade needed
-    if (hash.startsWith('$argon2id$')) {
-      return false;
-    }
-
-    // If it's a standard Argon2 hash, might need upgrade to our format
-    if (hash.startsWith('$argon2')) {
-      return true; // Upgrade to our prefixed format
-    }
-
-    // If it's bcrypt, definitely needs upgrade
-    return hash.startsWith('$2a$') || hash.startsWith('$2b$') || hash.startsWith('$2y$');
+    // If it's not using our Argon2 prefix, it needs upgrade
+    return !hash.startsWith('$argon2id');
   }
 
   /**
-   * Migrate a bcrypt hash to Argon2 (requires plain text password)
-   * This is used during login when we have access to the plain text password
+   * Migrate an old hash to new format
    * @param {string} password - Plain text password
-   * @param {string} oldHash - Current bcrypt hash
-   * @returns {Promise<string|null>} - New Argon2 hash or null if verification fails
+   * @param {string} oldHash - Old password hash
+   * @returns {Promise<string|null>} - New hash or null if migration failed
    */
   async migrateHash(password, oldHash) {
     try {
@@ -153,148 +141,78 @@ class PasswordService {
       const isValid = await this.verifyPassword(password, oldHash);
       
       if (!isValid) {
-        logger.warn('Hash migration failed: password verification failed', {
-          oldHashType: this.getHashType(oldHash)
-        });
         return null;
       }
 
-      // Generate new Argon2 hash
+      // Create new hash with current algorithm
       const newHash = await this.hashPassword(password);
       
       logger.info('Password hash migrated successfully', {
-        oldHashType: this.getHashType(oldHash),
-        newHashType: 'argon2id',
+        oldAlgorithm: oldHash.startsWith('$argon2') ? 'argon2' : 'bcrypt',
+        newAlgorithm: 'argon2id',
         oldHashLength: oldHash.length,
         newHashLength: newHash.length
       });
 
       return newHash;
     } catch (error) {
-      logger.error('Hash migration failed', {
+      logger.error('Password hash migration failed', {
         error: error.message,
-        stack: error.stack,
-        oldHashType: this.getHashType(oldHash)
+        oldHashLength: oldHash?.length || 0
       });
       return null;
     }
   }
 
   /**
-   * Get the type of hash algorithm used
+   * Hash password with bcrypt (for compatibility)
+   * @param {string} password - Plain text password
+   * @returns {Promise<string>} - bcrypt hash
+   */
+  async hashPasswordBcrypt(password) {
+    try {
+      const salt = await bcrypt.genSalt(this.bcryptRounds);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      
+      logger.debug('Password hashed successfully with bcrypt', {
+        passwordLength: password.length,
+        hashLength: hashedPassword.length,
+        algorithm: 'bcrypt'
+      });
+
+      return hashedPassword;
+    } catch (error) {
+      logger.error('bcrypt password hashing failed', {
+        error: error.message,
+        passwordLength: password?.length || 0
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get algorithm info from hash
    * @param {string} hash - Password hash
-   * @returns {string} - Hash algorithm type
+   * @returns {object} - Algorithm information
    */
-  getHashType(hash) {
-    if (!hash) return 'unknown';
-    
-    if (hash.startsWith('$argon2id$')) return 'argon2id-prefixed';
-    if (hash.startsWith('$argon2id')) return 'argon2id';
-    if (hash.startsWith('$argon2i')) return 'argon2i';
-    if (hash.startsWith('$argon2d')) return 'argon2d';
-    if (hash.startsWith('$2a$') || hash.startsWith('$2b$') || hash.startsWith('$2y$')) return 'bcrypt';
-    
-    return 'unknown';
-  }
-
-  /**
-   * Generate a secure random password
-   * @param {number} length - Password length (default: 16)
-   * @returns {string} - Generated password
-   */
-  generateSecurePassword(length = 16) {
-    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-    let password = '';
-    
-    for (let i = 0; i < length; i++) {
-      const randomIndex = Math.floor(Math.random() * charset.length);
-      password += charset[randomIndex];
-    }
-    
-    return password;
-  }
-
-  /**
-   * Validate password strength
-   * @param {string} password - Password to validate
-   * @returns {Object} - Validation result with score and feedback
-   */
-  validatePasswordStrength(password) {
-    if (!password) {
-      return {
-        isValid: false,
-        score: 0,
-        feedback: ['Password is required']
-      };
+  getHashInfo(hash) {
+    if (!hash) {
+      return { algorithm: 'unknown', needsUpgrade: true };
     }
 
-    const feedback = [];
-    let score = 0;
-
-    // Length check
-    if (password.length < 6) {
-      feedback.push('Password must be at least 6 characters long');
-    } else if (password.length >= 8) {
-      score += 1;
+    if (hash.startsWith('$argon2id')) {
+      return { algorithm: 'argon2id', needsUpgrade: false };
     }
 
-    // Character variety checks
-    if (!/[a-z]/.test(password)) {
-      feedback.push('Password should contain lowercase letters');
-    } else {
-      score += 1;
+    if (hash.startsWith('$argon2')) {
+      return { algorithm: 'argon2', needsUpgrade: true };
     }
 
-    if (!/[A-Z]/.test(password)) {
-      feedback.push('Password should contain uppercase letters');
-    } else {
-      score += 1;
+    if (hash.startsWith('$2a$') || hash.startsWith('$2b$') || hash.startsWith('$2y$')) {
+      return { algorithm: 'bcrypt', needsUpgrade: true };
     }
 
-    if (!/\d/.test(password)) {
-      feedback.push('Password should contain numbers');
-    } else {
-      score += 1;
-    }
-
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-      feedback.push('Password should contain special characters');
-    } else {
-      score += 1;
-    }
-
-    // Common password check
-    const commonPasswords = [
-      'password', '123456', 'password123', 'admin', 'qwerty',
-      'letmein', 'welcome', 'monkey', '1234567890', 'abc123'
-    ];
-    
-    if (commonPasswords.includes(password.toLowerCase())) {
-      feedback.push('Password is too common');
-      score = Math.max(0, score - 2);
-    }
-
-    const isValid = password.length >= 6 && feedback.length === 0;
-
-    return {
-      isValid,
-      score,
-      feedback,
-      strength: this.getStrengthLabel(score)
-    };
-  }
-
-  /**
-   * Get password strength label
-   * @param {number} score - Password score
-   * @returns {string} - Strength label
-   */
-  getStrengthLabel(score) {
-    if (score <= 1) return 'Very Weak';
-    if (score <= 2) return 'Weak';
-    if (score <= 3) return 'Fair';
-    if (score <= 4) return 'Good';
-    return 'Strong';
+    return { algorithm: 'unknown', needsUpgrade: true };
   }
 }
 

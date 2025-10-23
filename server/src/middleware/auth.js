@@ -786,7 +786,7 @@ export const validateAuthInput = (req, res, next) => {
       errors.push('Invalid email format');
     }
 
-    // Check for suspicious email patterns
+    // Check for suspicious email patterns (but don't fail validation)
     const suspiciousPatterns = [
       /(.)\1{4,}/, // Repeated characters
       /^[0-9]+@/, // Starts with numbers only
@@ -802,7 +802,7 @@ export const validateAuthInput = (req, res, next) => {
     }
   }
 
-  // Password validation for registration/reset
+  // Password validation for registration/reset only
   if (password && (req.originalUrl.includes('/register') || req.originalUrl.includes('/reset-password'))) {
     if (password.length < 6) {
       errors.push('Password must be at least 6 characters long');
@@ -819,27 +819,53 @@ export const validateAuthInput = (req, res, next) => {
     }
   }
 
-  // Check for SQL injection patterns
-  const sqlInjectionPatterns = [
-    /('|\\')|(;|\\;)|(--)|(\s*(union|select|insert|delete|update|drop|create|alter|exec|execute)\s*)/i
-  ];
-
-  const checkSqlInjection = (value) => {
-    return sqlInjectionPatterns.some(pattern => pattern.test(value));
+  // More targeted SQL injection check - only check for obvious patterns
+  const checkForObviousSqlInjection = (value) => {
+    if (typeof value !== 'string') return false;
+    
+    // Only flag very obvious SQL injection attempts
+    const obviousPatterns = [
+      /\bunion\s+select\b/i,
+      /\bdrop\s+table\b/i,
+      /\bdelete\s+from\b/i,
+      /\binsert\s+into\b/i,
+      /\bupdate\s+.*\s+set\b/i,
+      /\bselect\s+.*\s+from\b/i,
+      /;\s*drop\s/i,
+      /;\s*delete\s/i,
+      /'\s*or\s*'1'\s*=\s*'1/i,
+      /'\s*or\s*1\s*=\s*1/i
+    ];
+    
+    return obviousPatterns.some(pattern => pattern.test(value));
   };
 
-  Object.values(req.body).forEach(value => {
-    if (typeof value === 'string' && checkSqlInjection(value)) {
-      logger.warn('Potential SQL injection attempt detected', {
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        endpoint: req.originalUrl
-      });
-      errors.push('Invalid input detected');
-    }
-  });
+  // Only check email and password fields for SQL injection
+  if (email && checkForObviousSqlInjection(email)) {
+    logger.warn('Potential SQL injection in email detected', {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      endpoint: req.originalUrl
+    });
+    errors.push('Invalid email format');
+  }
+
+  if (password && checkForObviousSqlInjection(password)) {
+    logger.warn('Potential SQL injection in password detected', {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      endpoint: req.originalUrl
+    });
+    errors.push('Invalid password format');
+  }
 
   if (errors.length > 0) {
+    logger.warn('Auth input validation failed', {
+      endpoint: req.originalUrl,
+      errors,
+      ip: req.ip
+    });
+    
     return res.status(400).json({
       success: false,
       message: 'Validation failed',

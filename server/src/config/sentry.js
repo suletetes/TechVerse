@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/node';
-import { ProfilingIntegration } from '@sentry/profiling-node';
 import logger from '../utils/logger.js';
 
 /**
@@ -35,7 +34,6 @@ class SentryConfig {
         
         // Performance monitoring
         tracesSampleRate: environment === 'production' ? 0.1 : 1.0,
-        profilesSampleRate: environment === 'production' ? 0.1 : 1.0,
         
         // Integrations
         integrations: [
@@ -47,8 +45,6 @@ class SentryConfig {
           new Sentry.Integrations.Mongo(),
           // Enable Redis instrumentation
           new Sentry.Integrations.Redis(),
-          // Enable profiling
-          new ProfilingIntegration(),
         ],
 
         // Security and privacy settings
