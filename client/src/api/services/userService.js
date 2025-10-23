@@ -326,11 +326,20 @@ class UserService {
           hasHeaders: !!response.headers,
           hasData: response.data !== undefined,
           status: response.status,
-          type: typeof response
+          type: typeof response,
+          keys: Object.keys(response || {})
         });
       }
       
-      const data = await handleApiResponse(response);
+      // Check if response is already processed data (not a fetch Response)
+      let data;
+      if (response && typeof response === 'object' && response.data !== undefined && !response.headers) {
+        // Response is already processed data from ApiClient
+        data = response;
+      } else {
+        // Response is a fetch Response object, needs processing
+        data = await handleApiResponse(response);
+      }
       
       // Cache the result
       this.cache.set(cacheKey, {

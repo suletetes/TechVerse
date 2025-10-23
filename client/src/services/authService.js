@@ -548,7 +548,20 @@ class UnifiedAuthService {
   getCurrentUser() {
     try {
       const storedUser = localStorage.getItem('techverse_user');
-      return storedUser ? JSON.parse(storedUser) : null;
+      const user = storedUser ? JSON.parse(storedUser) : null;
+      
+      // Debug logging for admin role checking
+      if (process.env.NODE_ENV === 'development' && user) {
+        console.log('Current user debug:', {
+          email: user.email,
+          role: user.role,
+          isAdmin: user.role === 'admin',
+          hasAdminRole: this.hasRole('admin'),
+          isAdminMethod: this.isAdmin()
+        });
+      }
+      
+      return user;
     } catch (error) {
       console.error('Error parsing stored user:', error);
       return null;

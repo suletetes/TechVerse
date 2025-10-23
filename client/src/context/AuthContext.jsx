@@ -62,9 +62,21 @@ const authReducer = (state, action) => {
 
     case AUTH_ACTIONS.LOGIN_SUCCESS:
     case AUTH_ACTIONS.LOAD_USER_SUCCESS:
+      const user = action.payload.user || action.payload;
+
+      // Debug logging for admin role issue
+      if (process.env.NODE_ENV === 'development') {
+        console.log('AuthContext reducer LOGIN_SUCCESS:', {
+          payload: action.payload,
+          extractedUser: user,
+          userRole: user?.role,
+          permissions: action.payload.permissions
+        });
+      }
+
       return {
         ...state,
-        user: action.payload.user || action.payload,
+        user,
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -201,7 +213,7 @@ const AuthContext = createContext();
 // Provider component
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
-  
+
   // Simple notification function for now - we'll enhance this later
   const showNotification = useCallback((message, type = 'info') => {
     // For now, just log to console in development
@@ -210,7 +222,7 @@ export const AuthProvider = ({ children }) => {
     }
     // TODO: Integrate with notification system once circular dependency is resolved
   }, []);
-  
+
   const sessionCheckInterval = useRef(null);
   const activityTimeout = useRef(null);
   const syncUnsubscribe = useRef(null);
@@ -262,12 +274,12 @@ export const AuthProvider = ({ children }) => {
   // Load user on app start
   useEffect(() => {
     loadUser();
-    
+
     // Set up multi-tab synchronization
     syncUnsubscribe.current = multiTabSyncManager.addSyncListener((event) => {
       handleSyncEvent(event);
     });
-    
+
     return () => {
       if (syncUnsubscribe.current) {
         syncUnsubscribe.current();
@@ -329,23 +341,23 @@ export const AuthProvider = ({ children }) => {
           showNotification('Logged in from another tab', 'info');
         }
         break;
-      
+
       case 'logout':
         dispatch({ type: AUTH_ACTIONS.LOGOUT });
         showNotification('Logged out from another tab', 'info');
         break;
-      
+
       case 'tokenRefresh':
         if (event.data.user) {
           dispatch({ type: AUTH_ACTIONS.UPDATE_USER, payload: event.data.user });
         }
         break;
-      
+
       case 'securityBreach':
         dispatch({ type: AUTH_ACTIONS.LOGOUT });
         showNotification('Security breach detected. Please log in again.', 'error');
         break;
-      
+
       case 'sessionStateChange':
         if (event.data) {
           const { isAuthenticated, user } = event.data;
@@ -379,6 +391,16 @@ export const AuthProvider = ({ children }) => {
 
       console.log('Sending login data to authService:', loginData);
       const response = await authService.login(loginData);
+
+      // Debug logging for admin role issue
+      if (process.env.NODE_ENV === 'development') {
+        console.log('AuthContext login response:', {
+          response,
+          user: response.user,
+          userRole: response.user?.role,
+          hasUser: !!response.user
+        });
+      }
 
       // Handle MFA requirement
       if (response.mfaRequired) {
@@ -439,10 +461,10 @@ export const AuthProvider = ({ children }) => {
       }
 
       dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response });
-      
+
       // Sync login across tabs
       multiTabSyncManager.syncLogin(response.user || response, response.tokens);
-      
+
       showNotification('Registration successful!', 'success');
       return response;
 
