@@ -665,8 +665,22 @@ export const seedDatabase = async () => {
         const users = [];
         for (const userData of seedData.users) {
             const user = await User.create(userData);
+            
+            // Fix accountStatus for admin users (pre-save middleware sets it to 'pending')
+            if (userData.accountStatus === 'active' && user.accountStatus === 'pending') {
+                await User.updateOne(
+                    { _id: user._id },
+                    { 
+                        accountStatus: 'active',
+                        isEmailVerified: true 
+                    }
+                );
+                user.accountStatus = 'active';
+                user.isEmailVerified = true;
+            }
+            
             users.push(user);
-            console.log(`   ✅ Created user: ${user.email} (${user.role})`);
+            console.log(`   ✅ Created user: ${user.email} (${user.role}) - Status: ${user.accountStatus}`);
         }
 
         const adminUser = users.find(u => u.role === 'admin');
