@@ -85,40 +85,40 @@ const OrdersTable = ({
       cell: ({ row }) => {
         const order = row.original;
         return (
-          <div className="btn-group btn-group-sm">
+          <div className="btn-group btn-group-sm" role="group">
             <button 
-              className="btn btn-outline-primary btn-sm" 
+              className="btn btn-outline-primary" 
               title="View Details"
               onClick={(e) => {
                 e.stopPropagation();
                 onView?.(order);
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24">
+              <svg width="12" height="12" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
               </svg>
             </button>
             <button 
-              className="btn btn-outline-secondary btn-sm" 
+              className="btn btn-outline-secondary" 
               title="Edit Order"
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit?.(order);
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24">
+              <svg width="12" height="12" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
               </svg>
             </button>
             <button 
-              className="btn btn-outline-info btn-sm" 
+              className="btn btn-outline-info" 
               title="Print Invoice"
               onClick={(e) => {
                 e.stopPropagation();
                 onPrintInvoice?.(order);
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24">
+              <svg width="12" height="12" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
               </svg>
             </button>
@@ -187,6 +187,7 @@ const OrdersTable = ({
       emptyMessage="No orders found"
       renderSubComponent={renderSubComponent}
       onRowClick={(order) => onView?.(order)}
+      className="orders-table"
     />
   );
 };

@@ -13,7 +13,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         sku: editProduct?.sku || '',
         shortDescription: editProduct?.shortDescription || '',
         longDescription: editProduct?.longDescription || '',
-        
+
         // Pricing & Inventory
         price: editProduct?.price || '',
         originalPrice: editProduct?.originalPrice || '',
@@ -21,22 +21,22 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         stock: editProduct?.stock || '',
         minOrderQuantity: editProduct?.minOrderQuantity || 1,
         maxOrderQuantity: editProduct?.maxOrderQuantity || 10,
-        
+
         // Dynamic Product Options based on category
         productOptions: editProduct?.productOptions || {},
-        
+
         // Media Gallery (matching Product.jsx structure) - now supports videos
         mediaGallery: editProduct?.mediaGallery || [],
         mainImage: editProduct?.mainImage || '',
         videos: editProduct?.videos || [], // New video support
-        
+
         // Dynamic Technical Specifications based on category
         technicalSpecs: editProduct?.technicalSpecs || {},
         dynamicSpecs: editProduct?.dynamicSpecs || {}, // New dynamic specs based on category template
-        
+
         // Key Features
         keyFeatures: editProduct?.keyFeatures || [],
-        
+
         // Physical Properties
         weight: editProduct?.weight || '',
         dimensions: editProduct?.dimensions || {
@@ -44,13 +44,13 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             width: '',
             height: ''
         },
-        
+
         // SEO & Marketing
         seoTitle: editProduct?.seoTitle || '',
         seoDescription: editProduct?.seoDescription || '',
         tags: editProduct?.tags || [],
         featured: editProduct?.featured || false,
-        
+
         // Status & Shipping
         status: editProduct?.status || 'draft',
         shippingRequired: editProduct?.shippingRequired || true,
@@ -65,54 +65,54 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     // Validation function matching backend requirements
     const validateForm = () => {
         const newErrors = {};
-        
+
         // Required fields validation
         if (!formData.name || formData.name.trim().length === 0) {
             newErrors.name = 'Product name is required';
         } else if (formData.name.trim().length > 200) {
             newErrors.name = 'Product name cannot exceed 200 characters';
         }
-        
+
         if (!formData.longDescription && !formData.shortDescription) {
             newErrors.description = 'Product description is required';
         } else if (formData.longDescription && formData.longDescription.length > 2000) {
             newErrors.longDescription = 'Description cannot exceed 2000 characters';
         }
-        
+
         if (formData.shortDescription && formData.shortDescription.length > 500) {
             newErrors.shortDescription = 'Short description cannot exceed 500 characters';
         }
-        
+
         if (!formData.price || parseFloat(formData.price) <= 0) {
             newErrors.price = 'Product price is required and must be greater than 0';
         }
-        
+
         if (!formData.brand || formData.brand.trim().length === 0) {
             newErrors.brand = 'Product brand is required';
         }
-        
+
         if (!formData.category) {
             newErrors.category = 'Product category is required';
         }
-        
+
         // Optional field validations
         if (formData.originalPrice && parseFloat(formData.originalPrice) < 0) {
             newErrors.originalPrice = 'Compare price cannot be negative';
         }
-        
+
         if (formData.costPrice && parseFloat(formData.costPrice) < 0) {
             newErrors.costPrice = 'Cost price cannot be negative';
         }
-        
+
         if (formData.stock && parseInt(formData.stock) < 0) {
             newErrors.stock = 'Stock quantity cannot be negative';
         }
-        
+
         // Weight validation
         if (formData.weight && parseFloat(formData.weight) < 0) {
             newErrors.weight = 'Weight cannot be negative';
         }
-        
+
         // Dimensions validation
         if (formData.dimensions) {
             if (formData.dimensions.length && parseFloat(formData.dimensions.length) < 0) {
@@ -125,7 +125,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                 newErrors.dimensionsHeight = 'Height cannot be negative';
             }
         }
-        
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -133,9 +133,9 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     // Initialize category and dynamic specs
     useEffect(() => {
         if (formData.category && categories.length > 0) {
-            const category = categories.find(c => c.slug === formData.category || c.name === formData.category);
+            const category = Array.isArray(categories) ? categories.find(c => c.slug === formData.category || c.name === formData.category) : null;
             setSelectedCategory(category);
-            
+
             if (category && !editProduct) {
                 // Initialize dynamic specs based on category template
                 const initialSpecs = {};
@@ -144,7 +144,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                         initialSpecs[field.id] = '';
                     });
                 });
-                
+
                 // Initialize product options based on category template
                 const initialOptions = {};
                 category.optionsTemplate?.forEach(optionGroup => {
@@ -159,7 +159,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                         };
                     }
                 });
-                
+
                 setFormData(prev => ({
                     ...prev,
                     dynamicSpecs: initialSpecs,
@@ -186,7 +186,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             ...prev,
             [field]: value
         }));
-        
+
         // Clear error when user starts typing
         if (errors[field]) {
             setErrors(prev => ({
@@ -277,11 +277,11 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         try {
             // Create preview URL for immediate display
             const previewUrl = uploadService.createPreviewUrl(file);
-            
+
             if (type === 'main') {
                 // Set preview immediately
                 handleInputChange('mainImage', previewUrl);
-                
+
                 // Upload to backend
                 const response = await uploadService.uploadSingleImage(file, {
                     alt: formData.name || 'Product Image',
@@ -333,8 +333,8 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                 if (uploadedImage?.url) {
                     setFormData(prev => ({
                         ...prev,
-                        mediaGallery: prev.mediaGallery.map(media => 
-                            media.id === tempMedia.id 
+                        mediaGallery: prev.mediaGallery.map(media =>
+                            media.id === tempMedia.id
                                 ? {
                                     ...media,
                                     id: `image-${Date.now()}`,
@@ -353,7 +353,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         } catch (error) {
             console.error('Upload failed:', error);
             alert(`Upload failed: ${error.message}`);
-            
+
             // Remove failed upload from gallery if it was added
             if (type !== 'main') {
                 setFormData(prev => ({
@@ -386,7 +386,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                     fileName: file.name,
                     fileSize: file.size
                 };
-                
+
                 // Add to both videos array and media gallery
                 setFormData(prev => ({
                     ...prev,
@@ -407,7 +407,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
 
     const validateStep = (step) => {
         const newErrors = {};
-        
+
         switch (step) {
             case 1:
                 if (!formData.name) newErrors.name = 'Product name is required';
@@ -430,7 +430,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                 }
                 break;
         }
-        
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -450,7 +450,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         if (!isDraft && !validateForm()) {
             return;
         }
-        
+
         // Transform frontend form data to backend expected structure
         const productData = {
             // Basic required fields
@@ -460,22 +460,22 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             price: parseFloat(formData.price) || 0,
             brand: formData.brand.trim(),
             category: formData.category, // Should be ObjectId
-            
+
             // Optional pricing fields
             comparePrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
             cost: formData.costPrice ? parseFloat(formData.costPrice) : undefined,
-            
+
             // SKU and barcode
             sku: formData.sku || undefined,
             barcode: formData.barcode || undefined,
-            
+
             // Stock information - transform to backend structure
             stock: {
                 quantity: parseInt(formData.stock) || 0,
                 lowStockThreshold: 10, // Default value
                 trackQuantity: true
             },
-            
+
             // Images - transform mediaGallery to backend images structure
             images: formData.mediaGallery
                 .filter(media => media.type === 'image')
@@ -485,7 +485,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                     isPrimary: index === 0 || media.isPrimary || false,
                     publicId: media.publicId || null
                 })),
-            
+
             // Variants - transform productOptions to backend variants structure
             variants: Object.entries(formData.productOptions || {}).map(([key, option]) => ({
                 name: option.name || key,
@@ -495,7 +495,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                     stock: opt.stock || 0
                 })) || []
             })).filter(variant => variant.options.length > 0),
-            
+
             // Specifications - transform technicalSpecs and dynamicSpecs
             specifications: [
                 // Transform technicalSpecs
@@ -511,23 +511,23 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                     category: selectedCategory?.name?.toLowerCase() || 'general'
                 }))
             ].filter(spec => spec.value && spec.value.trim()),
-            
+
             // Features - ensure it's an array of strings
-            features: Array.isArray(formData.keyFeatures) 
+            features: Array.isArray(formData.keyFeatures)
                 ? formData.keyFeatures.filter(f => f && f.trim())
                 : [],
-            
+
             // Tags - ensure it's an array of strings
-            tags: Array.isArray(formData.tags) 
+            tags: Array.isArray(formData.tags)
                 ? formData.tags.filter(t => t && t.trim())
                 : [],
-            
+
             // Weight - transform to backend structure
             weight: formData.weight ? {
                 value: parseFloat(formData.weight),
                 unit: 'g' // Default unit
             } : undefined,
-            
+
             // Dimensions - transform to backend structure
             dimensions: (formData.dimensions?.length || formData.dimensions?.width || formData.dimensions?.height) ? {
                 length: parseFloat(formData.dimensions.length) || 0,
@@ -535,7 +535,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                 height: parseFloat(formData.dimensions.height) || 0,
                 unit: 'cm' // Default unit
             } : undefined,
-            
+
             // Shipping information
             shipping: {
                 free: formData.shippingRequired === false || formData.shippingClass === 'free',
@@ -546,33 +546,33 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                     height: parseFloat(formData.dimensions.height) || 0
                 } : undefined
             },
-            
+
             // SEO information
             seo: {
                 title: formData.seoTitle || formData.name,
                 description: formData.seoDescription || formData.shortDescription,
                 keywords: Array.isArray(formData.tags) ? formData.tags : []
             },
-            
+
             // Status and visibility
             status: isDraft ? 'draft' : 'active',
             visibility: 'public', // Default visibility
             featured: Boolean(formData.featured),
-            
+
             // Sections - if featured, add to featured section
             sections: formData.featured ? ['featured'] : [],
-            
+
             // Remove frontend-specific fields that don't exist in backend
             // id, createdAt, updatedAt will be handled by backend
         };
-        
+
         // Remove undefined values to avoid sending unnecessary data
         Object.keys(productData).forEach(key => {
             if (productData[key] === undefined) {
                 delete productData[key];
             }
         });
-        
+
         onSave(productData);
     };
 
@@ -609,9 +609,9 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                 onChange={(e) => handleInputChange('category', e.target.value)}
                             >
                                 <option value="">Select category</option>
-                                {categories.filter(cat => cat.isActive).map(cat => (
+                                {Array.isArray(categories) ? categories.filter(cat => cat.isActive).map(cat => (
                                     <option key={cat.id} value={cat.slug}>{cat.name}</option>
-                                ))}
+                                )) : null}
                             </select>
                             {errors.category && <div className="invalid-feedback">{errors.category}</div>}
                             {selectedCategory && (
@@ -764,8 +764,8 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                     <h5>Product Options</h5>
                                     <p className="text-muted">Configure available options for {selectedCategory.name}</p>
                                 </div>
-                                
-                                {selectedCategory.optionsTemplate.filter(opt => opt.enabled).map((optionGroup) => (
+
+                                {Array.isArray(selectedCategory?.optionsTemplate) ? selectedCategory.optionsTemplate.filter(opt => opt.enabled).map((optionGroup) => (
                                     <div key={optionGroup.id} className="col-12 mb-4">
                                         <div className="card">
                                             <div className="card-header">
@@ -782,15 +782,15 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                             </div>
                                             <div className="card-body">
                                                 <div className="row">
-                                                    {optionGroup.options.map((option, optionIndex) => (
+                                                    {Array.isArray(optionGroup.options) ? optionGroup.options.map((option, optionIndex) => (
                                                         <div key={option.id} className="col-md-6 col-lg-4 mb-3">
                                                             <div className="card border">
                                                                 <div className="card-body p-3">
                                                                     <div className="d-flex align-items-center justify-content-between">
                                                                         <div className="d-flex align-items-center">
                                                                             {optionGroup.type === 'color' && (
-                                                                                <div 
-                                                                                    className="me-2 border rounded-circle" 
+                                                                                <div
+                                                                                    className="me-2 border rounded-circle"
                                                                                     style={{
                                                                                         width: '24px',
                                                                                         height: '24px',
@@ -833,7 +833,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                                                             </label>
                                                                         </div>
                                                                     </div>
-                                                                    
+
                                                                     {optionGroup.type === 'select' && optionGroup.id === 'storage' && (
                                                                         <div className="mt-2">
                                                                             <label className="form-label">
@@ -859,9 +859,9 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    ))}
+                                                    )) : null}
                                                 </div>
-                                                
+
                                                 {optionGroup.options.length === 0 && (
                                                     <div className="text-center py-3 text-muted">
                                                         <p>No {optionGroup.name.toLowerCase()} defined for this category.</p>
@@ -870,14 +870,14 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                             </div>
                                         </div>
                                     </div>
-                                ))}
+                                )) : null}
                             </>
                         ) : (
                             <div className="col-12">
                                 <div className="alert alert-info">
                                     <h6>No Product Options</h6>
                                     <p className="mb-0">
-                                        {selectedCategory 
+                                        {selectedCategory
                                             ? `The ${selectedCategory.name} category doesn't have any product options configured.`
                                             : 'Please select a category in step 1 to see available product options.'
                                         }
@@ -912,7 +912,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                 </div>
                             )}
                         </div>
-                        
+
                         <div className="col-md-6 mb-4">
                             <h5>Additional Images</h5>
                             <div className="mb-3">
@@ -943,7 +943,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                         <div className="col-12">
                             <h5>Media Gallery</h5>
                             <div className="row">
-                                {formData.mediaGallery.map((media, index) => (
+                                {Array.isArray(formData.mediaGallery) ? formData.mediaGallery.map((media, index) => (
                                     <div key={media.id} className="col-md-3 mb-3">
                                         <div className="card">
                                             {media.type === 'image' ? (
@@ -964,7 +964,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                                     <div className="position-absolute top-50 start-50 translate-middle">
                                                         <div className="bg-dark bg-opacity-75 rounded-circle p-2">
                                                             <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                                                                <path d="M8 5v14l11-7z"/>
+                                                                <path d="M8 5v14l11-7z" />
                                                             </svg>
                                                         </div>
                                                     </div>
@@ -983,9 +983,9 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                             </div>
                                         </div>
                                     </div>
-                                ))}
+                                )) : null}
                             </div>
-                            {formData.mediaGallery.length === 0 && (
+                            {(!Array.isArray(formData.mediaGallery) || formData.mediaGallery.length === 0) && (
                                 <div className="text-center py-4 text-muted">
                                     <p>No media uploaded yet. Add images and videos to showcase your product.</p>
                                 </div>
@@ -1001,15 +1001,15 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                             <div className="col-12 mb-4">
                                 <h5>Product Specifications</h5>
                                 <p className="text-muted">Fill in the specifications for {selectedCategory.name}</p>
-                                
-                                {selectedCategory.specificationTemplate.groups.map((group) => (
+
+                                {Array.isArray(selectedCategory?.specificationTemplate?.groups) ? selectedCategory.specificationTemplate.groups.map((group) => (
                                     <div key={group.id} className="card mb-3">
                                         <div className="card-header">
                                             <h6 className="mb-0">{group.name}</h6>
                                         </div>
                                         <div className="card-body">
                                             <div className="row">
-                                                {group.fields.map((field) => (
+                                                {Array.isArray(group.fields) ? group.fields.map((field) => (
                                                     <div key={field.id} className="col-md-6 mb-3">
                                                         <label className="form-label">
                                                             {field.name}
@@ -1043,9 +1043,9 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                                                 required={field.required}
                                                             >
                                                                 <option value="">Select {field.name}</option>
-                                                                {field.options?.map((option, index) => (
+                                                                {Array.isArray(field.options) ? field.options.map((option, index) => (
                                                                     <option key={index} value={option}>{option}</option>
-                                                                ))}
+                                                                )) : null}
                                                             </select>
                                                         )}
                                                         {field.type === 'textarea' && (
@@ -1071,11 +1071,11 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                                             </select>
                                                         )}
                                                     </div>
-                                                ))}
+                                                )) : null}
                                             </div>
                                         </div>
                                     </div>
-                                ))}
+                                )) : null}
                             </div>
                         ) : (
                             <div className="col-12 mb-4">
@@ -1104,7 +1104,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                 </div>
                             </div>
                             <div className="d-flex flex-wrap gap-2">
-                                {formData.keyFeatures.map((feature, index) => (
+                                {Array.isArray(formData.keyFeatures) ? formData.keyFeatures.map((feature, index) => (
                                     <span key={index} className="badge bg-primary d-flex align-items-center">
                                         {feature}
                                         <button
@@ -1112,7 +1112,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                             onClick={() => removeFeature(index)}
                                         ></button>
                                     </span>
-                                ))}
+                                )) : null}
                             </div>
                         </div>
                     </div>
@@ -1163,7 +1163,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                 </button>
                             </div>
                             <div className="d-flex flex-wrap gap-2">
-                                {formData.tags.map((tag, index) => (
+                                {Array.isArray(formData.tags) ? formData.tags.map((tag, index) => (
                                     <span key={index} className="badge bg-secondary d-flex align-items-center">
                                         {tag}
                                         <button
@@ -1171,7 +1171,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                             onClick={() => removeTag(index)}
                                         ></button>
                                     </span>
-                                ))}
+                                )) : null}
                             </div>
                         </div>
                         <div className="col-12 mb-3">
@@ -1275,16 +1275,14 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                     {steps.map((step) => (
                         <div
                             key={step.id}
-                            className={`d-flex flex-column align-items-center ${
-                                step.id === currentStep ? 'text-primary' : 
+                            className={`d-flex flex-column align-items-center ${step.id === currentStep ? 'text-primary' :
                                 step.id < currentStep ? 'text-success' : 'text-muted'
-                            }`}
+                                }`}
                         >
                             <div
-                                className={`rounded-circle d-flex align-items-center justify-content-center mb-2 ${
-                                    step.id === currentStep ? 'bg-primary text-white' :
+                                className={`rounded-circle d-flex align-items-center justify-content-center mb-2 ${step.id === currentStep ? 'bg-primary text-white' :
                                     step.id < currentStep ? 'bg-success text-white' : 'bg-light'
-                                }`}
+                                    }`}
                                 style={{ width: '40px', height: '40px' }}
                             >
                                 {step.id < currentStep ? '✓' : step.icon}
@@ -1315,7 +1313,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                 >
                     Previous
                 </button>
-                
+
                 <div className="d-flex gap-2">
                     {currentStep === steps.length ? (
                         <>

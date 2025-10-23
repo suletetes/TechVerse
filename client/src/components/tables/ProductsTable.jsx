@@ -53,7 +53,7 @@ const ProductsTable = ({
           </div>
         );
       },
-      size: 300,
+      size: 250,
     },
     {
       accessorKey: 'category',
@@ -140,59 +140,59 @@ const ProductsTable = ({
       cell: ({ row }) => {
         const product = row.original;
         return (
-          <div className="btn-group btn-group-sm">
+          <div className="btn-group btn-group-sm" role="group">
             <button 
-              className="btn btn-outline-primary btn-sm" 
+              className="btn btn-outline-primary" 
               title="View Product"
               onClick={(e) => {
                 e.stopPropagation();
                 onView?.(product);
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24">
+              <svg width="12" height="12" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
               </svg>
             </button>
             <button 
-              className="btn btn-outline-secondary btn-sm" 
+              className="btn btn-outline-secondary" 
               title="Edit Product"
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit?.(product);
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24">
+              <svg width="12" height="12" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
               </svg>
             </button>
             <button 
-              className={`btn btn-outline-warning btn-sm ${product.featured ? 'active' : ''}`}
+              className={`btn ${product.featured ? 'btn-warning' : 'btn-outline-warning'}`}
               title={product.featured ? 'Remove from Featured' : 'Add to Featured'}
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleFeatured?.(product);
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24">
+              <svg width="12" height="12" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
               </svg>
             </button>
             <button 
-              className="btn btn-outline-danger btn-sm" 
+              className="btn btn-outline-danger" 
               title="Delete Product"
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete?.(product);
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24">
+              <svg width="12" height="12" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
               </svg>
             </button>
           </div>
         );
       },
-      size: 200,
+      size: 160,
     },
   ], [onEdit, onDelete, onToggleFeatured, onView, formatCurrency]);
 
@@ -208,6 +208,7 @@ const ProductsTable = ({
       searchPlaceholder="Search products by name, SKU, or category..."
       emptyMessage="No products found"
       onRowClick={(product) => onView?.(product)}
+      className="products-table"
     />
   );
 };

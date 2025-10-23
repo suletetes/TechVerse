@@ -80,27 +80,27 @@ const AdminProductManagement = () => {
 
     const handleDeleteProduct = (product) => {
         if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
-            setProducts(products.filter(p => p.id !== product.id));
+            setProducts(Array.isArray(products) ? products.filter(p => p.id !== product.id) : []);
         }
     };
 
     const handleToggleFeatured = (product) => {
-        setProducts(products.map(p => 
+        setProducts(Array.isArray(products) ? products.map(p => 
             p.id === product.id 
                 ? { ...p, featured: !p.featured }
                 : p
-        ));
+        ) : []);
     };
 
     // Apply filters to products
-    const filteredProducts = products.filter(product => {
+    const filteredProducts = Array.isArray(products) ? products.filter(product => {
         if (filters.category !== 'all' && product.category.toLowerCase() !== filters.category.toLowerCase()) return false;
         if (filters.status !== 'all' && product.status.toLowerCase() !== filters.status.toLowerCase()) return false;
         if (filters.search && !product.name.toLowerCase().includes(filters.search.toLowerCase())) return false;
         if (filters.priceMin && product.price < parseFloat(filters.priceMin)) return false;
         if (filters.priceMax && product.price > parseFloat(filters.priceMax)) return false;
         return true;
-    });
+    }) : [];
 
     const adminData = {
         name: 'Sarah Johnson',
@@ -194,7 +194,7 @@ const AdminProductManagement = () => {
                                 </div>
                             </div>
                             <div className="stats-content">
-                                <h2 className="stats-value">{products.filter(p => p.status === 'Active').length}</h2>
+                                <h2 className="stats-value">{Array.isArray(products) ? products.filter(p => p.status === 'Active').length : 0}</h2>
                                 <p className="stats-label">Active Products</p>
                             </div>
                         </div>
@@ -219,7 +219,7 @@ const AdminProductManagement = () => {
                                 </div>
                             </div>
                             <div className="stats-content">
-                                <h2 className="stats-value">{products.filter(p => p.status === 'Out of Stock').length}</h2>
+                                <h2 className="stats-value">{Array.isArray(products) ? products.filter(p => p.status === 'Out of Stock').length : 0}</h2>
                                 <p className="stats-label">Out of Stock</p>
                             </div>
                         </div>
@@ -273,9 +273,9 @@ const AdminProductManagement = () => {
                                     onChange={(e) => setFilters({ ...filters, category: e.target.value })}
                                 >
                                     <option value="all">All Categories</option>
-                                    {categories.map(cat => (
+                                    {Array.isArray(categories) ? categories.map(cat => (
                                         <option key={cat} value={cat}>{cat}</option>
-                                    ))}
+                                    )) : null}
                                 </select>
                             </div>
                             <div className="col-md-2">
