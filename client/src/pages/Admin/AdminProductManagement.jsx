@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AdminHeader } from '../../components/Admin';
+import { ProductsTable } from '../../components/tables';
 
 const AdminProductManagement = () => {
     const [products, setProducts] = useState([
@@ -66,21 +67,32 @@ const AdminProductManagement = () => {
         search: ''
     });
 
-    const [sortBy, setSortBy] = useState('name');
-    const [sortOrder, setSortOrder] = useState('asc');
+    // Product action handlers
+    const handleViewProduct = (product) => {
+        console.log('View product:', product);
+        // Navigate to product details or open modal
+    };
 
-    const getStatusColor = (status) => {
-        switch (status.toLowerCase()) {
-            case 'active': return 'success';
-            case 'low stock': return 'warning';
-            case 'out of stock': return 'danger';
-            case 'inactive': return 'secondary';
-            default: return 'secondary';
+    const handleEditProduct = (product) => {
+        console.log('Edit product:', product);
+        // Navigate to edit form or open modal
+    };
+
+    const handleDeleteProduct = (product) => {
+        if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
+            setProducts(products.filter(p => p.id !== product.id));
         }
     };
 
-    const formatCurrency = (amount) => `£${amount.toLocaleString('en-GB', { minimumFractionDigits: 2 })}`;
+    const handleToggleFeatured = (product) => {
+        setProducts(products.map(p => 
+            p.id === product.id 
+                ? { ...p, featured: !p.featured }
+                : p
+        ));
+    };
 
+    // Apply filters to products
     const filteredProducts = products.filter(product => {
         if (filters.category !== 'all' && product.category.toLowerCase() !== filters.category.toLowerCase()) return false;
         if (filters.status !== 'all' && product.status.toLowerCase() !== filters.status.toLowerCase()) return false;
@@ -88,20 +100,6 @@ const AdminProductManagement = () => {
         if (filters.priceMin && product.price < parseFloat(filters.priceMin)) return false;
         if (filters.priceMax && product.price > parseFloat(filters.priceMax)) return false;
         return true;
-    }).sort((a, b) => {
-        let aValue = a[sortBy];
-        let bValue = b[sortBy];
-
-        if (typeof aValue === 'string') {
-            aValue = aValue.toLowerCase();
-            bValue = bValue.toLowerCase();
-        }
-
-        if (sortOrder === 'asc') {
-            return aValue > bValue ? 1 : -1;
-        } else {
-            return aValue < bValue ? 1 : -1;
-        }
     });
 
     const adminData = {
@@ -331,30 +329,7 @@ const AdminProductManagement = () => {
                 <div className="card">
                     <div className="card-header d-flex justify-content-between align-items-center">
                         <h5 className="mb-0">Products ({filteredProducts.length})</h5>
-                        <div className="d-flex gap-2 align-items-center">
-                            <div className="d-flex align-items-center gap-2">
-                                <label className="form-label mb-0 small">Sort by:</label>
-                                <select
-                                    className="form-select form-select-sm"
-                                    value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value)}
-                                    style={{ width: 'auto' }}
-                                >
-                                    <option value="name">Name</option>
-                                    <option value="price">Price</option>
-                                    <option value="stock">Stock</option>
-                                    <option value="sales">Sales</option>
-                                </select>
-                                <button
-                                    className="btn btn-outline-secondary btn-sm"
-                                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                                >
-                                    <svg width="14" height="14" viewBox="0 0 24 24">
-                                        <path fill="currentColor" d={sortOrder === 'asc' ? "M7 14l5-5 5 5z" : "M7 10l5 5 5-5z"} />
-                                    </svg>
-                                </button>
-                            </div>
-                            <div className="vr"></div>
+                        <div className="d-flex gap-2">
                             <button className="btn btn-outline-primary btn-sm">
                                 <svg width="16" height="16" viewBox="0 0 24 24" className="me-1">
                                     <path fill="currentColor" d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" />
@@ -370,105 +345,14 @@ const AdminProductManagement = () => {
                         </div>
                     </div>
                     <div className="card-body p-0">
-                        <div className="admin-table-container">
-                            <div className="table-responsive">
-                                <table className="table table-hover mb-0">
-                                    <thead className="table-light">
-                                        <tr>
-                                            <th className="border-0 fw-semibold">Product</th>
-                                            <th className="border-0 fw-semibold">Category</th>
-                                            <th className="border-0 fw-semibold">Price</th>
-                                            <th className="border-0 fw-semibold">Stock</th>
-                                            <th className="border-0 fw-semibold">Status</th>
-                                            <th className="border-0 fw-semibold">Sales</th>
-                                            <th className="border-0 fw-semibold text-center">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredProducts.map((product) => (
-                                            <tr key={product.id}>
-                                                <td>
-                                                    <div className="d-flex align-items-center">
-                                                        <div className="product-image-container me-3">
-                                                            <img
-                                                                src={product.image}
-                                                                alt={product.name}
-                                                                className="product-table-image"
-                                                                onError={(e) => {
-                                                                    e.target.src = '/img/placeholder-product.jpg';
-                                                                }}
-                                                            />
-                                                            {product.featured && (
-                                                                <span className="featured-badge">
-                                                                    <svg width="12" height="12" viewBox="0 0 24 24">
-                                                                        <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                                                    </svg>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div>
-                                                            <div className="fw-semibold">{product.name}</div>
-                                                            <small className="text-muted">SKU: {product.sku}</small>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <span className="category-badge">{product.category}</span>
-                                                </td>
-                                                <td>
-                                                    <div>
-                                                        <span className="fw-semibold">{formatCurrency(product.price)}</span>
-                                                        {product.originalPrice && (
-                                                            <div>
-                                                                <small className="text-muted text-decoration-line-through">
-                                                                    {formatCurrency(product.originalPrice)}
-                                                                </small>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div className="d-flex align-items-center">
-                                                        <span className={`stock-indicator ${product.stock === 0 ? 'out-of-stock' : product.stock <= 15 ? 'low-stock' : 'in-stock'}`}></span>
-                                                        <span className="ms-2">{product.stock}</span>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <span className={`status-badge ${product.status.toLowerCase().replace(' ', '-')}`}>
-                                                        {product.status}
-                                                    </span>
-                                                </td>
-                                                <td className="fw-semibold">{product.sales}</td>
-                                                <td className="text-center">
-                                                    <div className="btn-group btn-group-sm">
-                                                        <button className="btn btn-outline-primary btn-sm" title="View Product">
-                                                            <svg width="14" height="14" viewBox="0 0 24 24">
-                                                                <path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
-                                                            </svg>
-                                                        </button>
-                                                        <button className="btn btn-outline-secondary btn-sm" title="Edit Product">
-                                                            <svg width="14" height="14" viewBox="0 0 24 24">
-                                                                <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
-                                                            </svg>
-                                                        </button>
-                                                        <button className="btn btn-outline-warning btn-sm" title={product.featured ? 'Remove from Featured' : 'Add to Featured'}>
-                                                            <svg width="14" height="14" viewBox="0 0 24 24">
-                                                                <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                                            </svg>
-                                                        </button>
-                                                        <button className="btn btn-outline-danger btn-sm" title="Delete Product">
-                                                            <svg width="14" height="14" viewBox="0 0 24 24">
-                                                                <path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <ProductsTable
+                            products={filteredProducts}
+                            onView={handleViewProduct}
+                            onEdit={handleEditProduct}
+                            onDelete={handleDeleteProduct}
+                            onToggleFeatured={handleToggleFeatured}
+                            enableSelection={false}
+                        />
                     </div>
                 </div>
             </div>

@@ -85,7 +85,7 @@ const Category = () => {
     }, [localFilters, categorySlug]); // Only depend on the actual data, not the functions
 
     // Get current category info
-    const currentCategory = categories.find(cat => cat.slug === categorySlug);
+    const currentCategory = Array.isArray(categories) ? categories.find(cat => cat.slug === categorySlug) : null;
     const categoryName = currentCategory?.name || 'All Products';
 
     // Get unique brands from current products for filters

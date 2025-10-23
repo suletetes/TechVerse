@@ -85,7 +85,7 @@ const ProductFilters = ({
                         style={{borderRadius: '25px', border: '2px solid #e0e0e0'}}
                     >
                         <option value="">All Categories</option>
-                        {categories && categories.map(category => (
+                        {Array.isArray(categories) && categories.map(category => (
                             <option key={category._id || category.slug || category} value={category.slug || category}>
                                 {category.name || (typeof category === 'string' ? category.charAt(0).toUpperCase() + category.slice(1) : 'Unknown Category')}
                             </option>

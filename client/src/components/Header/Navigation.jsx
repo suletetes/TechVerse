@@ -118,31 +118,46 @@ const Navigation = () => {
                                                     >
                                                         {user?.firstName || 'Account'}
                                                     </a>
-                                                    <ul className="dropdown-menu">
-                                                        <li>
-                                                            <Link className="dropdown-item" to="/user">
-                                                                <i className="fas fa-user me-2"></i>
-                                                                Profile
-                                                            </Link>
-                                                        </li>
-                                                        <li>
-                                                            <Link className="dropdown-item" to="/user/orders">
-                                                                <i className="fas fa-shopping-bag me-2"></i>
-                                                                Orders
-                                                            </Link>
-                                                        </li>
-                                                        <li>
-                                                            <Link className="dropdown-item" to="/user/addresses">
-                                                                <i className="fas fa-map-marker-alt me-2"></i>
-                                                                Addresses
-                                                            </Link>
-                                                        </li>
-                                                        <li><hr className="dropdown-divider" /></li>
+                                                    <ul className="dropdown-menu" style={{ backgroundColor: 'white', border: '1px solid #dee2e6', borderRadius: '0.375rem', boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.15)' }}>
+                                                        {isAdmin() ? (
+                                                            <>
+                                                                <li>
+                                                                    <Link className="dropdown-item" to="/admin" style={{ color: '#212529', padding: '0.5rem 1rem' }}>
+                                                                        <i className="fas fa-cog me-2"></i>
+                                                                        Admin Panel
+                                                                    </Link>
+                                                                </li>
+                                                                <li><hr className="dropdown-divider" /></li>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <li>
+                                                                    <Link className="dropdown-item" to="/user" style={{ color: '#212529', padding: '0.5rem 1rem' }}>
+                                                                        <i className="fas fa-user me-2"></i>
+                                                                        Profile
+                                                                    </Link>
+                                                                </li>
+                                                                <li>
+                                                                    <Link className="dropdown-item" to="/user/orders" style={{ color: '#212529', padding: '0.5rem 1rem' }}>
+                                                                        <i className="fas fa-shopping-bag me-2"></i>
+                                                                        Orders
+                                                                    </Link>
+                                                                </li>
+                                                                <li>
+                                                                    <Link className="dropdown-item" to="/user/addresses" style={{ color: '#212529', padding: '0.5rem 1rem' }}>
+                                                                        <i className="fas fa-map-marker-alt me-2"></i>
+                                                                        Addresses
+                                                                    </Link>
+                                                                </li>
+                                                                <li><hr className="dropdown-divider" /></li>
+                                                            </>
+                                                        )}
                                                         <li>
                                                             <button 
                                                                 className="dropdown-item" 
                                                                 onClick={handleLogout}
                                                                 disabled={isLoggingOut}
+                                                                style={{ color: '#212529', padding: '0.5rem 1rem', border: 'none', background: 'none', width: '100%', textAlign: 'left' }}
                                                             >
                                                                 <i className="fas fa-sign-out-alt me-2"></i>
                                                                 {isLoggingOut ? 'Logging out...' : 'Logout'}

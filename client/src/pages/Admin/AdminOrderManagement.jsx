@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AdminHeader } from '../../components/Admin';
+import { OrdersTable } from '../../components/tables';
 
 const AdminOrderManagement = () => {
     const [orders, setOrders] = useState([
@@ -57,18 +58,38 @@ const AdminOrderManagement = () => {
         customer: ''
     });
 
-    const [expandedOrders, setExpandedOrders] = useState(new Set());
+    // Order action handlers
+    const handleViewOrder = (order) => {
+        console.log('View order:', order);
+        // Navigate to order details or open modal
+    };
 
-    const formatCurrency = (amount) => `£${amount.toLocaleString('en-GB', {minimumFractionDigits: 2})}`;
+    const handleEditOrder = (order) => {
+        console.log('Edit order:', order);
+        // Navigate to edit form or open modal
+    };
 
-    const toggleOrderExpansion = (orderId) => {
-        const newExpanded = new Set(expandedOrders);
-        if (newExpanded.has(orderId)) {
-            newExpanded.delete(orderId);
-        } else {
-            newExpanded.add(orderId);
-        }
-        setExpandedOrders(newExpanded);
+    const handlePrintInvoice = (order) => {
+        console.log('Print invoice for order:', order.id);
+        // Generate and print invoice
+    };
+
+    const handleSendEmail = (order) => {
+        console.log('Send email for order:', order.id);
+        // Send email to customer
+    };
+
+    const handleMarkAsShipped = (order) => {
+        setOrders(orders.map(o => 
+            o.id === order.id 
+                ? { ...o, status: 'Shipped' }
+                : o
+        ));
+    };
+
+    const handlePrintLabel = (order) => {
+        console.log('Print shipping label for order:', order.id);
+        // Generate and print shipping label
     };
 
     const filteredOrders = orders.filter(order => {
@@ -305,112 +326,16 @@ const AdminOrderManagement = () => {
                         </div>
                     </div>
                     <div className="card-body p-0">
-                        <div className="admin-table-container">
-                            <div className="table-responsive">
-                                <table className="table table-hover mb-0">
-                                    <thead className="table-light">
-                                        <tr>
-                                            <th className="border-0 fw-semibold" width="50"></th>
-                                            <th className="border-0 fw-semibold">Order ID</th>
-                                            <th className="border-0 fw-semibold">Customer</th>
-                                            <th className="border-0 fw-semibold">Date</th>
-                                            <th className="border-0 fw-semibold">Status</th>
-                                            <th className="border-0 fw-semibold">Items</th>
-                                            <th className="border-0 fw-semibold">Total</th>
-                                            <th className="border-0 fw-semibold text-center">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredOrders.map((order) => (
-                                            <React.Fragment key={order.id}>
-                                                <tr>
-                                                    <td>
-                                                        <button
-                                                            className="btn btn-sm btn-outline-secondary"
-                                                            onClick={() => toggleOrderExpansion(order.id)}
-                                                        >
-                                                            <svg width="14" height="14" viewBox="0 0 24 24" className={`transition-transform ${expandedOrders.has(order.id) ? 'rotate-90' : ''}`}>
-                                                                <path fill="currentColor" d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" />
-                                                            </svg>
-                                                        </button>
-                                                    </td>
-                                                    <td>
-                                                        <span className="fw-semibold text-primary">{order.id}</span>
-                                                    </td>
-                                                    <td>
-                                                        <div>
-                                                            <div className="fw-semibold">{order.customer}</div>
-                                                            <small className="text-muted">{order.email}</small>
-                                                        </div>
-                                                    </td>
-                                                    <td>{new Date(order.date).toLocaleDateString()}</td>
-                                                    <td>
-                                                        <span className={`status-badge ${order.status.toLowerCase()}`}>
-                                                            {order.status}
-                                                        </span>
-                                                    </td>
-                                                    <td>{order.items}</td>
-                                                    <td className="fw-semibold">{formatCurrency(order.total)}</td>
-                                                    <td className="text-center">
-                                                        <div className="btn-group btn-group-sm">
-                                                            <button className="btn btn-outline-primary btn-sm" title="View Details">
-                                                                <svg width="14" height="14" viewBox="0 0 24 24">
-                                                                    <path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
-                                                                </svg>
-                                                            </button>
-                                                            <button className="btn btn-outline-secondary btn-sm" title="Edit Order">
-                                                                <svg width="14" height="14" viewBox="0 0 24 24">
-                                                                    <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
-                                                                </svg>
-                                                            </button>
-                                                            <button className="btn btn-outline-info btn-sm" title="Print Invoice">
-                                                                <svg width="14" height="14" viewBox="0 0 24 24">
-                                                                    <path fill="currentColor" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
-                                                                </svg>
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                {expandedOrders.has(order.id) && (
-                                                    <tr className="expanded-details">
-                                                        <td colSpan="8" className="p-0">
-                                                            <div className="bg-light border-top p-4">
-                                                                <div className="row">
-                                                                    <div className="col-md-6">
-                                                                        <h6 className="fw-bold mb-3">Order Details</h6>
-                                                                        <div className="mb-2">
-                                                                            <strong>Payment Method:</strong> {order.paymentMethod}
-                                                                        </div>
-                                                                        <div className="mb-2">
-                                                                            <strong>Shipping Address:</strong><br />
-                                                                            {order.shippingAddress}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="col-md-6">
-                                                                        <h6 className="fw-bold mb-3">Quick Actions</h6>
-                                                                        <div className="d-flex gap-2 flex-wrap">
-                                                                            <button className="btn btn-sm btn-outline-primary">
-                                                                                Send Email
-                                                                            </button>
-                                                                            <button className="btn btn-sm btn-outline-success">
-                                                                                Mark as Shipped
-                                                                            </button>
-                                                                            <button className="btn btn-sm btn-outline-info">
-                                                                                Print Label
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                )}
-                                            </React.Fragment>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <OrdersTable
+                            orders={filteredOrders}
+                            onView={handleViewOrder}
+                            onEdit={handleEditOrder}
+                            onPrintInvoice={handlePrintInvoice}
+                            onSendEmail={handleSendEmail}
+                            onMarkAsShipped={handleMarkAsShipped}
+                            onPrintLabel={handlePrintLabel}
+                            enableSelection={false}
+                        />
                     </div>
                 </div>
             </div>
