@@ -288,6 +288,11 @@ export const EndpointUtils = {
   validateEndpoint(endpoint) {
     const errors = [];
 
+    if (!endpoint || typeof endpoint !== 'string') {
+      errors.push('Endpoint must be a non-empty string');
+      return errors;
+    }
+
     if (!endpoint.startsWith('/')) {
       errors.push('Endpoint must start with "/"');
     }

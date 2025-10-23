@@ -1,0 +1,379 @@
+/* Rich Text Editor Styles */
+
+.rich-text-editor {
+  position: relative;
+  background: white;
+}
+
+.rich-text-editor .editor-content {
+  position: relative;
+}
+
+.rich-text-editor .ProseMirror {
+  outline: none;
+  padding: 1rem;
+  min-height: 200px;
+  line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.rich-text-editor .ProseMirror:focus {
+  box-shadow: none;
+}
+
+/* Typography */
+.rich-text-editor .ProseMirror h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 1.5rem 0 1rem 0;
+  line-height: 1.2;
+}
+
+.rich-text-editor .ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 1.25rem 0 0.75rem 0;
+  line-height: 1.3;
+}
+
+.rich-text-editor .ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 1rem 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.rich-text-editor .ProseMirror p {
+  margin: 0.75rem 0;
+}
+
+.rich-text-editor .ProseMirror p:first-child {
+  margin-top: 0;
+}
+
+.rich-text-editor .ProseMirror p:last-child {
+  margin-bottom: 0;
+}
+
+/* Lists */
+.rich-text-editor .ProseMirror ul,
+.rich-text-editor .ProseMirror ol {
+  padding-left: 1.5rem;
+  margin: 0.75rem 0;
+}
+
+.rich-text-editor .ProseMirror ul.bullet-list {
+  list-style-type: disc;
+}
+
+.rich-text-editor .ProseMirror ol.ordered-list {
+  list-style-type: decimal;
+}
+
+.rich-text-editor .ProseMirror li {
+  margin: 0.25rem 0;
+  line-height: 1.5;
+}
+
+.rich-text-editor .ProseMirror li p {
+  margin: 0;
+}
+
+/* Nested lists */
+.rich-text-editor .ProseMirror ul ul,
+.rich-text-editor .ProseMirror ol ol,
+.rich-text-editor .ProseMirror ul ol,
+.rich-text-editor .ProseMirror ol ul {
+  margin: 0.25rem 0;
+}
+
+/* Links */
+.rich-text-editor .ProseMirror a.editor-link {
+  color: #007bff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.rich-text-editor .ProseMirror a.editor-link:hover {
+  color: #0056b3;
+  text-decoration: none;
+}
+
+/* Images */
+.rich-text-editor .ProseMirror img.editor-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  margin: 1rem 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.rich-text-editor .ProseMirror img.editor-image:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Blockquotes */
+.rich-text-editor .ProseMirror blockquote {
+  border-left: 4px solid #e9ecef;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: #6c757d;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.25rem;
+}
+
+/* Code */
+.rich-text-editor .ProseMirror code {
+  background-color: #f8f9fa;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875em;
+  color: #e83e8c;
+}
+
+.rich-text-editor .ProseMirror pre {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.rich-text-editor .ProseMirror pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+/* Horizontal Rule */
+.rich-text-editor .ProseMirror hr {
+  border: none;
+  border-top: 2px solid #e9ecef;
+  margin: 2rem 0;
+}
+
+/* Text Alignment */
+.rich-text-editor .ProseMirror [style*="text-align: center"] {
+  text-align: center;
+}
+
+.rich-text-editor .ProseMirror [style*="text-align: right"] {
+  text-align: right;
+}
+
+.rich-text-editor .ProseMirror [style*="text-align: justify"] {
+  text-align: justify;
+}
+
+/* Selection */
+.rich-text-editor .ProseMirror ::selection {
+  background-color: #b3d4fc;
+}
+
+/* Placeholder */
+.rich-text-editor .editor-placeholder {
+  color: #6c757d;
+  font-style: italic;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Toolbar Styles */
+.editor-toolbar {
+  border-bottom: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  padding: 0.5rem;
+  border-radius: 0.375rem 0.375rem 0 0;
+}
+
+.editor-toolbar .btn-group {
+  margin-right: 0.5rem;
+}
+
+.editor-toolbar .btn-group:last-child {
+  margin-right: 0;
+}
+
+.editor-toolbar .btn {
+  border-color: #dee2e6;
+  background-color: white;
+  color: #495057;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-toolbar .btn:hover {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.editor-toolbar .btn.active {
+  background-color: #007bff;
+  border-color: #007bff;
+  color: white;
+}
+
+.editor-toolbar .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Product Description Editor */
+.product-description-editor {
+  background: white;
+  border-radius: 0.375rem;
+}
+
+.product-description-editor .rich-text-editor {
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+}
+
+.product-description-editor .form-label {
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+/* Character count */
+.character-count {
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+/* Focus states */
+.rich-text-editor:focus-within {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .editor-toolbar {
+    padding: 0.25rem;
+  }
+  
+  .editor-toolbar .btn-group {
+    margin-right: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .editor-toolbar .btn {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.25rem;
+    min-width: 28px;
+    height: 28px;
+  }
+  
+  .rich-text-editor .ProseMirror {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .rich-text-editor .ProseMirror h1 {
+    font-size: 1.5rem;
+  }
+  
+  .rich-text-editor .ProseMirror h2 {
+    font-size: 1.25rem;
+  }
+  
+  .rich-text-editor .ProseMirror h3 {
+    font-size: 1.125rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .rich-text-editor {
+    background-color: #343a40;
+    color: #f8f9fa;
+  }
+  
+  .rich-text-editor .ProseMirror {
+    color: #f8f9fa;
+  }
+  
+  .editor-toolbar {
+    background-color: #495057;
+    border-color: #6c757d;
+  }
+  
+  .editor-toolbar .btn {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: #f8f9fa;
+  }
+  
+  .editor-toolbar .btn:hover {
+    background-color: #5a6268;
+  }
+  
+  .rich-text-editor .ProseMirror blockquote {
+    background-color: #495057;
+    border-color: #6c757d;
+    color: #adb5bd;
+  }
+  
+  .rich-text-editor .ProseMirror code {
+    background-color: #495057;
+    color: #f8f9fa;
+  }
+  
+  .rich-text-editor .ProseMirror pre {
+    background-color: #495057;
+    border-color: #6c757d;
+    color: #f8f9fa;
+  }
+}
+
+/* Animation for toolbar buttons */
+.editor-toolbar .btn {
+  transition: all 0.15s ease-in-out;
+}
+
+/* Loading state */
+.editor-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: #6c757d;
+}
+
+.editor-loading .spinner-border {
+  width: 2rem;
+  height: 2rem;
+  margin-right: 0.5rem;
+}
+
+/* Error state */
+.editor-error {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  margin: 1rem 0;
+}
+
+/* Success state */
+.editor-success {
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  margin: 1rem 0;
+}

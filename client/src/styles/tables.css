@@ -1,0 +1,345 @@
+/* Advanced Data Tables Styles */
+
+.data-table-container {
+  --table-border-color: #dee2e6;
+  --table-hover-bg: #f8f9fa;
+  --table-active-bg: #e3f2fd;
+}
+
+/* Table Container */
+.data-table-container .table-responsive {
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.data-table-container .table {
+  margin-bottom: 0;
+}
+
+/* Header Styles */
+.data-table-container .table thead th {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid var(--table-border-color);
+  font-weight: 600;
+  color: #495057;
+  padding: 0.75rem;
+  vertical-align: middle;
+  user-select: none;
+}
+
+.data-table-container .table thead th:hover {
+  background-color: #e9ecef;
+}
+
+/* Sort Indicator */
+.sort-indicator {
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.data-table-container .table thead th:hover .sort-indicator {
+  opacity: 1;
+}
+
+/* Row Styles */
+.data-table-container .table tbody tr {
+  transition: background-color 0.15s ease-in-out;
+}
+
+.data-table-container .table tbody tr:hover {
+  background-color: var(--table-hover-bg);
+}
+
+.data-table-container .table tbody tr.table-active {
+  background-color: var(--table-active-bg);
+}
+
+.data-table-container .table tbody tr.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Cell Styles */
+.data-table-container .table tbody td {
+  padding: 0.75rem;
+  vertical-align: middle;
+  border-top: 1px solid var(--table-border-color);
+}
+
+/* Product Image in Table */
+.product-table-image {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 0.375rem;
+  border: 1px solid var(--table-border-color);
+}
+
+.product-image-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* Featured Badge */
+.featured-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ffc107;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Status Badges */
+.status-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.status-badge.active {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-badge.low-stock {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.status-badge.out-of-stock {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.status-badge.inactive {
+  background-color: #e2e3e5;
+  color: #383d41;
+  border: 1px solid #d6d8db;
+}
+
+.status-badge.processing {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.status-badge.shipped {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.status-badge.delivered {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-badge.cancelled {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Category Badge */
+.category-badge {
+  background-color: #f8f9fa;
+  color: #495057;
+  border: 1px solid #dee2e6;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Stock Indicator */
+.stock-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.stock-indicator.in-stock {
+  background-color: #28a745;
+}
+
+.stock-indicator.low-stock {
+  background-color: #ffc107;
+}
+
+.stock-indicator.out-of-stock {
+  background-color: #dc3545;
+}
+
+/* Search Container */
+.search-container {
+  position: relative;
+}
+
+.search-container input {
+  padding-left: 2.5rem;
+}
+
+.search-container::before {
+  content: "🔍";
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  color: #6c757d;
+}
+
+/* Selected Info Badge */
+.selected-info .badge {
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+}
+
+/* Pagination Styles */
+.data-table-container .pagination {
+  margin-bottom: 0;
+}
+
+.data-table-container .page-link {
+  color: #495057;
+  border-color: #dee2e6;
+}
+
+.data-table-container .page-link:hover {
+  color: #0056b3;
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.data-table-container .page-item.active .page-link {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+/* Expanded Row Styles */
+.expanded-details td {
+  background-color: #f8f9fa;
+  border-top: none;
+}
+
+/* Transition Effects */
+.transition-transform {
+  transition: transform 0.2s ease-in-out;
+}
+
+.rotate-90 {
+  transform: rotate(90deg);
+}
+
+/* Button Group Styles */
+.btn-group-sm .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* Virtualized Table Styles */
+.virtualized-table-container .table-container {
+  border: 1px solid var(--table-border-color);
+}
+
+.virtualized-table-container .table-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.virtualized-table-container .table-body {
+  position: relative;
+}
+
+/* Loading States */
+.table-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: #6c757d;
+}
+
+.table-loading .spinner-border {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.5rem;
+}
+
+/* Empty State */
+.table-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.table-empty svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .data-table-container .search-container input {
+    min-width: 200px;
+  }
+  
+  .data-table-container .btn-group-sm .btn {
+    padding: 0.125rem 0.25rem;
+  }
+  
+  .data-table-container .table tbody td {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .product-table-image {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .data-table-container {
+    --table-border-color: #495057;
+    --table-hover-bg: #343a40;
+    --table-active-bg: #1e3a5f;
+  }
+  
+  .data-table-container .table thead th {
+    background-color: #343a40;
+    color: #f8f9fa;
+  }
+  
+  .data-table-container .table thead th:hover {
+    background-color: #495057;
+  }
+  
+  .category-badge {
+    background-color: #495057;
+    color: #f8f9fa;
+    border-color: #6c757d;
+  }
+}
