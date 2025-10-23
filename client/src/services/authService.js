@@ -548,7 +548,17 @@ class UnifiedAuthService {
   getCurrentUser() {
     try {
       const storedUser = localStorage.getItem('techverse_user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
+      
+      if (!storedUser) {
+        return null;
+      }
+      
+      // Debug the raw stored data
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Raw stored user data:', storedUser);
+      }
+      
+      const user = JSON.parse(storedUser);
       
       // Debug logging for admin role checking
       if (process.env.NODE_ENV === 'development' && user) {
@@ -564,6 +574,12 @@ class UnifiedAuthService {
       return user;
     } catch (error) {
       console.error('Error parsing stored user:', error);
+      console.error('Stored user data:', localStorage.getItem('techverse_user'));
+      
+      // Clear corrupted data
+      localStorage.removeItem('techverse_user');
+      localStorage.removeItem('techverse_permissions');
+      
       return null;
     }
   }
@@ -586,6 +602,36 @@ class UnifiedAuthService {
   isEmailVerified() {
     const user = this.getCurrentUser();
     return user && user.isEmailVerified;
+  }
+
+  // Clear all authentication data (useful for debugging)
+  clearAllAuthData() {
+    localStorage.removeItem('techverse_user');
+    localStorage.removeItem('techverse_permissions');
+    localStorage.removeItem('techverse_security_context');
+    localStorage.removeItem('session_expiry');
+    unifiedTokenManager.clearToken();
+    unifiedTokenManager.clearRefreshToken();
+    console.log('All authentication data cleared');
+  }
+
+  // Debug function to test admin login
+  async debugAdminLogin() {
+    try {
+      console.log('Testing admin login...');
+      this.clearAllAuthData();
+      
+      const result = await this.login({
+        email: 'admin@techverse.com',
+        password: 'Admin123!'
+      });
+      
+      console.log('Admin login result:', result);
+      return result;
+    } catch (error) {
+      console.error('Admin login failed:', error);
+      throw error;
+    }
   }
 
   getFullName() {

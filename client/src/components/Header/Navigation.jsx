@@ -10,6 +10,17 @@ const Navigation = () => {
     const { getWishlistCount } = useWishlist();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+    // Debug logging for admin functionality
+    if (process.env.NODE_ENV === 'development' && isAuthenticated) {
+        console.log('Navigation debug:', {
+            isAuthenticated,
+            user,
+            userRole: user?.role,
+            isAdminResult: isAdmin(),
+            isAdminFunction: typeof isAdmin
+        });
+    }
+
     const wishlistCount = getWishlistCount();
 
     const handleLogout = async () => {
@@ -60,7 +71,7 @@ const Navigation = () => {
                                         <NavLink to="/" exact>
                                             Home
                                         </NavLink>
-                                        
+
                                         <NavLink to="/category">
                                             Products
                                         </NavLink>
@@ -74,8 +85,8 @@ const Navigation = () => {
 
                                         {/* Cart with item count */}
                                         <li className="nav-item">
-                                            <Link 
-                                                to="/cart" 
+                                            <Link
+                                                to="/cart"
                                                 className="nav-link ltc-2175 position-relative"
                                             >
                                                 Cart
@@ -90,8 +101,8 @@ const Navigation = () => {
 
                                         {/* Wishlist with item count */}
                                         <li className="nav-item">
-                                            <Link 
-                                                to="/wishlist" 
+                                            <Link
+                                                to="/wishlist"
                                                 className="nav-link ltc-2175 position-relative"
                                             >
                                                 Wishlist
@@ -109,11 +120,11 @@ const Navigation = () => {
                                             <>
                                                 {/* User Profile Dropdown */}
                                                 <li className="nav-item dropdown">
-                                                    <a 
-                                                        className="nav-link dropdown-toggle ltc-2175" 
-                                                        href="#" 
-                                                        role="button" 
-                                                        data-bs-toggle="dropdown" 
+                                                    <a
+                                                        className="nav-link dropdown-toggle ltc-2175"
+                                                        href="#"
+                                                        role="button"
+                                                        data-bs-toggle="dropdown"
                                                         aria-expanded="false"
                                                     >
                                                         {user?.firstName || 'Account'}
@@ -153,8 +164,8 @@ const Navigation = () => {
                                                             </>
                                                         )}
                                                         <li>
-                                                            <button 
-                                                                className="dropdown-item" 
+                                                            <button
+                                                                className="dropdown-item"
                                                                 onClick={handleLogout}
                                                                 disabled={isLoggingOut}
                                                                 style={{ color: '#212529', padding: '0.5rem 1rem', border: 'none', background: 'none', width: '100%', textAlign: 'left' }}

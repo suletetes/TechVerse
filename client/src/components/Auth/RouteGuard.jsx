@@ -7,6 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext.jsx';
 import unifiedAuthService, { UserRoles } from '../../services/authService.js';
 
 /**
@@ -74,104 +75,29 @@ const RouteGuard = ({
   onAccessDenied = null
 }) => {
   const location = useLocation();
-  const [authState, setAuthState] = useState({
-    isLoading: true,
-    isAuthenticated: false,
-    user: null,
-    error: null
-  });
+  const { isAuthenticated, user, isLoading, hasRole, hasPermission, isAdmin } = useAuth();
 
-  // Subscribe to auth state changes
+  // Debug logging for admin access
   useEffect(() => {
-    const updateAuthState = async () => {
-      try {
-        const isAuthenticated = unifiedAuthService.isAuthenticated();
-        let user = unifiedAuthService.getCurrentUser();
-        
-        // If we have a token but no user data, try to fetch it from backend
-        if (isAuthenticated && !user) {
-          try {
-            const profileResponse = await unifiedAuthService.getProfile();
-            if (profileResponse.success && profileResponse.data?.user) {
-              user = profileResponse.data.user;
-              // Update stored user data
-              localStorage.setItem('techverse_user', JSON.stringify(user));
-            }
-          } catch (error) {
-            console.warn('Failed to fetch user profile:', error);
-            // If profile fetch fails with 401, the user is not actually authenticated
-            if (error.status === 401) {
-              setAuthState({
-                isLoading: false,
-                isAuthenticated: false,
-                user: null,
-                error: 'Session expired'
-              });
-              return;
-            }
-          }
-        }
-
-        setAuthState({
-          isLoading: false,
-          isAuthenticated,
-          user,
-          error: null
-        });
-      } catch (error) {
-        console.error('Error updating auth state:', error);
-        setAuthState({
-          isLoading: false,
-          isAuthenticated: false,
-          user: null,
-          error: error.message
-        });
-      }
-    };
-
-    // Initial state check
-    updateAuthState();
-
-    // Listen for auth state changes
-    const unsubscribe = unifiedAuthService.addEventListener((event) => {
-      updateAuthState();
-    });
-
-    // Listen for DOM events as well
-    const handleAuthStateChange = () => {
-      updateAuthState();
-    };
-
-    // Listen for authentication errors from API interceptors
-    const handleAuthError = (event) => {
-      const { type, reason } = event.detail;
-      if (type === 'AUTHENTICATION_FAILED' || type === 'AUTHORIZATION_FAILED') {
-        setAuthState(prev => ({
-          ...prev,
-          isAuthenticated: false,
-          user: null,
-          error: reason || 'Authentication failed'
-        }));
-      }
-    };
-
-    window.addEventListener('authStateChange', handleAuthStateChange);
-    window.addEventListener('authError', handleAuthError);
-
-    return () => {
-      unsubscribe();
-      window.removeEventListener('authStateChange', handleAuthStateChange);
-      window.removeEventListener('authError', handleAuthError);
-    };
-  }, []);
+    if (process.env.NODE_ENV === 'development' && user) {
+      console.log('RouteGuard debug:', {
+        isAuthenticated,
+        user: user,
+        userRole: user.role,
+        isAdmin: isAdmin(),
+        hasAdminRole: hasRole('admin'),
+        hasSuperAdminRole: hasRole('super_admin')
+      });
+    }
+  }, [isAuthenticated, user, isAdmin, hasRole]);
 
   // Show loading state
-  if (authState.isLoading) {
+  if (isLoading) {
     return CustomFallback ? <CustomFallback /> : <RouteLoadingFallback />;
   }
 
   // Check authentication requirement
-  if (requireAuth && !authState.isAuthenticated) {
+  if (requireAuth && !isAuthenticated) {
     const loginPath = redirectTo || '/login';
     const returnUrl = location.pathname + location.search;
 
@@ -187,10 +113,8 @@ const RouteGuard = ({
     return children;
   }
 
-  const { user } = authState;
-
   // Check email verification requirement
-  if (requireEmailVerified && !unifiedAuthService.isEmailVerified()) {
+  if (requireEmailVerified && !user?.isEmailVerified) {
     const verifyPath = redirectTo || '/verify-email';
 
     if (onAccessDenied) {
@@ -204,10 +128,20 @@ const RouteGuard = ({
 
   // Check role requirements
   if (requireRole.length > 0) {
-    const hasRequiredRole = requireRole.some(role => unifiedAuthService.hasRole(role));
+    const hasRequiredRole = requireRole.some(role => hasRole(role));
 
     if (!hasRequiredRole) {
       const accessDeniedReason = `Access denied. Required role: ${requireRole.join(' or ')}. Your role: ${user?.role || 'none'}`;
+
+      // Debug logging for role check failure
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Role check failed:', {
+          requiredRoles: requireRole,
+          userRole: user?.role,
+          hasRequiredRole,
+          roleChecks: requireRole.map(role => ({ role, hasRole: hasRole(role) }))
+        });
+      }
 
       if (onAccessDenied) {
         onAccessDenied('insufficient_role', {
@@ -228,8 +162,8 @@ const RouteGuard = ({
   // Check permission requirements
   if (requirePermission.length > 0) {
     const checkPermissions = requireAllPermissions
-      ? requirePermission.every(permission => unifiedAuthService.hasPermission(permission))
-      : requirePermission.some(permission => unifiedAuthService.hasPermission(permission));
+      ? requirePermission.every(permission => hasPermission(permission))
+      : requirePermission.some(permission => hasPermission(permission));
 
     if (!checkPermissions) {
       const permissionType = requireAllPermissions ? 'all' : 'any';
@@ -351,6 +285,7 @@ export const PermissionRoute = ({ permissions, requireAll = true, children, ...p
  * Hook for checking route access programmatically
  */
 export const useRouteAccess = (requirements = {}) => {
+  const { isAuthenticated, user, isLoading, hasRole, hasPermission } = useAuth();
   const [access, setAccess] = useState({
     canAccess: false,
     reason: null,
@@ -358,6 +293,11 @@ export const useRouteAccess = (requirements = {}) => {
   });
 
   useEffect(() => {
+    if (isLoading) {
+      setAccess(prev => ({ ...prev, isLoading: true }));
+      return;
+    }
+
     const checkAccess = () => {
       const {
         requireAuth = false,
@@ -368,7 +308,7 @@ export const useRouteAccess = (requirements = {}) => {
       } = requirements;
 
       // Check authentication
-      if (requireAuth && !unifiedAuthService.isAuthenticated()) {
+      if (requireAuth && !isAuthenticated) {
         setAccess({
           canAccess: false,
           reason: 'authentication_required',
@@ -378,7 +318,7 @@ export const useRouteAccess = (requirements = {}) => {
       }
 
       // Check email verification
-      if (requireEmailVerified && !unifiedAuthService.isEmailVerified()) {
+      if (requireEmailVerified && !user?.isEmailVerified) {
         setAccess({
           canAccess: false,
           reason: 'email_verification_required',
@@ -389,7 +329,7 @@ export const useRouteAccess = (requirements = {}) => {
 
       // Check roles
       if (requireRole.length > 0) {
-        const hasRequiredRole = requireRole.some(role => unifiedAuthService.hasRole(role));
+        const hasRequiredRole = requireRole.some(role => hasRole(role));
         if (!hasRequiredRole) {
           setAccess({
             canAccess: false,
@@ -403,8 +343,8 @@ export const useRouteAccess = (requirements = {}) => {
       // Check permissions
       if (requirePermission.length > 0) {
         const checkPermissions = requireAllPermissions
-          ? requirePermission.every(permission => unifiedAuthService.hasPermission(permission))
-          : requirePermission.some(permission => unifiedAuthService.hasPermission(permission));
+          ? requirePermission.every(permission => hasPermission(permission))
+          : requirePermission.some(permission => hasPermission(permission));
 
         if (!checkPermissions) {
           setAccess({
@@ -425,14 +365,7 @@ export const useRouteAccess = (requirements = {}) => {
     };
 
     checkAccess();
-
-    // Listen for auth state changes
-    const unsubscribe = unifiedAuthService.addEventListener(() => {
-      checkAccess();
-    });
-
-    return unsubscribe;
-  }, [requirements]);
+  }, [isAuthenticated, user, isLoading, hasRole, hasPermission, requirements]);
 
   return access;
 };

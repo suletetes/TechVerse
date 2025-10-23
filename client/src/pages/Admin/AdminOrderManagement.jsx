@@ -80,11 +80,11 @@ const AdminOrderManagement = () => {
     };
 
     const handleMarkAsShipped = (order) => {
-        setOrders(orders.map(o => 
+        setOrders(Array.isArray(orders) ? orders.map(o => 
             o.id === order.id 
                 ? { ...o, status: 'Shipped' }
                 : o
-        ));
+        ) : []);
     };
 
     const handlePrintLabel = (order) => {
@@ -92,13 +92,13 @@ const AdminOrderManagement = () => {
         // Generate and print shipping label
     };
 
-    const filteredOrders = orders.filter(order => {
+    const filteredOrders = Array.isArray(orders) ? orders.filter(order => {
         if (filters.status !== 'all' && order.status.toLowerCase() !== filters.status.toLowerCase()) return false;
         if (filters.customer && !order.customer.toLowerCase().includes(filters.customer.toLowerCase())) return false;
         if (filters.dateFrom && new Date(order.date) < new Date(filters.dateFrom)) return false;
         if (filters.dateTo && new Date(order.date) > new Date(filters.dateTo)) return false;
         return true;
-    });
+    }) : [];
 
     const adminData = {
         name: 'Sarah Johnson',
@@ -190,7 +190,7 @@ const AdminOrderManagement = () => {
                                 </div>
                             </div>
                             <div className="stats-content">
-                                <h2 className="stats-value">{orders.filter(o => o.status === 'Processing').length}</h2>
+                                <h2 className="stats-value">{Array.isArray(orders) ? orders.filter(o => o.status === 'Processing').length : 0}</h2>
                                 <p className="stats-label">Processing</p>
                             </div>
                         </div>
@@ -215,7 +215,7 @@ const AdminOrderManagement = () => {
                                 </div>
                             </div>
                             <div className="stats-content">
-                                <h2 className="stats-value">{orders.filter(o => o.status === 'Shipped').length}</h2>
+                                <h2 className="stats-value">{Array.isArray(orders) ? orders.filter(o => o.status === 'Shipped').length : 0}</h2>
                                 <p className="stats-label">Shipped</p>
                             </div>
                         </div>
@@ -240,7 +240,7 @@ const AdminOrderManagement = () => {
                                 </div>
                             </div>
                             <div className="stats-content">
-                                <h2 className="stats-value">{orders.filter(o => o.status === 'Delivered').length}</h2>
+                                <h2 className="stats-value">{Array.isArray(orders) ? orders.filter(o => o.status === 'Delivered').length : 0}</h2>
                                 <p className="stats-label">Delivered</p>
                             </div>
                         </div>

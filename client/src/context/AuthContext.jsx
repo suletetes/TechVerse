@@ -260,7 +260,7 @@ export const AuthProvider = ({ children }) => {
       const deviceInfo = getDeviceInfo();
       dispatch({ type: AUTH_ACTIONS.SET_DEVICE_INFO, payload: deviceInfo });
 
-      dispatch({ type: AUTH_ACTIONS.LOAD_USER_SUCCESS, payload: userData });
+      dispatch({ type: AUTH_ACTIONS.LOAD_USER_SUCCESS, payload: userData.data || userData });
     } catch (error) {
       dispatch({ type: AUTH_ACTIONS.LOAD_USER_FAILURE, payload: error.message });
 
@@ -396,16 +396,16 @@ export const AuthProvider = ({ children }) => {
       if (process.env.NODE_ENV === 'development') {
         console.log('AuthContext login response:', {
           response,
-          user: response.user,
-          userRole: response.user?.role,
-          hasUser: !!response.user
+          user: response.data?.user,
+          userRole: response.data?.user?.role,
+          hasUser: !!response.data?.user
         });
       }
 
       // Handle MFA requirement
-      if (response.mfaRequired) {
-        dispatch({ type: AUTH_ACTIONS.SET_MFA_REQUIRED, payload: response.mfaToken });
-        return { mfaRequired: true, mfaToken: response.mfaToken };
+      if (response.data?.mfaRequired) {
+        dispatch({ type: AUTH_ACTIONS.SET_MFA_REQUIRED, payload: response.data.mfaToken });
+        return { mfaRequired: true, mfaToken: response.data.mfaToken };
       }
 
       // Set remember me preference
@@ -415,10 +415,10 @@ export const AuthProvider = ({ children }) => {
 
       // Reset login attempts on successful login
       dispatch({ type: AUTH_ACTIONS.RESET_LOGIN_ATTEMPTS });
-      dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response });
+      dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response.data });
 
       // Sync login across tabs
-      multiTabSyncManager.syncLogin(response.user || response, response.tokens);
+      multiTabSyncManager.syncLogin(response.data.user, response.data.tokens);
 
       showNotification('Login successful!', 'success');
       return response;
@@ -455,15 +455,15 @@ export const AuthProvider = ({ children }) => {
 
       const response = await authService.register(registrationData);
 
-      if (response.requiresVerification) {
+      if (response.data?.requiresVerification) {
         showNotification('Registration successful! Please check your email to verify your account.', 'success');
         return { requiresVerification: true, email: userData.email };
       }
 
-      dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response });
+      dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response.data });
 
       // Sync login across tabs
-      multiTabSyncManager.syncLogin(response.user || response, response.tokens);
+      multiTabSyncManager.syncLogin(response.data.user, response.data.tokens);
 
       showNotification('Registration successful!', 'success');
       return response;
@@ -499,10 +499,10 @@ export const AuthProvider = ({ children }) => {
       const response = await authService.verifyMFA(code, mfaToken);
 
       dispatch({ type: AUTH_ACTIONS.CLEAR_MFA });
-      dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response });
+      dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response.data });
 
       // Sync login across tabs
-      multiTabSyncManager.syncLogin(response.user || response, response.tokens);
+      multiTabSyncManager.syncLogin(response.data.user, response.data.tokens);
 
       showNotification('MFA verification successful!', 'success');
       return response;
@@ -654,7 +654,19 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user has specific role
   const hasRole = (role) => {
-    return state.user?.role === role;
+    const result = state.user?.role === role;
+    
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('hasRole() called:', {
+        requestedRole: role,
+        userRole: state.user?.role,
+        result,
+        hasUser: !!state.user
+      });
+    }
+    
+    return result;
   };
 
   // Check if user has specific permission
@@ -674,7 +686,20 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user is admin
   const isAdmin = () => {
-    return hasRole('admin') || hasRole('super_admin');
+    const result = hasRole('admin') || hasRole('super_admin');
+    
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('isAdmin() called:', {
+        result,
+        hasAdminRole: hasRole('admin'),
+        hasSuperAdminRole: hasRole('super_admin'),
+        userRole: state.user?.role,
+        stateUser: state.user
+      });
+    }
+    
+    return result;
   };
 
   // Check if user is authenticated and email verified
