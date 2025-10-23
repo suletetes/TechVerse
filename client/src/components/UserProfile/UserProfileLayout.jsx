@@ -8,10 +8,6 @@ import {
     ActivityTab,
     PreferencesTab,
     PasswordChangeModal,
-    OrderTrackingModal,
-    OrderConfirmModal,
-    ReviewModal,
-    ReorderModal,
     AddAddressModal,
     AddPaymentMethodModal
 } from './';
@@ -33,11 +29,6 @@ const UserProfileLayout = ({ initialTab }) => {
         }
     }, [initialTab]);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
-    const [orderFilters, setOrderFilters] = useState({
-        status: 'all',
-        dateRange: 'all',
-        searchTerm: ''
-    });
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [paymentMethods, setPaymentMethods] = useState([
         {
@@ -155,72 +146,9 @@ const UserProfileLayout = ({ initialTab }) => {
         }
     ]);
 
-    const [orders] = useState([
-        {
-            id: 'TV-2024-001234',
-            date: '2024-01-15',
-            status: 'Delivered',
-            total: 3597.60,
-            items: 3,
-            image: '/img/tablet-product.jpg',
-            trackingNumber: 'TRK123456789',
-            canReturn: true,
-            canReorder: true
-        },
-        {
-            id: 'TV-2024-001233',
-            date: '2024-01-10',
-            status: 'Processing',
-            total: 999.00,
-            items: 1,
-            image: '/img/phone-product.jpg',
-            trackingNumber: null,
-            canReturn: false,
-            canReorder: false
-        },
-        {
-            id: 'TV-2024-001232',
-            date: '2024-01-05',
-            status: 'Shipped',
-            total: 2599.00,
-            items: 2,
-            image: '/img/laptop-product.jpg',
-            trackingNumber: 'TRK987654321',
-            canReturn: false,
-            canReorder: false
-        },
-        {
-            id: 'TV-2024-001231',
-            date: '2023-12-20',
-            status: 'Delivered',
-            total: 1299.00,
-            items: 1,
-            image: '/img/phone-product.jpg',
-            trackingNumber: 'TRK555666777',
-            canReturn: false,
-            canReorder: true
-        },
-        {
-            id: 'TV-2024-001230',
-            date: '2023-12-15',
-            status: 'Cancelled',
-            total: 799.00,
-            items: 1,
-            image: '/img/tablet-product.jpg',
-            trackingNumber: null,
-            canReturn: false,
-            canReorder: true
-        }
-    ]);
 
-    const [showReviewModal, setShowReviewModal] = useState(false);
-    const [reviewOrder, setReviewOrder] = useState(null);
-    const [showTrackingModal, setShowTrackingModal] = useState(false);
-    const [trackingOrder, setTrackingOrder] = useState(null);
-    const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [confirmOrder, setConfirmOrder] = useState(null);
-    const [showReorderModal, setShowReorderModal] = useState(false);
-    const [reorderOrder, setReorderOrder] = useState(null);
+
+
     const [showAddAddressModal, setShowAddAddressModal] = useState(false);
     const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
     const [editingAddress, setEditingAddress] = useState(null);
@@ -253,15 +181,7 @@ const UserProfileLayout = ({ initialTab }) => {
         }
     };
 
-    const getStatusColor = (status) => {
-        switch (status.toLowerCase()) {
-            case 'delivered': return 'success';
-            case 'shipped': return 'info';
-            case 'processing': return 'warning';
-            case 'cancelled': return 'danger';
-            default: return 'secondary';
-        }
-    };
+
 
     const validatePassword = (password) => {
         const errors = [];
@@ -348,130 +268,7 @@ const UserProfileLayout = ({ initialTab }) => {
         return Math.round((completed / fields.length) * 100);
     };
 
-    const getFilteredOrders = () => {
-        return orders.filter(order => {
-            if (orderFilters.status !== 'all' && order.status.toLowerCase() !== orderFilters.status.toLowerCase()) {
-                return false;
-            }
 
-            if (orderFilters.searchTerm && !order.id.toLowerCase().includes(orderFilters.searchTerm.toLowerCase())) {
-                return false;
-            }
-
-            if (orderFilters.dateRange !== 'all') {
-                const orderDate = new Date(order.date);
-                const now = new Date();
-                const diffTime = Math.abs(now - orderDate);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                switch (orderFilters.dateRange) {
-                    case '30days':
-                        return diffDays <= 30;
-                    case '90days':
-                        return diffDays <= 90;
-                    case '1year':
-                        return diffDays <= 365;
-                    default:
-                        return true;
-                }
-            }
-
-            return true;
-        });
-    };
-
-    const handleReorder = (order) => {
-        setReorderOrder(order);
-        setShowReorderModal(true);
-    };
-
-    const handleReorderComplete = (selectedItems, quantities) => {
-        console.log('Reorder completed:', selectedItems, quantities);
-        // In real app: Add items to cart and optionally redirect
-        // This could also trigger a cart update or show a success toast
-    };
-
-    const handleOrderAction = (orderId, action) => {
-        const order = orders.find(o => o.id === orderId);
-        switch (action) {
-            case 'track':
-                // Now handled by Link to /user/order/:id/tracking
-                break;
-            case 'confirm':
-                setConfirmOrder(order);
-                setShowConfirmModal(true);
-                break;
-            case 'return':
-                if (confirm(`Are you sure you want to initiate a return for order ${orderId}?`)) {
-                    alert(`Return request submitted for order ${orderId}. You will receive an email with return instructions.`);
-                    // In real app: API call to initiate return
-                }
-                break;
-            case 'reorder':
-                handleReorder(order);
-                break;
-            case 'review':
-                // Now handled by Link to /user/order/:id/review
-                break;
-            default:
-                break;
-        }
-    };
-
-    const getTrackingTimeline = (order) => {
-        const baseTimeline = [
-            {
-                status: 'Order Placed',
-                date: order.date,
-                time: '14:30',
-                completed: true,
-                description: 'Your order has been confirmed and is being prepared'
-            },
-            {
-                status: 'Payment Confirmed',
-                date: order.date,
-                time: '14:32',
-                completed: true,
-                description: 'Payment has been successfully processed'
-            },
-            {
-                status: 'Processing',
-                date: order.date,
-                time: '15:45',
-                completed: order.status !== 'Processing',
-                description: 'Your items are being picked and packed'
-            }
-        ];
-
-        if (order.status === 'Shipped' || order.status === 'Delivered') {
-            baseTimeline.push({
-                status: 'Shipped',
-                date: new Date(new Date(order.date).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                time: '09:15',
-                completed: true,
-                description: `Package dispatched via courier. Tracking: ${order.trackingNumber}`
-            });
-        }
-
-        if (order.status === 'Delivered') {
-            baseTimeline.push({
-                status: 'Out for Delivery',
-                date: new Date(new Date(order.date).getTime() + 48 * 60 * 60 * 1000).toISOString().split('T')[0],
-                time: '08:30',
-                completed: true,
-                description: 'Package is out for delivery in your area'
-            });
-            baseTimeline.push({
-                status: 'Delivered',
-                date: new Date(new Date(order.date).getTime() + 48 * 60 * 60 * 1000).toISOString().split('T')[0],
-                time: '16:45',
-                completed: true,
-                description: 'Package delivered successfully'
-            });
-        }
-
-        return baseTimeline;
-    };
 
     const handleAddressAction = (addressId, action) => {
         switch (action) {
@@ -631,16 +428,7 @@ const UserProfileLayout = ({ initialTab }) => {
             case 'profile':
                 return <ProfileTab {...commonProps} />;
             case 'orders':
-                return (
-                    <OrdersTab 
-                        orders={orders}
-                        orderFilters={orderFilters}
-                        setOrderFilters={setOrderFilters}
-                        getFilteredOrders={getFilteredOrders}
-                        handleOrderAction={handleOrderAction}
-                        getStatusColor={getStatusColor}
-                    />
-                );
+                return <OrdersTab />;
             case 'addresses':
                 return (
                     <AddressesTab 
@@ -723,45 +511,7 @@ const UserProfileLayout = ({ initialTab }) => {
                     validatePassword={validatePassword}
                 />
             )}
-            {showTrackingModal && trackingOrder && (
-                <OrderTrackingModal 
-                    onClose={() => {
-                        setShowTrackingModal(false);
-                        setTrackingOrder(null);
-                    }}
-                    order={trackingOrder}
-                    getTrackingTimeline={getTrackingTimeline}
-                    getStatusColor={getStatusColor}
-                />
-            )}
-            {showConfirmModal && confirmOrder && (
-                <OrderConfirmModal 
-                    onClose={() => {
-                        setShowConfirmModal(false);
-                        setConfirmOrder(null);
-                    }}
-                    order={confirmOrder}
-                />
-            )}
-            {showReviewModal && reviewOrder && (
-                <ReviewModal 
-                    onClose={() => {
-                        setShowReviewModal(false);
-                        setReviewOrder(null);
-                    }}
-                    order={reviewOrder}
-                />
-            )}
-            {showReorderModal && reorderOrder && (
-                <ReorderModal 
-                    onClose={() => {
-                        setShowReorderModal(false);
-                        setReorderOrder(null);
-                    }}
-                    order={reorderOrder}
-                    onReorder={handleReorderComplete}
-                />
-            )}
+
             {showAddAddressModal && (
                 <AddAddressModal 
                     onClose={() => {

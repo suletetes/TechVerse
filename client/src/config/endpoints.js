@@ -57,11 +57,18 @@ export const API_ENDPOINTS = {
   // Order endpoints
   ORDERS: {
     BASE: '/orders',
+    USER_ORDERS: '/orders/user',
     HISTORY: '/orders/history',
     TRACKING: '/orders/:id/tracking',
     CANCEL: '/orders/:id/cancel',
     RETURN: '/orders/:id/return',
-    INVOICE: '/orders/:id/invoice'
+    INVOICE: '/orders/:id/invoice',
+    REORDER: '/orders/:id/reorder',
+    REFUND: '/orders/:id/refund',
+    SUMMARY: '/orders/summary',
+    TIMELINE: '/orders/:id/timeline',
+    ESTIMATE_DELIVERY: '/orders/estimate-delivery',
+    CALCULATE_SHIPPING: '/orders/calculate-shipping'
   },
 
   // Cart endpoints

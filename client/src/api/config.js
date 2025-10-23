@@ -34,7 +34,10 @@ export const API_ENDPOINTS = {
     // Legacy function-based endpoints
     BY_ID: (id) => `/orders/${id}`,
     CANCEL: (id) => `/orders/${id}/cancel`,
-    TRACKING: (id) => `/orders/${id}/tracking`
+    TRACKING: (id) => `/orders/${id}/tracking`,
+    REORDER: (id) => `/orders/${id}/reorder`,
+    REFUND: (id) => `/orders/${id}/refund`,
+    TIMELINE: (id) => `/orders/${id}/timeline`
   },
   
   USERS: {

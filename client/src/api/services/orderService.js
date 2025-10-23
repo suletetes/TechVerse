@@ -18,6 +18,11 @@ class OrderService extends BaseApiService {
         timeout: 20000 // Orders might take longer to process
       }
     });
+    
+    // Debug: Log available endpoints
+    if (import.meta.env.DEV) {
+      console.log('OrderService endpoints:', this.endpoints);
+    }
   }
 
   // Create new order
@@ -25,7 +30,7 @@ class OrderService extends BaseApiService {
     // Validate order data
     this.validateOrderData(orderData);
 
-    return this.create(this.endpoints.BASE, orderData);
+    return this.create('/orders', orderData);
   }
 
   // Get user orders with pagination and filtering
@@ -52,7 +57,7 @@ class OrderService extends BaseApiService {
     if (startDate) queryParams.startDate = startDate;
     if (endDate) queryParams.endDate = endDate;
 
-    return this.getPaginated(this.endpoints.USER_ORDERS, page, limit, {
+    return this.getPaginated('/orders/user', page, limit, {
       params: queryParams
     });
   }
@@ -63,7 +68,7 @@ class OrderService extends BaseApiService {
       throw new Error('Order ID is required');
     }
 
-    return this.read(`${this.endpoints.BASE}/${id}`);
+    return this.read(`/orders/${id}`);
   }
 
   // Cancel order
@@ -72,7 +77,7 @@ class OrderService extends BaseApiService {
       throw new Error('Order ID is required');
     }
 
-    return this.update(`${this.endpoints.BASE}/${id}/cancel`, {
+    return this.update(`/orders/${id}/cancel`, {
       reason: reason.trim()
     });
   }
@@ -83,7 +88,7 @@ class OrderService extends BaseApiService {
       throw new Error('Order ID is required');
     }
 
-    return this.read(this.endpoints.TRACKING(id), {}, {
+    return this.read(`/orders/${id}/tracking`, {}, {
       // Shorter cache for tracking info
       cacheTimeout: 30000
     });
@@ -98,7 +103,7 @@ class OrderService extends BaseApiService {
     // Validate payment data
     this.validatePaymentData(paymentData);
 
-    return this.create(`${this.endpoints.BASE}/${orderId}/payment`, paymentData);
+    return this.create(`/orders/${orderId}/payment`, paymentData);
   }
 
   // Get order summary/statistics
@@ -108,7 +113,7 @@ class OrderService extends BaseApiService {
       ...otherParams
     } = params;
 
-    return this.read(`${this.endpoints.BASE}/summary`, {
+    return this.read('/orders/summary', {
       period,
       ...otherParams
     });
@@ -120,7 +125,7 @@ class OrderService extends BaseApiService {
       throw new Error('Order ID is required');
     }
 
-    return this.create(`${this.endpoints.BASE}/${orderId}/reorder`);
+    return this.create(`/orders/${orderId}/reorder`);
   }
 
   // Request order refund
@@ -135,7 +140,7 @@ class OrderService extends BaseApiService {
       throw new Error('Refund reason must be at least 10 characters');
     }
 
-    return this.create(`${this.endpoints.BASE}/${orderId}/refund`, {
+    return this.create(`/orders/${orderId}/refund`, {
       reason: reason.trim(),
       items,
       amount
@@ -148,7 +153,7 @@ class OrderService extends BaseApiService {
       throw new Error('Order ID is required');
     }
 
-    return this.read(`${this.endpoints.BASE}/${orderId}/invoice`, {
+    return this.read(`/orders/${orderId}/invoice`, {
       format
     }, {
       headers: {
@@ -172,7 +177,7 @@ class OrderService extends BaseApiService {
       throw new Error('Invalid order status');
     }
 
-    return this.update(`${this.endpoints.BASE}/${orderId}/status`, {
+    return this.update(`/orders/${orderId}/status`, {
       status,
       notes: notes.trim()
     });
@@ -190,7 +195,7 @@ class OrderService extends BaseApiService {
       ...otherParams
     } = params;
 
-    return this.getPaginated(`${this.endpoints.BASE}/user/${userId}`, page, limit, {
+    return this.getPaginated(`/orders/user/${userId}`, page, limit, {
       params: otherParams
     });
   }
@@ -205,7 +210,7 @@ class OrderService extends BaseApiService {
       throw new Error('Order status is required');
     }
 
-    return this.batchUpdate(this.endpoints.BASE, {
+    return this.batchUpdate('/orders', {
       orderIds,
       updateData: { status, notes: notes.trim() }
     });
@@ -213,7 +218,7 @@ class OrderService extends BaseApiService {
 
   // Export orders (admin)
   async exportOrders(params = {}) {
-    return this.read(`${this.endpoints.BASE}/export`, params, {
+    return this.read('/orders/export', params, {
       headers: {
         'Accept': 'application/octet-stream'
       }
@@ -228,7 +233,7 @@ class OrderService extends BaseApiService {
       ...otherParams
     } = params;
 
-    return this.read(`${this.endpoints.BASE}/analytics`, {
+    return this.read('/orders/analytics', {
       period,
       groupBy,
       ...otherParams
@@ -333,17 +338,17 @@ class OrderService extends BaseApiService {
       throw new Error('Order ID is required');
     }
 
-    return this.read(`${this.endpoints.BASE}/${orderId}/timeline`);
+    return this.read(`/orders/${orderId}/timeline`);
   }
 
   // Estimate delivery date
   async estimateDelivery(orderData) {
-    return this.create(`${this.endpoints.BASE}/estimate-delivery`, orderData);
+    return this.create('/orders/estimate-delivery', orderData);
   }
 
   // Calculate shipping cost
   async calculateShipping(shippingData) {
-    return this.create(`${this.endpoints.BASE}/calculate-shipping`, shippingData);
+    return this.create('/orders/calculate-shipping', shippingData);
   }
 }
 

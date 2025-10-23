@@ -78,9 +78,17 @@ const OrdersTab = () => {
         return (
             <div className="store-card fill-card">
                 <div className="alert alert-danger">
-                    <h5>Error Loading Orders</h5>
-                    <p>{error}</p>
+                    <div className="d-flex align-items-center mb-3">
+                        <svg width="24" height="24" viewBox="0 0 24 24" className="text-danger me-2">
+                            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                        </svg>
+                        <h5 className="mb-0">Error Loading Orders</h5>
+                    </div>
+                    <p className="mb-3">{error}</p>
                     <button className="btn btn-primary" onClick={() => loadOrders()}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                            <path fill="currentColor" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" />
+                        </svg>
                         Try Again
                     </button>
                 </div>
@@ -144,6 +152,9 @@ const OrdersTab = () => {
 
             {getFilteredOrders().length === 0 ? (
                 <div className="text-center py-5">
+                    <svg width="64" height="64" viewBox="0 0 24 24" className="text-muted mb-3">
+                        <path fill="currentColor" d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1z" />
+                    </svg>
                     <h5 className="tc-6533 mb-3">No orders yet</h5>
                     <p className="tc-6533 mb-4">Start shopping to see your orders here</p>
                     <Link to="/" className="btn btn-c-2101 btn-rd">
