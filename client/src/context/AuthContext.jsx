@@ -368,16 +368,16 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
+      console.log('AuthContext login called with:', { credentials, options });
       dispatch({ type: AUTH_ACTIONS.LOGIN_START });
 
-      // Add device info to credentials
-      const deviceInfo = getDeviceInfo();
+      // Send only email and password for login - deviceInfo will be added server-side
       const loginData = {
-        ...credentials,
-        deviceInfo,
-        rememberMe: options.rememberMe || false
+        email: credentials.email,
+        password: credentials.password
       };
 
+      console.log('Sending login data to authService:', loginData);
       const response = await authService.login(loginData);
 
       // Handle MFA requirement
@@ -422,11 +422,13 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: AUTH_ACTIONS.LOGIN_START });
 
-      // Add device info
-      const deviceInfo = getDeviceInfo();
+      // Send only the required user data - deviceInfo will be added server-side
       const registrationData = {
-        ...userData,
-        deviceInfo
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,
+        password: userData.password,
+        subscribeNewsletter: userData.subscribeNewsletter
       };
 
       const response = await authService.register(registrationData);

@@ -121,7 +121,7 @@ const ProductIncludes = ({ includes, product }) => {
                         <svg width="14" height="14" viewBox="0 0 24 24" className="me-2">
                             <path fill="currentColor" d="M12 3c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm7 7.7c0-.8-.7-1.5-1.5-1.5S16 9.9 16 10.7v.8l-2.1 2.1c-.9.9-2.4.9-3.3 0L8.5 11.5c-.9-.9-2.4-.9-3.3 0L3 13.7v.8c0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5v-.8l2.1-2.1c.9-.9 2.4-.9 3.3 0l2.1 2.1c.9.9 2.4.9 3.3 0L19 11.5v-.8z"/>
                         </svg>
-                        Weight: {product.weight.value} {product.weight.unit}
+                        Weight: {product.weight?.value || 'N/A'} {product.weight?.unit || ''}
                     </small>
                 </div>
             )}

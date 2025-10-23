@@ -54,6 +54,10 @@ const DetailedSpecs = ({
 
     // Helper function to format category names
     const formatCategoryName = (category) => {
+        if (!category || typeof category !== 'string') {
+            return 'General';
+        }
+        
         const categoryMap = {
             'display': 'Display & Design',
             'design': 'Display & Design',
@@ -116,7 +120,7 @@ const DetailedSpecs = ({
             }
             processedSpecs['Display & Design'].push({
                 label: 'Weight',
-                value: `${product.weight.value} ${product.weight.unit}`,
+                value: `${product.weight?.value || 'N/A'} ${product.weight?.unit || ''}`,
                 highlight: false
             });
         }
