@@ -127,7 +127,10 @@ const getUserPermissions = (role) => {
       'read:profile', 'update:profile', 'read:orders', 'create:orders',
       'read:users', 'update:users', 'delete:users',
       'read:products', 'create:products', 'update:products', 'delete:products',
-      'read:analytics', 'manage:sections', 'manage:categories'
+      'read:analytics', 'manage:sections', 'manage:categories',
+      // Admin panel permissions
+      'view_admin_panel', 'manage_orders', 'manage_products', 'manage_users',
+      'manage_categories', 'manage_analytics', 'manage_settings'
     ]
   };
   return permissions[role] || permissions.user;
@@ -637,11 +640,15 @@ export const getProfile = asyncHandler(async (req, res, next) => {
     return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
   }
 
+  // Get user permissions based on role
+  const permissions = getUserPermissions(user.role);
+
   res.status(200).json({
     success: true,
     message: 'Profile retrieved successfully',
     data: {
-      user
+      user,
+      permissions
     }
   });
 });

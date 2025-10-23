@@ -70,7 +70,9 @@ const authReducer = (state, action) => {
           payload: action.payload,
           extractedUser: user,
           userRole: user?.role,
-          permissions: action.payload.permissions
+          userPermissions: user?.permissions,
+          payloadPermissions: action.payload.permissions,
+          finalPermissions: action.payload.user?.permissions || action.payload.permissions
         });
       }
 
@@ -85,7 +87,7 @@ const authReducer = (state, action) => {
         lockoutExpiry: null,
         sessionExpiry: action.payload.sessionExpiry,
         lastActivity: Date.now(),
-        permissions: action.payload.permissions || [],
+        permissions: action.payload.user?.permissions || action.payload.permissions || [],
         preferences: action.payload.preferences || {}
       };
 
@@ -398,6 +400,7 @@ export const AuthProvider = ({ children }) => {
           response,
           user: response.data?.user,
           userRole: response.data?.user?.role,
+          userPermissions: response.data?.user?.permissions,
           hasUser: !!response.data?.user
         });
       }
@@ -647,6 +650,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Refresh user profile and permissions
+  const refreshProfile = async () => {
+    try {
+      const userData = await authService.getProfile();
+      dispatch({ type: AUTH_ACTIONS.LOAD_USER_SUCCESS, payload: userData.data || userData });
+      return userData;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   // Clear error
   const clearError = useCallback(() => {
     dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
@@ -671,7 +685,19 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user has specific permission
   const hasPermission = (permission) => {
-    return state.permissions.includes(permission) || state.user?.permissions?.includes(permission);
+    const result = state.permissions.includes(permission) || state.user?.permissions?.includes(permission);
+    
+    // Debug logging for permission checks
+    if (process.env.NODE_ENV === 'development') {
+      console.log('hasPermission() called:', {
+        requestedPermission: permission,
+        statePermissions: state.permissions,
+        userPermissions: state.user?.permissions,
+        result
+      });
+    }
+    
+    return result;
   };
 
   // Check multiple permissions (all required)
@@ -752,6 +778,7 @@ export const AuthProvider = ({ children }) => {
 
     // Session management
     refreshSession,
+    refreshProfile,
     getUserSessions,
     revokeSession,
 
@@ -791,6 +818,7 @@ export const AuthProvider = ({ children }) => {
     verifyEmail,
     resendVerification,
     refreshSession,
+    refreshProfile,
     getUserSessions,
     revokeSession,
     clearError,
