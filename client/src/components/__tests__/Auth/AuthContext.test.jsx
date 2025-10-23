@@ -212,7 +212,8 @@ describe('AuthContext', () => {
         firstName: mockUserData.firstName,
         lastName: mockUserData.lastName,
         email: mockUserData.email,
-        password: mockUserData.password
+        password: mockUserData.password,
+        subscribeNewsletter: mockUserData.subscribeNewsletter
       });
       expect(result.current.user).toEqual(mockResponse.user);
       expect(mockShowNotification).toHaveBeenCalledWith('Registration successful!', 'success');

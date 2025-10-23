@@ -232,10 +232,21 @@ class HttpClient {
     }, config.timeout || this.timeout);
 
     try {
-      const response = await fetch(url, {
+      const fetchConfig = {
         ...config,
         signal: controller.signal
+      };
+      
+      // Debug: Log what's actually being sent to fetch
+      console.log('🔍 FETCH DEBUG:', {
+        url,
+        method: fetchConfig.method,
+        headers: fetchConfig.headers,
+        body: fetchConfig.body,
+        bodyType: typeof fetchConfig.body
       });
+      
+      const response = await fetch(url, fetchConfig);
       
       clearTimeout(timeoutId);
       return response;
@@ -313,7 +324,9 @@ class HttpClient {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const response = await this.executeRequest(config);
-        return await this.applyResponseInterceptors(response);
+        // Parse response body once to avoid "body stream already read" errors
+        const parsedResponse = await this.parseResponseBody(response);
+        return await this.applyResponseInterceptors(parsedResponse);
       } catch (error) {
         lastError = error;
         
@@ -350,7 +363,7 @@ class HttpClient {
     // Prepare fetch options
     const fetchOptions = {
       method: method.toUpperCase(),
-      headers,
+      headers: { ...headers }, // Create mutable copy of headers
       timeout
     };
 
@@ -362,6 +375,10 @@ class HttpClient {
         delete fetchOptions.headers['Content-Type'];
       } else if (typeof body === 'object') {
         fetchOptions.body = JSON.stringify(body);
+        // Ensure Content-Type is set for JSON
+        if (!fetchOptions.headers['Content-Type']) {
+          fetchOptions.headers['Content-Type'] = 'application/json';
+        }
       } else {
         fetchOptions.body = body;
       }
@@ -382,17 +399,67 @@ class HttpClient {
   }
 
   /**
+   * Parse response body once to avoid "body stream already read" errors
+   */
+  async parseResponseBody(response) {
+    const contentType = response.headers.get('content-type');
+    let data;
+
+    try {
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+    } catch (parseError) {
+      console.warn('Failed to parse response body:', parseError);
+      data = null;
+    }
+
+    // Create a new response-like object with parsed data
+    return {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+      url: response.url,
+      redirected: response.redirected,
+      type: response.type,
+      config: response.config,
+      data,
+      json: () => Promise.resolve(data),
+      text: () => Promise.resolve(typeof data === 'string' ? data : JSON.stringify(data)),
+      clone: () => ({ 
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        url: response.url,
+        redirected: response.redirected,
+        type: response.type,
+        config: response.config,
+        data 
+      })
+    };
+  }
+
+  /**
    * Create standardized error from response
    */
   async createErrorFromResponse(response, config) {
     let errorData;
     
     try {
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        errorData = await response.json();
+      // If response already has parsed data, use it
+      if (response.data !== undefined) {
+        errorData = response.data;
       } else {
-        errorData = { message: await response.text() };
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          errorData = await response.json();
+        } else {
+          errorData = { message: await response.text() };
+        }
       }
     } catch (parseError) {
       errorData = { message: 'Invalid response format' };

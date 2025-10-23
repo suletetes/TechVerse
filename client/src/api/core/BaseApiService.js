@@ -61,14 +61,22 @@ class BaseApiService {
    * Process successful response with transformation
    */
   async processResponse(response, config) {
-    const contentType = response.headers.get('content-type');
+    const contentType = response.headers && typeof response.headers.get === 'function' 
+      ? response.headers.get('content-type') 
+      : null;
     let data;
 
     try {
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
+      // If response already has parsed data (from HttpClient), use it
+      if (response.data !== undefined) {
+        data = response.data;
       } else {
-        data = await response.text();
+        // Fallback to parsing (shouldn't happen with new HttpClient)
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json();
+        } else {
+          data = await response.text();
+        }
       }
     } catch (parseError) {
       console.warn('Failed to parse response:', parseError);
@@ -161,9 +169,11 @@ class BaseApiService {
     ];
 
     headerNames.forEach(name => {
-      const value = headers.get(name);
-      if (value) {
-        relevantHeaders[name] = value;
+      if (headers && typeof headers.get === 'function') {
+        const value = headers.get(name);
+        if (value) {
+          relevantHeaders[name] = value;
+        }
       }
     });
 
@@ -183,7 +193,7 @@ class BaseApiService {
    */
   getRetryDelay(error) {
     // Check for Retry-After header
-    if (error.response && error.response.headers) {
+    if (error.response && error.response.headers && typeof error.response.headers.get === 'function') {
       const retryAfter = error.response.headers.get('retry-after');
       if (retryAfter) {
         return parseInt(retryAfter) * 1000;

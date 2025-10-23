@@ -596,10 +596,16 @@ export const handleApiResponse = async (response, context = {}) => {
   
   let data;
   try {
-    if (contentType && contentType.includes('application/json')) {
-      data = await response.json();
+    // If response already has parsed data (from HttpClient), use it
+    if (response.data !== undefined) {
+      data = response.data;
     } else {
-      data = await response.text();
+      // Fallback to parsing (shouldn't happen with new HttpClient)
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
     }
   } catch (parseError) {
     // Handle cases where response body is not valid JSON/text

@@ -1,11 +1,20 @@
-import apiClient from '../config.js';
+import BaseApiService from '../core/BaseApiService.js';
+import { API_ENDPOINTS } from '../config.js';
 
-class WishlistService {
+class WishlistService extends BaseApiService {
+  constructor() {
+    super({
+      serviceName: 'WishlistService',
+      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+      endpoints: API_ENDPOINTS.USERS,
+      cacheEnabled: false,
+      retryEnabled: true
+    });
+  }
+
   async getWishlist(page = 1, limit = 20) {
     try {
-      const response = await apiClient.get('/users/wishlist', {
-        params: { page, limit }
-      });
+      const response = await this.read('/users/wishlist', { page, limit });
       return response.data;
     } catch (error) {
       console.error('Error fetching wishlist:', error);
@@ -15,7 +24,7 @@ class WishlistService {
 
   async addToWishlist(productId) {
     try {
-      const response = await apiClient.post(`/users/wishlist/${productId}`);
+      const response = await this.create(`/users/wishlist/${productId}`);
       return response.data;
     } catch (error) {
       console.error('Error adding to wishlist:', error);
@@ -25,7 +34,7 @@ class WishlistService {
 
   async removeFromWishlist(productId) {
     try {
-      const response = await apiClient.delete(`/users/wishlist/${productId}`);
+      const response = await this.delete(`/users/wishlist/${productId}`);
       return response.data;
     } catch (error) {
       console.error('Error removing from wishlist:', error);
@@ -61,9 +70,7 @@ class WishlistService {
 
   async getWishlistWithDetails(page = 1, limit = 20) {
     try {
-      const response = await apiClient.get('/users/wishlist', {
-        params: { page, limit }
-      });
+      const response = await this.read('/users/wishlist', { page, limit });
       return response.data?.data?.items || [];
     } catch (error) {
       console.error('Error fetching wishlist with details:', error);
@@ -92,7 +99,7 @@ class WishlistService {
         return { success: true, message: 'No items to sync' };
       }
 
-      const response = await apiClient.post('/users/wishlist/sync', {
+      const response = await this.create('/users/wishlist/sync', {
         productIds
       });
       return response.data;

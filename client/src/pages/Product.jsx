@@ -27,31 +27,31 @@ const Product = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
-    
+
     // Context hooks
-    const { 
-        currentProduct, 
-        relatedProducts, 
-        reviews, 
-        isLoading: productLoading, 
+    const {
+        currentProduct,
+        relatedProducts,
+        reviews,
+        isLoading: productLoading,
         error: productError,
-        loadProduct, 
-        loadRelatedProducts, 
+        loadProduct,
+        loadRelatedProducts,
         loadProductReviews,
         addProductReview,
-        clearCurrentProduct 
+        clearCurrentProduct
     } = useProduct();
-    
-    const { 
-        addToCart, 
-        isLoading: cartLoading 
+
+    const {
+        addToCart,
+        isLoading: cartLoading
     } = useCart();
-    
-    const { 
-        addToWishlist, 
-        removeFromWishlist, 
-        isInWishlist, 
-        isLoading: wishlistLoading 
+
+    const {
+        addToWishlist,
+        removeFromWishlist,
+        isInWishlist,
+        isLoading: wishlistLoading
     } = useWishlist();
 
     // Local state
@@ -69,7 +69,7 @@ const Product = () => {
             loadProductReviews(id);
             loadRelatedProducts(id);
         }
-        
+
         return () => {
             clearCurrentProduct();
         };
@@ -82,14 +82,14 @@ const Product = () => {
             const variants = currentProduct.variants || [];
             const colorVariant = variants.find(v => v.name.toLowerCase().includes('color') || v.name.toLowerCase().includes('colour'));
             const storageVariant = variants.find(v => v.name.toLowerCase().includes('storage') || v.name.toLowerCase().includes('memory'));
-            
+
             if (colorVariant && colorVariant.options.length > 0) {
                 setSelectedColor(colorVariant.options[0]._id || colorVariant.options[0].value);
             }
             if (storageVariant && storageVariant.options.length > 0) {
                 setSelectedStorage(storageVariant.options[0]._id || storageVariant.options[0].value);
             }
-            
+
             // Set default media selection from product images
             if (currentProduct.images && currentProduct.images.length > 0) {
                 const primaryImage = currentProduct.images.find(img => img.isPrimary);
@@ -117,7 +117,7 @@ const Product = () => {
                 <div className="alert alert-danger">
                     <h4>Product Not Found</h4>
                     <p>{productError}</p>
-                    <button 
+                    <button
                         className="btn btn-primary"
                         onClick={() => navigate('/')}
                     >
@@ -135,7 +135,7 @@ const Product = () => {
                 <div className="alert alert-warning">
                     <h4>Product Not Found</h4>
                     <p>The product you're looking for doesn't exist.</p>
-                    <button 
+                    <button
                         className="btn btn-primary"
                         onClick={() => navigate('/')}
                     >
@@ -150,7 +150,7 @@ const Product = () => {
     const variants = currentProduct.variants || [];
     const colorVariant = variants.find(v => v.name.toLowerCase().includes('color') || v.name.toLowerCase().includes('colour'));
     const storageVariant = variants.find(v => v.name.toLowerCase().includes('storage') || v.name.toLowerCase().includes('memory'));
-    
+
     const colorOptions = colorVariant?.options || currentProduct.colors || [];
     const storageOptions = storageVariant?.options || currentProduct.storageOptions || [];
     const mediaGallery = currentProduct.mediaGallery || [];
@@ -158,26 +158,26 @@ const Product = () => {
 
     const getCurrentPrice = () => {
         const basePrice = currentProduct.price || 0;
-        
+
         if (storageOptions.length === 0) return basePrice;
-        
+
         // Handle backend variant structure
-        const selectedStorageOption = storageOptions.find(s => 
+        const selectedStorageOption = storageOptions.find(s =>
             s._id === selectedStorage || s.value === selectedStorage || s.id === selectedStorage
         );
-        
+
         if (selectedStorageOption) {
             // Backend uses priceModifier, frontend might use price directly
             return basePrice + (selectedStorageOption.priceModifier || 0);
         }
-        
+
         return basePrice;
     };
 
     const handleAddToCart = async () => {
         if (!isAuthenticated) {
-            navigate('/login', { 
-                state: { 
+            navigate('/login', {
+                state: {
                     from: { pathname: `/product/${id}` },
                     message: 'Please login to add items to your cart'
                 }
@@ -187,7 +187,7 @@ const Product = () => {
 
         try {
             setIsAddingToCart(true);
-            
+
             const cartData = {
                 productId: currentProduct._id,
                 quantity: quantity,
@@ -214,8 +214,8 @@ const Product = () => {
 
     const toggleWishlist = async () => {
         if (!isAuthenticated) {
-            navigate('/login', { 
-                state: { 
+            navigate('/login', {
+                state: {
                     from: { pathname: `/product/${id}` },
                     message: 'Please login to manage your wishlist'
                 }
@@ -241,16 +241,16 @@ const Product = () => {
 
     const handlePreviousMedia = () => {
         // Handle both mediaGallery and product images
-        const images = mediaGallery.length > 0 
-            ? mediaGallery 
+        const images = mediaGallery.length > 0
+            ? mediaGallery
             : (currentProduct?.images || []).map((img, index) => ({
                 id: img._id || `image-${index}`,
                 ...img
             }));
-            
+
         if (images.length === 0) return;
-        
-        const currentIndex = images.findIndex(media => 
+
+        const currentIndex = images.findIndex(media =>
             media.id === selectedMedia || media._id === selectedMedia
         );
         const previousIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
@@ -259,16 +259,16 @@ const Product = () => {
 
     const handleNextMedia = () => {
         // Handle both mediaGallery and product images
-        const images = mediaGallery.length > 0 
-            ? mediaGallery 
+        const images = mediaGallery.length > 0
+            ? mediaGallery
             : (currentProduct?.images || []).map((img, index) => ({
                 id: img._id || `image-${index}`,
                 ...img
             }));
-            
+
         if (images.length === 0) return;
-        
-        const currentIndex = images.findIndex(media => 
+
+        const currentIndex = images.findIndex(media =>
             media.id === selectedMedia || media._id === selectedMedia
         );
         const nextIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
@@ -277,8 +277,8 @@ const Product = () => {
 
     const handleSubmitReview = async (reviewData) => {
         if (!isAuthenticated) {
-            navigate('/login', { 
-                state: { 
+            navigate('/login', {
+                state: {
                     from: { pathname: `/product/${id}` },
                     message: 'Please login to write a review'
                 }
@@ -304,7 +304,7 @@ const Product = () => {
                 <div className="row">
                     {/* Category Navigation Pane - Full Width */}
                     <div className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mb-4">
-                        <ProductCategoryPane 
+                        <ProductCategoryPane
                             category={currentProduct.category?.name || "Products"}
                             subcategory={currentProduct.subcategory?.name || ""}
                             breadcrumbs={currentProduct.breadcrumbs || [
@@ -351,13 +351,13 @@ const Product = () => {
                         />
 
                         {/* Quick Technical Specs */}
-                        <TechnicalSpecs 
+                        <TechnicalSpecs
                             product={currentProduct}
                             specifications={currentProduct.specifications}
                         />
 
                         {/* Key Features */}
-                        <KeyFeatures 
+                        <KeyFeatures
                             product={currentProduct}
                             features={currentProduct.features}
                         />
@@ -381,7 +381,7 @@ const Product = () => {
                                     onToggleWishlist={toggleWishlist}
                                     isWishlistLoading={wishlistLoading}
                                 />
-                                
+
                                 {currentProduct.description && (
                                     <p>{currentProduct.description}</p>
                                 )}
@@ -421,7 +421,7 @@ const Product = () => {
                                     isAuthenticated={isAuthenticated}
                                 />
 
-                                <ProductIncludes 
+                                <ProductIncludes
                                     product={currentProduct}
                                     includes={currentProduct.includes}
                                 />
@@ -429,7 +429,7 @@ const Product = () => {
                         </div>
 
                         {/* Product Highlights */}
-                        <ProductHighlights 
+                        <ProductHighlights
                             product={currentProduct}
                             highlights={currentProduct.highlights}
                         />
@@ -438,18 +438,18 @@ const Product = () => {
                     {/* Customer Reviews Section - Full Width Below */}
                     <div
                         className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
-                        <ReviewsSection 
+                        <ReviewsSection
                             productId={currentProduct._id}
                             reviews={reviews}
                             averageRating={currentProduct.averageRating}
                             totalReviews={currentProduct.reviewCount}
-                            showWriteReview={isAuthenticated} 
+                            showWriteReview={isAuthenticated}
                             onSubmitReview={handleSubmitReview}
                             productInfo={{
                                 id: currentProduct._id,
                                 name: currentProduct.name,
-                                variant: colorOptions.length > 0 || storageOptions.length > 0 
-                                    ? `${selectedColor} - ${selectedStorage}` 
+                                variant: colorOptions.length > 0 || storageOptions.length > 0
+                                    ? `${selectedColor} - ${selectedStorage}`
                                     : null,
                                 image: currentProduct.images?.[0] || currentProduct.thumbnail
                             }}
@@ -461,7 +461,7 @@ const Product = () => {
                     {currentProduct.specifications && (
                         <div
                             className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
-                            <DetailedSpecs 
+                            <DetailedSpecs
                                 product={currentProduct}
                                 productName={currentProduct.name}
                                 specifications={currentProduct.specifications}
@@ -472,7 +472,7 @@ const Product = () => {
                     {/* Related Products Section */}
                     <div
                         className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
-                        <RelatedProducts 
+                        <RelatedProducts
                             products={relatedProducts}
                             isLoading={productLoading}
                         />
@@ -482,7 +482,7 @@ const Product = () => {
                     {currentProduct.faqs && currentProduct.faqs.length > 0 && (
                         <div
                             className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-4">
-                            <ProductFAQ 
+                            <ProductFAQ
                                 faqs={currentProduct.faqs}
                                 productName={currentProduct.name}
                             />
