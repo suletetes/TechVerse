@@ -1,63 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AdminHeader } from '../../components/Admin';
 import { ProductsTable } from '../../components/tables';
+import { productService } from '../../api/services';
 
 const AdminProductManagement = () => {
-    const [products, setProducts] = useState([
-        {
-            id: 1,
-            name: 'Tablet Air',
-            category: 'Tablets',
-            price: 1999,
-            originalPrice: 2199,
-            stock: 45,
-            status: 'Active',
-            sales: 234,
-            image: '/img/tablet-product.jpg',
-            featured: true,
-            sku: 'TAB-001'
-        },
-        {
-            id: 2,
-            name: 'Phone Pro',
-            category: 'Phones',
-            price: 999,
-            originalPrice: null,
-            stock: 12,
-            status: 'Low Stock',
-            sales: 567,
-            image: '/img/phone-product.jpg',
-            featured: false,
-            sku: 'PHN-002'
-        },
-        {
-            id: 3,
-            name: 'Ultra Laptop',
-            category: 'Laptops',
-            price: 2599,
-            originalPrice: null,
-            stock: 0,
-            status: 'Out of Stock',
-            sales: 123,
-            image: '/img/laptop-product.jpg',
-            featured: true,
-            sku: 'LAP-003'
-        },
-        {
-            id: 4,
-            name: 'Smart TV 55"',
-            category: 'TVs',
-            price: 1299,
-            originalPrice: 1499,
-            stock: 28,
-            status: 'Active',
-            sales: 89,
-            image: '/img/tv-product.jpg',
-            featured: false,
-            sku: 'TV-004'
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        fetchProducts();
+    }, []);
+
+    const fetchProducts = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await productService.getProducts({ limit: 100 });
+            const backendProducts = response?.data?.products || response?.products || [];
+            
+            // Transform backend data to component format
+            const transformedProducts = backendProducts.map(product => ({
+                id: product._id,
+                name: product.name,
+                category: product.category?.name || 'Uncategorized',
+                price: product.price,
+                originalPrice: product.compareAtPrice || null,
+                stock: product.stock?.quantity || product.stock || 0,
+                status: getProductStatus(product),
+                sales: product.sales?.totalSold || 0,
+                image: product.images?.[0]?.url || '/img/placeholder-product.jpg',
+                featured: product.featured || false,
+                sku: product.sku || `PRD-${product._id?.slice(-6)?.toUpperCase()}`
+            }));
+            
+            setProducts(transformedProducts);
+        } catch (err) {
+            console.error('Error fetching products:', err);
+            setError('Failed to load products');
+        } finally {
+            setLoading(false);
         }
-    ]);
+    };
+
+    const getProductStatus = (product) => {
+        const stock = product.stock?.quantity || product.stock || 0;
+        const lowStockThreshold = product.stock?.lowStockThreshold || 10;
+        
+        if (stock === 0) return 'Out of Stock';
+        if (stock <= lowStockThreshold) return 'Low Stock';
+        if (product.status === 'active') return 'Active';
+        return 'Inactive';
+    };
 
     const [filters, setFilters] = useState({
         category: 'all',
@@ -78,18 +74,30 @@ const AdminProductManagement = () => {
         // Navigate to edit form or open modal
     };
 
-    const handleDeleteProduct = (product) => {
+    const handleDeleteProduct = async (product) => {
         if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
-            setProducts(Array.isArray(products) ? products.filter(p => p.id !== product.id) : []);
+            try {
+                await productService.deleteProduct(product.id);
+                setProducts(products.filter(p => p.id !== product.id));
+            } catch (err) {
+                console.error('Error deleting product:', err);
+                alert('Failed to delete product');
+            }
         }
     };
 
-    const handleToggleFeatured = (product) => {
-        setProducts(Array.isArray(products) ? products.map(p => 
-            p.id === product.id 
-                ? { ...p, featured: !p.featured }
-                : p
-        ) : []);
+    const handleToggleFeatured = async (product) => {
+        try {
+            await productService.updateProduct(product.id, { featured: !product.featured });
+            setProducts(products.map(p => 
+                p.id === product.id 
+                    ? { ...p, featured: !p.featured }
+                    : p
+            ));
+        } catch (err) {
+            console.error('Error updating product:', err);
+            alert('Failed to update product');
+        }
     };
 
     // Apply filters to products
@@ -345,14 +353,38 @@ const AdminProductManagement = () => {
                         </div>
                     </div>
                     <div className="card-body p-0">
-                        <ProductsTable
-                            products={filteredProducts}
-                            onView={handleViewProduct}
-                            onEdit={handleEditProduct}
-                            onDelete={handleDeleteProduct}
-                            onToggleFeatured={handleToggleFeatured}
-                            enableSelection={false}
-                        />
+                        {loading ? (
+                            <div className="text-center py-5">
+                                <div className="spinner-border text-primary" role="status">
+                                    <span className="visually-hidden">Loading...</span>
+                                </div>
+                                <p className="mt-2 text-muted">Loading products...</p>
+                            </div>
+                        ) : error ? (
+                            <div className="text-center py-5">
+                                <div className="alert alert-danger" role="alert">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" className="me-2">
+                                        <path fill="currentColor" d="M12,2L13.09,8.26L22,9L17,14L18.18,21L12,17.77L5.82,21L7,14L2,9L10.91,8.26L12,2Z"/>
+                                    </svg>
+                                    {error}
+                                </div>
+                                <button 
+                                    className="btn btn-primary"
+                                    onClick={fetchProducts}
+                                >
+                                    Try Again
+                                </button>
+                            </div>
+                        ) : (
+                            <ProductsTable
+                                products={filteredProducts}
+                                onView={handleViewProduct}
+                                onEdit={handleEditProduct}
+                                onDelete={handleDeleteProduct}
+                                onToggleFeatured={handleToggleFeatured}
+                                enableSelection={false}
+                            />
+                        )}
                     </div>
                 </div>
             </div>

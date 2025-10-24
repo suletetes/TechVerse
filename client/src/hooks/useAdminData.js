@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { productService } from '../api/services';
 
 export const useAdminData = () => {
     // Admin profile state management
@@ -76,39 +77,48 @@ export const useAdminData = () => {
         }
     ];
 
-    // Mock products data
-    const products = [
-        {
-            id: 1,
-            name: 'Tablet Air',
-            category: 'Tablets',
-            price: 1999,
-            stock: 45,
-            status: 'Active',
-            sales: 234,
-            image: 'img/tablet-product.jpg'
-        },
-        {
-            id: 2,
-            name: 'Phone Pro',
-            category: 'Phones',
-            price: 999,
-            stock: 12,
-            status: 'Low Stock',
-            sales: 567,
-            image: 'img/phone-product.jpg'
-        },
-        {
-            id: 3,
-            name: 'Ultra Laptop',
-            category: 'Laptops',
-            price: 2599,
-            stock: 0,
-            status: 'Out of Stock',
-            sales: 123,
-            image: 'img/laptop-product.jpg'
-        }
-    ];
+    // Fetch products data from backend
+    const [products, setProducts] = useState([]);
+    const [productsLoading, setProductsLoading] = useState(true);
+    
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                setProductsLoading(true);
+                const response = await productService.getProducts({ limit: 100 });
+                const backendProducts = response?.data?.products || response?.products || [];
+                
+                const transformedProducts = backendProducts.map(product => ({
+                    id: product._id,
+                    name: product.name,
+                    category: product.category?.name || 'Uncategorized',
+                    price: product.price,
+                    stock: product.stock?.quantity || product.stock || 0,
+                    status: getProductStatus(product),
+                    sales: product.sales?.totalSold || 0,
+                    image: product.images?.[0]?.url || 'img/placeholder-product.jpg'
+                }));
+                
+                setProducts(transformedProducts);
+            } catch (error) {
+                console.error('Error fetching products:', error);
+            } finally {
+                setProductsLoading(false);
+            }
+        };
+
+        fetchProducts();
+    }, []);
+
+    const getProductStatus = (product) => {
+        const stock = product.stock?.quantity || product.stock || 0;
+        const lowStockThreshold = product.stock?.lowStockThreshold || 10;
+        
+        if (stock === 0) return 'Out of Stock';
+        if (stock <= lowStockThreshold) return 'Low Stock';
+        if (product.status === 'active') return 'Active';
+        return 'Inactive';
+    };
 
     // Mock categories data
     const [categories, setCategories] = useState([
@@ -260,6 +270,7 @@ export const useAdminData = () => {
         dashboardStats,
         recentOrders,
         products,
+        productsLoading,
         categories,
         setCategories,
         users,

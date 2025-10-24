@@ -284,6 +284,47 @@ const seedData = {
             tags: ['tablet', 'ipad', 'apple', 'm2-chip', 'professional', 'creative'],
             sections: ['latest', 'quickPick']
         },
+        {
+            name: 'Tablet Air 11-inch',
+            description: 'Experience the power of the Apple M2 chip in a stunning 11-inch Liquid Retina display. The Tablet Air combines performance, portability, and versatility in an ultra-thin design perfect for work and creativity.',
+            shortDescription: '11-inch Liquid Retina display tablet with Apple M2 chip.',
+            price: 1999.00,
+            compareAtPrice: 2199.00,
+            brand: 'Apple',
+            category: 'smartphones-tablets',
+            images: [
+                { url: '/img/tablet-lg.webp', alt: 'Tablet Air 11-inch', isPrimary: true },
+                { url: '/img/tablet-product.webp', alt: 'Tablet Air 11-inch - Side view', isPrimary: false },
+                { url: '/img/tablet-product.jpg', alt: 'Tablet Air 11-inch - Back view', isPrimary: false }
+            ],
+            stock: { quantity: 35, lowStockThreshold: 8 },
+            status: 'active',
+            visibility: 'public',
+            featured: true,
+            weight: 0.466,
+            dimensions: { length: 247.6, width: 178.5, height: 6.1 },
+            specifications: [
+                { name: 'Display', value: '11-inch Liquid Retina', category: 'display' },
+                { name: 'Resolution', value: '2388 x 1668 pixels at 264 ppi', category: 'display' },
+                { name: 'Processor', value: 'Apple M2 chip', category: 'performance' },
+                { name: 'CPU', value: '8-core CPU with 4 performance and 4 efficiency cores', category: 'performance' },
+                { name: 'GPU', value: '10-core GPU', category: 'performance' },
+                { name: 'Memory', value: '8GB unified memory', category: 'performance' },
+                { name: 'Storage Options', value: '128GB, 256GB, 512GB, 1TB', category: 'storage' },
+                { name: 'Camera', value: '12MP Wide camera, 12MP Ultra Wide front camera', category: 'camera' },
+                { name: 'Battery Life', value: 'Up to 10 hours', category: 'battery' },
+                { name: 'Operating System', value: 'iPadOS 17', category: 'software' },
+                { name: 'Connectivity', value: 'Wi-Fi 6E, Bluetooth 5.3, USB-C', category: 'connectivity' },
+                { name: 'Compatibility', value: 'Apple Pencil (2nd generation), Magic Keyboard', category: 'compatibility' }
+            ],
+            tags: ['tablet', 'ipad', 'apple', 'm2-chip', 'liquid-retina', 'portable', 'creative'],
+            sections: ['featured', 'topSeller'],
+            seo: {
+                title: 'Tablet Air 11-inch - Liquid Retina Display with M2 Chip | TechVerse',
+                description: 'Experience the power of Apple M2 chip in the stunning Tablet Air. 11-inch Liquid Retina display, all-day battery life, and incredible performance.',
+                keywords: ['tablet air', 'ipad', 'apple m2', 'liquid retina', '11 inch tablet', 'portable tablet']
+            }
+        },
 
         // Gaming
         {
