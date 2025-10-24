@@ -1,0 +1,133 @@
+{
+    "products": [
+        {
+            "id": 1,
+            "slug": "phone-pro",
+            "name": "Phone Pro",
+            "price": 2000,
+            "priceDisplay": "From £2000",
+            "currency": "GBP",
+            "brand": "TechBrand",
+            "category": "flagship",
+            "subcategory": "phones",
+            "rating": 4.8,
+            "images": [
+                "/img/phone-product.jpg"
+            ],
+            "webp": "/img/phone-product.webp",
+            "link": "/product/1",
+            "status": "active",
+            "featured": true,
+            "topSeller": false,
+            "quickPick": false,
+            "weeklyDeal": false,
+            "stock": 50,
+            "tags": [
+                "flagship",
+                "premium",
+                "pro"
+            ],
+            "shortDescription": "Premium flagship smartphone with advanced features",
+            "createdAt": "2024-01-15T00:00:00Z",
+            "updatedAt": "2024-01-15T00:00:00Z"
+        },
+        {
+            "id": 2,
+            "slug": "phone-lite",
+            "name": "Phone Lite",
+            "price": 1500,
+            "priceDisplay": "From £1500",
+            "currency": "GBP",
+            "brand": "TechBrand",
+            "category": "mid-range",
+            "subcategory": "phones",
+            "rating": 4.5,
+            "images": [
+                "/img/phone-product.jpg"
+            ],
+            "webp": "/img/phone-product.webp",
+            "link": "/product/2",
+            "status": "active",
+            "featured": false,
+            "topSeller": true,
+            "quickPick": false,
+            "weeklyDeal": false,
+            "stock": 50,
+            "tags": [
+                "mid-range",
+                "lite",
+                "affordable"
+            ],
+            "shortDescription": "Mid-range smartphone with essential features",
+            "createdAt": "2024-01-15T00:00:00Z",
+            "updatedAt": "2024-01-15T00:00:00Z"
+        },
+        {
+            "id": 3,
+            "slug": "phone-ultra",
+            "name": "Phone Ultra",
+            "price": 2500,
+            "priceDisplay": "From £2500",
+            "currency": "GBP",
+            "brand": "TechBrand",
+            "category": "flagship",
+            "subcategory": "phones",
+            "rating": 4.9,
+            "images": [
+                "/img/phone-product.jpg"
+            ],
+            "webp": "/img/phone-product.webp",
+            "link": "/product/3",
+            "status": "active",
+            "featured": true,
+            "topSeller": true,
+            "quickPick": false,
+            "weeklyDeal": false,
+            "stock": 50,
+            "tags": [
+                "flagship",
+                "ultra",
+                "premium"
+            ],
+            "shortDescription": "Ultra-premium smartphone with cutting-edge technology",
+            "createdAt": "2024-01-15T00:00:00Z",
+            "updatedAt": "2024-01-15T00:00:00Z"
+        }
+    ],
+    "categories": [
+        {
+            "id": "phones",
+            "slug": "phones",
+            "name": "Phones",
+            "description": "Latest smartphones and mobile devices",
+            "image": "/img/category-phones.jpg",
+            "parentId": "electronics",
+            "isActive": true,
+            "sortOrder": 1,
+            "productCount": 8,
+            "subcategories": [
+                {
+                    "id": "flagship",
+                    "slug": "flagship",
+                    "name": "Flagship",
+                    "description": "Premium flagship smartphones",
+                    "productCount": 4
+                },
+                {
+                    "id": "mid-range",
+                    "slug": "mid-range",
+                    "name": "Mid-range",
+                    "description": "Mid-range smartphones with great value",
+                    "productCount": 3
+                },
+                {
+                    "id": "budget",
+                    "slug": "budget",
+                    "name": "Budget",
+                    "description": "Affordable budget smartphones",
+                    "productCount": 1
+                }
+            ]
+        }
+    ]
+}

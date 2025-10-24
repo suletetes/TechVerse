@@ -1,0 +1,62 @@
+[
+  {
+    "id": "contact",
+    "slug": "contact",
+    "title": "Contact Us",
+    "sections": [
+      {
+        "heading": "Content",
+        "html": "Page content to be added"
+      }
+    ],
+    "meta": {
+      "title": "Contact Us",
+      "description": "Contact Us page content"
+    }
+  },
+  {
+    "id": "privacy",
+    "slug": "privacy",
+    "title": "Privacy Policy",
+    "sections": [
+      {
+        "heading": "Content",
+        "html": "Page content to be added"
+      }
+    ],
+    "meta": {
+      "title": "Privacy Policy",
+      "description": "Privacy Policy page content"
+    }
+  },
+  {
+    "id": "faq",
+    "slug": "faq",
+    "title": "Frequently Asked Questions",
+    "sections": [
+      {
+        "heading": "Frequently Asked Questions",
+        "html": "<div className=\"container bloc-md bloc-lg-md\">\r\n                <div className=\"row\">\r\n                    <div className=\"text-start offset-sm-1 col-sm-10 offset-lg-1 col-lg-10\">\r\n                        <h1 className=\"mb-4 tc-6533\">Frequently Asked Questions</h1>\r\n                        <Accordion items={faqData} allowMultiple={false} />\r\n                    </div>\r\n                </div>\r\n            </div>"
+      }
+    ],
+    "meta": {
+      "title": "Frequently Asked Questions",
+      "description": "Frequently Asked Questions page content"
+    }
+  },
+  {
+    "id": "delivery",
+    "slug": "delivery",
+    "title": "Delivery Information",
+    "sections": [
+      {
+        "heading": "Content",
+        "html": "Page content to be added"
+      }
+    ],
+    "meta": {
+      "title": "Delivery Information",
+      "description": "Delivery Information page content"
+    }
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "flagship",
+    "slug": "flagship",
+    "name": "Flagship",
+    "description": "Flagship products",
+    "image": "",
+    "parentId": null,
+    "isActive": true,
+    "sortOrder": 0
+  },
+  {
+    "id": "mid-range",
+    "slug": "mid-range",
+    "name": "Mid-range",
+    "description": "Mid-range products",
+    "image": "",
+    "parentId": null,
+    "isActive": true,
+    "sortOrder": 0
+  },
+  {
+    "id": "budget",
+    "slug": "budget",
+    "name": "Budget",
+    "description": "Budget products",
+    "image": "",
+    "parentId": null,
+    "isActive": true,
+    "sortOrder": 0
+  }
+]

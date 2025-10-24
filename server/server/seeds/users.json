@@ -1,0 +1,64 @@
+[
+  {
+    "id": "b0ihbblyy",
+    "name": "Admin User",
+    "email": "admin@techverse.com",
+    "role": "admin",
+    "password": "CHANGE_ME",
+    "status": "active",
+    "joinDate": "2025-10-23T22:02:29.089Z",
+    "permissions": [
+      "users",
+      "products",
+      "orders",
+      "analytics",
+      "settings"
+    ]
+  },
+  {
+    "id": "azt94ntez",
+    "name": "Sarah Johnson",
+    "email": "sarah.johnson@techverse.com",
+    "role": "admin",
+    "password": "CHANGE_ME",
+    "status": "active",
+    "joinDate": "2025-10-23T22:02:29.141Z",
+    "permissions": [
+      "users",
+      "products",
+      "orders",
+      "analytics",
+      "settings"
+    ]
+  },
+  {
+    "id": "ansdili8n",
+    "name": "John Smith",
+    "email": "john.smith@email.com",
+    "role": "user",
+    "password": "CHANGE_ME",
+    "status": "active",
+    "joinDate": "2023-12-01T00:00:00.000Z",
+    "permissions": []
+  },
+  {
+    "id": "ash9ibk0y",
+    "name": "Emma Wilson",
+    "email": "emma.wilson@email.com",
+    "role": "vip",
+    "password": "CHANGE_ME",
+    "status": "vip",
+    "joinDate": "2023-11-15T00:00:00.000Z",
+    "permissions": []
+  },
+  {
+    "id": "th81l6iam",
+    "name": "Michael Brown",
+    "email": "michael.brown@email.com",
+    "role": "user",
+    "password": "CHANGE_ME",
+    "status": "new",
+    "joinDate": "2024-01-10T00:00:00.000Z",
+    "permissions": []
+  }
+]

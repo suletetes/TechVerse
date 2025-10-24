@@ -1,0 +1,27 @@
+{
+  "homepage": {
+    "latestProducts": [
+      "ultra-hd-qled",
+      "tablet-pro",
+      "phone-15"
+    ],
+    "topSellers": [
+      "laptop-pro",
+      "phone-air"
+    ],
+    "quickPicks": [
+      "ultra-hd-qled",
+      "tablet-pro",
+      "phone-15",
+      "laptop-pro"
+    ],
+    "weeklyDeals": [
+      "hd-tv-plus"
+    ]
+  },
+  "site": {
+    "currency": "USD",
+    "defaultStock": 50,
+    "lowStockThreshold": 10
+  }
+}

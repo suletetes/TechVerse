@@ -1,0 +1,41 @@
+[
+  {
+    "id": "zceoj6nfq",
+    "productId": "unknown",
+    "authorName": "Sarah Johnson",
+    "userId": null,
+    "rating": 5,
+    "title": "Excellent tablet, highly recommended!",
+    "body": "I",
+    "date": "2025-10-23T22:02:29.175Z",
+    "verified": false,
+    "helpfulCount": 0,
+    "sample": false
+  },
+  {
+    "id": "yzp2v9ypr",
+    "productId": "unknown",
+    "authorName": "Michael Chen",
+    "userId": null,
+    "rating": 5,
+    "title": "Perfect for work and entertainment",
+    "body": "This tablet has exceeded my expectations...",
+    "date": "2025-10-23T22:02:29.175Z",
+    "verified": false,
+    "helpfulCount": 0,
+    "sample": false
+  },
+  {
+    "id": "6pa74i5st",
+    "productId": "unknown",
+    "authorName": "Emily Rodriguez",
+    "userId": null,
+    "rating": 5,
+    "title": "Great value for money",
+    "body": "Overall a great tablet...",
+    "date": "2025-10-23T22:02:29.175Z",
+    "verified": false,
+    "helpfulCount": 0,
+    "sample": false
+  }
+]

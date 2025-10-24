@@ -1,0 +1,614 @@
+{
+  "products": [
+    {
+      "id": "ultra-hd-qled",
+      "slug": "ultra-hd-qled",
+      "name": "Ultra HD QLED",
+      "shortDescription": "Ultra HD QLED - Premium quality product",
+      "longDescription": "",
+      "price": 2999,
+      "currency": "GBP",
+      "images": [
+        "/uploads/seed_images/tv-product.jpg",
+        "/uploads/seed_images/tv-product.webp"
+      ],
+      "category": "premium",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": true,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:28.966Z",
+      "updatedAt": "2025-10-23T22:02:29.179Z"
+    },
+    {
+      "id": "tablet-pro",
+      "slug": "tablet-pro",
+      "name": "Tablet Pro",
+      "shortDescription": "Tablet Pro - Premium quality product",
+      "longDescription": "",
+      "price": 999,
+      "currency": "GBP",
+      "images": [
+        "/uploads/seed_images/tablet-product.jpg",
+        "/uploads/seed_images/tablet-product.webp"
+      ],
+      "category": "tablets",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": true,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:28.967Z",
+      "updatedAt": "2025-10-23T22:02:29.179Z"
+    },
+    {
+      "id": "phone-15",
+      "slug": "phone-15",
+      "name": "Phone 15",
+      "shortDescription": "Phone 15 - Premium quality product",
+      "longDescription": "",
+      "price": 699,
+      "currency": "USD",
+      "images": [
+        "/uploads/seed_images/phone-product.jpg",
+        "/uploads/seed_images/phone-product.webp"
+      ],
+      "category": "smartphones",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": true,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:28.967Z",
+      "updatedAt": "2025-10-23T22:02:29.178Z"
+    },
+    {
+      "id": "laptop-pro",
+      "slug": "laptop-pro",
+      "name": "Laptop Pro",
+      "shortDescription": "Laptop Pro - Premium quality product",
+      "longDescription": "",
+      "price": 2599,
+      "currency": "GBP",
+      "images": [
+        "/uploads/seed_images/laptop-product.jpg",
+        "/uploads/seed_images/laptop-product.webp"
+      ],
+      "category": "premium",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": true,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:28.967Z",
+      "updatedAt": "2025-10-23T22:02:29.179Z"
+    },
+    {
+      "id": "hd-tv-plus",
+      "slug": "hd-tv-plus",
+      "name": "HD TV Plus",
+      "shortDescription": "HD TV Plus - Premium quality product",
+      "longDescription": "",
+      "price": 5999,
+      "currency": "USD",
+      "images": [
+        "/uploads/seed_images/tv-product-1761256949237.jpg",
+        "/uploads/seed_images/tv-product-1761256949242.webp"
+      ],
+      "category": "televisions",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": true,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:28.968Z",
+      "updatedAt": "2025-10-23T22:02:28.968Z"
+    },
+    {
+      "id": "phone-air",
+      "slug": "phone-air",
+      "name": "Phone Air",
+      "shortDescription": "Phone Air - Premium quality product",
+      "longDescription": "",
+      "price": 699,
+      "currency": "GBP",
+      "images": [
+        "/uploads/seed_images/phone-product-1761256949247.jpg",
+        "/uploads/seed_images/phone-product-1761256949251.webp"
+      ],
+      "category": "mid-range",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": true,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:28.968Z",
+      "updatedAt": "2025-10-23T22:02:29.179Z"
+    },
+    {
+      "id": "ultra-laptop",
+      "slug": "ultra-laptop",
+      "name": "Ultra Laptop",
+      "shortDescription": "Ultra Laptop - Premium quality product",
+      "longDescription": "",
+      "price": 2599,
+      "currency": "USD",
+      "images": [
+        "/uploads/seed_images/laptop-product-1761256949256.jpg",
+        "/uploads/seed_images/laptop-product-1761256949261.webp"
+      ],
+      "category": "laptops",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": true,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:28.968Z",
+      "updatedAt": "2025-10-23T22:02:29.179Z"
+    },
+    {
+      "id": "product-0",
+      "slug": "product-1",
+      "name": "Product 1",
+      "shortDescription": "Product 1 - Premium quality product",
+      "longDescription": "",
+      "price": 0,
+      "currency": "USD",
+      "images": [],
+      "category": "general",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": true,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:28.968Z",
+      "updatedAt": "2025-10-23T22:02:29.179Z"
+    },
+    {
+      "id": "8k-qled",
+      "slug": "8k-qled",
+      "name": "8K QLED",
+      "shortDescription": "8K QLED - Premium quality product",
+      "longDescription": "",
+      "price": 0,
+      "currency": "GBP",
+      "images": [
+        "/uploads/seed_images/tv-product-1761256949266.jpg"
+      ],
+      "category": "premium",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": false,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:28.996Z",
+      "updatedAt": "2025-10-23T22:02:29.179Z"
+    },
+    {
+      "id": "tablet-ultra",
+      "slug": "tablet-ultra",
+      "name": "Tablet Ultra",
+      "shortDescription": "Tablet Ultra - Premium quality product",
+      "longDescription": "",
+      "price": 0,
+      "currency": "GBP",
+      "images": [
+        "/uploads/seed_images/tablet-product-1761256949272.jpg"
+      ],
+      "category": "premium",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": false,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:28.996Z",
+      "updatedAt": "2025-10-23T22:02:29.179Z"
+    },
+    {
+      "id": "phone-pro",
+      "slug": "phone-pro",
+      "name": "Phone Pro",
+      "shortDescription": "Phone Pro - Premium quality product",
+      "longDescription": "",
+      "price": 999,
+      "currency": "USD",
+      "images": [
+        "/uploads/seed_images/phone-product-1761256949277.jpg"
+      ],
+      "category": "phones",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": false,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:28.996Z",
+      "updatedAt": "2025-10-23T22:02:29.179Z"
+    },
+    {
+      "id": "tablet-air",
+      "slug": "tablet-air",
+      "name": "Tablet Air",
+      "shortDescription": "Tablet Air - Premium quality product",
+      "longDescription": "",
+      "price": 1999,
+      "currency": "USD",
+      "images": [
+        "/uploads/seed_images/tablet-product-1761256949283.jpg"
+      ],
+      "category": "tablets",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": false,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:28.996Z",
+      "updatedAt": "2025-10-23T22:02:29.179Z"
+    },
+    {
+      "id": "laptop-air",
+      "slug": "laptop-air",
+      "name": "Laptop Air",
+      "shortDescription": "Laptop Air - Premium quality product",
+      "longDescription": "",
+      "price": 0,
+      "currency": "GBP",
+      "images": [
+        "/uploads/seed_images/laptop-product-1761256949288.jpg"
+      ],
+      "category": "laptops",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": false,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:28.996Z",
+      "updatedAt": "2025-10-23T22:02:29.179Z"
+    },
+    {
+      "id": "tablet",
+      "slug": "tablet",
+      "name": "Tablet",
+      "shortDescription": "Tablet - Premium quality product",
+      "longDescription": "",
+      "price": 0,
+      "currency": "GBP",
+      "images": [],
+      "category": "tablets",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": false,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:29.002Z",
+      "updatedAt": "2025-10-23T22:02:29.002Z"
+    },
+    {
+      "id": "phone",
+      "slug": "phone",
+      "name": "Phone",
+      "shortDescription": "Phone - Premium quality product",
+      "longDescription": "",
+      "price": 0,
+      "currency": "GBP",
+      "images": [],
+      "category": "smartphones",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": false,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:29.002Z",
+      "updatedAt": "2025-10-23T22:02:29.002Z"
+    },
+    {
+      "id": "hd-led",
+      "slug": "hd-led",
+      "name": "HD LED",
+      "shortDescription": "HD LED - Premium quality product",
+      "longDescription": "",
+      "price": 0,
+      "currency": "GBP",
+      "images": [],
+      "category": "general",
+      "variants": [],
+      "specs": {},
+      "stock": 50,
+      "status": "active",
+      "featured": false,
+      "topSeller": false,
+      "quickPick": false,
+      "weeklyDeal": false,
+      "tags": [],
+      "createdAt": "2025-10-23T22:02:29.002Z",
+      "updatedAt": "2025-10-23T22:02:29.002Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": "flagship",
+      "slug": "flagship",
+      "name": "Flagship",
+      "description": "Flagship products",
+      "image": "",
+      "parentId": null,
+      "isActive": true,
+      "sortOrder": 0
+    },
+    {
+      "id": "mid-range",
+      "slug": "mid-range",
+      "name": "Mid-range",
+      "description": "Mid-range products",
+      "image": "",
+      "parentId": null,
+      "isActive": true,
+      "sortOrder": 0
+    },
+    {
+      "id": "budget",
+      "slug": "budget",
+      "name": "Budget",
+      "description": "Budget products",
+      "image": "",
+      "parentId": null,
+      "isActive": true,
+      "sortOrder": 0
+    }
+  ],
+  "reviews": [
+    {
+      "id": "zceoj6nfq",
+      "productId": "unknown",
+      "authorName": "Sarah Johnson",
+      "userId": null,
+      "rating": 5,
+      "title": "Excellent tablet, highly recommended!",
+      "body": "I",
+      "date": "2025-10-23T22:02:29.175Z",
+      "verified": false,
+      "helpfulCount": 0,
+      "sample": false
+    },
+    {
+      "id": "yzp2v9ypr",
+      "productId": "unknown",
+      "authorName": "Michael Chen",
+      "userId": null,
+      "rating": 5,
+      "title": "Perfect for work and entertainment",
+      "body": "This tablet has exceeded my expectations...",
+      "date": "2025-10-23T22:02:29.175Z",
+      "verified": false,
+      "helpfulCount": 0,
+      "sample": false
+    },
+    {
+      "id": "6pa74i5st",
+      "productId": "unknown",
+      "authorName": "Emily Rodriguez",
+      "userId": null,
+      "rating": 5,
+      "title": "Great value for money",
+      "body": "Overall a great tablet...",
+      "date": "2025-10-23T22:02:29.175Z",
+      "verified": false,
+      "helpfulCount": 0,
+      "sample": false
+    }
+  ],
+  "users": [
+    {
+      "id": "b0ihbblyy",
+      "name": "Admin User",
+      "email": "admin@techverse.com",
+      "role": "admin",
+      "password": "CHANGE_ME",
+      "status": "active",
+      "joinDate": "2025-10-23T22:02:29.089Z",
+      "permissions": [
+        "users",
+        "products",
+        "orders",
+        "analytics",
+        "settings"
+      ]
+    },
+    {
+      "id": "azt94ntez",
+      "name": "Sarah Johnson",
+      "email": "sarah.johnson@techverse.com",
+      "role": "admin",
+      "password": "CHANGE_ME",
+      "status": "active",
+      "joinDate": "2025-10-23T22:02:29.141Z",
+      "permissions": [
+        "users",
+        "products",
+        "orders",
+        "analytics",
+        "settings"
+      ]
+    },
+    {
+      "id": "ansdili8n",
+      "name": "John Smith",
+      "email": "john.smith@email.com",
+      "role": "user",
+      "password": "CHANGE_ME",
+      "status": "active",
+      "joinDate": "2023-12-01T00:00:00.000Z",
+      "permissions": []
+    },
+    {
+      "id": "ash9ibk0y",
+      "name": "Emma Wilson",
+      "email": "emma.wilson@email.com",
+      "role": "vip",
+      "password": "CHANGE_ME",
+      "status": "vip",
+      "joinDate": "2023-11-15T00:00:00.000Z",
+      "permissions": []
+    },
+    {
+      "id": "th81l6iam",
+      "name": "Michael Brown",
+      "email": "michael.brown@email.com",
+      "role": "user",
+      "password": "CHANGE_ME",
+      "status": "new",
+      "joinDate": "2024-01-10T00:00:00.000Z",
+      "permissions": []
+    }
+  ],
+  "pages": [
+    {
+      "id": "contact",
+      "slug": "contact",
+      "title": "Contact Us",
+      "sections": [
+        {
+          "heading": "Content",
+          "html": "Page content to be added"
+        }
+      ],
+      "meta": {
+        "title": "Contact Us",
+        "description": "Contact Us page content"
+      }
+    },
+    {
+      "id": "privacy",
+      "slug": "privacy",
+      "title": "Privacy Policy",
+      "sections": [
+        {
+          "heading": "Content",
+          "html": "Page content to be added"
+        }
+      ],
+      "meta": {
+        "title": "Privacy Policy",
+        "description": "Privacy Policy page content"
+      }
+    },
+    {
+      "id": "faq",
+      "slug": "faq",
+      "title": "Frequently Asked Questions",
+      "sections": [
+        {
+          "heading": "Frequently Asked Questions",
+          "html": "<div className=\"container bloc-md bloc-lg-md\">\r\n                <div className=\"row\">\r\n                    <div className=\"text-start offset-sm-1 col-sm-10 offset-lg-1 col-lg-10\">\r\n                        <h1 className=\"mb-4 tc-6533\">Frequently Asked Questions</h1>\r\n                        <Accordion items={faqData} allowMultiple={false} />\r\n                    </div>\r\n                </div>\r\n            </div>"
+        }
+      ],
+      "meta": {
+        "title": "Frequently Asked Questions",
+        "description": "Frequently Asked Questions page content"
+      }
+    },
+    {
+      "id": "delivery",
+      "slug": "delivery",
+      "title": "Delivery Information",
+      "sections": [
+        {
+          "heading": "Content",
+          "html": "Page content to be added"
+        }
+      ],
+      "meta": {
+        "title": "Delivery Information",
+        "description": "Delivery Information page content"
+      }
+    }
+  ],
+  "stores": [],
+  "settings": {
+    "homepage": {
+      "latestProducts": [
+        "ultra-hd-qled",
+        "tablet-pro",
+        "phone-15"
+      ],
+      "topSellers": [
+        "laptop-pro",
+        "phone-air"
+      ],
+      "quickPicks": [
+        "ultra-hd-qled",
+        "tablet-pro",
+        "phone-15",
+        "laptop-pro"
+      ],
+      "weeklyDeals": [
+        "hd-tv-plus"
+      ]
+    },
+    "site": {
+      "currency": "USD",
+      "defaultStock": 50,
+      "lowStockThreshold": 10
+    }
+  }
+}
