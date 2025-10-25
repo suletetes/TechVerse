@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserProfile } from '../../context/UserProfileContext';
 import {
     ProfileSidebar,
@@ -14,23 +15,35 @@ import {
 } from './';
 
 const UserProfileLayout = ({ initialTab }) => {
-    const { deleteAddress, updateAddress, deletePaymentMethod } = useUserProfile();
+    const { deleteAddress, updateAddress, deletePaymentMethod, setDefaultAddress } = useUserProfile();
+    const navigate = useNavigate();
+    const location = useLocation();
     
-    // Set initial state based on initialTab prop
-    const [activeTab, setActiveTab] = useState(() => {
-        if (initialTab && ['profile', 'orders', 'addresses', 'payments', 'activity', 'preferences'].includes(initialTab)) {
-            return initialTab;
-        }
+    // Get active tab from URL path
+    const getActiveTabFromPath = () => {
+        const path = location.pathname;
+        if (path.includes('/profile/orders')) return 'orders';
+        if (path.includes('/profile/addresses')) return 'addresses';
+        if (path.includes('/profile/payments')) return 'payments';
+        if (path.includes('/profile/activity')) return 'activity';
+        if (path.includes('/profile/preferences')) return 'preferences';
         return 'profile';
-    });
+    };
+
+    const [activeTab, setActiveTab] = useState(getActiveTabFromPath);
     const [isEditing, setIsEditing] = useState(false);
 
-    // Update active tab when initialTab prop changes (for navigation)
+    // Update active tab when URL changes
     useEffect(() => {
-        if (initialTab && ['profile', 'orders', 'addresses', 'payments', 'activity', 'preferences'].includes(initialTab)) {
-            setActiveTab(initialTab);
-        }
-    }, [initialTab]);
+        setActiveTab(getActiveTabFromPath());
+    }, [location.pathname]);
+
+    // Function to change tab and update URL
+    const changeTab = (tab) => {
+        const basePath = '/profile';
+        const tabPath = tab === 'profile' ? basePath : `${basePath}/${tab}`;
+        navigate(tabPath);
+    };
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [showAddressModal, setShowAddressModal] = useState(false);
     // Payment methods are now managed by UserProfileContext
@@ -251,7 +264,7 @@ const UserProfileLayout = ({ initialTab }) => {
                 break;
             case 'setDefault':
                 try {
-                    await updateAddress(addressId, { isDefault: true });
+                    await setDefaultAddress(addressId);
                 } catch (error) {
                     console.error('Failed to set default address:', error);
                 }
@@ -411,7 +424,7 @@ const UserProfileLayout = ({ initialTab }) => {
 
                         {/* Sidebar Navigation */}
                         <div className="col-lg-3 mb-4 mb-lg-0">
-                            <ProfileSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+                            <ProfileSidebar activeTab={activeTab} onTabChange={changeTab} />
                         </div>
 
                         {/* Main Content */}

@@ -1,10 +1,9 @@
 import React from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { UserProfileLayout } from '../components/UserProfile';
 
 const UserProfile = () => {
-    const [searchParams] = useSearchParams();
-    const tab = searchParams.get('tab');
+    const { tab } = useParams();
 
     return (
         <>

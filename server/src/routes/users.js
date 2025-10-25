@@ -145,6 +145,46 @@ router.put('/addresses/:id',
   updateAddress
 );
 router.delete('/addresses/:id', commonValidations.mongoId('id'), validate, deleteAddress);
+router.patch('/addresses/:id/default', commonValidations.mongoId('id'), validate, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const address = user.addresses.id(req.params.id);
+        if (!address) {
+            return res.status(404).json({
+                success: false,
+                message: 'Address not found'
+            });
+        }
+
+        // Set all addresses to not default
+        user.addresses.forEach(addr => {
+            addr.isDefault = false;
+        });
+
+        // Set the specified address as default
+        address.isDefault = true;
+
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Default address updated successfully',
+            data: { addresses: user.addresses }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update default address'
+        });
+    }
+});
 
 // Payment method routes
 router.get('/payment-methods', authenticate, async (req, res) => {

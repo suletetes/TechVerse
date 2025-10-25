@@ -19,7 +19,7 @@ class UserProfileService extends BaseApiService {
 
     // Address methods
     async getAddresses() {
-        return this.read('/users/addresses');
+        return this.read(`/users/addresses?_t=${Date.now()}`);
     }
 
     async addAddress(addressData) {
@@ -34,9 +34,13 @@ class UserProfileService extends BaseApiService {
         return this.delete(`/users/addresses/${addressId}`);
     }
 
+    async setDefaultAddress(addressId) {
+        return this.request(`/users/addresses/${addressId}/default`, 'PATCH');
+    }
+
     // Payment method methods
     async getPaymentMethods() {
-        return this.read('/users/payment-methods');
+        return this.read(`/users/payment-methods?_t=${Date.now()}`);
     }
 
     async addPaymentMethod(paymentMethodData) {

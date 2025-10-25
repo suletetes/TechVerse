@@ -353,14 +353,14 @@ export const WishlistProvider = ({ children }) => {
   // Load wishlist on mount and authentication changes
   useEffect(() => {
     loadWishlist();
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user?.id]);
 
   // Auto-sync wishlist when user logs in
   useEffect(() => {
     if (isAuthenticated && user) {
       syncWishlistWithBackend();
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user?.id]);
 
   // Auto-sync wishlist periodically for authenticated users
   useEffect(() => {
