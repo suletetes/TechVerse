@@ -326,7 +326,7 @@ class EnhancedTokenManager {
       if (window.location.protocol === 'https:') {
         localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, token);
       } else {
-        console.warn('Refresh token stored in localStorage over HTTP - not secure for production');
+        // Refresh token stored in localStorage over HTTP - not secure for production
         localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, token);
       }
       
@@ -461,7 +461,7 @@ class EnhancedTokenManager {
       }));
     }
     
-    console.warn('Suspicious activity detected - tokens cleared and cooldown activated');
+    // Suspicious activity detected - tokens cleared and cooldown activated
   }
 
   /**

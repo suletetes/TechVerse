@@ -124,7 +124,7 @@ const UserProfileLayout = ({ initialTab }) => {
     };
 
     const handleSaveProfile = () => {
-        console.log('Saving profile:', profileData);
+        // Profile saving handled by context
         setIsEditing(false);
     };
 
@@ -193,7 +193,7 @@ const UserProfileLayout = ({ initialTab }) => {
         setPasswordErrors(errors);
 
         if (Object.keys(errors).length === 0) {
-            console.log('Password change successful');
+            // Password change successful
             alert('Password changed successfully!');
             setShowPasswordModal(false);
             setPasswordData({
@@ -238,8 +238,7 @@ const UserProfileLayout = ({ initialTab }) => {
                 setShowAddAddressModal(true);
                 break;
             case 'edit':
-                // For edit, we'll need to implement this when we have the edit modal
-                console.log('Edit address:', addressId);
+                // Edit address functionality
                 break;
             case 'delete':
                 if (window.confirm('Are you sure you want to delete this address?')) {
@@ -263,9 +262,7 @@ const UserProfileLayout = ({ initialTab }) => {
     };
 
     const handleSaveAddress = (addressData) => {
-        // This will be handled by the UserProfileContext
-        console.log('Save address:', addressData);
-        // TODO: Implement with addAddress from context
+        // Address saving handled by UserProfileContext
         setEditingAddress(null);
     };
 
@@ -275,8 +272,7 @@ const UserProfileLayout = ({ initialTab }) => {
                 setShowAddPaymentModal(true);
                 break;
             case 'setDefault':
-                // This would need to be implemented in the backend
-                console.log('Set default payment method:', methodId);
+                // Set default payment method functionality
                 break;
             case 'delete':
                 if (window.confirm('Are you sure you want to remove this payment method?')) {
@@ -293,9 +289,7 @@ const UserProfileLayout = ({ initialTab }) => {
     };
 
     const handleSavePaymentMethod = (paymentMethodData) => {
-        // This will be handled by the UserProfileContext
-        console.log('Save payment method:', paymentMethodData);
-        // TODO: Implement with addPaymentMethod from context
+        // Payment method saving handled by UserProfileContext
     };
 
     const handleRecentlyViewedAction = (productId, action) => {

@@ -6,8 +6,8 @@ class UserProfileService extends BaseApiService {
             serviceName: 'UserProfileService',
             baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
             endpoints: {
-                addresses: '/profile/addresses',
-                paymentMethods: '/profile/payment-methods'
+                addresses: '/users/addresses',
+                paymentMethods: '/users/payment-methods'
             },
             cacheEnabled: true,
             retryEnabled: true,
@@ -36,15 +36,15 @@ class UserProfileService extends BaseApiService {
 
     // Payment method methods
     async getPaymentMethods() {
-        return this.read('/profile/payment-methods');
+        return this.read('/users/payment-methods');
     }
 
     async addPaymentMethod(paymentMethodData) {
-        return this.create('/profile/payment-methods', paymentMethodData);
+        return this.create('/users/payment-methods', paymentMethodData);
     }
 
     async deletePaymentMethod(methodId) {
-        return this.delete(`/profile/payment-methods/${methodId}`);
+        return this.delete(`/users/payment-methods/${methodId}`);
     }
 }
 

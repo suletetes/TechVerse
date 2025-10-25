@@ -33,9 +33,7 @@ axiosRetry(apiClient, {
            (error.response?.status >= 500 && error.response?.status < 600);
   },
   onRetry: (retryCount, error, requestConfig) => {
-    console.warn(`Retrying request (${retryCount}/3):`, {
-      url: requestConfig.url,
-      method: requestConfig.method,
+    // Retrying request silently
       error: error.message,
     });
   },
@@ -92,10 +90,7 @@ apiClient.interceptors.response.use(
     }
     
     // Track slow requests
-    if (duration > 5000) {
-      console.warn(`🐌 Slow API request detected:`, {
-        url: config.url,
-        method: config.method,
+    // Slow API requests monitored silently
         duration: `${duration}ms`,
       });
     }
@@ -162,7 +157,7 @@ apiClient.interceptors.response.use(
       showError('Access denied. You don\'t have permission for this action.');
     } else if (response?.status === 404) {
       // Not found - don't show notification for all 404s
-      console.warn('Resource not found:', config?.url);
+      // Resource not found logged silently
     } else if (response?.status >= 500) {
       // Server error
       const { showError } = useNotifications.getState();

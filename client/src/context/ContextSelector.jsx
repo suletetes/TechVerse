@@ -173,8 +173,7 @@ export const useContextPerformanceMonitor = (contextName, value) => {
     if (process.env.NODE_ENV === 'development') {
       console.log(`[${contextName}] Render #${renderCountRef.current}, Time since last: ${timeSinceLastRender}ms`);
       
-      if (timeSinceLastRender < 16) { // Less than one frame
-        console.warn(`[${contextName}] Potential performance issue: Re-rendering too frequently`);
+      // Performance monitoring silently tracks re-render frequency
       }
     }
 

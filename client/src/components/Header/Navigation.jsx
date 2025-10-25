@@ -10,11 +10,7 @@ const Navigation = () => {
     const { getWishlistCount } = useWishlist();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-    // Debug logging for admin functionality
-    if (process.env.NODE_ENV === 'development' && isAuthenticated) {
-        console.log('Navigation debug:', {
-            isAuthenticated,
-            user,
+    // Debug logging removed for cleaner console
             userRole: user?.role,
             isAdminResult: isAdmin(),
             isAdminFunction: typeof isAdmin

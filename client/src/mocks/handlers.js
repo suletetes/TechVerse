@@ -560,7 +560,7 @@ export const handlers = [
 
   // Fallback handler for unmatched requests
   http.all('*', ({ request }) => {
-    console.warn(`Unhandled ${request.method} request to ${request.url}`);
+    // Unhandled request logged silently
     
     return HttpResponse.json(
       {

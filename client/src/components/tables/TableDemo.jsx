@@ -96,7 +96,7 @@ const TableDemo = () => {
   ], []);
 
   const handleRowClick = (row) => {
-    console.log('Row clicked:', row);
+    // Row clicked silently
   };
 
   const renderSubComponent = ({ row }) => (
@@ -192,7 +192,7 @@ const TableDemo = () => {
                       <strong>{selectedRows.length}</strong> rows selected
                       <button 
                         className="btn btn-sm btn-outline-primary ms-2"
-                        onClick={() => console.log('Selected rows:', selectedRows)}
+                        onClick={() => {/* Process selected rows */}}
                       >
                         Process Selected
                       </button>

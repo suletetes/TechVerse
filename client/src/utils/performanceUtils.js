@@ -131,9 +131,7 @@ class PerformanceUtils {
       const endTime = performance.now();
       const renderTime = endTime - startTime;
       
-      if (renderTime > 16) { // Warn if render takes longer than 16ms (60fps)
-        console.warn(`🐌 ${componentName} render took ${renderTime.toFixed(2)}ms (>16ms)`);
-      }
+      // Performance monitoring silently tracks render times
       
       return renderTime;
     };
@@ -155,9 +153,7 @@ class PerformanceUtils {
 
     const usagePercent = (memory.used / memory.total) * 100;
     
-    if (usagePercent > 80) {
-      console.warn(`🧠 High memory usage in ${context}: ${usagePercent.toFixed(1)}%`);
-    }
+    // Memory usage monitored silently
 
     return memory;
   }

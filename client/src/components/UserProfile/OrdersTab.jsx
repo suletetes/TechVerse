@@ -44,8 +44,7 @@ const OrdersTab = () => {
                     await cancelOrder(orderId, 'User requested cancellation');
                     break;
                 case 'reorder':
-                    // Handle reorder logic
-                    console.log('Reorder:', orderId);
+                    // Reorder functionality
                     break;
                 default:
                     break;

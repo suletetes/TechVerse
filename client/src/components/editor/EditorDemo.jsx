@@ -20,7 +20,7 @@ const EditorDemo = () => {
     setIsLoading(true);
     // Simulate API call
     setTimeout(() => {
-      console.log('Saved product description:', content);
+      // Product description saved silently
       setIsLoading(false);
       alert('Product description saved successfully!');
     }, 1500);

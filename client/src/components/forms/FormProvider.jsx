@@ -43,7 +43,7 @@ export const FormProvider = ({
         // Save to localStorage or call API
         const formData = getValues();
         localStorage.setItem('form-autosave', JSON.stringify(formData));
-        console.log('Form auto-saved:', formData);
+        // Form auto-saved silently
       }, autoSaveDelay);
 
       return () => clearTimeout(timeoutId);

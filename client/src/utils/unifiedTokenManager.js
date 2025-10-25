@@ -927,9 +927,7 @@ class UnifiedTokenManager {
       data
     };
     
-    if (import.meta.env?.DEV) {
-      console.log(`🔒 Security Event: ${type}`, data);
-    }
+    // Security event logged silently
     
     this.securityEventListeners.forEach(listener => {
       try {

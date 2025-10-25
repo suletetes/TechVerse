@@ -65,11 +65,6 @@ const authReducer = (state, action) => {
       const user = action.payload.user || action.payload;
 
       // Debug logging removed for cleaner console
-          userRole: user?.role,
-          userPermissions: user?.permissions,
-          payloadPermissions: action.payload.permissions,
-          finalPermissions: action.payload.user?.permissions || action.payload.permissions
-        });
       }
 
       return {

@@ -17,7 +17,7 @@ const ReviewModal = ({ onClose, order }) => {
                             showHeader={false}
                             showDividers={false}
                             onSubmitReview={(data) => {
-                                console.log('Review submitted for order:', order, data);
+                                // Review submitted successfully
                                 alert('Thank you for your review!');
                                 onClose();
                             }}

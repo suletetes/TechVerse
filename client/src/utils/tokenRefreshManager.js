@@ -73,7 +73,7 @@ class TokenRefreshManager {
       this.isRefreshing = false;
       this.refreshPromise = null;
 
-      console.warn('Token refresh disabled due to security breach');
+      // Token refresh disabled due to security breach
     }
   }
 
@@ -98,7 +98,7 @@ class TokenRefreshManager {
 
     // If token expires soon, trigger refresh
     if (timeUntilExpiry <= REFRESH_CONFIG.REFRESH_BUFFER_TIME && timeUntilExpiry > 0) {
-      console.log('Token expiring soon, triggering automatic refresh');
+      // Token expiring soon, triggering automatic refresh
       this.refreshToken().catch(error => {
         console.error('Automatic token refresh failed:', error);
       });

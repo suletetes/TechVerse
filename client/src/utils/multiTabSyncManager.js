@@ -367,7 +367,7 @@ class MultiTabSyncManager {
    * Handle cross-tab security breach
    */
   handleCrossTabSecurityBreach(data) {
-    console.warn('Cross-tab security breach detected');
+    // Cross-tab security breach detected
     
     // Clear tokens immediately
     tokenManager.clearTokens();
