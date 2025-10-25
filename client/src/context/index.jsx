@@ -11,6 +11,7 @@ import { WishlistProvider } from './WishlistContext.jsx';
 import { LoadingProvider } from './LoadingContext.jsx';
 import { OfflineProvider } from './OfflineContext.jsx';
 import { PerformanceProvider } from './PerformanceContext.jsx';
+import { UserProfileProvider } from './UserProfileContext.jsx';
 
 // Import selective subscription utilities
 export { 
@@ -46,6 +47,7 @@ export { WishlistProvider, useWishlist } from './WishlistContext.jsx';
 export { LoadingProvider, useLoading, useComponentLoading } from './LoadingContext.jsx';
 export { OfflineProvider, useOffline } from './OfflineContext.jsx';
 export { PerformanceProvider, usePerformanceContext, withPerformanceMonitoring } from './PerformanceContext.jsx';
+export { UserProfileProvider, useUserProfile } from './UserProfileContext.jsx';
 
 // Performance monitoring wrapper
 const PerformanceMonitoredProvider = ({ name, children, provider: Provider, ...props }) => {
@@ -70,8 +72,10 @@ export const AppProviders = ({ children }) => {
                 <PerformanceMonitoredProvider name="Cart" provider={CartProvider}>
                   <PerformanceMonitoredProvider name="Wishlist" provider={WishlistProvider}>
                     <PerformanceMonitoredProvider name="Order" provider={OrderProvider}>
-                      <PerformanceMonitoredProvider name="Admin" provider={AdminProvider}>
-                        {children}
+                      <PerformanceMonitoredProvider name="UserProfile" provider={UserProfileProvider}>
+                        <PerformanceMonitoredProvider name="Admin" provider={AdminProvider}>
+                          {children}
+                        </PerformanceMonitoredProvider>
                       </PerformanceMonitoredProvider>
                     </PerformanceMonitoredProvider>
                   </PerformanceMonitoredProvider>

@@ -27,42 +27,42 @@ import '../../assets/css/admin-enhancements.css';
 const AdminProfile = () => {
     const navigate = useNavigate();
     const { isAuthenticated, user, isAdmin } = useAuth();
-    
+
     // Admin context
     const {
         // Dashboard data
         dashboardStats,
         analytics,
-        
+
         // Products
         adminProducts,
         productsPagination,
-        
+
         // Orders
         adminOrders,
         ordersPagination,
-        
+
         // Users
         adminUsers,
         usersPagination,
-        
+
         // Categories
         categories,
-        
+
         // Loading states
         isDashboardLoading,
         isProductsLoading,
         isOrdersLoading,
         isUsersLoading,
         isCategoriesLoading,
-        
+
         // Error states
         dashboardError,
         productsError,
         ordersError,
         usersError,
         categoriesError,
-        
+
         // Methods
         loadDashboardStats,
         loadAnalytics,
@@ -88,7 +88,7 @@ const AdminProfile = () => {
     const [editProductId, setEditProductId] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [dateRange, setDateRange] = useState('7days');
-    
+
     // Additional state for missing variables
     const [notifications, setNotifications] = useState([]);
     const [activityLog, setActivityLog] = useState([]);
@@ -111,8 +111,8 @@ const AdminProfile = () => {
     // Check authentication and admin access
     useEffect(() => {
         if (!isAuthenticated) {
-            navigate('/login', { 
-                state: { 
+            navigate('/login', {
+                state: {
                     from: { pathname: '/admin' },
                     message: 'Please login to access the admin panel'
                 }
@@ -121,8 +121,8 @@ const AdminProfile = () => {
         }
 
         if (!isAdmin()) {
-            navigate('/', { 
-                state: { 
+            navigate('/', {
+                state: {
                     message: 'You do not have permission to access the admin panel'
                 }
             });
@@ -269,7 +269,7 @@ const AdminProfile = () => {
 
     // Additional handler functions for missing functionality
     const markNotificationAsRead = (notificationId) => {
-        setNotifications(prev => 
+        setNotifications(prev =>
             prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
         );
     };
@@ -358,7 +358,7 @@ const AdminProfile = () => {
                         error={dashboardError}
                     />
                 );
-            
+
             case 'products':
                 return (
                     <AdminProducts
@@ -375,7 +375,7 @@ const AdminProfile = () => {
                         error={productsError}
                     />
                 );
-            
+
             case 'add-product':
                 return (
                     <AdminAddProduct
@@ -385,7 +385,7 @@ const AdminProfile = () => {
                         isLoading={isProductsLoading}
                     />
                 );
-            
+
             case 'edit-product':
                 return (
                     <AdminAddProduct
@@ -396,7 +396,7 @@ const AdminProfile = () => {
                         isLoading={isProductsLoading}
                     />
                 );
-            
+
             case 'categories':
                 return (
                     <AdminCategories
@@ -408,7 +408,7 @@ const AdminProfile = () => {
                         error={categoriesError}
                     />
                 );
-            
+
             case 'catalog':
                 return (
                     <AdminCatalogManager
@@ -423,12 +423,12 @@ const AdminProfile = () => {
                         }}
                     />
                 );
-            
+
             case 'homepage':
                 return (
                     <AdminHomepageManager />
                 );
-            
+
             case 'orders':
                 return (
                     <AdminOrders
@@ -441,7 +441,7 @@ const AdminProfile = () => {
                         error={ordersError}
                     />
                 );
-            
+
             case 'users':
                 return (
                     <AdminUsers
@@ -454,7 +454,7 @@ const AdminProfile = () => {
                         error={usersError}
                     />
                 );
-            
+
             case 'notifications':
                 return (
                     <AdminNotifications
@@ -464,7 +464,7 @@ const AdminProfile = () => {
                         deleteNotification={deleteNotification}
                     />
                 );
-            
+
             case 'analytics':
                 return (
                     <AdminAnalytics
@@ -475,14 +475,14 @@ const AdminProfile = () => {
                         isLoading={isDashboardLoading}
                     />
                 );
-            
+
             case 'activity':
                 return (
                     <AdminActivityLog
                         activityLog={activityLog}
                     />
                 );
-            
+
             case 'security':
                 return (
                     <AdminSecurity
@@ -493,7 +493,7 @@ const AdminProfile = () => {
                         handlePasswordChange={handlePasswordChange}
                     />
                 );
-            
+
             case 'profile':
                 return (
                     <AdminProfileSettings
@@ -505,7 +505,7 @@ const AdminProfile = () => {
                         handleAdminAvatarChange={handleAdminAvatarChange}
                     />
                 );
-            
+
             case 'settings':
                 return (
                     <AdminSettings
@@ -523,13 +523,13 @@ const AdminProfile = () => {
                         toggleTwoFactor={toggleTwoFactor}
                     />
                 );
-            
+
             default:
                 return (
                     <AdminDashboard
                         dashboardStats={dashboardStats}
                         dateRange="7days"
-                        setDateRange={() => {}}
+                        setDateRange={() => { }}
                         recentOrders={Array.isArray(adminOrders) ? adminOrders.slice(0, 10) : []}
                         setActiveTab={setActiveTab}
                         getStatusColor={getStatusColor}
@@ -552,7 +552,7 @@ const AdminProfile = () => {
                         onClick={() => setSidebarOpen(false)}
                     ></div>
                 )}
-                
+
                 <div className="row g-0 min-vh-100">
                     {/* Sidebar Navigation */}
                     <div
@@ -567,7 +567,7 @@ const AdminProfile = () => {
                             adminData={adminData}
                         />
                     </div>
-                    
+
                     {/* Main Content */}
                     <div className="col-lg-9 col-xl-10">
                         <AdminHeader
@@ -576,25 +576,25 @@ const AdminProfile = () => {
                             sidebarOpen={sidebarOpen}
                             setSidebarOpen={setSidebarOpen}
                         />
-                        
+
                         <div className="p-4">
                             {/* Enhanced Notifications Bar */}
                             {notifications.filter(n => !n.read).length > 0 && (
                                 <div className="alert alert-info d-flex justify-content-between align-items-center mb-4">
                                     <div className="d-flex align-items-center">
                                         <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
-                                            <path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+                                            <path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
                                         </svg>
                                         <span>You have {notifications.filter(n => !n.read).length} unread notifications</span>
                                     </div>
                                     <div className="d-flex gap-2">
-                                        <button 
+                                        <button
                                             className="btn btn-sm btn-outline-primary"
                                             onClick={() => setActiveTab('notifications')}
                                         >
                                             View All
                                         </button>
-                                        <button 
+                                        <button
                                             className="btn btn-sm btn-primary"
                                             onClick={markAllNotificationsAsRead}
                                         >

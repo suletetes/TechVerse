@@ -544,7 +544,7 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (profileData) => {
     try {
       const response = await authService.updateProfile(profileData);
-      dispatch({ type: AUTH_ACTIONS.UPDATE_USER, payload: response.user });
+      dispatch({ type: AUTH_ACTIONS.UPDATE_USER, payload: response.data.user });
       showNotification('Profile updated successfully', 'success');
       return response;
     } catch (error) {

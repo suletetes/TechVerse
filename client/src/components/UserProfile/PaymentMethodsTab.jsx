@@ -1,6 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useUserProfile } from '../../context/UserProfileContext';
 
-const PaymentMethodsTab = ({ paymentMethods, handlePaymentMethodAction }) => {
+const PaymentMethodsTab = ({ handlePaymentMethodAction }) => {
+    const { paymentMethods, loading, error, loadPaymentMethods } = useUserProfile();
+
+    useEffect(() => {
+        loadPaymentMethods();
+    }, [loadPaymentMethods]);
     return (
         <div className="store-card fill-card">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -17,9 +23,33 @@ const PaymentMethodsTab = ({ paymentMethods, handlePaymentMethodAction }) => {
                 </button>
             </div>
 
+            {loading && (
+                <div className="text-center py-4">
+                    <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">Loading payment methods...</span>
+                    </div>
+                </div>
+            )}
+
+            {error && (
+                <div className="alert alert-danger" role="alert">
+                    {error}
+                </div>
+            )}
+
+            {!loading && !error && paymentMethods.length === 0 && (
+                <div className="text-center py-5">
+                    <svg width="64" height="64" viewBox="0 0 24 24" className="text-muted mb-3">
+                        <path fill="currentColor" d="M20,8H4V6H20M20,18H4V12H20M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.11,4 20,4Z" />
+                    </svg>
+                    <h5 className="text-muted">No Payment Methods</h5>
+                    <p className="text-muted mb-4">You haven't added any payment methods yet.</p>
+                </div>
+            )}
+
             <div className="row">
-                {paymentMethods.map((method) => (
-                    <div key={method.id} className="col-md-6 mb-4">
+                {!loading && paymentMethods.map((method) => (
+                    <div key={method._id} className="col-md-6 mb-4">
                         <div className="border rounded p-3 h-100">
                             <div className="d-flex justify-content-between align-items-start mb-3">
                                 <div className="d-flex align-items-center">
@@ -51,7 +81,7 @@ const PaymentMethodsTab = ({ paymentMethods, handlePaymentMethodAction }) => {
                                             <li>
                                                 <button
                                                     className="dropdown-item"
-                                                    onClick={() => handlePaymentMethodAction(method.id, 'setDefault')}
+                                                    onClick={() => handlePaymentMethodAction(method._id, 'setDefault')}
                                                 >
                                                     Set as Default
                                                 </button>
@@ -60,7 +90,7 @@ const PaymentMethodsTab = ({ paymentMethods, handlePaymentMethodAction }) => {
                                         <li>
                                             <button
                                                 className="dropdown-item text-danger"
-                                                onClick={() => handlePaymentMethodAction(method.id, 'delete')}
+                                                onClick={() => handlePaymentMethodAction(method._id, 'delete')}
                                             >
                                                 Remove
                                             </button>
