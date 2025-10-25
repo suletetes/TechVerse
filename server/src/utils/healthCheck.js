@@ -310,17 +310,8 @@ class HealthCheck {
     logger.info('TechVerse API Server started successfully', startupInfo);
 
     if (environment === 'development') {
-      console.log(`\n🚀 TechVerse API Server is running!`);
-      console.log(`🌐 Server URL: http://localhost:${port}`);
-      console.log(`📚 Health Check: http://localhost:${port}/api/health`);
-      console.log(`🔍 Detailed Health: http://localhost:${port}/api/health/detailed`);
-      console.log(`📊 Database Health: http://localhost:${port}/api/health/database`);
-      console.log(`\n📋 Server Information:`);
-      console.log(`   Environment: ${environment}`);
-      console.log(`   Node.js: ${process.version}`);
-      console.log(`   Platform: ${process.platform} (${process.arch})`);
-      console.log(`   Process ID: ${process.pid}`);
-      console.log(`\n✅ Server ready to accept connections\n`);
+      console.log(`🚀 TechVerse API Server running on http://localhost:${port}`);
+      console.log(`✅ Server ready to accept connections`);
     }
 
     return startupInfo;

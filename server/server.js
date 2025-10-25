@@ -61,6 +61,7 @@ import userRoutes from './src/routes/users.js';
 import adminRoutes from './src/routes/admin.js';
 import uploadRoutes from './src/routes/upload.js';
 import notificationRoutes from './src/routes/notifications.js';
+import userProfileRoutes from './src/routes/userProfile.js';
 
 // Initialize Passport strategies
 initializePassport();
@@ -186,16 +187,14 @@ app.use('/img', express.static(path.join(__dirname, '../client/public/img'), {
 app.use('/api/', apiRateLimit);
 
 // API routes
-console.log('🔍 Registering auth routes...');
-console.log('Auth routes stack:', authRoutes.stack?.map(r => r.route?.path).filter(Boolean));
 app.use('/api/auth', authRoutes);
-console.log('✅ Auth routes registered');
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/profile', userProfileRoutes);
 
 // Health check endpoints
 import healthCheck from './src/utils/healthCheck.js';
