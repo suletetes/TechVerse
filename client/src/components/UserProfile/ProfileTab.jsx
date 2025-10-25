@@ -40,7 +40,23 @@ const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
 
     const handleSaveProfile = async () => {
         try {
-            await updateProfile(profileData);
+            // Only send fields that the backend accepts
+            const allowedFields = ['firstName', 'lastName', 'phone', 'dateOfBirth', 'preferences'];
+            const updateData = {};
+            
+            allowedFields.forEach(field => {
+                if (profileData[field] !== undefined && profileData[field] !== '') {
+                    updateData[field] = profileData[field];
+                }
+            });
+
+            // Ensure we have at least one field to update
+            if (Object.keys(updateData).length === 0) {
+                console.warn('No valid fields to update');
+                return;
+            }
+
+            await updateProfile(updateData);
             setIsEditing(false);
         } catch (error) {
             console.error('Error updating profile:', error);
@@ -197,7 +213,9 @@ const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
                         value={profileData.phone || ''}
                         onChange={handleInputChange}
                         disabled={!isEditing}
+                        placeholder="07700900123"
                     />
+                    <small className="text-muted">Enter UK mobile number (e.g., 07700900123)</small>
                 </div>
                 <div className="col-md-6 mb-3">
                     <label className="form-label tc-6533 bold-text">Date of Birth</label>

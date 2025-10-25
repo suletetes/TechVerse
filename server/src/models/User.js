@@ -528,6 +528,52 @@ userSchema.methods.updateOrderStats = function(orderTotal) {
   return this.save();
 };
 
+// Method to add payment method
+userSchema.methods.addPaymentMethod = function(paymentMethodData) {
+  // If this is the first payment method or marked as default, make it default
+  if (this.paymentMethods.length === 0 || paymentMethodData.isDefault) {
+    this.paymentMethods.forEach(method => method.isDefault = false);
+    paymentMethodData.isDefault = true;
+  }
+  
+  this.paymentMethods.push(paymentMethodData);
+  return this.save();
+};
+
+// Method to update payment method
+userSchema.methods.updatePaymentMethod = function(methodId, updateData) {
+  const method = this.paymentMethods.id(methodId);
+  if (!method) {
+    throw new Error('Payment method not found');
+  }
+  
+  // If setting as default, unset others
+  if (updateData.isDefault) {
+    this.paymentMethods.forEach(method => method.isDefault = false);
+  }
+  
+  Object.assign(method, updateData);
+  return this.save();
+};
+
+// Method to remove payment method
+userSchema.methods.removePaymentMethod = function(methodId) {
+  const method = this.paymentMethods.id(methodId);
+  if (!method) {
+    throw new Error('Payment method not found');
+  }
+  
+  const wasDefault = method.isDefault;
+  method.remove();
+  
+  // If removed method was default, make first remaining method default
+  if (wasDefault && this.paymentMethods.length > 0) {
+    this.paymentMethods[0].isDefault = true;
+  }
+  
+  return this.save();
+};
+
 // Method to add active session
 userSchema.methods.addSession = function(sessionId, ipAddress, userAgent) {
   // Remove old sessions (keep only last 5)

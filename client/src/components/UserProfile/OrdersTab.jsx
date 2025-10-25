@@ -27,7 +27,9 @@ const OrdersTab = () => {
     }, [loadOrders]);
 
     const getFilteredOrders = () => {
-        return orders.filter(order => {
+        // Ensure orders is an array before filtering
+        const safeOrders = Array.isArray(orders) ? orders : [];
+        return safeOrders.filter(order => {
             const matchesSearch = orderFilters.searchTerm === '' || 
                 order.orderNumber?.toLowerCase().includes(orderFilters.searchTerm.toLowerCase());
             const matchesStatus = orderFilters.status === 'all' || order.status === orderFilters.status;

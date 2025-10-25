@@ -20,6 +20,7 @@ import {
 } from '../controllers/userController.js';
 import { authenticate } from '../middleware/passportAuth.js';
 import { validate, commonValidations } from '../middleware/validation.js';
+import { User } from '../models/index.js';
 
 const router = express.Router();
 
@@ -123,6 +124,20 @@ router.get('/profile', getUserProfile);
 router.put('/profile', profileValidation, validate, updateUserProfile);
 
 // Address routes
+router.get('/addresses', authenticate, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).select('addresses');
+        res.json({
+            success: true,
+            data: { addresses: user?.addresses || [] }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch addresses'
+        });
+    }
+});
 router.post('/addresses', addressValidation, validate, addAddress);
 router.put('/addresses/:id', 
   [commonValidations.mongoId('id'), ...addressValidation], 

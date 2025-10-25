@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useUserProfile } from '../../context/UserProfileContext';
 import {
     ProfileSidebar,
     ProfileTab,
@@ -13,6 +14,8 @@ import {
 } from './';
 
 const UserProfileLayout = ({ initialTab }) => {
+    const { deleteAddress, updateAddress, deletePaymentMethod } = useUserProfile();
+    
     // Set initial state based on initialTab prop
     const [activeTab, setActiveTab] = useState(() => {
         if (initialTab && ['profile', 'orders', 'addresses', 'payments', 'activity', 'preferences'].includes(initialTab)) {
@@ -30,28 +33,7 @@ const UserProfileLayout = ({ initialTab }) => {
     }, [initialTab]);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [showAddressModal, setShowAddressModal] = useState(false);
-    const [paymentMethods, setPaymentMethods] = useState([
-        {
-            id: 1,
-            type: 'card',
-            brand: 'visa',
-            last4: '4242',
-            expiryMonth: 12,
-            expiryYear: 2025,
-            isDefault: true,
-            holderName: 'John Smith'
-        },
-        {
-            id: 2,
-            type: 'card',
-            brand: 'mastercard',
-            last4: '8888',
-            expiryMonth: 8,
-            expiryYear: 2026,
-            isDefault: false,
-            holderName: 'John Smith'
-        }
-    ]);
+    // Payment methods are now managed by UserProfileContext
     const [recentlyViewed, setRecentlyViewed] = useState([
         {
             id: 1,
@@ -123,28 +105,7 @@ const UserProfileLayout = ({ initialTab }) => {
         completeness: 85
     });
 
-    const [addresses, setAddresses] = useState([
-        {
-            id: 1,
-            type: 'Home',
-            name: 'John Smith',
-            address: '123 Tech Street',
-            city: 'London',
-            postcode: 'SW1A 1AA',
-            country: 'United Kingdom',
-            isDefault: true
-        },
-        {
-            id: 2,
-            type: 'Work',
-            name: 'John Smith',
-            address: '456 Business Ave',
-            city: 'Manchester',
-            postcode: 'M1 1AA',
-            country: 'United Kingdom',
-            isDefault: false
-        }
-    ]);
+    // Addresses are now managed by UserProfileContext
 
 
 
@@ -270,26 +231,31 @@ const UserProfileLayout = ({ initialTab }) => {
 
 
 
-    const handleAddressAction = (addressId, action) => {
+    const handleAddressAction = async (addressId, action) => {
         switch (action) {
             case 'add':
                 setEditingAddress(null);
                 setShowAddAddressModal(true);
                 break;
             case 'edit':
-                setEditingAddress(addresses.find(a => a.id === addressId));
-                setShowAddAddressModal(true);
+                // For edit, we'll need to implement this when we have the edit modal
+                console.log('Edit address:', addressId);
                 break;
             case 'delete':
-                if (confirm('Are you sure you want to delete this address?')) {
-                    setAddresses(addresses.filter(a => a.id !== addressId));
+                if (window.confirm('Are you sure you want to delete this address?')) {
+                    try {
+                        await deleteAddress(addressId);
+                    } catch (error) {
+                        console.error('Failed to delete address:', error);
+                    }
                 }
                 break;
             case 'setDefault':
-                setAddresses(addresses.map(a => ({
-                    ...a,
-                    isDefault: a.id === addressId
-                })));
+                try {
+                    await updateAddress(addressId, { isDefault: true });
+                } catch (error) {
+                    console.error('Failed to set default address:', error);
+                }
                 break;
             default:
                 break;
@@ -297,40 +263,28 @@ const UserProfileLayout = ({ initialTab }) => {
     };
 
     const handleSaveAddress = (addressData) => {
-        if (editingAddress) {
-            // Update existing address
-            setAddresses(addresses.map(a => 
-                a.id === editingAddress.id ? addressData : a
-            ));
-        } else {
-            // Add new address
-            if (addressData.isDefault) {
-                // Remove default from other addresses
-                setAddresses([
-                    ...addresses.map(a => ({ ...a, isDefault: false })),
-                    addressData
-                ]);
-            } else {
-                setAddresses([...addresses, addressData]);
-            }
-        }
+        // This will be handled by the UserProfileContext
+        console.log('Save address:', addressData);
+        // TODO: Implement with addAddress from context
         setEditingAddress(null);
     };
 
-    const handlePaymentMethodAction = (methodId, action) => {
+    const handlePaymentMethodAction = async (methodId, action) => {
         switch (action) {
             case 'add':
                 setShowAddPaymentModal(true);
                 break;
             case 'setDefault':
-                setPaymentMethods(paymentMethods.map(pm => ({
-                    ...pm,
-                    isDefault: pm.id === methodId
-                })));
+                // This would need to be implemented in the backend
+                console.log('Set default payment method:', methodId);
                 break;
             case 'delete':
-                if (confirm('Are you sure you want to remove this payment method?')) {
-                    setPaymentMethods(paymentMethods.filter(pm => pm.id !== methodId));
+                if (window.confirm('Are you sure you want to remove this payment method?')) {
+                    try {
+                        await deletePaymentMethod(methodId);
+                    } catch (error) {
+                        console.error('Failed to delete payment method:', error);
+                    }
                 }
                 break;
             default:
@@ -339,15 +293,9 @@ const UserProfileLayout = ({ initialTab }) => {
     };
 
     const handleSavePaymentMethod = (paymentMethodData) => {
-        if (paymentMethodData.isDefault) {
-            // Remove default from other payment methods
-            setPaymentMethods([
-                ...paymentMethods.map(pm => ({ ...pm, isDefault: false })),
-                paymentMethodData
-            ]);
-        } else {
-            setPaymentMethods([...paymentMethods, paymentMethodData]);
-        }
+        // This will be handled by the UserProfileContext
+        console.log('Save payment method:', paymentMethodData);
+        // TODO: Implement with addPaymentMethod from context
     };
 
     const handleRecentlyViewedAction = (productId, action) => {
@@ -412,34 +360,23 @@ const UserProfileLayout = ({ initialTab }) => {
     };
 
     const renderActiveTab = () => {
-        const commonProps = {
-            profileData,
-            setProfileData,
-            isEditing,
-            setIsEditing,
-            handleInputChange,
-            handleSaveProfile,
-            handleAvatarChange,
-            calculateProfileCompleteness,
-            onPasswordChange: () => setShowPasswordModal(true)
-        };
-
         switch (activeTab) {
             case 'profile':
-                return <ProfileTab {...commonProps} />;
+                return <ProfileTab 
+                    onPasswordChange={() => setShowPasswordModal(true)}
+                    handleAvatarChange={handleAvatarChange}
+                />;
             case 'orders':
                 return <OrdersTab />;
             case 'addresses':
                 return (
                     <AddressesTab 
-                        addresses={addresses}
                         handleAddressAction={handleAddressAction}
                     />
                 );
             case 'payments':
                 return (
                     <PaymentMethodsTab 
-                        paymentMethods={paymentMethods}
                         handlePaymentMethodAction={handlePaymentMethodAction}
                     />
                 );
@@ -459,7 +396,10 @@ const UserProfileLayout = ({ initialTab }) => {
             case 'preferences':
                 return <PreferencesTab />;
             default:
-                return <ProfileTab {...commonProps} />;
+                return <ProfileTab 
+                    onPasswordChange={() => setShowPasswordModal(true)}
+                    handleAvatarChange={handleAvatarChange}
+                />;
         }
     };
 

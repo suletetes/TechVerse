@@ -1,6 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useUserProfile } from '../../context/UserProfileContext';
 
-const AddressesTab = ({ addresses, handleAddressAction }) => {
+const AddressesTab = ({ handleAddressAction }) => {
+    const { addresses, loading, error, loadAddresses } = useUserProfile();
+
+    useEffect(() => {
+        loadAddresses();
+    }, [loadAddresses]);
     return (
         <div className="store-card fill-card">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -17,9 +23,33 @@ const AddressesTab = ({ addresses, handleAddressAction }) => {
                 </button>
             </div>
 
+            {loading && (
+                <div className="text-center py-4">
+                    <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">Loading addresses...</span>
+                    </div>
+                </div>
+            )}
+
+            {error && (
+                <div className="alert alert-danger" role="alert">
+                    {error}
+                </div>
+            )}
+
+            {!loading && !error && addresses.length === 0 && (
+                <div className="text-center py-5">
+                    <svg width="64" height="64" viewBox="0 0 24 24" className="text-muted mb-3">
+                        <path fill="currentColor" d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z" />
+                    </svg>
+                    <h5 className="text-muted">No Addresses Found</h5>
+                    <p className="text-muted mb-4">You haven't added any addresses yet.</p>
+                </div>
+            )}
+
             <div className="row">
-                {addresses.map((address) => (
-                    <div key={address.id} className="col-md-6 mb-4">
+                {!loading && addresses.map((address) => (
+                    <div key={address._id} className="col-md-6 mb-4">
                         <div className="border rounded p-3 h-100">
                             <div className="d-flex justify-content-between align-items-start mb-3">
                                 <div>
@@ -40,7 +70,7 @@ const AddressesTab = ({ addresses, handleAddressAction }) => {
                                         <li>
                                             <button
                                                 className="dropdown-item"
-                                                onClick={() => handleAddressAction(address.id, 'edit')}
+                                                onClick={() => handleAddressAction(address._id, 'edit')}
                                             >
                                                 Edit
                                             </button>
@@ -49,7 +79,7 @@ const AddressesTab = ({ addresses, handleAddressAction }) => {
                                             <li>
                                                 <button
                                                     className="dropdown-item"
-                                                    onClick={() => handleAddressAction(address.id, 'setDefault')}
+                                                    onClick={() => handleAddressAction(address._id, 'setDefault')}
                                                 >
                                                     Set as Default
                                                 </button>
@@ -59,7 +89,7 @@ const AddressesTab = ({ addresses, handleAddressAction }) => {
                                         <li>
                                             <button
                                                 className="dropdown-item text-danger"
-                                                onClick={() => handleAddressAction(address.id, 'delete')}
+                                                onClick={() => handleAddressAction(address._id, 'delete')}
                                             >
                                                 Delete
                                             </button>
@@ -68,7 +98,7 @@ const AddressesTab = ({ addresses, handleAddressAction }) => {
                                 </div>
                             </div>
                             <div>
-                                <p className="mb-1 bold-text">{address.name}</p>
+                                <p className="mb-1 bold-text">{address.firstName} {address.lastName}</p>
                                 <p className="mb-1">{address.address}</p>
                                 <p className="mb-1">{address.city}</p>
                                 <p className="mb-1">{address.postcode}</p>
