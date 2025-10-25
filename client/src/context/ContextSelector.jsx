@@ -170,20 +170,10 @@ export const useContextPerformanceMonitor = (contextName, value) => {
     const now = Date.now();
     const timeSinceLastRender = now - lastRenderTimeRef.current;
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[${contextName}] Render #${renderCountRef.current}, Time since last: ${timeSinceLastRender}ms`);
-      
-      // Performance monitoring silently tracks re-render frequency
-      }
-    }
+    // Performance monitoring silently tracks render frequency
 
     lastRenderTimeRef.current = now;
   });
 
-  // Log context value changes
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[${contextName}] Value changed:`, value);
-    }
-  }, [contextName, value]);
+  // Value change logging removed for cleaner console
 };

@@ -125,10 +125,8 @@ export const UserProfileProvider = ({ children }) => {
         try {
             dispatch({ type: PROFILE_ACTIONS.SET_LOADING, payload: true });
             const response = await userProfileService.addAddress(addressData);
-            dispatch({ 
-                type: PROFILE_ACTIONS.ADD_ADDRESS, 
-                payload: response.data?.addresses || [] 
-            });
+            // Reload addresses to ensure fresh data
+            await loadAddresses();
             return response;
         } catch (error) {
             dispatch({ 
@@ -137,7 +135,7 @@ export const UserProfileProvider = ({ children }) => {
             });
             throw error;
         }
-    }, []);
+    }, [loadAddresses]);
 
     // Update address
     const updateAddress = useCallback(async (addressId, addressData) => {
@@ -172,6 +170,25 @@ export const UserProfileProvider = ({ children }) => {
             dispatch({ 
                 type: PROFILE_ACTIONS.SET_ERROR, 
                 payload: error.message || 'Failed to delete address' 
+            });
+            throw error;
+        }
+    }, []);
+
+    // Set default address
+    const setDefaultAddress = useCallback(async (addressId) => {
+        try {
+            dispatch({ type: PROFILE_ACTIONS.SET_LOADING, payload: true });
+            const response = await userProfileService.setDefaultAddress(addressId);
+            dispatch({ 
+                type: PROFILE_ACTIONS.SET_ADDRESSES, 
+                payload: response.data?.addresses || [] 
+            });
+            return response;
+        } catch (error) {
+            dispatch({ 
+                type: PROFILE_ACTIONS.SET_ERROR, 
+                payload: error.message || 'Failed to set default address' 
             });
             throw error;
         }
@@ -247,6 +264,7 @@ export const UserProfileProvider = ({ children }) => {
         addAddress,
         updateAddress,
         deleteAddress,
+        setDefaultAddress,
         loadPaymentMethods,
         addPaymentMethod,
         deletePaymentMethod,

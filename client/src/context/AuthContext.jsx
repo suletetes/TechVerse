@@ -65,7 +65,6 @@ const authReducer = (state, action) => {
       const user = action.payload.user || action.payload;
 
       // Debug logging removed for cleaner console
-      }
 
       return {
         ...state,
@@ -382,11 +381,6 @@ export const AuthProvider = ({ children }) => {
       const response = await authService.login(loginData);
 
       // Debug logging removed for cleaner console
-          userRole: response.data?.user?.role,
-          userPermissions: response.data?.user?.permissions,
-          hasUser: !!response.data?.user
-        });
-      }
 
       // Handle MFA requirement
       if (response.data?.mfaRequired) {
@@ -654,10 +648,6 @@ export const AuthProvider = ({ children }) => {
     const result = state.user?.role === role;
     
     // Debug logging removed for cleaner console
-        result,
-        hasUser: !!state.user
-      });
-    }
     
     return result;
   };
@@ -667,10 +657,6 @@ export const AuthProvider = ({ children }) => {
     const result = state.permissions.includes(permission) || state.user?.permissions?.includes(permission);
     
     // Debug logging removed for cleaner console
-        userPermissions: state.user?.permissions,
-        result
-      });
-    }
     
     return result;
   };
@@ -690,11 +676,6 @@ export const AuthProvider = ({ children }) => {
     const result = hasRole('admin') || hasRole('super_admin');
     
     // Debug logging removed for cleaner console
-        hasSuperAdminRole: hasRole('super_admin'),
-        userRole: state.user?.role,
-        stateUser: state.user
-      });
-    }
     
     return result;
   };
