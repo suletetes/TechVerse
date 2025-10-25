@@ -8,7 +8,7 @@ import { User } from '../models/index.js';
 
 const router = express.Router();
 
-console.log('🔧 UserProfile routes loaded');
+// UserProfile routes
 
 // Test route to verify userProfile routes are working
 router.get('/test', (_req, res) => {

@@ -601,13 +601,10 @@ const assignProductsToSections = async (products) => {
         }
     }
 
-    // Log section assignments
+    // Log section assignments summary only
     console.log('   📊 Section assignment summary:');
     for (const [section, sectionProducts] of Object.entries(sectionAssignments)) {
         console.log(`      ${section}: ${sectionProducts.length} products`);
-        sectionProducts.forEach(product => {
-            console.log(`         - ${product.name}`);
-        });
     }
 
     return sectionAssignments;
@@ -667,15 +664,9 @@ const generateSampleJSON = async () => {
 export const seedDatabase = async () => {
     try {
         console.log('🌱 Starting database seeding...');
-
-        console.log('🔌 Connecting to database...');
         await connectDB();
-
-        // Test the connection
-        console.log('🧪 Testing database connection...');
-        const testCount = await Category.countDocuments();
-        console.log(`   Current categories in DB: ${testCount}`);
-
+        
+        // Clear existing data
         console.log('🗑️  Clearing existing data...');
         await Promise.all([
             User.deleteMany({}),
@@ -762,11 +753,93 @@ export const seedDatabase = async () => {
         // Generate sample JSON for verification
         await generateSampleJSON();
 
+        // Create sample orders for testing
+        console.log('📋 Creating sample orders...');
+        const sampleProducts = await Product.find().limit(3);
+        const regularUser = users.find(u => u.role === 'user');
+        
+        if (sampleProducts.length > 0 && regularUser) {
+            const sampleOrders = [
+                {
+                    user: regularUser._id,
+                    orderNumber: `ORD-${Date.now()}-001`,
+                    items: [
+                        {
+                            product: sampleProducts[0]._id,
+                            name: sampleProducts[0].name,
+                            quantity: 2,
+                            price: sampleProducts[0].price,
+                            image: sampleProducts[0].images?.[0] || '',
+                            sku: sampleProducts[0].sku
+                        }
+                    ],
+                    subtotal: sampleProducts[0].price * 2,
+                    tax: (sampleProducts[0].price * 2) * 0.2, // 20% VAT
+                    total: (sampleProducts[0].price * 2) * 1.2,
+                    status: 'delivered',
+                    shippingAddress: {
+                        firstName: 'John',
+                        lastName: 'Smith',
+                        address: '123 Main Street',
+                        city: 'London',
+                        postcode: 'SW1A 1AA',
+                        country: 'UK',
+                        phone: '+44 7700 900123'
+                    },
+                    payment: {
+                        method: 'card',
+                        status: 'completed',
+                        amount: (sampleProducts[0].price * 2) * 1.2,
+                        currency: 'GBP'
+                    },
+                    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago
+                },
+                {
+                    user: regularUser._id,
+                    orderNumber: `ORD-${Date.now()}-002`,
+                    items: [
+                        {
+                            product: sampleProducts[1]._id,
+                            name: sampleProducts[1].name,
+                            quantity: 1,
+                            price: sampleProducts[1].price,
+                            image: sampleProducts[1].images?.[0] || '',
+                            sku: sampleProducts[1].sku
+                        }
+                    ],
+                    subtotal: sampleProducts[1].price,
+                    tax: sampleProducts[1].price * 0.2,
+                    total: sampleProducts[1].price * 1.2,
+                    status: 'processing',
+                    shippingAddress: {
+                        firstName: 'John',
+                        lastName: 'Smith',
+                        address: '123 Main Street',
+                        city: 'London',
+                        postcode: 'SW1A 1AA',
+                        country: 'UK',
+                        phone: '+44 7700 900123'
+                    },
+                    payment: {
+                        method: 'card',
+                        status: 'completed',
+                        amount: sampleProducts[1].price * 1.2,
+                        currency: 'GBP'
+                    },
+                    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) // 2 days ago
+                }
+            ];
+
+            await Order.insertMany(sampleOrders);
+            console.log(`   ✅ Created ${sampleOrders.length} sample orders`);
+        }
+
         console.log('\n🎉 Database seeding completed successfully!');
         console.log('\n📊 Seeding Summary:');
         console.log(`   Categories: ${await Category.countDocuments()}`);
         console.log(`   Users: ${await User.countDocuments()}`);
         console.log(`   Products: ${await Product.countDocuments()}`);
+        console.log(`   Orders: ${await Order.countDocuments()}`);
 
         // Show section distribution
         console.log('\n🏷️  Homepage Section Distribution:');

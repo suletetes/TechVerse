@@ -297,9 +297,7 @@ export const ProductProvider = ({ children }) => {
 
   // Temporary notification function - will be enhanced later
   const showNotification = useCallback((message, type = 'info') => {
-    if (import.meta.env.DEV) {
-      console.log(`[PRODUCT ${type.toUpperCase()}] ${message}`);
-    }
+    // Notification logging removed for cleaner console
   }, []);
 
   // Load products with filters and pagination
@@ -337,8 +335,7 @@ export const ProductProvider = ({ children }) => {
   const loadFeaturedProducts = useCallback(async (limit = 10) => {
     const requestKey = `featured-${limit}`;
     if (activeRequests.current.has(requestKey)) {
-      console.log('Skipping duplicate request:', requestKey);
-      return;
+      return; // Skip duplicate request
     }
 
     try {
@@ -360,8 +357,7 @@ export const ProductProvider = ({ children }) => {
   const loadTopSellingProducts = useCallback(async (limit = 10, timeframe = null) => {
     const requestKey = `top-selling-${limit}-${timeframe}`;
     if (activeRequests.current.has(requestKey)) {
-      console.log('Skipping duplicate request:', requestKey);
-      return;
+      return; // Skip duplicate request
     }
 
     try {

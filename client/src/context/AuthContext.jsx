@@ -64,11 +64,7 @@ const authReducer = (state, action) => {
     case AUTH_ACTIONS.LOAD_USER_SUCCESS:
       const user = action.payload.user || action.payload;
 
-      // Debug logging for admin role issue
-      if (process.env.NODE_ENV === 'development') {
-        console.log('AuthContext reducer LOGIN_SUCCESS:', {
-          payload: action.payload,
-          extractedUser: user,
+      // Debug logging removed for cleaner console
           userRole: user?.role,
           userPermissions: user?.permissions,
           payloadPermissions: action.payload.permissions,
@@ -218,11 +214,7 @@ export const AuthProvider = ({ children }) => {
 
   // Simple notification function for now - we'll enhance this later
   const showNotification = useCallback((message, type = 'info') => {
-    // For now, just log to console in development
-    if (import.meta.env.DEV) {
-      console.log(`[${type.toUpperCase()}] ${message}`);
-    }
-    // TODO: Integrate with notification system once circular dependency is resolved
+    // Notification logging removed for cleaner console
   }, []);
 
   const sessionCheckInterval = useRef(null);
@@ -394,11 +386,7 @@ export const AuthProvider = ({ children }) => {
       console.log('Sending login data to authService:', loginData);
       const response = await authService.login(loginData);
 
-      // Debug logging for admin role issue
-      if (process.env.NODE_ENV === 'development') {
-        console.log('AuthContext login response:', {
-          response,
-          user: response.data?.user,
+      // Debug logging removed for cleaner console
           userRole: response.data?.user?.role,
           userPermissions: response.data?.user?.permissions,
           hasUser: !!response.data?.user
@@ -670,11 +658,7 @@ export const AuthProvider = ({ children }) => {
   const hasRole = (role) => {
     const result = state.user?.role === role;
     
-    // Debug logging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('hasRole() called:', {
-        requestedRole: role,
-        userRole: state.user?.role,
+    // Debug logging removed for cleaner console
         result,
         hasUser: !!state.user
       });
@@ -687,11 +671,7 @@ export const AuthProvider = ({ children }) => {
   const hasPermission = (permission) => {
     const result = state.permissions.includes(permission) || state.user?.permissions?.includes(permission);
     
-    // Debug logging for permission checks
-    if (process.env.NODE_ENV === 'development') {
-      console.log('hasPermission() called:', {
-        requestedPermission: permission,
-        statePermissions: state.permissions,
+    // Debug logging removed for cleaner console
         userPermissions: state.user?.permissions,
         result
       });
@@ -714,11 +694,7 @@ export const AuthProvider = ({ children }) => {
   const isAdmin = () => {
     const result = hasRole('admin') || hasRole('super_admin');
     
-    // Debug logging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('isAdmin() called:', {
-        result,
-        hasAdminRole: hasRole('admin'),
+    // Debug logging removed for cleaner console
         hasSuperAdminRole: hasRole('super_admin'),
         userRole: state.user?.role,
         stateUser: state.user

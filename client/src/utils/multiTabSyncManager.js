@@ -65,10 +65,7 @@ class MultiTabSyncManager {
     
     this.isInitialized = true;
     
-    console.log('Multi-tab sync initialized', {
-      tabId: this.tabId,
-      isMasterTab: this.isMasterTab
-    });
+    // Multi-tab sync initialized silently
   }
 
   /**
@@ -153,7 +150,7 @@ class MultiTabSyncManager {
       if (now - tab.timestamp > SYNC_CONFIG.TAB_TIMEOUT) {
         delete activeTabs[tabId];
         hasChanges = true;
-        console.log('Cleaned up inactive tab:', tabId);
+        // Cleaned up inactive tab silently
       }
     });
     
@@ -198,7 +195,7 @@ class MultiTabSyncManager {
     if (newMasterTabId === this.tabId) {
       this.isMasterTab = true;
       localStorage.setItem(SYNC_CONFIG.STORAGE_KEYS.MASTER_TAB, this.tabId);
-      console.log('Elected as master tab');
+      // Elected as master tab silently
       
       // Master tab responsibilities
       this.handleMasterTabDuties();
@@ -302,7 +299,7 @@ class MultiTabSyncManager {
    * Handle cross-tab login
    */
   handleCrossTabLogin(data) {
-    console.log('Cross-tab login detected');
+    // Cross-tab login detected silently
     
     // Notify sync listeners
     this.notifySyncListeners('login', data);
@@ -319,7 +316,7 @@ class MultiTabSyncManager {
    * Handle cross-tab logout
    */
   handleCrossTabLogout(data = {}) {
-    console.log('Cross-tab logout detected');
+    // Cross-tab logout detected silently
     
     // Clear local auth state without API call (already done by originating tab)
     tokenManager.clearTokens();
@@ -346,14 +343,14 @@ class MultiTabSyncManager {
    * Handle cross-tab token refresh
    */
   handleCrossTabTokenRefresh(data) {
-    console.log('Cross-tab token refresh detected');
+    // Cross-tab token refresh detected silently
     
     // Update local tokens (they should already be updated via storage events)
     if (data.tokens) {
       // Verify tokens are actually updated
       const currentToken = tokenManager.getToken();
       if (currentToken !== data.tokens.accessToken) {
-        console.log('Syncing refreshed tokens from other tab');
+        // Syncing refreshed tokens from other tab silently
         tokenManager.setToken(
           data.tokens.accessToken,
           data.tokens.expiresIn,

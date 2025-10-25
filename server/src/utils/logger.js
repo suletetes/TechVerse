@@ -18,7 +18,7 @@ class Logger {
       level: level.toUpperCase(),
       message,
       ...(Object.keys(meta).length > 0 && { meta }),
-      ...(error && { 
+      ...(error && {
         error: {
           message: error.message,
           stack: this.isDevelopment ? error.stack : undefined,
@@ -40,21 +40,20 @@ class Logger {
 
   info(message, meta = {}) {
     if (!this.shouldLog('info')) return;
-    
+
     const logEntry = this.formatLog('info', message, meta);
-    
-    if (this.isDevelopment) {
-      console.log('ℹ️ INFO:', message, Object.keys(meta).length > 0 ? meta : '');
-    } else {
+
+    // Reduce info logging in development
+    if (!this.isDevelopment) {
       console.log(JSON.stringify(logEntry));
     }
   }
 
   error(message, error = null, meta = {}) {
     if (!this.shouldLog('error')) return;
-    
+
     const logEntry = this.formatLog('error', message, meta, error);
-    
+
     if (this.isDevelopment) {
       console.error('❌ ERROR:', message);
       if (error) {
@@ -70,9 +69,9 @@ class Logger {
 
   warn(message, meta = {}) {
     if (!this.shouldLog('warn')) return;
-    
+
     const logEntry = this.formatLog('warn', message, meta);
-    
+
     if (this.isDevelopment) {
       console.warn('⚠️ WARN:', message, Object.keys(meta).length > 0 ? meta : '');
     } else {
@@ -82,9 +81,9 @@ class Logger {
 
   debug(message, meta = {}) {
     if (!this.shouldLog('debug')) return;
-    
+
     const logEntry = this.formatLog('debug', message, meta);
-    
+
     if (this.isDevelopment) {
       console.debug('🐛 DEBUG:', message, Object.keys(meta).length > 0 ? meta : '');
     } else {
@@ -94,7 +93,7 @@ class Logger {
 
   http(req, res, responseTime) {
     if (!this.shouldLog('http')) return;
-    
+
     const meta = {
       method: req.method,
       url: req.url,
@@ -107,11 +106,11 @@ class Logger {
 
     const message = `${req.method} ${req.url} - ${res.statusCode} - ${responseTime}ms`;
     const logEntry = this.formatLog('http', message, meta);
-    
-    if (this.isDevelopment) {
-      const statusEmoji = res.statusCode >= 400 ? '❌' : res.statusCode >= 300 ? '⚠️' : '✅';
-      console.log(`🌐 ${statusEmoji} ${message}`);
-    } else {
+
+    if (this.isDevelopment && res.statusCode >= 400) {
+      // Only log errors and warnings in development
+      console.log(`🌐 ❌ ${message}`);
+    } else if (!this.isDevelopment) {
       console.log(JSON.stringify(logEntry));
     }
   }
@@ -121,7 +120,7 @@ class Logger {
    */
   database(operation, details = {}) {
     if (!this.shouldLog('info')) return;
-    
+
     const message = `Database ${operation}`;
     const meta = {
       operation,
@@ -129,7 +128,7 @@ class Logger {
     };
 
     const logEntry = this.formatLog('info', message, meta);
-    
+
     if (this.isDevelopment) {
       console.log(`📦 ${message}:`, details);
     } else {
@@ -149,7 +148,7 @@ class Logger {
     };
 
     const logEntry = this.formatLog('warn', message, meta);
-    
+
     if (this.isDevelopment) {
       console.warn(`🔒 SECURITY:`, message, details);
     } else {
@@ -162,7 +161,7 @@ class Logger {
    */
   performance(metric, value, meta = {}) {
     if (!this.shouldLog('info')) return;
-    
+
     const message = `Performance: ${metric} = ${value}`;
     const logMeta = {
       metric,
@@ -171,7 +170,7 @@ class Logger {
     };
 
     const logEntry = this.formatLog('info', message, logMeta);
-    
+
     if (this.isDevelopment) {
       console.log(`⚡ PERF: ${message}`, Object.keys(meta).length > 0 ? meta : '');
     } else {
