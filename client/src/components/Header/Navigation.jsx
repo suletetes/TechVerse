@@ -11,11 +11,6 @@ const Navigation = () => {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     // Debug logging removed for cleaner console
-            userRole: user?.role,
-            isAdminResult: isAdmin(),
-            isAdminFunction: typeof isAdmin
-        });
-    }
 
     const wishlistCount = getWishlistCount();
 

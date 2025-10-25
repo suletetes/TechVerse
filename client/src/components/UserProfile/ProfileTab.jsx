@@ -18,12 +18,23 @@ const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
     // Load user data when component mounts
     useEffect(() => {
         if (user) {
+            // Convert ISO date to yyyy-MM-dd format for HTML date input
+            let formattedDate = '';
+            if (user.dateOfBirth) {
+                try {
+                    const date = new Date(user.dateOfBirth);
+                    formattedDate = date.toISOString().split('T')[0];
+                } catch (error) {
+                    console.warn('Invalid date format:', user.dateOfBirth);
+                }
+            }
+            
             setProfileData({
                 firstName: user.firstName || '',
                 lastName: user.lastName || '',
                 email: user.email || '',
                 phone: user.phone || '',
-                dateOfBirth: user.dateOfBirth || '',
+                dateOfBirth: formattedDate,
                 gender: user.gender || '',
                 avatar: user.avatar || ''
             });

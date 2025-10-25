@@ -130,7 +130,15 @@ const router = createBrowserRouter([
 
             // User routes - protected with UserRoute guard
             {
-                path: 'user',
+                path: 'profile',
+                element: (
+                    <UserRoute>
+                        <UserProfile />
+                    </UserRoute>
+                ),
+            },
+            {
+                path: 'profile/:tab',
                 element: (
                     <UserRoute>
                         <UserProfile />
