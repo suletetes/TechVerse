@@ -1,4 +1,4 @@
-import { User, Product } from '../models/index.js';
+import { User, Product, Cart, Wishlist } from '../models/index.js';
 import { AppError, asyncHandler } from '../middleware/errorHandler.js';
 import paymentService from '../services/paymentService.js';
 import logger from '../utils/logger.js';
@@ -316,183 +316,66 @@ export const deletePaymentMethod = asyncHandler(async (req, res, next) => {
   }
 });
 
-// @desc    Get user wishlist
-// @route   GET /api/users/wishlist
-// @access  Private
-export const getWishlist = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user._id)
-    .populate({
-      path: 'wishlist',
-      select: 'name price images rating status',
-      match: { status: 'active' }
-    });
-
-  if (!user) {
-    return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
-  }
-
-  res.status(200).json({
-    success: true,
-    message: 'Wishlist retrieved successfully',
-    data: {
-      wishlist: user.wishlist
-    }
-  });
-});
-
-// @desc    Add product to wishlist
-// @route   POST /api/users/wishlist/:productId
-// @access  Private
-export const addToWishlist = asyncHandler(async (req, res, next) => {
-  const { productId } = req.params;
-  const user = await User.findById(req.user._id);
-
-  if (!user) {
-    return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
-  }
-
-  // Check if product exists
-  const product = await Product.findById(productId);
-  if (!product) {
-    return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
-  }
-
-  // Check if already in wishlist
-  if (user.wishlist.includes(productId)) {
-    return next(new AppError('Product already in wishlist', 400, 'PRODUCT_ALREADY_IN_WISHLIST'));
-  }
-
-  user.wishlist.push(productId);
-  await user.save();
-
-  logger.info('Product added to wishlist', {
-    userId: user._id,
-    productId,
-    ip: req.ip
-  });
-
-  res.status(200).json({
-    success: true,
-    message: 'Product added to wishlist successfully',
-    data: {
-      wishlistCount: user.wishlist.length
-    }
-  });
-});
-
-// @desc    Remove product from wishlist
-// @route   DELETE /api/users/wishlist/:productId
-// @access  Private
-export const removeFromWishlist = asyncHandler(async (req, res, next) => {
-  const { productId } = req.params;
-  const user = await User.findById(req.user._id);
-
-  if (!user) {
-    return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
-  }
-
-  // Check if product is in wishlist
-  const index = user.wishlist.indexOf(productId);
-  if (index === -1) {
-    return next(new AppError('Product not in wishlist', 400, 'PRODUCT_NOT_IN_WISHLIST'));
-  }
-
-  user.wishlist.splice(index, 1);
-  await user.save();
-
-  logger.info('Product removed from wishlist', {
-    userId: user._id,
-    productId,
-    ip: req.ip
-  });
-
-  res.status(200).json({
-    success: true,
-    message: 'Product removed from wishlist successfully',
-    data: {
-      wishlistCount: user.wishlist.length
-    }
-  });
-});
-
 // @desc    Get user cart
 // @route   GET /api/users/cart
 // @access  Private
 export const getCart = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user._id)
-    .populate({
-      path: 'cart.product',
-      select: 'name price images rating status stock'
-    });
+  let cart = await Cart.findOne({ user: req.user._id })
+    .populate('items.product', 'name price images stock status');
 
-  if (!user) {
-    return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
+  if (!cart) {
+    cart = await Cart.create({ user: req.user._id, items: [] });
   }
-
-  // Filter out products that are no longer available
-  const availableCartItems = user.cart.filter(item => 
-    item.product && item.product.status === 'active'
-  );
-
-  // Calculate cart totals
-  const subtotal = availableCartItems.reduce((total, item) => {
-    return total + (item.price * item.quantity);
-  }, 0);
 
   res.status(200).json({
     success: true,
     message: 'Cart retrieved successfully',
-    data: {
-      cart: availableCartItems,
-      summary: {
-        itemCount: availableCartItems.length,
-        totalQuantity: availableCartItems.reduce((total, item) => total + item.quantity, 0),
-        subtotal
-      }
-    }
+    data: { cart }
   });
 });
 
-// @desc    Add product to cart
+// @desc    Add item to cart
 // @route   POST /api/users/cart
 // @access  Private
 export const addToCart = asyncHandler(async (req, res, next) => {
-  const { productId, quantity = 1, variants = [] } = req.body;
-  const user = await User.findById(req.user._id);
+  const { productId, quantity = 1 } = req.body;
 
-  if (!user) {
-    return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
-  }
-
-  // Check if product exists and is available
   const product = await Product.findById(productId);
   if (!product) {
     return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
   }
 
-  if (!product.isAvailable(quantity)) {
-    return next(new AppError('Product is not available in requested quantity', 400, 'INSUFFICIENT_STOCK'));
+  if (product.stock.quantity < quantity) {
+    return next(new AppError('Insufficient stock', 400, 'INSUFFICIENT_STOCK'));
   }
 
-  // Calculate price including variants
-  const price = product.getVariantPrice(variants);
+  let cart = await Cart.findOne({ user: req.user._id });
+  if (!cart) {
+    cart = await Cart.create({ user: req.user._id, items: [] });
+  }
 
-  await user.addToCart(productId, quantity, variants, price);
+  const existingItem = cart.items.find(item => item.product.toString() === productId);
+  
+  if (existingItem) {
+    existingItem.quantity += quantity;
+    if (existingItem.quantity > product.stock.quantity) {
+      return next(new AppError('Insufficient stock', 400, 'INSUFFICIENT_STOCK'));
+    }
+  } else {
+    cart.items.push({
+      product: productId,
+      quantity,
+      price: product.price
+    });
+  }
 
-  logger.info('Product added to cart', {
-    userId: user._id,
-    productId,
-    quantity,
-    price,
-    ip: req.ip
-  });
+  await cart.save();
+  await cart.populate('items.product', 'name price images stock status');
 
   res.status(200).json({
     success: true,
-    message: 'Product added to cart successfully',
-    data: {
-      cartItemCount: user.cart.length
-    }
+    message: 'Item added to cart',
+    data: { cart }
   });
 });
 
@@ -502,32 +385,31 @@ export const addToCart = asyncHandler(async (req, res, next) => {
 export const updateCartItem = asyncHandler(async (req, res, next) => {
   const { itemId } = req.params;
   const { quantity } = req.body;
-  const user = await User.findById(req.user._id);
 
-  if (!user) {
-    return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
+  const cart = await Cart.findOne({ user: req.user._id });
+  if (!cart) {
+    return next(new AppError('Cart not found', 404, 'CART_NOT_FOUND'));
   }
 
-  try {
-    await user.updateCartItem(itemId, quantity);
-
-    logger.info('Cart item updated', {
-      userId: user._id,
-      itemId,
-      quantity,
-      ip: req.ip
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Cart item updated successfully',
-      data: {
-        cartItemCount: user.cart.length
-      }
-    });
-  } catch (error) {
-    return next(new AppError(error.message, 400, 'CART_UPDATE_ERROR'));
+  const item = cart.items.id(itemId);
+  if (!item) {
+    return next(new AppError('Cart item not found', 404, 'CART_ITEM_NOT_FOUND'));
   }
+
+  const product = await Product.findById(item.product);
+  if (product.stock.quantity < quantity) {
+    return next(new AppError('Insufficient stock', 400, 'INSUFFICIENT_STOCK'));
+  }
+
+  item.quantity = quantity;
+  await cart.save();
+  await cart.populate('items.product', 'name price images stock status');
+
+  res.status(200).json({
+    success: true,
+    message: 'Cart item updated',
+    data: { cart }
+  });
 });
 
 // @desc    Remove item from cart
@@ -535,55 +417,121 @@ export const updateCartItem = asyncHandler(async (req, res, next) => {
 // @access  Private
 export const removeFromCart = asyncHandler(async (req, res, next) => {
   const { itemId } = req.params;
-  const user = await User.findById(req.user._id);
 
-  if (!user) {
-    return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
+  const cart = await Cart.findOne({ user: req.user._id });
+  if (!cart) {
+    return next(new AppError('Cart not found', 404, 'CART_NOT_FOUND'));
   }
 
-  try {
-    await user.removeFromCart(itemId);
-
-    logger.info('Item removed from cart', {
-      userId: user._id,
-      itemId,
-      ip: req.ip
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Item removed from cart successfully',
-      data: {
-        cartItemCount: user.cart.length
-      }
-    });
-  } catch (error) {
-    return next(new AppError(error.message, 400, 'CART_REMOVE_ERROR'));
-  }
-});
-
-// @desc    Clear user cart
-// @route   DELETE /api/users/cart
-// @access  Private
-export const clearCart = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user._id);
-
-  if (!user) {
-    return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
-  }
-
-  await user.clearCart();
-
-  logger.info('Cart cleared', {
-    userId: user._id,
-    ip: req.ip
-  });
+  cart.items.id(itemId).remove();
+  await cart.save();
+  await cart.populate('items.product', 'name price images stock status');
 
   res.status(200).json({
     success: true,
-    message: 'Cart cleared successfully',
-    data: {
-      cartItemCount: 0
-    }
+    message: 'Item removed from cart',
+    data: { cart }
   });
 });
+
+// @desc    Clear cart
+// @route   DELETE /api/users/cart
+// @access  Private
+export const clearCart = asyncHandler(async (req, res, next) => {
+  const cart = await Cart.findOne({ user: req.user._id });
+  if (!cart) {
+    return next(new AppError('Cart not found', 404, 'CART_NOT_FOUND'));
+  }
+
+  cart.items = [];
+  await cart.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Cart cleared',
+    data: { cart }
+  });
+});
+
+// @desc    Get user wishlist
+// @route   GET /api/users/wishlist
+// @access  Private
+export const getWishlist = asyncHandler(async (req, res, next) => {
+  let wishlist = await Wishlist.findOne({ user: req.user._id })
+    .populate('items.product', 'name price images stock status rating');
+
+  if (!wishlist) {
+    wishlist = await Wishlist.create({ user: req.user._id, items: [] });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Wishlist retrieved successfully',
+    data: { wishlist }
+  });
+});
+
+// @desc    Add item to wishlist
+// @route   POST /api/users/wishlist/:productId
+// @access  Private
+export const addToWishlist = asyncHandler(async (req, res, next) => {
+  const { productId } = req.params;
+  const { notes } = req.body;
+
+  const product = await Product.findById(productId);
+  if (!product) {
+    return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
+  }
+
+  let wishlist = await Wishlist.findOne({ user: req.user._id });
+  if (!wishlist) {
+    wishlist = await Wishlist.create({ user: req.user._id, items: [] });
+  }
+
+  const existingItem = wishlist.items.find(item => item.product.toString() === productId);
+  if (existingItem) {
+    return next(new AppError('Product already in wishlist', 400, 'PRODUCT_ALREADY_IN_WISHLIST'));
+  }
+
+  wishlist.items.push({
+    product: productId,
+    priceWhenAdded: product.price,
+    notes: notes || ''
+  });
+
+  await wishlist.save();
+  await wishlist.populate('items.product', 'name price images stock status rating');
+
+  res.status(200).json({
+    success: true,
+    message: 'Item added to wishlist',
+    data: { wishlist }
+  });
+})  });
+});ishlist }
+ta: { wda
+    wishlist',from d oveeme: 'Item rsagesrue,
+    mccess: t({
+    su00).jsonatus(2
+  res.stng');
+titus rastack ages storice ime pt', 'namtems.producpopulate('i wishlist.
+  await();saveishlist.;
+  await wdex, 1)emInce(itplist.items.s
+
+  wishliST'));
+  }_IN_WISHLIDUCT_NOT04, 'PROlist', 4n wishnot ioduct Prror('new AppErn next(retur1) {
+    == -mIndex =ite);
+  if (oductIding() === proStr.product.ttemtem => index(idIs.finemt.it = wishlisndextemInst i
+
+  co;
+  }OUND'))HLIST_NOT_F 404, 'WISnot found',shlist Wiror('ew AppErnext(n   return list) {
+  (!wish);
+  ifr._id } req.user: usene({findOst.hli = await Wist wishlist
+
+  consarams;Id } = req.pctrodut { pns co=> {
+ , next) , resnc (reqsyandler(aist = asyncHveFromWishlt const remoate
+exporess  Priv
+// @accproductIdhlist/:i/users/wis DELETE /apoute  
+// @rhlistem from wis itc    Removees;
+
+// 

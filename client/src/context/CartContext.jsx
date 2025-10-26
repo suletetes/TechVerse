@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback, useRef } from 'react';
 import { userService } from '../api/services/index.js';
+import cartService from '../api/services/cartService.js';
 import { useAuth } from './AuthContext.jsx';
 import { useDataSync } from '../hooks/useDataSync.js';
 
@@ -148,7 +149,7 @@ export const CartProvider = ({ children }) => {
     try {
       loadingRef.current = true;
       dispatch({ type: CART_ACTIONS.LOAD_CART_START });
-      const response = await userService.getCart();
+      const response = await cartService.getCart();
       dispatch({ type: CART_ACTIONS.LOAD_CART_SUCCESS, payload: response.data });
     } catch (error) {
       console.error('Error loading cart:', error);
@@ -180,7 +181,7 @@ export const CartProvider = ({ children }) => {
         { items: [...state.items, optimisticItem] },
         // Server operation
         async () => {
-          const response = await userService.addToCart({ productId, quantity, variants });
+          const response = await cartService.addToCart(productId, quantity);
           return response.data;
         },
         // Rollback function
@@ -217,7 +218,7 @@ export const CartProvider = ({ children }) => {
 
     try {
       dispatch({ type: CART_ACTIONS.UPDATE_ITEM_START });
-      await userService.updateCartItem(itemId, updateData);
+      await cartService.updateCartItem(itemId, updateData.quantity);
       dispatch({ type: CART_ACTIONS.UPDATE_ITEM_SUCCESS });
       
       // Reload cart to get updated data
@@ -240,7 +241,7 @@ export const CartProvider = ({ children }) => {
 
     try {
       dispatch({ type: CART_ACTIONS.REMOVE_ITEM_START });
-      await userService.removeFromCart(itemId);
+      await cartService.removeFromCart(itemId);
       dispatch({ type: CART_ACTIONS.REMOVE_ITEM_SUCCESS });
       
       // Reload cart to get updated data
@@ -263,7 +264,7 @@ export const CartProvider = ({ children }) => {
 
     try {
       dispatch({ type: CART_ACTIONS.CLEAR_CART_START });
-      await userService.clearCart();
+      await cartService.clearCart();
       dispatch({ type: CART_ACTIONS.CLEAR_CART_SUCCESS });
       
       return { success: true };

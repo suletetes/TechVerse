@@ -135,7 +135,8 @@ export const WishlistProvider = ({ children }) => {
 
       if (isAuthenticated) {
         // Load from backend for authenticated users
-        const wishlistItems = await wishlistService.getWishlistWithDetails();
+        const response = await wishlistService.getWishlist();
+        const wishlistItems = response.data?.wishlist?.items || [];
         
         // Transform backend response to match expected format
         const response = {
