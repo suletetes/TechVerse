@@ -264,13 +264,17 @@ export const transformCart = (backendCart) => {
     addedAt: item.addedAt
   }));
 
-  const subtotal = transformedItems.reduce((sum, item) => sum + item.total, 0);
+  const subtotal = Array.isArray(transformedItems) && transformedItems.length > 0 
+    ? transformedItems.reduce((sum, item) => sum + (item.total || 0), 0) 
+    : 0;
 
   return {
     items: transformedItems,
     subtotal,
-    itemCount: transformedItems.reduce((sum, item) => sum + item.quantity, 0),
-    totalItems: transformedItems.length
+    itemCount: Array.isArray(transformedItems) && transformedItems.length > 0 
+      ? transformedItems.reduce((sum, item) => sum + (item.quantity || 0), 0) 
+      : 0,
+    totalItems: Array.isArray(transformedItems) ? transformedItems.length : 0
   };
 };
 
@@ -322,13 +326,22 @@ export const transformError = (backendError) => {
     return backendError;
   }
 
-  return {
-    message: backendError.error || backendError.message || 'An error occurred',
-    status: backendError.status,
-    code: backendError.code,
-    details: backendError.details,
-    data: backendError.data
-  };
+  try {
+    return {
+      message: backendError.error || backendError.message || 'An error occurred',
+      status: backendError.status,
+      code: backendError.code,
+      details: backendError.details,
+      data: backendError.data
+    };
+  } catch (error) {
+    console.error('Error transforming error response:', error);
+    return {
+      message: 'An error occurred',
+      status: 500,
+      code: 'TRANSFORM_ERROR'
+    };
+  }
 };
 
 /**
@@ -441,7 +454,11 @@ export const mapFields = (data, mappingType) => {
  * Get nested object value by path
  */
 const getNestedValue = (obj, path) => {
+  if (!obj || !path) return undefined;
+  
   return path.split('.').reduce((current, key) => {
+    if (!current) return undefined;
+    
     if (key.includes('[') && key.includes(']')) {
       const [arrayKey, indexStr] = key.split('[');
       const index = parseInt(indexStr.replace(']', ''));
@@ -459,6 +476,7 @@ const setNestedValue = (obj, path, value) => {
   const lastKey = keys.pop();
   
   const target = keys.reduce((current, key) => {
+    if (!current || typeof current !== 'object') return {};
     if (!current[key]) current[key] = {};
     return current[key];
   }, obj);

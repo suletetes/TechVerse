@@ -30,7 +30,7 @@ const UserProfileLayout = ({ initialTab }) => {
         return 'profile';
     };
 
-    const [activeTab, setActiveTab] = useState(getActiveTabFromPath);
+    const [activeTab, setActiveTab] = useState(() => getActiveTabFromPath());
     const [isEditing, setIsEditing] = useState(false);
 
     // Update active tab when URL changes

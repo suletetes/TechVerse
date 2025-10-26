@@ -121,14 +121,17 @@ class BaseApiService {
    * Process error response with transformation
    */
   async processError(error, config) {
+    // Ensure error is an object
+    const safeError = error || {};
+    
     // Create standardized error object
-    const standardizedError = new Error(error.message);
+    const standardizedError = new Error(safeError.message || 'An error occurred');
     standardizedError.success = false;
-    standardizedError.status = error.status;
-    standardizedError.statusText = error.statusText;
-    standardizedError.data = error.data;
-    standardizedError.code = error.code;
-    standardizedError.config = config;
+    standardizedError.status = safeError.status || 500;
+    standardizedError.statusText = safeError.statusText || 'Internal Server Error';
+    standardizedError.data = safeError.data || null;
+    standardizedError.code = safeError.code || 'UNKNOWN_ERROR';
+    standardizedError.config = config || {};
     standardizedError.timestamp = new Date().toISOString();
     standardizedError.service = this.serviceName;
 
@@ -142,7 +145,9 @@ class BaseApiService {
     if (this.enableTransformation) {
       try {
         const transformedError = transformResponse(standardizedError, 'error');
-        Object.assign(standardizedError, transformedError);
+        if (transformedError && typeof transformedError === 'object') {
+          Object.assign(standardizedError, transformedError);
+        }
       } catch (transformError) {
         console.error('Error transformation failed:', transformError);
         // Continue with untransformed error

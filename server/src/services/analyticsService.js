@@ -57,15 +57,19 @@ class AnalyticsService {
 
       const results = await Order.aggregate(pipeline);
       
+      // Defensive guard: ensure results is an array before calling reduce
+      console.debug('[analytics] Revenue results:', Array.isArray(results), results && results.length);
+      const safeResults = Array.isArray(results) ? results : [];
+      
       // Calculate totals
-      const totals = results.reduce((acc, item) => ({
-        totalRevenue: acc.totalRevenue + item.revenue,
-        totalOrders: acc.totalOrders + item.orders,
-        totalItems: acc.totalItems + item.items
+      const totals = safeResults.reduce((acc, item) => ({
+        totalRevenue: acc.totalRevenue + (item?.revenue ?? 0),
+        totalOrders: acc.totalOrders + (item?.orders ?? 0),
+        totalItems: acc.totalItems + (item?.items ?? 0)
       }), { totalRevenue: 0, totalOrders: 0, totalItems: 0 });
 
       return {
-        data: results,
+        data: safeResults,
         totals: {
           ...totals,
           averageOrderValue: totals.totalOrders > 0 ? totals.totalRevenue / totals.totalOrders : 0

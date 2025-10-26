@@ -20,6 +20,7 @@ import {
     AdminSecurity,
     AdminProfileSettings
 } from "../../components";
+import AdminDashboardSimple from "../../components/Admin/AdminDashboardSimple";
 
 // Import admin-specific CSS
 import '../../assets/css/admin-enhancements.css';
@@ -345,19 +346,7 @@ const AdminProfile = () => {
     const renderActiveTab = () => {
         switch (activeTab) {
             case 'dashboard':
-                return (
-                    <AdminDashboard
-                        dashboardStats={dashboardStats}
-                        dateRange={dateRange}
-                        setDateRange={setDateRange}
-                        recentOrders={Array.isArray(adminOrders) ? adminOrders.slice(0, 10) : []}
-                        setActiveTab={setActiveTab}
-                        getStatusColor={getStatusColor}
-                        formatCurrency={formatCurrency}
-                        isLoading={isDashboardLoading}
-                        error={dashboardError}
-                    />
-                );
+                return <AdminDashboardSimple />;
 
             case 'products':
                 return (
@@ -525,19 +514,7 @@ const AdminProfile = () => {
                 );
 
             default:
-                return (
-                    <AdminDashboard
-                        dashboardStats={dashboardStats}
-                        dateRange="7days"
-                        setDateRange={() => { }}
-                        recentOrders={Array.isArray(adminOrders) ? adminOrders.slice(0, 10) : []}
-                        setActiveTab={setActiveTab}
-                        getStatusColor={getStatusColor}
-                        formatCurrency={formatCurrency}
-                        notifications={notifications}
-                        activityLog={activityLog}
-                    />
-                );
+                return <AdminDashboardSimple />;
         }
     };
 

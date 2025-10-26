@@ -5,6 +5,15 @@ import './AdminAddProduct.css'; // We'll create this for custom styles
 const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = [] }) => {
     const [currentStep, setCurrentStep] = useState(1);
     const [selectedCategory, setSelectedCategory] = useState(null);
+    
+    // Debug categories
+    useEffect(() => {
+        console.log('AdminAddProduct - Categories received:', categories);
+        console.log('Categories count:', Array.isArray(categories) ? categories.length : 'Not an array');
+        if (Array.isArray(categories) && categories.length > 0) {
+            console.log('First category:', categories[0]);
+        }
+    }, [categories]);
     const [formData, setFormData] = useState({
         // Basic Information
         name: editProduct?.name || '',
@@ -645,18 +654,42 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                 onChange={(e) => handleInputChange('category', e.target.value)}
                             >
                                 <option value="">Choose a category...</option>
-                                {Array.isArray(categories) ? categories.filter(cat => cat.isActive).map(cat => (
-                                    <option key={cat.id} value={cat.slug}>
-                                        {cat.name} {cat.productCount ? `(${cat.productCount} products)` : ''}
-                                    </option>
-                                )) : null}
+                                {Array.isArray(categories) && categories.length > 0 ? 
+                                    categories.filter(cat => cat.isActive !== false).map(cat => (
+                                        <option key={cat._id || cat.id} value={cat.slug}>
+                                            {cat.name} {cat.productCount ? `(${cat.productCount} products)` : ''}
+                                        </option>
+                                    )) : 
+                                    // Fallback categories if none are loaded
+                                    [
+                                        { _id: '1', name: 'Laptops & Computers', slug: 'laptops-computers' },
+                                        { _id: '2', name: 'Smartphones & Tablets', slug: 'smartphones-tablets' },
+                                        { _id: '3', name: 'Gaming', slug: 'gaming' },
+                                        { _id: '4', name: 'Audio & Headphones', slug: 'audio-headphones' },
+                                        { _id: '5', name: 'Smart Watches', slug: 'smart-watches' },
+                                        { _id: '6', name: 'TV & Entertainment', slug: 'tv-entertainment' },
+                                        { _id: '7', name: 'Accessories', slug: 'accessories' }
+                                    ].map(cat => (
+                                        <option key={cat._id} value={cat.slug}>
+                                            {cat.name}
+                                        </option>
+                                    ))
+                                }
                             </select>
                             {errors.category && <div className="invalid-feedback">{errors.category}</div>}
-                            {selectedCategory && (
+                            {selectedCategory && selectedCategory.description && (
                                 <div className="alert alert-info mt-2 py-2">
                                     <small>
                                         <i className="fas fa-info-circle me-1"></i>
                                         {selectedCategory.description}
+                                    </small>
+                                </div>
+                            )}
+                            {(!Array.isArray(categories) || categories.length === 0) && (
+                                <div className="alert alert-warning mt-2 py-2">
+                                    <small>
+                                        <i className="fas fa-exclamation-triangle me-1"></i>
+                                        Categories are loading... Using fallback categories for now.
                                     </small>
                                 </div>
                             )}

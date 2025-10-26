@@ -51,10 +51,9 @@ export { UserProfileProvider, useUserProfile } from './UserProfileContext.jsx';
 
 // Performance monitoring wrapper
 const PerformanceMonitoredProvider = ({ name, children, provider: Provider, ...props }) => {
-  const memoizedProps = useMemo(() => props, [props]);
-  
+  // Don't memoize props as it causes unnecessary re-renders
   return (
-    <Provider {...memoizedProps}>
+    <Provider {...props}>
       {children}
     </Provider>
   );

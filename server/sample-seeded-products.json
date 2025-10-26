@@ -1,11 +1,11 @@
 {
   "latest": [
     {
-      "_id": "68fbfa2d89f7d6c5a454f834",
+      "_id": "68fd68542e666f9dd10a50fd",
       "name": "MacBook Pro 16-inch M3 Pro",
       "price": 2499,
       "category": {
-        "_id": "68fbfa2c89f7d6c5a454f7f1",
+        "_id": "68fd68532e666f9dd10a50b3",
         "name": "Laptops & Computers",
         "slug": "laptops-computers"
       },
@@ -14,13 +14,13 @@
           "url": "/img/laptop-product.webp",
           "alt": "MacBook Pro 16-inch M3 Pro",
           "isPrimary": true,
-          "_id": "68fbfa2d89f7d6c5a454f835"
+          "_id": "68fd68542e666f9dd10a50fe"
         },
         {
           "url": "/img/laptop-product.jpg",
           "alt": "MacBook Pro 16-inch M3 Pro - Alternative view",
           "isPrimary": false,
-          "_id": "68fbfa2d89f7d6c5a454f836"
+          "_id": "68fd68542e666f9dd10a50ff"
         }
       ],
       "sections": [
@@ -33,11 +33,11 @@
       }
     },
     {
-      "_id": "68fbfa2d89f7d6c5a454f849",
+      "_id": "68fd68542e666f9dd10a5112",
       "name": "iPhone 15 Pro",
       "price": 999,
       "category": {
-        "_id": "68fbfa2c89f7d6c5a454f7fb",
+        "_id": "68fd68532e666f9dd10a50bf",
         "name": "Smartphones & Tablets",
         "slug": "smartphones-tablets"
       },
@@ -46,13 +46,13 @@
           "url": "/img/phone-product.webp",
           "alt": "iPhone 15 Pro",
           "isPrimary": true,
-          "_id": "68fbfa2d89f7d6c5a454f84a"
+          "_id": "68fd68542e666f9dd10a5113"
         },
         {
           "url": "/img/phone-product.jpg",
           "alt": "iPhone 15 Pro - Back view",
           "isPrimary": false,
-          "_id": "68fbfa2d89f7d6c5a454f84b"
+          "_id": "68fd68542e666f9dd10a5114"
         }
       ],
       "sections": [
@@ -66,11 +66,11 @@
       }
     },
     {
-      "_id": "68fbfa2d89f7d6c5a454f85f",
+      "_id": "68fd68542e666f9dd10a5128",
       "name": "iPad Pro 12.9-inch M2",
       "price": 1099,
       "category": {
-        "_id": "68fbfa2c89f7d6c5a454f7fb",
+        "_id": "68fd68532e666f9dd10a50bf",
         "name": "Smartphones & Tablets",
         "slug": "smartphones-tablets"
       },
@@ -79,19 +79,19 @@
           "url": "/img/tablet-product.webp",
           "alt": "iPad Pro 12.9-inch M2",
           "isPrimary": true,
-          "_id": "68fbfa2d89f7d6c5a454f860"
+          "_id": "68fd68542e666f9dd10a5129"
         },
         {
           "url": "/img/tablet-product.jpg",
           "alt": "iPad Pro 12.9-inch M2 - Side view",
           "isPrimary": false,
-          "_id": "68fbfa2d89f7d6c5a454f861"
+          "_id": "68fd68542e666f9dd10a512a"
         },
         {
           "url": "/img/tablet-lg.webp",
           "alt": "iPad Pro 12.9-inch M2 - Large view",
           "isPrimary": false,
-          "_id": "68fbfa2d89f7d6c5a454f862"
+          "_id": "68fd68542e666f9dd10a512b"
         }
       ],
       "sections": [
@@ -106,11 +106,11 @@
   ],
   "topSeller": [
     {
-      "_id": "68fbfa2d89f7d6c5a454f83f",
+      "_id": "68fd68542e666f9dd10a5108",
       "name": "Dell XPS 13 Plus",
       "price": 1299,
       "category": {
-        "_id": "68fbfa2c89f7d6c5a454f7f1",
+        "_id": "68fd68532e666f9dd10a50b3",
         "name": "Laptops & Computers",
         "slug": "laptops-computers"
       },
@@ -119,7 +119,7 @@
           "url": "/img/laptop-product.webp",
           "alt": "Dell XPS 13 Plus",
           "isPrimary": true,
-          "_id": "68fbfa2d89f7d6c5a454f840"
+          "_id": "68fd68542e666f9dd10a5109"
         }
       ],
       "sections": [
@@ -132,11 +132,11 @@
       }
     },
     {
-      "_id": "68fbfa2d89f7d6c5a454f849",
+      "_id": "68fd68542e666f9dd10a5112",
       "name": "iPhone 15 Pro",
       "price": 999,
       "category": {
-        "_id": "68fbfa2c89f7d6c5a454f7fb",
+        "_id": "68fd68532e666f9dd10a50bf",
         "name": "Smartphones & Tablets",
         "slug": "smartphones-tablets"
       },
@@ -145,13 +145,13 @@
           "url": "/img/phone-product.webp",
           "alt": "iPhone 15 Pro",
           "isPrimary": true,
-          "_id": "68fbfa2d89f7d6c5a454f84a"
+          "_id": "68fd68542e666f9dd10a5113"
         },
         {
           "url": "/img/phone-product.jpg",
           "alt": "iPhone 15 Pro - Back view",
           "isPrimary": false,
-          "_id": "68fbfa2d89f7d6c5a454f84b"
+          "_id": "68fd68542e666f9dd10a5114"
         }
       ],
       "sections": [
@@ -165,11 +165,11 @@
       }
     },
     {
-      "_id": "68fbfa2d89f7d6c5a454f854",
+      "_id": "68fd68542e666f9dd10a511d",
       "name": "Samsung Galaxy S24 Ultra",
       "price": 1199,
       "category": {
-        "_id": "68fbfa2c89f7d6c5a454f7fb",
+        "_id": "68fd68532e666f9dd10a50bf",
         "name": "Smartphones & Tablets",
         "slug": "smartphones-tablets"
       },
@@ -178,7 +178,7 @@
           "url": "/img/phone-product.webp",
           "alt": "Samsung Galaxy S24 Ultra",
           "isPrimary": true,
-          "_id": "68fbfa2d89f7d6c5a454f855"
+          "_id": "68fd68542e666f9dd10a511e"
         }
       ],
       "sections": [
@@ -193,11 +193,11 @@
   ],
   "quickPick": [
     {
-      "_id": "68fbfa2d89f7d6c5a454f83f",
+      "_id": "68fd68542e666f9dd10a5108",
       "name": "Dell XPS 13 Plus",
       "price": 1299,
       "category": {
-        "_id": "68fbfa2c89f7d6c5a454f7f1",
+        "_id": "68fd68532e666f9dd10a50b3",
         "name": "Laptops & Computers",
         "slug": "laptops-computers"
       },
@@ -206,7 +206,7 @@
           "url": "/img/laptop-product.webp",
           "alt": "Dell XPS 13 Plus",
           "isPrimary": true,
-          "_id": "68fbfa2d89f7d6c5a454f840"
+          "_id": "68fd68542e666f9dd10a5109"
         }
       ],
       "sections": [
@@ -219,11 +219,11 @@
       }
     },
     {
-      "_id": "68fbfa2d89f7d6c5a454f854",
+      "_id": "68fd68542e666f9dd10a511d",
       "name": "Samsung Galaxy S24 Ultra",
       "price": 1199,
       "category": {
-        "_id": "68fbfa2c89f7d6c5a454f7fb",
+        "_id": "68fd68532e666f9dd10a50bf",
         "name": "Smartphones & Tablets",
         "slug": "smartphones-tablets"
       },
@@ -232,7 +232,7 @@
           "url": "/img/phone-product.webp",
           "alt": "Samsung Galaxy S24 Ultra",
           "isPrimary": true,
-          "_id": "68fbfa2d89f7d6c5a454f855"
+          "_id": "68fd68542e666f9dd10a511e"
         }
       ],
       "sections": [
@@ -247,11 +247,11 @@
   ],
   "weeklyDeal": [
     {
-      "_id": "68fbfa2d89f7d6c5a454f887",
+      "_id": "68fd68542e666f9dd10a5150",
       "name": "Samsung 65\" Neo QLED 4K Smart TV",
       "price": 1799,
       "category": {
-        "_id": "68fbfa2d89f7d6c5a454f81e",
+        "_id": "68fd68542e666f9dd10a50e6",
         "name": "TV & Entertainment",
         "slug": "tv-entertainment"
       },
@@ -260,13 +260,13 @@
           "url": "/img/tv-product.webp",
           "alt": "Samsung 65\" Neo QLED 4K Smart TV",
           "isPrimary": true,
-          "_id": "68fbfa2d89f7d6c5a454f888"
+          "_id": "68fd68542e666f9dd10a5151"
         },
         {
           "url": "/img/tv-product.jpg",
           "alt": "Samsung 65\" Neo QLED 4K Smart TV - Room setup",
           "isPrimary": false,
-          "_id": "68fbfa2d89f7d6c5a454f889"
+          "_id": "68fd68542e666f9dd10a5152"
         }
       ],
       "sections": [
@@ -279,11 +279,11 @@
       }
     },
     {
-      "_id": "68fbfa2e89f7d6c5a454f8ae",
+      "_id": "68fd68542e666f9dd10a5177",
       "name": "Microsoft Surface Laptop 5",
       "price": 999,
       "category": {
-        "_id": "68fbfa2c89f7d6c5a454f7f1",
+        "_id": "68fd68532e666f9dd10a50b3",
         "name": "Laptops & Computers",
         "slug": "laptops-computers"
       },
@@ -292,7 +292,7 @@
           "url": "/img/laptop-product.webp",
           "alt": "Microsoft Surface Laptop 5",
           "isPrimary": true,
-          "_id": "68fbfa2e89f7d6c5a454f8af"
+          "_id": "68fd68542e666f9dd10a5178"
         }
       ],
       "sections": [
@@ -307,11 +307,11 @@
   ],
   "featured": [
     {
-      "_id": "68fbfa2d89f7d6c5a454f834",
+      "_id": "68fd68542e666f9dd10a50fd",
       "name": "MacBook Pro 16-inch M3 Pro",
       "price": 2499,
       "category": {
-        "_id": "68fbfa2c89f7d6c5a454f7f1",
+        "_id": "68fd68532e666f9dd10a50b3",
         "name": "Laptops & Computers",
         "slug": "laptops-computers"
       },
@@ -320,13 +320,13 @@
           "url": "/img/laptop-product.webp",
           "alt": "MacBook Pro 16-inch M3 Pro",
           "isPrimary": true,
-          "_id": "68fbfa2d89f7d6c5a454f835"
+          "_id": "68fd68542e666f9dd10a50fe"
         },
         {
           "url": "/img/laptop-product.jpg",
           "alt": "MacBook Pro 16-inch M3 Pro - Alternative view",
           "isPrimary": false,
-          "_id": "68fbfa2d89f7d6c5a454f836"
+          "_id": "68fd68542e666f9dd10a50ff"
         }
       ],
       "sections": [
@@ -339,11 +339,11 @@
       }
     },
     {
-      "_id": "68fbfa2d89f7d6c5a454f849",
+      "_id": "68fd68542e666f9dd10a5112",
       "name": "iPhone 15 Pro",
       "price": 999,
       "category": {
-        "_id": "68fbfa2c89f7d6c5a454f7fb",
+        "_id": "68fd68532e666f9dd10a50bf",
         "name": "Smartphones & Tablets",
         "slug": "smartphones-tablets"
       },
@@ -352,13 +352,13 @@
           "url": "/img/phone-product.webp",
           "alt": "iPhone 15 Pro",
           "isPrimary": true,
-          "_id": "68fbfa2d89f7d6c5a454f84a"
+          "_id": "68fd68542e666f9dd10a5113"
         },
         {
           "url": "/img/phone-product.jpg",
           "alt": "iPhone 15 Pro - Back view",
           "isPrimary": false,
-          "_id": "68fbfa2d89f7d6c5a454f84b"
+          "_id": "68fd68542e666f9dd10a5114"
         }
       ],
       "sections": [
@@ -372,11 +372,11 @@
       }
     },
     {
-      "_id": "68fbfa2d89f7d6c5a454f86c",
+      "_id": "68fd68542e666f9dd10a5135",
       "name": "Tablet Air 11-inch",
       "price": 1999,
       "category": {
-        "_id": "68fbfa2c89f7d6c5a454f7fb",
+        "_id": "68fd68532e666f9dd10a50bf",
         "name": "Smartphones & Tablets",
         "slug": "smartphones-tablets"
       },
@@ -385,19 +385,19 @@
           "url": "/img/tablet-lg.webp",
           "alt": "Tablet Air 11-inch",
           "isPrimary": true,
-          "_id": "68fbfa2d89f7d6c5a454f86d"
+          "_id": "68fd68542e666f9dd10a5136"
         },
         {
           "url": "/img/tablet-product.webp",
           "alt": "Tablet Air 11-inch - Side view",
           "isPrimary": false,
-          "_id": "68fbfa2d89f7d6c5a454f86e"
+          "_id": "68fd68542e666f9dd10a5137"
         },
         {
           "url": "/img/tablet-product.jpg",
           "alt": "Tablet Air 11-inch - Back view",
           "isPrimary": false,
-          "_id": "68fbfa2d89f7d6c5a454f86f"
+          "_id": "68fd68542e666f9dd10a5138"
         }
       ],
       "sections": [

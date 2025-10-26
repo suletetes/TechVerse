@@ -66,9 +66,6 @@ export const createSelectiveContext = (defaultValue = null) => {
         setSelectedValue(newValue);
       });
 
-      // Update initial value
-      setSelectedValue(selector(context.value));
-
       return unsubscribe;
     }, [context, selector]);
 
@@ -94,9 +91,10 @@ export const createSelectiveContext = (defaultValue = null) => {
  * @param {Function} selector - Function to select specific data from context
  * @returns {React.Component} - Wrapped component
  */
-export const withContextSelector = (Component, selector) => {
+export const withContextSelector = (Component, selector, Context) => {
   return React.memo((props) => {
-    const selectedValue = useSelector(selector);
+    const context = useContext(Context);
+    const selectedValue = selector(context?.value);
     return <Component {...props} contextValue={selectedValue} />;
   });
 };
