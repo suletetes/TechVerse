@@ -123,10 +123,10 @@ const WishlistContext = createContext();
 export const WishlistProvider = ({ children }) => {
   const [state, dispatch] = useReducer(wishlistReducer, initialState);
   const { isAuthenticated, user } = useAuth();
-  
+
   // Safely access notification context without throwing error
   const notificationContext = useContext(NotificationContext);
-  const showNotification = notificationContext?.showNotification || (() => {});
+  const showNotification = notificationContext?.showNotification || (() => { });
 
   // Load wishlist from backend or localStorage
   const loadWishlist = useCallback(async (params = {}, loadMore = false) => {
@@ -137,9 +137,9 @@ export const WishlistProvider = ({ children }) => {
         // Load from backend for authenticated users
         const response = await wishlistService.getWishlist();
         const wishlistItems = response.data?.wishlist?.items || [];
-        
+
         // Transform backend response to match expected format
-        const response = {
+        const transformedResponse = {
           items: wishlistItems,
           data: wishlistItems,
           page: params.page || 1,
@@ -153,13 +153,13 @@ export const WishlistProvider = ({ children }) => {
           ? WISHLIST_ACTIONS.LOAD_MORE_WISHLIST_SUCCESS
           : WISHLIST_ACTIONS.LOAD_WISHLIST_SUCCESS;
 
-        dispatch({ type: actionType, payload: response });
-        return response;
+        dispatch({ type: actionType, payload: transformedResponse });
+        return transformedResponse;
       } else {
         // Load from localStorage for guest users
         const savedWishlist = localStorage.getItem('guestWishlist');
         const wishlistItems = savedWishlist ? JSON.parse(savedWishlist) : [];
-        
+
         const response = {
           items: wishlistItems,
           data: wishlistItems,
@@ -177,7 +177,7 @@ export const WishlistProvider = ({ children }) => {
       console.error('Error loading wishlist:', error);
       dispatch({ type: WISHLIST_ACTIONS.SET_ERROR, payload: error.message });
       showNotification(error.message, 'error');
-      
+
       // Fallback to localStorage if backend fails
       if (isAuthenticated) {
         const savedWishlist = localStorage.getItem('guestWishlist');
@@ -214,7 +214,7 @@ export const WishlistProvider = ({ children }) => {
       if (isAuthenticated) {
         // Use backend API for authenticated users
         const updatedWishlist = await wishlistService.addToWishlist(productId);
-        
+
         // Reload wishlist to get updated data with product details
         await loadWishlist();
         showNotification('Added to wishlist!', 'success');
@@ -229,7 +229,7 @@ export const WishlistProvider = ({ children }) => {
         const savedWishlist = localStorage.getItem('guestWishlist');
         const currentWishlist = savedWishlist ? JSON.parse(savedWishlist) : [];
         const updatedWishlist = [guestWishlistItem, ...currentWishlist];
-        
+
         localStorage.setItem('guestWishlist', JSON.stringify(updatedWishlist));
         dispatch({ type: WISHLIST_ACTIONS.ADD_TO_WISHLIST_SUCCESS, payload: guestWishlistItem });
         showNotification('Added to wishlist! Sign in to sync across devices.', 'success');
@@ -265,7 +265,7 @@ export const WishlistProvider = ({ children }) => {
           const itemProductId = typeof item.product === 'string' ? item.product : item.product._id;
           return itemProductId !== productId;
         });
-        
+
         localStorage.setItem('guestWishlist', JSON.stringify(updatedWishlist));
         dispatch({ type: WISHLIST_ACTIONS.REMOVE_FROM_WISHLIST_SUCCESS, payload: productId });
         showNotification('Removed from wishlist', 'success');
@@ -281,16 +281,16 @@ export const WishlistProvider = ({ children }) => {
   // Sync local wishlist with backend (for guest to user conversion)
   const syncWishlistWithBackend = useCallback(async () => {
     if (!isAuthenticated) return;
-    
+
     try {
       const localWishlist = localStorage.getItem('guestWishlist');
       if (localWishlist) {
         const localWishlistData = JSON.parse(localWishlist);
         if (localWishlistData.length > 0) {
-          const productIds = localWishlistData.map(item => 
+          const productIds = localWishlistData.map(item =>
             typeof item.product === 'string' ? item.product : item.product._id
           );
-          
+
           await wishlistService.syncWishlist(productIds);
           localStorage.removeItem('guestWishlist');
           await loadWishlist(); // Reload to get synced data

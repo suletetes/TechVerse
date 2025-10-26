@@ -285,15 +285,6 @@ const UserProfileLayout = ({ initialTab }) => {
         return { strength: 25, label: 'Weak', color: 'danger' };
     };
 
-    const calculateProfileCompleteness = () => {
-        const fields = ['firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'avatar'];
-        const completed = fields.filter(field => {
-            if (field === 'avatar') return profileData.avatar !== null;
-            return profileData[field] && profileData[field].trim() !== '';
-        }).length;
-        return Math.round((completed / fields.length) * 100);
-    };
-
 
 
     const handleAddressAction = async (addressId, action) => {

@@ -49,7 +49,7 @@ const TopSellerProducts = ({
         brand: product.brand || 'TechVerse',
         category: product.category?.name || 'premium',
         stock: product.stock,
-        inStock: product.stock?.quantity > 0 && product.status === 'active'
+        inStock: product.stock?.quantity > 0 && product.status === 'active',
         rating: product.rating?.average || 4.5
     }));
 
