@@ -3,10 +3,11 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import compression from 'compression';
+
 // Load environment variables first
 dotenv.config();
-// Initialize Sentry as early as possible
-sentryConfig.initialize();
+
+// Import other modules after environment is loaded
 import connectDB from './src/config/database.js';
 import logger from './src/utils/logger.js';
 import enhancedLogger from './src/utils/enhancedLogger.js';
@@ -14,6 +15,9 @@ import sentryConfig from './src/config/sentry.js';
 import securityMonitor from './src/utils/securityMonitor.js';
 import passport, { initializePassport } from './src/config/passport.js';
 import sessionConfig from './src/config/session.js';
+
+// Initialize Sentry after imports
+// sentryConfig.initialize();
 // Import middleware
 import {
   errorHandler,

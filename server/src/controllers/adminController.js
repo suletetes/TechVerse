@@ -1824,3 +1824,176 @@ export const getRealtimeMetrics = asyncHandler(async (req, res, next) => {
     }
   });
 });
+
+// @desc    Get all products (Admin)
+// @route   GET /api/admin/products
+// @access  Private (Admin only)
+export const getAllProducts = asyncHandler(async (req, res, next) => {
+  const {
+    page = 1,
+    limit = 20,
+    search = '',
+    category = '',
+    status = '',
+    sortBy = 'createdAt',
+    sortOrder = 'desc'
+  } = req.query;
+
+  const skip = (page - 1) * limit;
+  const query = {};
+
+  // Build search query
+  if (search) {
+    query.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } },
+      { sku: { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  if (category) {
+    query.category = category;
+  }
+
+  if (status) {
+    query.status = status;
+  }
+
+  const sortOptions = {};
+  sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+  const [products, totalProducts] = await Promise.all([
+    Product.find(query)
+      .populate('category', 'name')
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean(),
+    Product.countDocuments(query)
+  ]);
+
+  const totalPages = Math.ceil(totalProducts / limit);
+
+  res.status(200).json({
+    success: true,
+    message: 'Products retrieved successfully',
+    data: {
+      products,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalProducts,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    }
+  });
+});
+
+// @desc    Get single product (Admin)
+// @route   GET /api/admin/products/:id
+// @access  Private (Admin only)
+export const getProductById = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const product = await Product.findById(id)
+    .populate('category', 'name slug')
+    .populate('reviews.user', 'firstName lastName');
+
+  if (!product) {
+    return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Product retrieved successfully',
+    data: { product }
+  });
+});
+
+// @desc    Create new product (Admin)
+// @route   POST /api/admin/products
+// @access  Private (Admin only)
+export const createProduct = asyncHandler(async (req, res, next) => {
+  const productData = {
+    ...req.body,
+    createdBy: req.user._id
+  };
+
+  const product = await Product.create(productData);
+  await product.populate('category', 'name slug');
+
+  logger.info('Product created by admin', {
+    productId: product._id,
+    adminId: req.user._id,
+    productName: product.name,
+    ip: req.ip
+  });
+
+  res.status(201).json({
+    success: true,
+    message: 'Product created successfully',
+    data: { product }
+  });
+});
+
+// @desc    Update product (Admin)
+// @route   PUT /api/admin/products/:id
+// @access  Private (Admin only)
+export const updateProduct = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const product = await Product.findByIdAndUpdate(
+    id,
+    { ...req.body, updatedBy: req.user._id },
+    { new: true, runValidators: true }
+  ).populate('category', 'name slug');
+
+  if (!product) {
+    return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
+  }
+
+  logger.info('Product updated by admin', {
+    productId: product._id,
+    adminId: req.user._id,
+    productName: product.name,
+    ip: req.ip
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Product updated successfully',
+    data: { product }
+  });
+});
+
+// @desc    Delete product (Admin)
+// @route   DELETE /api/admin/products/:id
+// @access  Private (Admin only)
+export const deleteProduct = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const product = await Product.findById(id);
+  if (!product) {
+    return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
+  }
+
+  // Soft delete by updating status
+  product.status = 'deleted';
+  product.deletedAt = new Date();
+  product.deletedBy = req.user._id;
+  await product.save();
+
+  logger.info('Product deleted by admin', {
+    productId: product._id,
+    adminId: req.user._id,
+    productName: product.name,
+    ip: req.ip
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Product deleted successfully',
+    data: { product: { _id: product._id, name: product.name, status: product.status } }
+  });
+});
