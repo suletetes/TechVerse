@@ -35,10 +35,12 @@ export const getDashboardStats = asyncHandler(async (req, res, next) => {
 
     try {
       totalUsers = await User.countDocuments() || 0;
+      logger.info(`[admin/dashboard] Users count: ${totalUsers}`, { requestId });
     } catch (e) { logger.warn('Error counting users:', e.message); }
 
     try {
       totalProducts = await Product.countDocuments({ status: 'active' }) || 0;
+      logger.info(`[admin/dashboard] Products count: ${totalProducts}`, { requestId });
     } catch (e) { logger.warn('Error counting products:', e.message); }
 
     try {
@@ -79,18 +81,23 @@ export const getDashboardStats = asyncHandler(async (req, res, next) => {
     // Get revenue trend for the period
     let revenueTrend = [];
     try {
+      logger.info(`[admin/dashboard] Getting revenue trend`, { requestId });
       const revenueTrendRaw = await Order.getRevenueByPeriod('day', startDate);
+      logger.info(`[admin/dashboard] Revenue trend raw result:`, { requestId, type: typeof revenueTrendRaw, isArray: Array.isArray(revenueTrendRaw) });
       revenueTrend = Array.isArray(revenueTrendRaw) ? revenueTrendRaw : [];
+      logger.info(`[admin/dashboard] Revenue trend retrieved: ${revenueTrend.length} items`, { requestId });
     } catch (e) { 
-      logger.warn('Error getting revenue trend:', e.message);
+      logger.error('Error getting revenue trend:', { requestId, error: e.message, stack: e.stack });
       revenueTrend = [];
     }
 
     // Get top selling products
     let topProducts = [];
     try {
+      logger.info(`[admin/dashboard] Getting top products`, { requestId });
       const topProductsRaw = await Product.getTopSelling(5, parseInt(period));
       topProducts = Array.isArray(topProductsRaw) ? topProductsRaw : [];
+      logger.info(`[admin/dashboard] Top products retrieved: ${topProducts.length} items`, { requestId });
     } catch (e) { 
       logger.warn('Error getting top products:', e.message);
       topProducts = [];
@@ -99,17 +106,21 @@ export const getDashboardStats = asyncHandler(async (req, res, next) => {
     // Get recent orders
     let recentOrders = [];
     try {
+      logger.info(`[admin/dashboard] Getting recent orders`, { requestId });
       const recentOrdersRaw = await Order.find()
         .populate('user', 'firstName lastName email')
         .sort({ createdAt: -1 })
         .limit(10)
         .select('orderNumber total status createdAt user');
       recentOrders = Array.isArray(recentOrdersRaw) ? recentOrdersRaw : [];
+      logger.info(`[admin/dashboard] Recent orders retrieved: ${recentOrders.length} items`, { requestId });
     } catch (e) { 
       logger.warn('Error getting recent orders:', e.message);
       recentOrders = [];
     }
 
+    logger.info(`[admin/dashboard] Building response data`, { requestId });
+    
     const responseData = {
       overview: {
         totalUsers,
@@ -129,6 +140,8 @@ export const getDashboardStats = asyncHandler(async (req, res, next) => {
       topProducts,
       recentOrders
     };
+    
+    logger.info(`[admin/dashboard] Response data built successfully`, { requestId });
 
     logger.info('[admin/dashboard] Response prepared', { 
       requestId, 
@@ -138,13 +151,38 @@ export const getDashboardStats = asyncHandler(async (req, res, next) => {
       recentOrdersCount: responseData.recentOrders.length
     });
     
-    res.status(200).json({
-      success: true,
-      message: 'Dashboard statistics retrieved successfully',
-      data: responseData
-    });
-    
-    logger.debug('[admin/dashboard] Response sent successfully', { requestId });
+    // Send response with proper error handling
+    try {
+      res.status(200).json({
+        success: true,
+        message: 'Dashboard statistics retrieved successfully',
+        data: responseData
+      });
+      logger.debug('[admin/dashboard] Response sent successfully', { requestId });
+    } catch (jsonError) {
+      logger.error('[admin/dashboard] JSON serialization error', { requestId, error: jsonError.message });
+      // Send simplified response if JSON serialization fails
+      res.status(200).json({
+        success: true,
+        message: 'Dashboard statistics retrieved successfully',
+        data: {
+          overview: {
+            totalUsers,
+            totalProducts,
+            totalOrders,
+            totalRevenue,
+            newUsers,
+            newOrders,
+            pendingOrders,
+            lowStockProducts,
+            pendingReviews
+          },
+          trends: { revenue: [], period: parseInt(period) },
+          topProducts: [],
+          recentOrders: []
+        }
+      });
+    }
   } catch (error) {
     logger.error('[admin/dashboard] Error occurred', { 
       requestId, 

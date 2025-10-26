@@ -6,6 +6,7 @@ class UserProfileService extends BaseApiService {
             serviceName: 'UserProfileService',
             baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
             endpoints: {
+                profile: '/users/profile',
                 addresses: '/users/addresses',
                 paymentMethods: '/users/payment-methods'
             },
@@ -15,6 +16,15 @@ class UserProfileService extends BaseApiService {
                 timeout: 10000
             }
         });
+    }
+
+    // Profile methods
+    async getProfile() {
+        return this.read(`/users/profile?_t=${Date.now()}`);
+    }
+
+    async updateProfile(profileData) {
+        return this.update('/users/profile', profileData);
     }
 
     // Address methods

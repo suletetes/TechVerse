@@ -620,27 +620,27 @@ const generateSampleJSON = async () => {
             latest: await Product.find({ sections: 'latest' })
                 .populate('category', 'name slug')
                 .limit(3)
-                .select('name price images rating sections category')
+                .select('name price images rating sections category stock status')
                 .lean(),
             topSeller: await Product.find({ sections: 'topSeller' })
                 .populate('category', 'name slug')
                 .limit(3)
-                .select('name price images rating sections category')
+                .select('name price images rating sections category stock status')
                 .lean(),
             quickPick: await Product.find({ sections: 'quickPick' })
                 .populate('category', 'name slug')
                 .limit(2)
-                .select('name price images rating sections category')
+                .select('name price images rating sections category stock status')
                 .lean(),
             weeklyDeal: await Product.find({ sections: 'weeklyDeal' })
                 .populate('category', 'name slug')
                 .limit(2)
-                .select('name price images rating sections category')
+                .select('name price images rating sections category stock status')
                 .lean(),
             featured: await Product.find({ sections: 'featured' })
                 .populate('category', 'name slug')
                 .limit(3)
-                .select('name price images rating sections category')
+                .select('name price images rating sections category stock status')
                 .lean()
         };
 
