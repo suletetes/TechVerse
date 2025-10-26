@@ -600,8 +600,22 @@ productSchema.statics.getTopSelling = function (limit = 10, timeframe = null) {
     .limit(limit);
 };
 
-// Indexes
-productSchema.index({ name: 'text', description: 'text', tags: 'text', brand: 'text' });
+// Text search indexes
+productSchema.index({ 
+  name: 'text', 
+  description: 'text', 
+  shortDescription: 'text',
+  tags: 'text', 
+  brand: 'text' 
+}, {
+  weights: {
+    name: 10,
+    brand: 5,
+    shortDescription: 3,
+    tags: 2,
+    description: 1
+  }
+});
 productSchema.index({ category: 1, status: 1, visibility: 1 });
 productSchema.index({ brand: 1, status: 1 });
 productSchema.index({ price: 1 });
