@@ -88,7 +88,7 @@ const ProductCategoryPane = ({
                         <h6 className="fw-semibold mb-3 text-muted">Related Categories</h6>
                         <div className="row g-2">
                             {relatedCategories.map((relatedCat) => (
-                                <div key={relatedCat.name} className="col-12">
+                                <div key={relatedCat._id || relatedCat.name} className="col-12">
                                     <Link 
                                         to={relatedCat.path}
                                         className="d-flex justify-content-between align-items-center p-2 rounded-2 text-decoration-none hover-bg-light border border-light"

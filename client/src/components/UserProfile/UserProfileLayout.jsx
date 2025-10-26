@@ -15,20 +15,20 @@ import {
 } from './';
 
 const UserProfileLayout = ({ initialTab }) => {
-    const { 
-        profile, 
-        loadProfile, 
-        updateProfile, 
-        deleteAddress, 
-        updateAddress, 
-        deletePaymentMethod, 
+    const {
+        profile,
+        loadProfile,
+        updateProfile,
+        deleteAddress,
+        updateAddress,
+        deletePaymentMethod,
         setDefaultAddress,
         loading,
         error
     } = useUserProfile();
     const navigate = useNavigate();
     const location = useLocation();
-    
+
     // Get active tab from URL path
     const getActiveTabFromPath = () => {
         const path = location.pathname;
@@ -184,7 +184,7 @@ const UserProfileLayout = ({ initialTab }) => {
                 dateOfBirth: profileData.dateOfBirth,
                 preferences: profile?.preferences || {}
             };
-            
+
             await updateProfile(updateData);
             setIsEditing(false);
         } catch (error) {
@@ -412,7 +412,7 @@ const UserProfileLayout = ({ initialTab }) => {
     const renderActiveTab = () => {
         switch (activeTab) {
             case 'profile':
-                return <ProfileTab 
+                return <ProfileTab
                     onPasswordChange={() => setShowPasswordModal(true)}
                     handleAvatarChange={handleAvatarChange}
                 />;
@@ -420,19 +420,19 @@ const UserProfileLayout = ({ initialTab }) => {
                 return <OrdersTab />;
             case 'addresses':
                 return (
-                    <AddressesTab 
+                    <AddressesTab
                         handleAddressAction={handleAddressAction}
                     />
                 );
             case 'payments':
                 return (
-                    <PaymentMethodsTab 
+                    <PaymentMethodsTab
                         handlePaymentMethodAction={handlePaymentMethodAction}
                     />
                 );
             case 'activity':
                 return (
-                    <ActivityTab 
+                    <ActivityTab
                         recentlyViewed={recentlyViewed}
                         setRecentlyViewed={setRecentlyViewed}
                         wishlistCategories={wishlistCategories}
@@ -446,7 +446,7 @@ const UserProfileLayout = ({ initialTab }) => {
             case 'preferences':
                 return <PreferencesTab />;
             default:
-                return <ProfileTab 
+                return <ProfileTab
                     onPasswordChange={() => setShowPasswordModal(true)}
                     handleAvatarChange={handleAvatarChange}
                 />;
@@ -480,7 +480,7 @@ const UserProfileLayout = ({ initialTab }) => {
 
             {/* Modals */}
             {showPasswordModal && (
-                <PasswordChangeModal 
+                <PasswordChangeModal
                     onClose={() => {
                         setShowPasswordModal(false);
                         setPasswordData({
@@ -503,7 +503,7 @@ const UserProfileLayout = ({ initialTab }) => {
             )}
 
             {showAddAddressModal && (
-                <AddAddressModal 
+                <AddAddressModal
                     onClose={() => {
                         setShowAddAddressModal(false);
                         setEditingAddress(null);
@@ -513,7 +513,7 @@ const UserProfileLayout = ({ initialTab }) => {
                 />
             )}
             {showAddPaymentModal && (
-                <AddPaymentMethodModal 
+                <AddPaymentMethodModal
                     onClose={() => setShowAddPaymentModal(false)}
                     onSave={handleSavePaymentMethod}
                 />

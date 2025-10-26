@@ -305,14 +305,31 @@ const Product = () => {
                     {/* Category Navigation Pane - Full Width */}
                     <div className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mb-4">
                         <ProductCategoryPane
-                            category={currentProduct.category?.name || "Products"}
-                            subcategory={currentProduct.subcategory?.name || ""}
+                            category={
+                                typeof currentProduct.category === 'object' 
+                                    ? currentProduct.category?.name || "Products"
+                                    : currentProduct.category || "Products"
+                            }
+                            subcategory={
+                                typeof currentProduct.subcategory === 'object'
+                                    ? currentProduct.subcategory?.name || ""
+                                    : currentProduct.subcategory || ""
+                            }
                             breadcrumbs={currentProduct.breadcrumbs || [
                                 { name: 'Home', path: '/' },
-                                { name: currentProduct.category?.name || 'Products', path: `/category/${currentProduct.category?.slug || ''}` },
+                                { 
+                                    name: typeof currentProduct.category === 'object' 
+                                        ? currentProduct.category?.name || 'Products'
+                                        : currentProduct.category || 'Products', 
+                                    path: `/category/${
+                                        typeof currentProduct.category === 'object'
+                                            ? currentProduct.category?.slug || ''
+                                            : currentProduct.category || ''
+                                    }` 
+                                },
                                 { name: currentProduct.name, path: `/product/${currentProduct.slug || id}` }
                             ]}
-                            relatedCategories={currentProduct.relatedCategories || []}
+                            relatedCategories={Array.isArray(currentProduct.relatedCategories) ? currentProduct.relatedCategories : []}
                         />
                     </div>
 

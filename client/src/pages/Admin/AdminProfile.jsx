@@ -20,7 +20,7 @@ import {
     AdminSecurity,
     AdminProfileSettings
 } from "../../components";
-import AdminDashboardSimple from "../../components/Admin/AdminDashboardSimple";
+import AdminDashboardModern from "../../components/Admin/AdminDashboardModern";
 
 // Import admin-specific CSS
 import '../../assets/css/admin-enhancements.css';
@@ -346,7 +346,7 @@ const AdminProfile = () => {
     const renderActiveTab = () => {
         switch (activeTab) {
             case 'dashboard':
-                return <AdminDashboardSimple />;
+                return <AdminDashboardModern />;
 
             case 'products':
                 return (
