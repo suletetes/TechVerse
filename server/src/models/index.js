@@ -6,3 +6,4 @@ export { default as Category } from './Category.js';
 export { default as Review } from './Review.js';
 export { default as Cart } from './Cart.js';
 export { default as Wishlist } from './Wishlist.js';
+export { default as Activity } from './Activity.js';
