@@ -1997,3 +1997,112 @@ export const deleteProduct = asyncHandler(async (req, res, next) => {
     data: { product: { _id: product._id, name: product.name, status: product.status } }
   });
 });
+
+// @desc    Get single order (Admin)
+// @route   GET /api/admin/orders/:id
+// @access  Private (Admin only)
+export const getOrderById = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const order = await Order.findById(id)
+    .populate('user', 'firstName lastName email')
+    .populate('items.product', 'name price images sku');
+
+  if (!order) {
+    return next(new AppError('Order not found', 404, 'ORDER_NOT_FOUND'));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Order retrieved successfully',
+    data: { order }
+  });
+});
+
+// @desc    Update order status (Admin)
+// @route   PUT /api/admin/orders/:id/status
+// @access  Private (Admin only)
+export const updateOrderStatus = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { status, notes } = req.body;
+
+  const validStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+  if (!validStatuses.includes(status)) {
+    return next(new AppError('Invalid order status', 400, 'INVALID_STATUS'));
+  }
+
+  const order = await Order.findById(id);
+  if (!order) {
+    return next(new AppError('Order not found', 404, 'ORDER_NOT_FOUND'));
+  }
+
+  // Update order status
+  order.status = status;
+  if (notes) {
+    order.statusHistory.push({
+      status,
+      notes,
+      updatedBy: req.user._id,
+      updatedAt: new Date()
+    });
+  }
+
+  await order.save();
+  await order.populate('user', 'firstName lastName email');
+
+  logger.info('Order status updated by admin', {
+    orderId: order._id,
+    adminId: req.user._id,
+    oldStatus: order.status,
+    newStatus: status,
+    notes,
+    ip: req.ip
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Order status updated successfully',
+    data: { order }
+  });
+});
+
+// @desc    Get database performance metrics
+// @route   GET /api/admin/performance/database
+// @access  Private (Admin only)
+export const getDatabasePerformance = asyncHandler(async (req, res, next) => {
+  const databaseOptimization = await import('../services/databaseOptimization.js');
+  
+  const [performanceData, queryAnalysis] = await Promise.all([
+    databaseOptimization.default.monitorPerformance(),
+    databaseOptimization.default.analyzeQueryPerformance()
+  ]);
+
+  res.status(200).json({
+    success: true,
+    message: 'Database performance metrics retrieved successfully',
+    data: {
+      performance: performanceData,
+      queryAnalysis
+    }
+  });
+});
+
+// @desc    Optimize database indexes
+// @route   POST /api/admin/performance/optimize
+// @access  Private (Admin only)
+export const optimizeDatabase = asyncHandler(async (req, res, next) => {
+  const databaseOptimization = await import('../services/databaseOptimization.js');
+  
+  await databaseOptimization.default.createOptimizedIndexes();
+  await databaseOptimization.default.setupCaching();
+
+  logger.info('Database optimization triggered by admin', {
+    adminId: req.user._id,
+    ip: req.ip
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Database optimization completed successfully'
+  });
+});
