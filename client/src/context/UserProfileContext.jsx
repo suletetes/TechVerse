@@ -5,6 +5,8 @@ import { userProfileService } from '../api/services/userProfileService';
 const PROFILE_ACTIONS = {
     SET_LOADING: 'SET_LOADING',
     SET_ERROR: 'SET_ERROR',
+    SET_PROFILE: 'SET_PROFILE',
+    UPDATE_PROFILE: 'UPDATE_PROFILE',
     SET_ADDRESSES: 'SET_ADDRESSES',
     ADD_ADDRESS: 'ADD_ADDRESS',
     UPDATE_ADDRESS: 'UPDATE_ADDRESS',
@@ -17,6 +19,7 @@ const PROFILE_ACTIONS = {
 
 // Initial state
 const initialState = {
+    profile: null,
     addresses: [],
     paymentMethods: [],
     loading: false,
@@ -40,6 +43,20 @@ const userProfileReducer = (state, action) => {
         case PROFILE_ACTIONS.CLEAR_ERROR:
             return {
                 ...state,
+                error: null
+            };
+        case PROFILE_ACTIONS.SET_PROFILE:
+            return {
+                ...state,
+                profile: action.payload,
+                loading: false,
+                error: null
+            };
+        case PROFILE_ACTIONS.UPDATE_PROFILE:
+            return {
+                ...state,
+                profile: action.payload,
+                loading: false,
                 error: null
             };
         case PROFILE_ACTIONS.SET_ADDRESSES:
@@ -100,6 +117,45 @@ const UserProfileContext = createContext();
 // Provider component
 export const UserProfileProvider = ({ children }) => {
     const [state, dispatch] = useReducer(userProfileReducer, initialState);
+
+    // Load profile
+    const loadProfile = useCallback(async () => {
+        try {
+            dispatch({ type: PROFILE_ACTIONS.SET_LOADING, payload: true });
+            const response = await userProfileService.getProfile();
+            const profile = response.data?.user || null;
+            dispatch({ 
+                type: PROFILE_ACTIONS.SET_PROFILE, 
+                payload: profile 
+            });
+        } catch (error) {
+            console.error('Error loading profile:', error);
+            dispatch({ 
+                type: PROFILE_ACTIONS.SET_ERROR, 
+                payload: error.message || 'Failed to load profile' 
+            });
+        }
+    }, []);
+
+    // Update profile
+    const updateProfile = useCallback(async (profileData) => {
+        try {
+            dispatch({ type: PROFILE_ACTIONS.SET_LOADING, payload: true });
+            const response = await userProfileService.updateProfile(profileData);
+            const profile = response.data?.user || null;
+            dispatch({ 
+                type: PROFILE_ACTIONS.UPDATE_PROFILE, 
+                payload: profile 
+            });
+            return response;
+        } catch (error) {
+            dispatch({ 
+                type: PROFILE_ACTIONS.SET_ERROR, 
+                payload: error.message || 'Failed to update profile' 
+            });
+            throw error;
+        }
+    }, []);
 
     // Load addresses
     const loadAddresses = useCallback(async () => {
@@ -254,12 +310,15 @@ export const UserProfileProvider = ({ children }) => {
 
     const value = {
         // State
+        profile: state.profile,
         addresses: state.addresses,
         paymentMethods: state.paymentMethods,
         loading: state.loading,
         error: state.error,
         
         // Actions
+        loadProfile,
+        updateProfile,
         loadAddresses,
         addAddress,
         updateAddress,

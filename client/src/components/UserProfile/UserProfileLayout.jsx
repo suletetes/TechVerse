@@ -15,7 +15,17 @@ import {
 } from './';
 
 const UserProfileLayout = ({ initialTab }) => {
-    const { deleteAddress, updateAddress, deletePaymentMethod, setDefaultAddress } = useUserProfile();
+    const { 
+        profile, 
+        loadProfile, 
+        updateProfile, 
+        deleteAddress, 
+        updateAddress, 
+        deletePaymentMethod, 
+        setDefaultAddress,
+        loading,
+        error
+    } = useUserProfile();
     const navigate = useNavigate();
     const location = useLocation();
     
@@ -108,15 +118,44 @@ const UserProfileLayout = ({ initialTab }) => {
         confirm: false
     });
     const [profileData, setProfileData] = useState({
-        firstName: 'John',
-        lastName: 'Smith',
-        email: 'john.smith@email.com',
-        phone: '+44 7700 900123',
-        dateOfBirth: '1990-05-15',
-        gender: 'male',
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        dateOfBirth: '',
+        gender: '',
         avatar: null,
-        completeness: 85
+        completeness: 0
     });
+
+    // Load profile data on mount
+    useEffect(() => {
+        loadProfile();
+    }, [loadProfile]);
+
+    // Update local state when profile data changes
+    useEffect(() => {
+        if (profile) {
+            setProfileData({
+                firstName: profile.firstName || '',
+                lastName: profile.lastName || '',
+                email: profile.email || '',
+                phone: profile.phone || '',
+                dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.split('T')[0] : '',
+                gender: profile.gender || '',
+                avatar: profile.avatar || null,
+                completeness: calculateProfileCompleteness(profile)
+            });
+        }
+    }, [profile]);
+
+    // Calculate profile completeness
+    const calculateProfileCompleteness = (profileData) => {
+        if (!profileData) return 0;
+        const fields = ['firstName', 'lastName', 'email', 'phone', 'dateOfBirth'];
+        const completedFields = fields.filter(field => profileData[field] && profileData[field].trim() !== '');
+        return Math.round((completedFields.length / fields.length) * 100);
+    };
 
     // Addresses are now managed by UserProfileContext
 
@@ -136,9 +175,22 @@ const UserProfileLayout = ({ initialTab }) => {
         }));
     };
 
-    const handleSaveProfile = () => {
-        // Profile saving handled by context
-        setIsEditing(false);
+    const handleSaveProfile = async () => {
+        try {
+            const updateData = {
+                firstName: profileData.firstName,
+                lastName: profileData.lastName,
+                phone: profileData.phone,
+                dateOfBirth: profileData.dateOfBirth,
+                preferences: profile?.preferences || {}
+            };
+            
+            await updateProfile(updateData);
+            setIsEditing(false);
+        } catch (error) {
+            console.error('Error saving profile:', error);
+            // Error is handled by context
+        }
     };
 
     const handleAvatarChange = (e) => {
