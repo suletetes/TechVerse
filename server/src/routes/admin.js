@@ -33,7 +33,9 @@ import {
   getProductById,
   createProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  getOrderById,
+  updateOrderStatus
 } from '../controllers/adminController.js';
 import {
   getSecurityDashboard,
@@ -125,8 +127,16 @@ router.put('/users/:id/status', userStatusValidation, validate, updateUserStatus
 router.delete('/users/:id', commonValidations.mongoId('id'), validate, deleteUser);
 
 // Order management routes
-router.get('/orders', getAllOrders);
-router.get('/orders/stats', getOrderStats);
+router.get('/orders', authenticate, requireAdmin, getAllOrders);
+router.get('/orders/stats', authenticate, requireAdmin, getOrderStats);
+router.get('/orders/:id', authenticate, requireAdmin, [
+  commonValidations.mongoId('id')
+], validate, getOrderById);
+router.put('/orders/:id/status', authenticate, requireAdmin, [
+  commonValidations.mongoId('id'),
+  body('status').isIn(['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled']).withMessage('Invalid status'),
+  body('notes').optional().trim().isLength({ max: 500 }).withMessage('Notes must be less than 500 characters')
+], validate, updateOrderStatus);
 
 // Category management routes
 router.get('/categories', getAllCategories);
