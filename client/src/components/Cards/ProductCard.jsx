@@ -15,6 +15,16 @@ const ProductCard = ({ product }) => {
         );
     }
 
+    const getStockStatus = () => {
+        if (!product.stock || !product.stock.trackQuantity) return { text: 'In Stock', class: 'text-success' };
+        if (product.stock.quantity === 0) return { text: 'Out of Stock', class: 'text-danger' };
+        if (product.stock.quantity <= product.stock.lowStockThreshold) return { text: `Low Stock (${product.stock.quantity})`, class: 'text-warning' };
+        return { text: 'In Stock', class: 'text-success' };
+    };
+
+    const stockStatus = getStockStatus();
+    const inStock = product.stock?.quantity > 0 && product.status === 'active';
+
     return (
         <div className="text-start d-flex col-md-6 col-lg-4 mb-4">
             <div className="store-card fill-card position-relative">
@@ -59,15 +69,16 @@ const ProductCard = ({ product }) => {
                         <small className="text-muted">{product.brand || 'Brand'}</small>
                     </div>
                     <div className="col-lg-8">
-                        <p className="tc-6533 float-lg-none mb-2 fw-bold">{product.price || 'Price'}</p>
+                        <p className="tc-6533 float-lg-none mb-1 fw-bold">{product.price || 'Price'}</p>
+                        <small className={`${stockStatus.class} fw-bold`}>{stockStatus.text}</small>
                     </div>
                     <div className="col-lg-4 align-self-end">
                         <Link
                             to={product.link || '#'}
-                            className="btn btn-sm btn-rd btn-c-2101 float-lg-end buy-btn w-100"
-                            style={{transition: 'all 0.3s ease'}}
+                            className={`btn btn-sm btn-rd float-lg-end buy-btn w-100 ${!inStock ? 'btn-secondary disabled' : 'btn-c-2101'}`}
+                            style={{transition: 'all 0.3s ease', pointerEvents: !inStock ? 'none' : 'auto'}}
                         >
-                            Buy Now
+                            {inStock ? 'Buy Now' : 'Out of Stock'}
                         </Link>
                     </div>
                 </div>

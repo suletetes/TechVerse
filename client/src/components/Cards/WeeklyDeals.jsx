@@ -45,7 +45,9 @@ const WeeklyDeals = ({
         discount: product.comparePrice ? `Save £${(product.comparePrice - product.price).toFixed(2)}` : 'Special Offer',
         link: `/product/${product.slug || product._id}`,
         imageWebp: product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder-product.webp',
-        imageJpg: product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder-product.jpg'
+        imageJpg: product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder-product.jpg',
+        stock: product.stock,
+        inStock: product.stock?.quantity > 0 && product.status === 'active'
     }));
 
     const renderContent = () => {

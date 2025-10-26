@@ -1,6 +1,15 @@
 import React from "react";
 
-export default function DealCard({ imageWebp, imageJpg, title, price, discount, link }) {
+export default function DealCard({ imageWebp, imageJpg, title, price, discount, link, stock, inStock = true }) {
+    const getStockStatus = () => {
+        if (!stock || !stock.trackQuantity) return { text: 'In Stock', class: 'text-success' };
+        if (stock.quantity === 0) return { text: 'Out of Stock', class: 'text-danger' };
+        if (stock.quantity <= stock.lowStockThreshold) return { text: 'Low Stock', class: 'text-warning' };
+        return { text: 'In Stock', class: 'text-success' };
+    };
+
+    const stockStatus = getStockStatus();
+
     return (
         <div className="text-start d-flex mb-4 col-md-6 col-lg-4">
             <div className="store-card fill-card w-100">
@@ -23,11 +32,16 @@ export default function DealCard({ imageWebp, imageJpg, title, price, discount, 
                     </div>
                     <div className="col-lg-8">
                         <p className="tc-6533 mb-0">{price}</p>
-                        <p className="tc-2101 bold-text sm-text mb-2">{discount}</p>
+                        <p className="tc-2101 bold-text sm-text mb-1">{discount}</p>
+                        <small className={`${stockStatus.class} fw-bold`}>{stockStatus.text}</small>
                     </div>
                     <div className="align-self-end col-lg-4">
-                        <a href={link} className="btn btn-sm btn-rd btn-c-2101 float-lg-end buy-btn">
-                            Buy
+                        <a 
+                            href={link} 
+                            className={`btn btn-sm btn-rd float-lg-end buy-btn ${!inStock ? 'btn-secondary disabled' : 'btn-c-2101'}`}
+                            style={{ pointerEvents: !inStock ? 'none' : 'auto' }}
+                        >
+                            {inStock ? 'Buy' : 'Out of Stock'}
                         </a>
                     </div>
                 </div>
