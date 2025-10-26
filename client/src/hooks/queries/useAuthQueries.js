@@ -99,7 +99,7 @@ export const useLogin = () => {
       // Prefetch user data
       queryClient.prefetchQuery({
         queryKey: queryKeys.auth.profile,
-        queryFn: () => fetch('/api/auth/profile', {
+        queryFn: () => fetch('/api/auth/me', {
           headers: { 'Authorization': `Bearer ${data.tokens.accessToken}` }
         }).then(res => res.json()),
       });
@@ -197,7 +197,7 @@ export const useUpdateProfile = () => {
   
   return useMutation({
     mutationFn: async (profileData) => {
-      const response = await fetch('/api/auth/profile', {
+      const response = await fetch('/api/auth/me', {
         method: 'PUT',
         headers: {
           'Authorization': getAuthHeader(),

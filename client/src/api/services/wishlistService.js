@@ -27,6 +27,23 @@ class WishlistService extends BaseApiService {
     async removeFromWishlist(productId) {
         return this.delete(`/users/wishlist/${productId}`);
     }
+
+    async getWishlistCount() {
+        try {
+            const response = await this.read('/users/wishlist');
+            return {
+                success: true,
+                count: response.data?.wishlist?.items?.length || 0
+            };
+        } catch (error) {
+            console.error('Error getting wishlist count:', error);
+            return {
+                success: false,
+                count: 0,
+                error: error.response?.data?.message || 'Failed to get wishlist count'
+            };
+        }
+    }
 }
 
 export const wishlistService = new WishlistService();

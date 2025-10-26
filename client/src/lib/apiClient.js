@@ -375,7 +375,7 @@ export const endpoints = {
     register: '/auth/register',
     logout: '/auth/logout',
     me: '/auth/me',
-    profile: '/auth/profile',
+    profile: '/auth/me',
     changePassword: '/auth/change-password',
     forgotPassword: '/auth/forgot-password',
     resetPassword: '/auth/reset-password',
