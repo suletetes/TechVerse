@@ -20,7 +20,20 @@ import {
   clearSection,
   getAvailableProducts,
   bulkUpdateProductSections,
-  getAnalytics
+  getAnalytics,
+  getLowStockProducts,
+  updateProductStock,
+  bulkUpdateStock,
+  getInventoryAnalytics,
+  getUserActivities,
+  getActivityAnalytics,
+  getComprehensiveAnalytics,
+  getRealtimeMetrics,
+  getAllProducts,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct
 } from '../controllers/adminController.js';
 import {
   getSecurityDashboard,
@@ -147,5 +160,40 @@ router.get('/security/alerts', getSecurityAlerts);
 router.post('/security/test', testSecurityMonitoring);
 router.get('/security/config', getSecurityConfig);
 router.post('/security/clear', clearSecurityEvents);
+
+// Product management routes
+router.get('/products', authenticate, requireAdmin, getAllProducts);
+router.get('/products/:id', authenticate, requireAdmin, [
+  commonValidations.mongoId('id')
+], validate, getProductById);
+router.post('/products', authenticate, requireAdmin, createProduct);
+router.put('/products/:id', authenticate, requireAdmin, [
+  commonValidations.mongoId('id')
+], validate, updateProduct);
+router.delete('/products/:id', authenticate, requireAdmin, [
+  commonValidations.mongoId('id')
+], validate, deleteProduct);
+
+// Inventory management routes
+router.get('/inventory/low-stock', authenticate, requireAdmin, getLowStockProducts);
+router.put('/inventory/:id/stock', authenticate, requireAdmin, [
+  commonValidations.mongoId('id'),
+  body('quantity').isInt({ min: 0 }).withMessage('Quantity must be a non-negative integer'),
+  body('reason').optional().trim().isLength({ max: 200 }).withMessage('Reason must be less than 200 characters')
+], validate, updateProductStock);
+router.put('/inventory/bulk-update', authenticate, requireAdmin, [
+  body('updates').isArray({ min: 1 }).withMessage('Updates array is required'),
+  body('updates.*.productId').isMongoId().withMessage('Valid product ID is required'),
+  body('updates.*.quantity').isInt({ min: 0 }).withMessage('Quantity must be a non-negative integer')
+], validate, bulkUpdateStock);
+router.get('/inventory/analytics', authenticate, requireAdmin, getInventoryAnalytics);
+
+// Activity tracking routes
+router.get('/users/:id/activities', authenticate, requireAdmin, [
+  commonValidations.mongoId('id')
+], validate, getUserActivities);
+router.get('/analytics/activities', authenticate, requireAdmin, getActivityAnalytics);
+router.get('/analytics/comprehensive', authenticate, requireAdmin, getComprehensiveAnalytics);
+router.get('/analytics/realtime', authenticate, requireAdmin, getRealtimeMetrics);
 
 export default router;

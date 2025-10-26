@@ -20,6 +20,7 @@ import {
 } from '../controllers/userController.js';
 import { authenticate } from '../middleware/passportAuth.js';
 import { validate, commonValidations } from '../middleware/validation.js';
+// import { activityTrackers } from '../middleware/activityTracker.js';
 import { User } from '../models/index.js';
 
 const router = express.Router();

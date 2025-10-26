@@ -50,6 +50,7 @@ import {
 } from '../middleware/passportAuth.js';
 import { hybridAuth, sessionAuth, logout as hybridLogout } from '../middleware/hybridAuth.js';
 import { validate } from '../middleware/validation.js';
+// import { activityTrackers } from '../middleware/activityTracker.js';
 
 const router = express.Router();
 
