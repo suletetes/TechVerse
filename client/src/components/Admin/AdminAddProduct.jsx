@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import uploadService from '../../api/services/uploadService';
+import './AdminAddProduct.css'; // We'll create this for custom styles
 
 const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = [] }) => {
     const [currentStep, setCurrentStep] = useState(1);
@@ -61,6 +62,9 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     const [errors, setErrors] = useState({});
     const [newFeature, setNewFeature] = useState('');
     const [newTag, setNewTag] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [showPreview, setShowPreview] = useState(false);
 
     // Validation function matching backend requirements
     const validateForm = () => {
@@ -270,9 +274,16 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         // Validate file
         const validation = uploadService.validateFile(file);
         if (!validation.isValid) {
-            alert(`Upload failed: ${validation.errors.join(', ')}`);
+            // Show better error notification
+            setErrors(prev => ({
+                ...prev,
+                upload: validation.errors.join(', ')
+            }));
             return;
         }
+
+        setIsUploading(true);
+        setUploadProgress(0);
 
         try {
             // Create preview URL for immediate display
@@ -289,7 +300,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                     isPrimary: true,
                     onProgress: (progressEvent) => {
                         const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                        console.log(`Upload progress: ${percentCompleted}%`);
+                        setUploadProgress(percentCompleted);
                     }
                 });
 
@@ -324,7 +335,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                     category: 'products',
                     onProgress: (progressEvent) => {
                         const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                        console.log(`Upload progress: ${percentCompleted}%`);
+                        setUploadProgress(percentCompleted);
                     }
                 });
 
@@ -350,9 +361,20 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                     uploadService.cleanupPreviewUrl(previewUrl);
                 }
             }
+
+            // Clear any upload errors
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors.upload;
+                return newErrors;
+            });
+
         } catch (error) {
             console.error('Upload failed:', error);
-            alert(`Upload failed: ${error.message}`);
+            setErrors(prev => ({
+                ...prev,
+                upload: error.message
+            }));
 
             // Remove failed upload from gallery if it was added
             if (type !== 'main') {
@@ -361,6 +383,9 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                     mediaGallery: prev.mediaGallery.filter(media => !media.uploading)
                 }));
             }
+        } finally {
+            setIsUploading(false);
+            setUploadProgress(0);
         }
     };
 
@@ -591,32 +616,48 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                 return (
                     <div className="row">
                         <div className="col-md-6 mb-3">
-                            <label className="form-label">Product Name *</label>
+                            <label className="form-label">
+                                <i className="fas fa-tag me-2"></i>
+                                Product Name *
+                            </label>
                             <input
                                 type="text"
                                 className={`form-control ${errors.name ? 'is-invalid' : ''}`}
                                 value={formData.name}
                                 onChange={(e) => handleInputChange('name', e.target.value)}
-                                placeholder="Enter product name"
+                                placeholder="Enter a compelling product name"
                             />
+                            <div className="form-text">
+                                <small className="text-muted">
+                                    {formData.name.length}/200 characters
+                                </small>
+                            </div>
                             {errors.name && <div className="invalid-feedback">{errors.name}</div>}
                         </div>
                         <div className="col-md-6 mb-3">
-                            <label className="form-label">Category *</label>
+                            <label className="form-label">
+                                <i className="fas fa-folder me-2"></i>
+                                Category *
+                            </label>
                             <select
                                 className={`form-select ${errors.category ? 'is-invalid' : ''}`}
                                 value={formData.category}
                                 onChange={(e) => handleInputChange('category', e.target.value)}
                             >
-                                <option value="">Select category</option>
+                                <option value="">Choose a category...</option>
                                 {Array.isArray(categories) ? categories.filter(cat => cat.isActive).map(cat => (
-                                    <option key={cat.id} value={cat.slug}>{cat.name}</option>
+                                    <option key={cat.id} value={cat.slug}>
+                                        {cat.name} {cat.productCount ? `(${cat.productCount} products)` : ''}
+                                    </option>
                                 )) : null}
                             </select>
                             {errors.category && <div className="invalid-feedback">{errors.category}</div>}
                             {selectedCategory && (
-                                <div className="form-text">
-                                    {selectedCategory.description}
+                                <div className="alert alert-info mt-2 py-2">
+                                    <small>
+                                        <i className="fas fa-info-circle me-1"></i>
+                                        {selectedCategory.description}
+                                    </small>
                                 </div>
                             )}
                         </div>
@@ -678,27 +719,42 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                 return (
                     <div className="row">
                         <div className="col-md-4 mb-3">
-                            <label className="form-label">Current Price * (£)</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                className={`form-control ${errors.price ? 'is-invalid' : ''}`}
-                                value={formData.price}
-                                onChange={(e) => handleInputChange('price', e.target.value)}
-                                placeholder="0.00"
-                            />
+                            <label className="form-label">
+                                <i className="fas fa-pound-sign me-2"></i>
+                                Current Price *
+                            </label>
+                            <div className="input-group">
+                                <span className="input-group-text">£</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    className={`form-control ${errors.price ? 'is-invalid' : ''}`}
+                                    value={formData.price}
+                                    onChange={(e) => handleInputChange('price', e.target.value)}
+                                    placeholder="0.00"
+                                />
+                            </div>
                             {errors.price && <div className="invalid-feedback">{errors.price}</div>}
                         </div>
                         <div className="col-md-4 mb-3">
-                            <label className="form-label">Original Price (£)</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                className={`form-control ${errors.originalPrice ? 'is-invalid' : ''}`}
-                                value={formData.originalPrice}
-                                onChange={(e) => handleInputChange('originalPrice', e.target.value)}
-                                placeholder="0.00"
-                            />
+                            <label className="form-label">
+                                <i className="fas fa-tag me-2"></i>
+                                Original Price
+                            </label>
+                            <div className="input-group">
+                                <span className="input-group-text">£</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    className={`form-control ${errors.originalPrice ? 'is-invalid' : ''}`}
+                                    value={formData.originalPrice}
+                                    onChange={(e) => handleInputChange('originalPrice', e.target.value)}
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <div className="form-text">
+                                <small className="text-muted">For showing discounts</small>
+                            </div>
                             {errors.originalPrice && <div className="invalid-feedback">{errors.originalPrice}</div>}
                         </div>
                         <div className="col-md-4 mb-3">
@@ -714,10 +770,47 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                         </div>
                         {formData.price && formData.costPrice && (
                             <div className="col-12 mb-3">
-                                <div className="alert alert-info">
-                                    <strong>Profit Margin: {calculateProfitMargin()}%</strong>
-                                    <br />
-                                    Profit per unit: £{(parseFloat(formData.price) - parseFloat(formData.costPrice)).toFixed(2)}
+                                <div className="profit-analysis-card">
+                                    <div className="row">
+                                        <div className="col-md-4">
+                                            <div className="metric-card">
+                                                <div className="metric-icon">
+                                                    <i className="fas fa-chart-line"></i>
+                                                </div>
+                                                <div className="metric-content">
+                                                    <div className="metric-value">{calculateProfitMargin()}%</div>
+                                                    <div className="metric-label">Profit Margin</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-4">
+                                            <div className="metric-card">
+                                                <div className="metric-icon">
+                                                    <i className="fas fa-coins"></i>
+                                                </div>
+                                                <div className="metric-content">
+                                                    <div className="metric-value">£{(parseFloat(formData.price) - parseFloat(formData.costPrice)).toFixed(2)}</div>
+                                                    <div className="metric-label">Profit per Unit</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-4">
+                                            <div className="metric-card">
+                                                <div className="metric-icon">
+                                                    <i className="fas fa-percentage"></i>
+                                                </div>
+                                                <div className="metric-content">
+                                                    <div className="metric-value">
+                                                        {formData.originalPrice ? 
+                                                            Math.round(((parseFloat(formData.originalPrice) - parseFloat(formData.price)) / parseFloat(formData.originalPrice)) * 100) + '%'
+                                                            : '0%'
+                                                        }
+                                                    </div>
+                                                    <div className="metric-label">Discount</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -892,23 +985,58 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                 return (
                     <div className="row">
                         <div className="col-12 mb-4">
-                            <h5>Main Product Image</h5>
-                            <div className="mb-3">
-                                <input
-                                    type="file"
-                                    className="form-control"
-                                    accept="image/*"
-                                    onChange={(e) => handleImageUpload(e, 'main')}
-                                />
-                            </div>
-                            {formData.mainImage && (
-                                <div className="mb-3">
-                                    <img
-                                        src={formData.mainImage}
-                                        alt="Main product"
-                                        className="img-thumbnail"
-                                        style={{ maxWidth: '200px', maxHeight: '200px' }}
+                            <h5>
+                                <i className="fas fa-image me-2"></i>
+                                Main Product Image
+                            </h5>
+                            <p className="text-muted mb-3">Upload the primary image that will represent your product</p>
+                            
+                            {!formData.mainImage ? (
+                                <div className="upload-zone" onClick={() => document.getElementById('mainImageInput').click()}>
+                                    <div className="upload-icon">
+                                        <i className="fas fa-cloud-upload-alt"></i>
+                                    </div>
+                                    <div className="upload-text">Click to upload main image</div>
+                                    <div className="upload-subtext">PNG, JPG, GIF up to 10MB</div>
+                                    <input
+                                        id="mainImageInput"
+                                        type="file"
+                                        className="d-none"
+                                        accept="image/*"
+                                        onChange={(e) => handleImageUpload(e, 'main')}
                                     />
+                                </div>
+                            ) : (
+                                <div className="main-image-preview">
+                                    <div className="position-relative d-inline-block">
+                                        <img
+                                            src={formData.mainImage}
+                                            alt="Main product"
+                                            className="img-thumbnail"
+                                            style={{ maxWidth: '300px', maxHeight: '300px' }}
+                                        />
+                                        <div className="image-overlay">
+                                            <button
+                                                className="btn btn-sm btn-outline-light me-2"
+                                                onClick={() => document.getElementById('mainImageInput').click()}
+                                            >
+                                                <i className="fas fa-edit"></i> Change
+                                            </button>
+                                            <button
+                                                className="btn btn-sm btn-outline-danger"
+                                                onClick={() => handleInputChange('mainImage', '')}
+                                            >
+                                                <i className="fas fa-trash"></i> Remove
+                                            </button>
+                                        </div>
+                                        <input
+                                            id="mainImageInput"
+                                            type="file"
+                                            className="d-none"
+                                            accept="image/*"
+                                            onChange={(e) => handleImageUpload(e, 'main')}
+                                        />
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -941,53 +1069,99 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                         </div>
 
                         <div className="col-12">
-                            <h5>Media Gallery</h5>
-                            <div className="row">
+                            <h5>
+                                <i className="fas fa-images me-2"></i>
+                                Media Gallery
+                            </h5>
+                            <p className="text-muted mb-3">Add multiple images and videos to showcase your product from different angles</p>
+                            
+                            <div className="media-gallery-grid">
                                 {Array.isArray(formData.mediaGallery) ? formData.mediaGallery.map((media, index) => (
-                                    <div key={media.id} className="col-md-3 mb-3">
-                                        <div className="card">
-                                            {media.type === 'image' ? (
-                                                <img
+                                    <div key={media.id} className="media-item">
+                                        {media.type === 'image' ? (
+                                            <img
+                                                src={media.src}
+                                                alt={media.alt}
+                                                className="media-content"
+                                            />
+                                        ) : (
+                                            <div className="position-relative">
+                                                <video
                                                     src={media.src}
-                                                    alt={media.alt}
-                                                    className="card-img-top"
-                                                    style={{ height: '150px', objectFit: 'cover' }}
+                                                    className="media-content"
+                                                    controls={false}
                                                 />
-                                            ) : (
-                                                <div className="position-relative">
-                                                    <video
-                                                        src={media.src}
-                                                        className="card-img-top"
-                                                        style={{ height: '150px', objectFit: 'cover' }}
-                                                        controls={false}
-                                                    />
-                                                    <div className="position-absolute top-50 start-50 translate-middle">
-                                                        <div className="bg-dark bg-opacity-75 rounded-circle p-2">
-                                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                                                                <path d="M8 5v14l11-7z" />
-                                                            </svg>
-                                                        </div>
+                                                <div className="position-absolute top-50 start-50 translate-middle">
+                                                    <div className="bg-dark bg-opacity-75 rounded-circle p-2">
+                                                        <i className="fas fa-play text-white"></i>
                                                     </div>
                                                 </div>
-                                            )}
-                                            <div className="card-body p-2">
-                                                <small className="text-muted d-block mb-1">
-                                                    {media.type === 'video' ? '🎥 Video' : '🖼️ Image'}
-                                                </small>
+                                            </div>
+                                        )}
+                                        <div className="media-overlay">
+                                            <div className="media-actions">
                                                 <button
-                                                    className="btn btn-danger btn-sm w-100"
+                                                    className="btn btn-sm btn-outline-light"
+                                                    onClick={() => {
+                                                        // Preview functionality
+                                                        window.open(media.src, '_blank');
+                                                    }}
+                                                >
+                                                    <i className="fas fa-eye"></i>
+                                                </button>
+                                                <button
+                                                    className="btn btn-sm btn-outline-danger"
                                                     onClick={() => removeMediaItem(index)}
                                                 >
-                                                    Remove
+                                                    <i className="fas fa-trash"></i>
                                                 </button>
                                             </div>
                                         </div>
+                                        {media.uploading && (
+                                            <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50">
+                                                <div className="spinner-border text-light" role="status">
+                                                    <span className="visually-hidden">Uploading...</span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )) : null}
+                                
+                                {/* Add more media button */}
+                                <div className="upload-zone" onClick={() => document.getElementById('additionalImageInput').click()}>
+                                    <div className="upload-icon">
+                                        <i className="fas fa-plus"></i>
+                                    </div>
+                                    <div className="upload-text">Add Image</div>
+                                    <input
+                                        id="additionalImageInput"
+                                        type="file"
+                                        className="d-none"
+                                        accept="image/*"
+                                        onChange={(e) => handleImageUpload(e, 'additional')}
+                                    />
+                                </div>
+                                
+                                <div className="upload-zone" onClick={() => document.getElementById('videoInput').click()}>
+                                    <div className="upload-icon">
+                                        <i className="fas fa-video"></i>
+                                    </div>
+                                    <div className="upload-text">Add Video</div>
+                                    <input
+                                        id="videoInput"
+                                        type="file"
+                                        className="d-none"
+                                        accept="video/*"
+                                        onChange={handleVideoUpload}
+                                    />
+                                </div>
                             </div>
+                            
                             {(!Array.isArray(formData.mediaGallery) || formData.mediaGallery.length === 0) && (
                                 <div className="text-center py-4 text-muted">
+                                    <i className="fas fa-images fa-3x mb-3 d-block"></i>
                                     <p>No media uploaded yet. Add images and videos to showcase your product.</p>
+                                    <small>Tip: High-quality images increase conversion rates by up to 30%</small>
                                 </div>
                             )}
                         </div>
@@ -1087,32 +1261,63 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                         )}
 
                         <div className="col-12">
-                            <h5>Key Features</h5>
-                            <div className="mb-3">
+                            <h5>
+                                <i className="fas fa-star me-2"></i>
+                                Key Features
+                            </h5>
+                            <p className="text-muted mb-3">Highlight the most important features that make your product stand out</p>
+                            
+                            <div className="feature-input-group">
                                 <div className="input-group">
+                                    <span className="input-group-text">
+                                        <i className="fas fa-plus"></i>
+                                    </span>
                                     <input
                                         type="text"
                                         className="form-control"
                                         value={newFeature}
                                         onChange={(e) => setNewFeature(e.target.value)}
-                                        placeholder="Add a key feature"
-                                        onKeyPress={(e) => e.key === 'Enter' && addFeature()}
+                                        placeholder="e.g., Wireless charging, Water resistant, 5-year warranty"
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                addFeature();
+                                            }
+                                        }}
                                     />
-                                    <button className="btn btn-outline-secondary" onClick={addFeature}>
-                                        Add
+                                    <button 
+                                        className="btn btn-primary" 
+                                        onClick={addFeature}
+                                        disabled={!newFeature.trim()}
+                                    >
+                                        <i className="fas fa-plus me-1"></i>
+                                        Add Feature
                                     </button>
                                 </div>
+                                <div className="form-text">
+                                    <small className="text-muted">
+                                        <i className="fas fa-lightbulb me-1"></i>
+                                        Tip: Focus on benefits that solve customer problems
+                                    </small>
+                                </div>
                             </div>
-                            <div className="d-flex flex-wrap gap-2">
-                                {Array.isArray(formData.keyFeatures) ? formData.keyFeatures.map((feature, index) => (
-                                    <span key={index} className="badge bg-primary d-flex align-items-center">
-                                        {feature}
-                                        <button
-                                            className="btn-close btn-close-white ms-2"
-                                            onClick={() => removeFeature(index)}
-                                        ></button>
-                                    </span>
-                                )) : null}
+                            
+                            <div className="feature-list">
+                                {Array.isArray(formData.keyFeatures) && formData.keyFeatures.length > 0 ? 
+                                    formData.keyFeatures.map((feature, index) => (
+                                        <span key={index} className="feature-badge">
+                                            <i className="fas fa-check-circle me-2"></i>
+                                            {feature}
+                                            <button
+                                                className="badge-remove"
+                                                onClick={() => removeFeature(index)}
+                                                title="Remove feature"
+                                            >
+                                                <i className="fas fa-times"></i>
+                                            </button>
+                                        </span>
+                                    )) : null
+                                }
                             </div>
                         </div>
                     </div>
@@ -1148,30 +1353,63 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                             {errors.seoDescription && <div className="invalid-feedback">{errors.seoDescription}</div>}
                         </div>
                         <div className="col-12 mb-3">
-                            <label className="form-label">Tags</label>
-                            <div className="input-group mb-2">
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    value={newTag}
-                                    onChange={(e) => setNewTag(e.target.value)}
-                                    placeholder="Add a tag"
-                                    onKeyPress={(e) => e.key === 'Enter' && addTag()}
-                                />
-                                <button className="btn btn-outline-secondary" onClick={addTag}>
-                                    Add Tag
-                                </button>
-                            </div>
-                            <div className="d-flex flex-wrap gap-2">
-                                {Array.isArray(formData.tags) ? formData.tags.map((tag, index) => (
-                                    <span key={index} className="badge bg-secondary d-flex align-items-center">
-                                        {tag}
-                                        <button
-                                            className="btn-close btn-close-white ms-2"
-                                            onClick={() => removeTag(index)}
-                                        ></button>
+                            <label className="form-label">
+                                <i className="fas fa-tags me-2"></i>
+                                Tags
+                            </label>
+                            <p className="text-muted mb-3">Add relevant tags to help customers find your product through search</p>
+                            
+                            <div className="tag-input-group">
+                                <div className="input-group mb-2">
+                                    <span className="input-group-text">
+                                        <i className="fas fa-hashtag"></i>
                                     </span>
-                                )) : null}
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        value={newTag}
+                                        onChange={(e) => setNewTag(e.target.value)}
+                                        placeholder="e.g., electronics, smartphone, android, gaming"
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                addTag();
+                                            }
+                                        }}
+                                    />
+                                    <button 
+                                        className="btn btn-primary" 
+                                        onClick={addTag}
+                                        disabled={!newTag.trim() || formData.tags.includes(newTag.trim())}
+                                    >
+                                        <i className="fas fa-plus me-1"></i>
+                                        Add Tag
+                                    </button>
+                                </div>
+                                <div className="form-text">
+                                    <small className="text-muted">
+                                        <i className="fas fa-search me-1"></i>
+                                        Tags improve SEO and help customers discover your products
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <div className="tag-list">
+                                {Array.isArray(formData.tags) && formData.tags.length > 0 ? 
+                                    formData.tags.map((tag, index) => (
+                                        <span key={index} className="tag-badge">
+                                            <i className="fas fa-tag me-2"></i>
+                                            {tag}
+                                            <button
+                                                className="badge-remove"
+                                                onClick={() => removeTag(index)}
+                                                title="Remove tag"
+                                            >
+                                                <i className="fas fa-times"></i>
+                                            </button>
+                                        </span>
+                                    )) : null
+                                }
                             </div>
                         </div>
                         <div className="col-12 mb-3">
@@ -1206,44 +1444,152 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                 return (
                     <div className="row">
                         <div className="col-12">
-                            <h5>Product Review</h5>
-                            <div className="card">
-                                <div className="card-body">
-                                    <div className="row">
-                                        <div className="col-md-4">
-                                            {formData.mainImage && (
-                                                <img
-                                                    src={formData.mainImage}
-                                                    alt={formData.name}
-                                                    className="img-fluid rounded"
-                                                />
-                                            )}
+                            {/* Summary Header */}
+                            <div className="review-summary">
+                                <h4>
+                                    <i className="fas fa-clipboard-check me-2"></i>
+                                    Product Review & Summary
+                                </h4>
+                                <p className="mb-3">Review all the information before publishing your product</p>
+                                
+                                <div className="review-stats">
+                                    <div className="review-stat">
+                                        <div className="review-stat-value">
+                                            {formData.mediaGallery ? formData.mediaGallery.length + (formData.mainImage ? 1 : 0) : (formData.mainImage ? 1 : 0)}
                                         </div>
-                                        <div className="col-md-8">
-                                            <h4>{formData.name}</h4>
-                                            <p className="text-muted">{formData.category} • {formData.brand}</p>
-                                            <p>{formData.shortDescription}</p>
-                                            <div className="row">
-                                                <div className="col-6">
-                                                    <strong>Price: £{formData.price}</strong>
-                                                    {formData.originalPrice && (
-                                                        <span className="text-muted text-decoration-line-through ms-2">
-                                                            £{formData.originalPrice}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="col-6">
-                                                    <strong>Stock: {formData.stock}</strong>
+                                        <div className="review-stat-label">Media Files</div>
+                                    </div>
+                                    <div className="review-stat">
+                                        <div className="review-stat-value">{formData.keyFeatures ? formData.keyFeatures.length : 0}</div>
+                                        <div className="review-stat-label">Key Features</div>
+                                    </div>
+                                    <div className="review-stat">
+                                        <div className="review-stat-value">{formData.tags ? formData.tags.length : 0}</div>
+                                        <div className="review-stat-label">Tags</div>
+                                    </div>
+                                    <div className="review-stat">
+                                        <div className="review-stat-value">
+                                            {Object.keys(formData.dynamicSpecs || {}).filter(key => formData.dynamicSpecs[key]).length}
+                                        </div>
+                                        <div className="review-stat-label">Specifications</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Product Preview */}
+                            <div className="review-card">
+                                <div className="row">
+                                    <div className="col-md-5">
+                                        {formData.mainImage ? (
+                                            <img
+                                                src={formData.mainImage}
+                                                alt={formData.name}
+                                                className="review-image"
+                                            />
+                                        ) : (
+                                            <div className="review-image d-flex align-items-center justify-content-center bg-light">
+                                                <div className="text-center text-muted">
+                                                    <i className="fas fa-image fa-3x mb-2"></i>
+                                                    <p>No main image</p>
                                                 </div>
                                             </div>
-                                            <div className="mt-2">
-                                                <span className={`badge bg-${formData.status === 'active' ? 'success' : 'secondary'}`}>
-                                                    {formData.status}
-                                                </span>
-                                                {formData.featured && (
-                                                    <span className="badge bg-warning ms-2">Featured</span>
+                                        )}
+                                    </div>
+                                    <div className="col-md-7">
+                                        <div className="review-content">
+                                            <div className="review-title">{formData.name || 'Untitled Product'}</div>
+                                            <div className="review-meta">
+                                                <i className="fas fa-folder me-1"></i>
+                                                {formData.category || 'No category'} • 
+                                                <i className="fas fa-building ms-2 me-1"></i>
+                                                {formData.brand || 'No brand'}
+                                            </div>
+                                            <div className="review-description">
+                                                {formData.shortDescription || 'No description provided'}
+                                            </div>
+                                            
+                                            <div className="review-pricing">
+                                                <div className="review-current-price">£{formData.price || '0.00'}</div>
+                                                {formData.originalPrice && (
+                                                    <div className="review-original-price">£{formData.originalPrice}</div>
                                                 )}
                                             </div>
+                                            
+                                            <div className="row mb-3">
+                                                <div className="col-6">
+                                                    <small className="text-muted">Stock Quantity</small>
+                                                    <div className="fw-bold">{formData.stock || '0'} units</div>
+                                                </div>
+                                                <div className="col-6">
+                                                    <small className="text-muted">SKU</small>
+                                                    <div className="fw-bold">{formData.sku || 'Not set'}</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="review-badges">
+                                                <span className={`review-badge ${formData.status === 'active' ? 'bg-success' : 'bg-secondary'}`}>
+                                                    <i className="fas fa-circle me-1"></i>
+                                                    {formData.status || 'draft'}
+                                                </span>
+                                                {formData.featured && (
+                                                    <span className="review-badge bg-warning">
+                                                        <i className="fas fa-star me-1"></i>
+                                                        Featured
+                                                    </span>
+                                                )}
+                                                {formData.keyFeatures && formData.keyFeatures.length > 0 && (
+                                                    <span className="review-badge bg-info">
+                                                        <i className="fas fa-list me-1"></i>
+                                                        {formData.keyFeatures.length} Features
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Completion Checklist */}
+                            <div className="completion-checklist mt-4">
+                                <h6>
+                                    <i className="fas fa-tasks me-2"></i>
+                                    Completion Checklist
+                                </h6>
+                                <div className="row">
+                                    <div className="col-md-6">
+                                        <div className="checklist-item">
+                                            <i className={`fas ${formData.name ? 'fa-check-circle text-success' : 'fa-times-circle text-danger'} me-2`}></i>
+                                            Product name provided
+                                        </div>
+                                        <div className="checklist-item">
+                                            <i className={`fas ${formData.price ? 'fa-check-circle text-success' : 'fa-times-circle text-danger'} me-2`}></i>
+                                            Price set
+                                        </div>
+                                        <div className="checklist-item">
+                                            <i className={`fas ${formData.category ? 'fa-check-circle text-success' : 'fa-times-circle text-danger'} me-2`}></i>
+                                            Category selected
+                                        </div>
+                                        <div className="checklist-item">
+                                            <i className={`fas ${formData.mainImage ? 'fa-check-circle text-success' : 'fa-times-circle text-warning'} me-2`}></i>
+                                            Main image uploaded
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="checklist-item">
+                                            <i className={`fas ${formData.shortDescription ? 'fa-check-circle text-success' : 'fa-times-circle text-warning'} me-2`}></i>
+                                            Description provided
+                                        </div>
+                                        <div className="checklist-item">
+                                            <i className={`fas ${formData.stock ? 'fa-check-circle text-success' : 'fa-times-circle text-warning'} me-2`}></i>
+                                            Stock quantity set
+                                        </div>
+                                        <div className="checklist-item">
+                                            <i className={`fas ${formData.keyFeatures && formData.keyFeatures.length > 0 ? 'fa-check-circle text-success' : 'fa-times-circle text-muted'} me-2`}></i>
+                                            Key features added
+                                        </div>
+                                        <div className="checklist-item">
+                                            <i className={`fas ${formData.seoTitle || formData.seoDescription ? 'fa-check-circle text-success' : 'fa-times-circle text-muted'} me-2`}></i>
+                                            SEO information provided
                                         </div>
                                     </div>
                                 </div>
@@ -1258,86 +1604,289 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     };
 
     return (
-        <div className="store-card fill-card">
-            {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h3 className="tc-6533 bold-text mb-0">
-                    {editProduct ? 'Edit Product' : 'Add New Product'}
-                </h3>
-                <button className="btn btn-outline-secondary" onClick={onCancel}>
-                    Cancel
-                </button>
+        <div className="admin-add-product">
+            {/* Enhanced Header */}
+            <div className="product-header">
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 className="product-title">
+                            {editProduct ? (
+                                <>
+                                    <i className="fas fa-edit me-2"></i>
+                                    Edit Product
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fas fa-plus-circle me-2"></i>
+                                    Add New Product
+                                </>
+                            )}
+                        </h2>
+                        <p className="product-subtitle text-muted mb-0">
+                            {editProduct ? 'Update your product information' : 'Create a new product for your store'}
+                        </p>
+                    </div>
+                    <div className="header-actions">
+                        {formData.name && (
+                            <button 
+                                className="btn btn-outline-info me-2"
+                                onClick={() => setShowPreview(!showPreview)}
+                            >
+                                <i className="fas fa-eye me-1"></i>
+                                {showPreview ? 'Hide Preview' : 'Preview'}
+                            </button>
+                        )}
+                        <button className="btn btn-outline-secondary" onClick={onCancel}>
+                            <i className="fas fa-times me-1"></i>
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+
+                {/* Show upload progress */}
+                {isUploading && (
+                    <div className="upload-progress mb-3">
+                        <div className="d-flex align-items-center">
+                            <div className="spinner-border spinner-border-sm me-2" role="status">
+                                <span className="visually-hidden">Uploading...</span>
+                            </div>
+                            <span className="me-2">Uploading... {uploadProgress}%</span>
+                        </div>
+                        <div className="progress mt-1" style={{ height: '4px' }}>
+                            <div 
+                                className="progress-bar progress-bar-striped progress-bar-animated" 
+                                style={{ width: `${uploadProgress}%` }}
+                            ></div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Show upload errors */}
+                {errors.upload && (
+                    <div className="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i className="fas fa-exclamation-triangle me-2"></i>
+                        {errors.upload}
+                        <button 
+                            type="button" 
+                            className="btn-close" 
+                            onClick={() => setErrors(prev => {
+                                const newErrors = { ...prev };
+                                delete newErrors.upload;
+                                return newErrors;
+                            })}
+                        ></button>
+                    </div>
+                )}
             </div>
 
-            {/* Progress Steps */}
-            <div className="mb-4">
-                <div className="d-flex justify-content-between align-items-center">
-                    {steps.map((step) => (
-                        <div
-                            key={step.id}
-                            className={`d-flex flex-column align-items-center ${step.id === currentStep ? 'text-primary' :
-                                step.id < currentStep ? 'text-success' : 'text-muted'
-                                }`}
-                        >
-                            <div
-                                className={`rounded-circle d-flex align-items-center justify-content-center mb-2 ${step.id === currentStep ? 'bg-primary text-white' :
-                                    step.id < currentStep ? 'bg-success text-white' : 'bg-light'
-                                    }`}
-                                style={{ width: '40px', height: '40px' }}
-                            >
-                                {step.id < currentStep ? '✓' : step.icon}
+            {/* Enhanced Progress Steps */}
+            <div className="product-steps mb-4">
+                <div className="steps-container">
+                    {steps.map((step, index) => (
+                        <div key={step.id} className="step-item">
+                            <div className="step-connector">
+                                {index < steps.length - 1 && (
+                                    <div 
+                                        className={`connector-line ${step.id < currentStep ? 'completed' : ''}`}
+                                    ></div>
+                                )}
                             </div>
-                            <small className="text-center">{step.title}</small>
+                            <div
+                                className={`step-circle ${
+                                    step.id === currentStep ? 'current' :
+                                    step.id < currentStep ? 'completed' : 'pending'
+                                }`}
+                                onClick={() => step.id < currentStep && setCurrentStep(step.id)}
+                                style={{ cursor: step.id < currentStep ? 'pointer' : 'default' }}
+                            >
+                                <div className="step-icon">
+                                    {step.id < currentStep ? (
+                                        <i className="fas fa-check"></i>
+                                    ) : step.id === currentStep ? (
+                                        <i className="fas fa-edit"></i>
+                                    ) : (
+                                        <span>{step.icon}</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="step-label">
+                                <div className="step-title">{step.title}</div>
+                                <div className="step-subtitle">
+                                    {step.id === 1 && 'Basic information'}
+                                    {step.id === 2 && 'Price & inventory'}
+                                    {step.id === 3 && 'Product variants'}
+                                    {step.id === 4 && 'Images & videos'}
+                                    {step.id === 5 && 'Technical details'}
+                                    {step.id === 6 && 'SEO & marketing'}
+                                    {step.id === 7 && 'Final review'}
+                                </div>
+                            </div>
                         </div>
                     ))}
                 </div>
-                <div className="progress mt-3" style={{ height: '4px' }}>
-                    <div
-                        className="progress-bar"
-                        style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
-                    ></div>
+                <div className="progress-bar-container mt-3">
+                    <div className="progress" style={{ height: '6px' }}>
+                        <div
+                            className="progress-bar progress-bar-striped"
+                            style={{ 
+                                width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`,
+                                transition: 'width 0.3s ease'
+                            }}
+                        ></div>
+                    </div>
+                    <div className="progress-text mt-2 text-center">
+                        <small className="text-muted">
+                            Step {currentStep} of {steps.length} - {Math.round(((currentStep - 1) / (steps.length - 1)) * 100)}% Complete
+                        </small>
+                    </div>
                 </div>
             </div>
 
-            {/* Step Content */}
-            <div className="mb-4">
-                {renderStepContent()}
+            {/* Enhanced Step Content */}
+            <div className="step-content-container mb-4">
+                <div className="step-content-card">
+                    <div className="step-content-header">
+                        <h4 className="step-content-title">
+                            <span className="step-number">{currentStep}</span>
+                            {steps.find(s => s.id === currentStep)?.title}
+                        </h4>
+                        <div className="step-content-actions">
+                            {currentStep > 1 && (
+                                <button 
+                                    className="btn btn-sm btn-outline-secondary me-2"
+                                    onClick={() => setCurrentStep(currentStep - 1)}
+                                >
+                                    <i className="fas fa-arrow-left me-1"></i>
+                                    Back
+                                </button>
+                            )}
+                            {currentStep < steps.length && (
+                                <button 
+                                    className="btn btn-sm btn-primary"
+                                    onClick={nextStep}
+                                >
+                                    Next
+                                    <i className="fas fa-arrow-right ms-1"></i>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    <div className="step-content-body">
+                        {renderStepContent()}
+                    </div>
+                </div>
+
+                {/* Quick Preview Sidebar */}
+                {showPreview && formData.name && (
+                    <div className="preview-sidebar">
+                        <div className="preview-card">
+                            <div className="preview-header">
+                                <h6 className="mb-0">
+                                    <i className="fas fa-eye me-2"></i>
+                                    Live Preview
+                                </h6>
+                                <button 
+                                    className="btn btn-sm btn-outline-secondary"
+                                    onClick={() => setShowPreview(false)}
+                                >
+                                    <i className="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div className="preview-body">
+                                {formData.mainImage && (
+                                    <img 
+                                        src={formData.mainImage} 
+                                        alt={formData.name}
+                                        className="preview-image"
+                                    />
+                                )}
+                                <h6 className="preview-title">{formData.name}</h6>
+                                <p className="preview-brand text-muted">{formData.brand}</p>
+                                <div className="preview-price">
+                                    <span className="current-price">£{formData.price}</span>
+                                    {formData.originalPrice && (
+                                        <span className="original-price">£{formData.originalPrice}</span>
+                                    )}
+                                </div>
+                                <p className="preview-description">{formData.shortDescription}</p>
+                                <div className="preview-badges">
+                                    {formData.featured && (
+                                        <span className="badge bg-warning">Featured</span>
+                                    )}
+                                    <span className={`badge bg-${formData.status === 'active' ? 'success' : 'secondary'}`}>
+                                        {formData.status}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Navigation Buttons */}
-            <div className="d-flex justify-content-between">
-                <button
-                    className="btn btn-outline-secondary"
-                    onClick={prevStep}
-                    disabled={currentStep === 1}
-                >
-                    Previous
-                </button>
-
-                <div className="d-flex gap-2">
-                    {currentStep === steps.length ? (
-                        <>
-                            <button
-                                className="btn btn-outline-primary"
-                                onClick={() => handleSave(true)}
-                            >
-                                Save as Draft
-                            </button>
-                            <button
-                                className="btn btn-success"
-                                onClick={() => handleSave(false)}
-                            >
-                                Publish Product
-                            </button>
-                        </>
-                    ) : (
+            {/* Enhanced Navigation Footer */}
+            <div className="product-footer">
+                <div className="footer-actions">
+                    <div className="left-actions">
                         <button
-                            className="btn btn-primary"
-                            onClick={nextStep}
+                            className="btn btn-outline-secondary btn-lg"
+                            onClick={prevStep}
+                            disabled={currentStep === 1}
                         >
-                            Next
+                            <i className="fas fa-chevron-left me-2"></i>
+                            Previous
                         </button>
-                    )}
+                    </div>
+
+                    <div className="center-info">
+                        <div className="completion-info">
+                            <div className="completion-circle">
+                                <span>{Math.round(((currentStep - 1) / (steps.length - 1)) * 100)}%</span>
+                            </div>
+                            <div className="completion-text">
+                                <small className="text-muted">Complete</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="right-actions">
+                        {currentStep === steps.length ? (
+                            <div className="final-actions">
+                                <button
+                                    className="btn btn-outline-primary btn-lg me-2"
+                                    onClick={() => handleSave(true)}
+                                    disabled={isUploading}
+                                >
+                                    <i className="fas fa-save me-2"></i>
+                                    Save as Draft
+                                </button>
+                                <button
+                                    className="btn btn-success btn-lg"
+                                    onClick={() => handleSave(false)}
+                                    disabled={isUploading}
+                                >
+                                    <i className="fas fa-rocket me-2"></i>
+                                    Publish Product
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                className="btn btn-primary btn-lg"
+                                onClick={nextStep}
+                                disabled={isUploading}
+                            >
+                                Next
+                                <i className="fas fa-chevron-right ms-2"></i>
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Save Progress Indicator */}
+                <div className="save-indicator mt-2 text-center">
+                    <small className="text-muted">
+                        <i className="fas fa-cloud me-1"></i>
+                        Changes are automatically saved as you progress
+                    </small>
                 </div>
             </div>
         </div>

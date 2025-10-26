@@ -431,6 +431,14 @@ export const AdminProvider = ({ children }) => {
     }
   }, []);
 
+  // Helper function to handle errors consistently
+  const handleError = useCallback((error, actionType, defaultMessage) => {
+    const errorMessage = error?.message || defaultMessage || 'An error occurred';
+    dispatch({ type: actionType, payload: errorMessage });
+    showNotification(errorMessage, 'error');
+    return errorMessage;
+  }, [showNotification]);
+
   // Dashboard methods
   const loadDashboardStats = useCallback(async (params = {}) => {
     if (!isAuthenticated || !isAdmin()) {
@@ -444,9 +452,12 @@ export const AdminProvider = ({ children }) => {
       dispatch({ type: ADMIN_ACTIONS.LOAD_DASHBOARD_SUCCESS, payload: response });
       return response;
     } catch (error) {
-      dispatch({ type: ADMIN_ACTIONS.SET_DASHBOARD_ERROR, payload: error.message });
-      showNotification(error.message, 'error');
-      throw error;
+      console.error('[AdminContext] Dashboard stats error:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to load dashboard statistics';
+      dispatch({ type: ADMIN_ACTIONS.SET_DASHBOARD_ERROR, payload: errorMessage });
+      showNotification(`Dashboard Error: ${errorMessage}`, 'error');
+      // Don't re-throw to prevent uncaught promise rejection
+      return null;
     }
   }, [isAuthenticated, isAdmin, showNotification]);
 
@@ -462,8 +473,7 @@ export const AdminProvider = ({ children }) => {
       dispatch({ type: ADMIN_ACTIONS.LOAD_ANALYTICS_SUCCESS, payload: response });
       return response;
     } catch (error) {
-      dispatch({ type: ADMIN_ACTIONS.SET_ERROR, payload: error.message });
-      showNotification(error.message, 'error');
+      handleError(error, ADMIN_ACTIONS.SET_ERROR, 'Failed to load analytics');
       throw error;
     }
   }, [isAuthenticated, isAdmin, showNotification]);
@@ -769,7 +779,7 @@ export const AdminProvider = ({ children }) => {
       showNotification(error.message, 'error');
       throw error;
     }
-  }, [isAuthenticated, isAdmin, loadAdminProducts, showNotification]);
+  }, [isAuthenticated, isAdmin, showNotification]);
 
   const bulkDeleteProducts = useCallback(async (productIds) => {
     if (!isAuthenticated || !isAdmin()) {
@@ -878,7 +888,7 @@ export const AdminProvider = ({ children }) => {
     dispatch({ type: ADMIN_ACTIONS.CLEAR_ERROR });
   }, []);
 
-  const value = useMemo(() => ({
+  const value = {
     ...state,
     
     // Dashboard methods
@@ -922,35 +932,7 @@ export const AdminProvider = ({ children }) => {
     
     // Utility
     clearError
-  }), [
-    state,
-    loadDashboardStats,
-    loadAnalytics,
-    loadAdminProducts,
-    createProduct,
-    updateProduct,
-    deleteProduct,
-    bulkUpdateProducts,
-    bulkDeleteProducts,
-    loadAdminOrders,
-    updateOrderStatus,
-    loadAdminUsers,
-    updateUserStatus,
-    updateUserRole,
-    loadCategories,
-    createCategory,
-    updateCategory,
-    deleteCategory,
-    exportData,
-    importData,
-    setProductFilters,
-    setOrderFilters,
-    setUserFilters,
-    clearProductFilters,
-    clearOrderFilters,
-    clearUserFilters,
-    clearError
-  ]);
+  };
 
   return (
     <AdminContext.Provider value={value}>

@@ -8,9 +8,19 @@ import { PAGINATION_DEFAULTS } from '../utils/constants.js';
 // @route   GET /api/admin/dashboard
 // @access  Private (Admin only)
 export const getDashboardStats = asyncHandler(async (req, res, next) => {
-  const { period = '30' } = req.query; // days
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - parseInt(period));
+  const requestId = req.id || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  try {
+    const { period = '30' } = req.query; // days
+    
+    logger.info('[admin/dashboard] Request received', { 
+      requestId, 
+      period, 
+      query: req.query 
+    });
+    
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - parseInt(period));
 
   // Get basic counts
   const [
@@ -41,42 +51,93 @@ export const getDashboardStats = asyncHandler(async (req, res, next) => {
     Review.countDocuments({ status: 'pending' })
   ]);
 
-  // Get revenue trend for the period
-  const revenueTrend = await Order.getRevenueByPeriod('day', startDate);
+    // Get revenue trend for the period
+    const revenueTrendRaw = await Order.getRevenueByPeriod('day', startDate);
+    const revenueTrend = Array.isArray(revenueTrendRaw) ? revenueTrendRaw : [];
+    
+    logger.debug('[admin/dashboard] Revenue trend data', { 
+      requestId, 
+      isArray: Array.isArray(revenueTrendRaw), 
+      length: revenueTrend.length 
+    });
 
-  // Get top selling products
-  const topProducts = await Product.getTopSelling(5, parseInt(period));
+    // Get top selling products
+    const topProductsRaw = await Product.getTopSelling(5, parseInt(period));
+    const topProducts = Array.isArray(topProductsRaw) ? topProductsRaw : [];
+    
+    logger.debug('[admin/dashboard] Top products data', { 
+      requestId, 
+      isArray: Array.isArray(topProductsRaw), 
+      length: topProducts.length 
+    });
 
-  // Get recent orders
-  const recentOrders = await Order.find()
-    .populate('user', 'firstName lastName email')
-    .sort({ createdAt: -1 })
-    .limit(10)
-    .select('orderNumber total status createdAt user');
+    // Get recent orders
+    const recentOrdersRaw = await Order.find()
+      .populate('user', 'firstName lastName email')
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select('orderNumber total status createdAt user');
+    const recentOrders = Array.isArray(recentOrdersRaw) ? recentOrdersRaw : [];
 
-  res.status(200).json({
-    success: true,
-    message: 'Dashboard statistics retrieved successfully',
-    data: {
+    const responseData = {
       overview: {
-        totalUsers,
-        totalProducts,
-        totalOrders,
-        totalRevenue: totalRevenue[0]?.total || 0,
-        newUsers,
-        newOrders,
-        pendingOrders,
-        lowStockProducts,
-        pendingReviews
+        totalUsers: totalUsers || 0,
+        totalProducts: totalProducts || 0,
+        totalOrders: totalOrders || 0,
+        totalRevenue: (Array.isArray(totalRevenue) && totalRevenue[0]) ? totalRevenue[0].total || 0 : 0,
+        newUsers: newUsers || 0,
+        newOrders: newOrders || 0,
+        pendingOrders: pendingOrders || 0,
+        lowStockProducts: lowStockProducts || 0,
+        pendingReviews: pendingReviews || 0
       },
       trends: {
         revenue: revenueTrend,
         period: parseInt(period)
       },
-      topProducts,
-      recentOrders
-    }
-  });
+      topProducts: topProducts,
+      recentOrders: recentOrders
+    };
+
+    logger.info('[admin/dashboard] Response prepared', { 
+      requestId, 
+      overviewKeys: Object.keys(responseData.overview),
+      trendsCount: responseData.trends.revenue.length,
+      topProductsCount: responseData.topProducts.length,
+      recentOrdersCount: responseData.recentOrders.length
+    });
+
+    logger.debug('[admin/dashboard] About to send response', { requestId });
+    
+    const finalResponse = {
+      success: true,
+      message: 'Dashboard statistics retrieved successfully',
+      data: responseData
+    };
+    
+    logger.debug('[admin/dashboard] Final response created', { requestId, hasData: !!finalResponse.data });
+    
+    res.status(200).json(finalResponse);
+    
+    logger.debug('[admin/dashboard] Response sent successfully', { requestId });
+  } catch (error) {
+    logger.error('[admin/dashboard] Error occurred', { 
+      requestId, 
+      message: error.message, 
+      stack: error.stack,
+      query: req.query,
+      errorName: error.name,
+      errorCode: error.code
+    });
+    
+    // Return a safe fallback response
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve dashboard statistics',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error',
+      requestId
+    });
+  }
 });
 
 // @desc    Get all users
@@ -366,7 +427,7 @@ export const getOrderStats = asyncHandler(async (req, res, next) => {
   const overallStats = await Order.getOrderStats(dateFrom, dateTo);
 
   // Get revenue by period
-  const revenueByPeriod = await Order.getRevenueByPeriod(period, dateFrom, dateTo);
+  const revenueByPeriod = await Order.getRevenueByPeriod(period, dateFrom, dateTo) || [];
 
   // Get status breakdown
   const statusBreakdown = await Order.aggregate([
@@ -391,9 +452,9 @@ export const getOrderStats = asyncHandler(async (req, res, next) => {
     success: true,
     message: 'Order statistics retrieved successfully',
     data: {
-      overall: overallStats[0] || {},
-      revenueByPeriod,
-      statusBreakdown
+      overall: (Array.isArray(overallStats) && overallStats[0]) ? overallStats[0] : {},
+      revenueByPeriod: Array.isArray(revenueByPeriod) ? revenueByPeriod : [],
+      statusBreakdown: Array.isArray(statusBreakdown) ? statusBreakdown : []
     }
   });
 });
@@ -950,9 +1011,9 @@ export const getAnalytics = asyncHandler(async (req, res, next) => {
       ]);
 
       analyticsData = {
-        topSellingProducts,
-        lowStockProducts,
-        categoryBreakdown
+        topSellingProducts: topSellingProducts || [],
+        lowStockProducts: lowStockProducts || [],
+        categoryBreakdown: categoryBreakdown || []
       };
       break;
 
@@ -1015,10 +1076,10 @@ export const getAnalytics = asyncHandler(async (req, res, next) => {
       ]);
 
       analyticsData = {
-        revenue: revenueData,
-        orders: orderData,
-        users: userStats[0],
-        products: productStats[0]
+        revenue: revenueData || [],
+        orders: orderData || [],
+        users: userStats[0] || { total: [{ count: 0 }], new: [{ count: 0 }], active: [{ count: 0 }] },
+        products: productStats[0] || { total: [{ count: 0 }], active: [{ count: 0 }], lowStock: [{ count: 0 }] }
       };
   }
 

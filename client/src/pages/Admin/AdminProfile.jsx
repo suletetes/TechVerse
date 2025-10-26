@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, useAdmin } from '../../context';
 import { LoadingSpinner } from '../../components/Common';
@@ -136,7 +136,7 @@ const AdminProfile = () => {
             loadDashboardStats({ period: dateRange });
             loadCategories();
         }
-    }, [isAuthenticated, isAdmin, loadDashboardStats, loadCategories, dateRange]);
+    }, [isAuthenticated, isAdmin, dateRange]);
 
     // Load data based on active tab
     useEffect(() => {
@@ -160,7 +160,7 @@ const AdminProfile = () => {
             default:
                 break;
         }
-    }, [activeTab, isAuthenticated, isAdmin, loadAdminProducts, loadAdminOrders, loadAdminUsers, loadAnalytics]);
+    }, [activeTab, isAuthenticated, isAdmin]);
 
     // Show loading for initial load
     if (!isAuthenticated || (isAuthenticated && !user)) {
@@ -171,23 +171,23 @@ const AdminProfile = () => {
         );
     }
 
-    // Admin data for components
-    const adminData = {
+    // Admin data for components - memoized to prevent unnecessary re-renders
+    const adminData = useMemo(() => ({
         name: user?.firstName ? `${user.firstName} ${user.lastName}` : user?.email,
         role: user?.role || 'admin',
         email: user?.email,
         avatar: user?.avatar,
         lastLogin: user?.lastLogin,
         permissions: user?.permissions || []
-    };
+    }), [user]);
 
-    // Utility functions
-    const formatCurrency = (amount) => {
+    // Utility functions - memoized to prevent re-creation
+    const formatCurrency = useMemo(() => (amount) => {
         return new Intl.NumberFormat('en-GB', {
             style: 'currency',
             currency: 'GBP'
         }).format(amount || 0);
-    };
+    }, []);
 
     const getStatusColor = (status) => {
         const statusColors = {
