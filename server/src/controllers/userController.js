@@ -18,9 +18,7 @@ export const getUserProfile = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: 'Profile retrieved successfully',
-    data: {
-      user
-    }
+    data: { user }
   });
 });
 
@@ -31,7 +29,6 @@ export const updateUserProfile = asyncHandler(async (req, res, next) => {
   const allowedFields = ['firstName', 'lastName', 'phone', 'dateOfBirth', 'preferences'];
   const updates = {};
 
-  // Only allow specific fields to be updated
   allowedFields.forEach(field => {
     if (req.body[field] !== undefined) {
       updates[field] = req.body[field];
@@ -45,28 +42,34 @@ export const updateUserProfile = asyncHandler(async (req, res, next) => {
   const user = await User.findByIdAndUpdate(
     req.user._id,
     updates,
-    {
-      new: true,
-      runValidators: true
-    }
+    { new: true, runValidators: true }
   ).select('-password -emailVerificationToken -passwordResetToken');
 
   if (!user) {
     return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
   }
 
-  logger.info('User profile updated', {
-    userId: user._id,
-    updatedFields: Object.keys(updates),
-    ip: req.ip
-  });
-
   res.status(200).json({
     success: true,
     message: 'Profile updated successfully',
-    data: {
-      user
-    }
+    data: { user }
+  });
+});
+
+// @desc    Get user addresses
+// @route   GET /api/users/addresses
+// @access  Private
+export const getAddresses = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user._id).select('addresses');
+  
+  if (!user) {
+    return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Addresses retrieved successfully',
+    data: { addresses: user.addresses }
   });
 });
 
@@ -82,18 +85,10 @@ export const addAddress = asyncHandler(async (req, res, next) => {
 
   await user.addAddress(req.body);
 
-  logger.info('Address added', {
-    userId: user._id,
-    addressType: req.body.type,
-    ip: req.ip
-  });
-
   res.status(201).json({
     success: true,
     message: 'Address added successfully',
-    data: {
-      addresses: user.addresses
-    }
+    data: { addresses: user.addresses }
   });
 });
 
@@ -110,19 +105,10 @@ export const updateAddress = asyncHandler(async (req, res, next) => {
 
   try {
     await user.updateAddress(id, req.body);
-
-    logger.info('Address updated', {
-      userId: user._id,
-      addressId: id,
-      ip: req.ip
-    });
-
     res.status(200).json({
       success: true,
       message: 'Address updated successfully',
-      data: {
-        addresses: user.addresses
-      }
+      data: { addresses: user.addresses }
     });
   } catch (error) {
     return next(new AppError(error.message, 400, 'ADDRESS_UPDATE_ERROR'));
@@ -142,131 +128,49 @@ export const deleteAddress = asyncHandler(async (req, res, next) => {
 
   try {
     await user.removeAddress(id);
-
-    logger.info('Address deleted', {
-      userId: user._id,
-      addressId: id,
-      ip: req.ip
-    });
-
     res.status(200).json({
       success: true,
       message: 'Address deleted successfully',
-      data: {
-        addresses: user.addresses
-      }
+      data: { addresses: user.addresses }
     });
   } catch (error) {
     return next(new AppError(error.message, 400, 'ADDRESS_DELETE_ERROR'));
   }
 });
 
+// @desc    Get payment methods
+// @route   GET /api/users/payment-methods
+// @access  Private
+export const getPaymentMethods = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user._id).select('paymentMethods');
+  
+  if (!user) {
+    return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Payment methods retrieved successfully',
+    data: { paymentMethods: user.paymentMethods }
+  });
+});
+
 // @desc    Add payment method
 // @route   POST /api/users/payment-methods
 // @access  Private
 export const addPaymentMethod = asyncHandler(async (req, res, next) => {
-  const { paymentMethodId, setAsDefault = false } = req.body;
   const user = await User.findById(req.user._id);
 
   if (!user) {
     return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
   }
 
-  try {
-    // Create or retrieve Stripe customer
-    let stripeCustomerId = user.stripeCustomerId;
-    if (!stripeCustomerId) {
-      const customer = await paymentService.createCustomer(user);
-      stripeCustomerId = customer.id;
-      user.stripeCustomerId = stripeCustomerId;
-    }
+  await user.addPaymentMethod(req.body);
 
-    // Attach payment method to customer
-    await paymentService.addPaymentMethod(stripeCustomerId, paymentMethodId);
-
-    // Get payment method details from Stripe
-    const paymentMethod = await paymentService.getPaymentMethod(paymentMethodId);
-
-    // Add to user's payment methods
-    const paymentMethodData = {
-      type: paymentMethod.type,
-      stripePaymentMethodId: paymentMethodId,
-      isDefault: setAsDefault || user.paymentMethods.length === 0
-    };
-
-    if (paymentMethod.type === 'card') {
-      paymentMethodData.cardLast4 = paymentMethod.card.last4;
-      paymentMethodData.cardBrand = paymentMethod.card.brand;
-      paymentMethodData.expiryMonth = paymentMethod.card.exp_month;
-      paymentMethodData.expiryYear = paymentMethod.card.exp_year;
-    }
-
-    // If setting as default, unset others
-    if (setAsDefault) {
-      user.paymentMethods.forEach(pm => pm.isDefault = false);
-    }
-
-    user.paymentMethods.push(paymentMethodData);
-    await user.save();
-
-    logger.info('Payment method added', {
-      userId: user._id,
-      paymentMethodType: paymentMethod.type,
-      isDefault: setAsDefault,
-      ip: req.ip
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Payment method added successfully',
-      data: {
-        paymentMethods: user.paymentMethods
-      }
-    });
-
-  } catch (error) {
-    logger.error('Failed to add payment method', error);
-    return next(new AppError('Failed to add payment method', 500, 'PAYMENT_METHOD_ERROR'));
-  }
-});
-
-// @desc    Update payment method
-// @route   PUT /api/users/payment-methods/:id
-// @access  Private
-export const updatePaymentMethod = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  const { isDefault } = req.body;
-  const user = await User.findById(req.user._id);
-
-  if (!user) {
-    return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
-  }
-
-  const paymentMethod = user.paymentMethods.id(id);
-  if (!paymentMethod) {
-    return next(new AppError('Payment method not found', 404, 'PAYMENT_METHOD_NOT_FOUND'));
-  }
-
-  // If setting as default, unset others
-  if (isDefault) {
-    user.paymentMethods.forEach(pm => pm.isDefault = false);
-    paymentMethod.isDefault = true;
-  }
-
-  await user.save();
-
-  logger.info('Payment method updated', {
-    userId: user._id,
-    paymentMethodId: id,
-    ip: req.ip
-  });
-
-  res.status(200).json({
+  res.status(201).json({
     success: true,
-    message: 'Payment method updated successfully',
-    data: {
-      paymentMethods: user.paymentMethods
-    }
+    message: 'Payment method added successfully',
+    data: { paymentMethods: user.paymentMethods }
   });
 });
 
@@ -281,38 +185,15 @@ export const deletePaymentMethod = asyncHandler(async (req, res, next) => {
     return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
   }
 
-  const paymentMethod = user.paymentMethods.id(id);
-  if (!paymentMethod) {
-    return next(new AppError('Payment method not found', 404, 'PAYMENT_METHOD_NOT_FOUND'));
-  }
-
   try {
-    // Remove from Stripe if it exists
-    if (paymentMethod.stripePaymentMethodId) {
-      await paymentService.removePaymentMethod(paymentMethod.stripePaymentMethodId);
-    }
-
-    // Remove from user
-    paymentMethod.remove();
-    await user.save();
-
-    logger.info('Payment method deleted', {
-      userId: user._id,
-      paymentMethodId: id,
-      ip: req.ip
-    });
-
+    await user.removePaymentMethod(id);
     res.status(200).json({
       success: true,
       message: 'Payment method deleted successfully',
-      data: {
-        paymentMethods: user.paymentMethods
-      }
+      data: { paymentMethods: user.paymentMethods }
     });
-
   } catch (error) {
-    logger.error('Failed to delete payment method', error);
-    return next(new AppError('Failed to delete payment method', 500, 'PAYMENT_METHOD_DELETE_ERROR'));
+    return next(new AppError(error.message, 400, 'PAYMENT_METHOD_DELETE_ERROR'));
   }
 });
 
@@ -345,6 +226,9 @@ export const addToCart = asyncHandler(async (req, res, next) => {
     return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
   }
 
+  // Clean expired reservations first
+  await product.cleanExpiredReservations();
+  
   if (product.stock.quantity < quantity) {
     return next(new AppError('Insufficient stock', 400, 'INSUFFICIENT_STOCK'));
   }
@@ -507,31 +391,54 @@ export const addToWishlist = asyncHandler(async (req, res, next) => {
     message: 'Item added to wishlist',
     data: { wishlist }
   });
-})  });
-});ishlist }
-ta: { wda
-    wishlist',from d oveeme: 'Item rsagesrue,
-    mccess: t({
-    su00).jsonatus(2
-  res.stng');
-titus rastack ages storice ime pt', 'namtems.producpopulate('i wishlist.
-  await();saveishlist.;
-  await wdex, 1)emInce(itplist.items.s
+});
 
-  wishliST'));
-  }_IN_WISHLIDUCT_NOT04, 'PROlist', 4n wishnot ioduct Prror('new AppErn next(retur1) {
-    == -mIndex =ite);
-  if (oductIding() === proStr.product.ttemtem => index(idIs.finemt.it = wishlisndextemInst i
+// @desc    Remove item from wishlist
+// @route   DELETE /api/users/wishlist/:productId
+// @access  Private
+export const removeFromWishlist = asyncHandler(async (req, res, next) => {
+  const { productId } = req.params;
 
-  co;
-  }OUND'))HLIST_NOT_F 404, 'WISnot found',shlist Wiror('ew AppErnext(n   return list) {
-  (!wish);
-  ifr._id } req.user: usene({findOst.hli = await Wist wishlist
+  const wishlist = await Wishlist.findOne({ user: req.user._id });
+  if (!wishlist) {
+    return next(new AppError('Wishlist not found', 404, 'WISHLIST_NOT_FOUND'));
+  }
 
-  consarams;Id } = req.pctrodut { pns co=> {
- , next) , resnc (reqsyandler(aist = asyncHveFromWishlt const remoate
-exporess  Priv
-// @accproductIdhlist/:i/users/wis DELETE /apoute  
-// @rhlistem from wis itc    Removees;
+  const itemIndex = wishlist.items.findIndex(item => item.product.toString() === productId);
+  if (itemIndex === -1) {
+    return next(new AppError('Product not in wishlist', 404, 'PRODUCT_NOT_IN_WISHLIST'));
+  }
 
-// 
+  wishlist.items.splice(itemIndex, 1);
+  await wishlist.save();
+  await wishlist.populate('items.product', 'name price images stock status rating');
+
+  res.status(200).json({
+    success: true,
+    message: 'Item removed from wishlist',
+    data: { wishlist }
+  });
+});
+
+// @desc    Update payment method
+// @route   PUT /api/users/payment-methods/:id
+// @access  Private
+export const updatePaymentMethod = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
+  }
+
+  try {
+    await user.updatePaymentMethod(id, req.body);
+    res.status(200).json({
+      success: true,
+      message: 'Payment method updated successfully',
+      data: { paymentMethods: user.paymentMethods }
+    });
+  } catch (error) {
+    return next(new AppError(error.message, 400, 'PAYMENT_METHOD_UPDATE_ERROR'));
+  }
+});

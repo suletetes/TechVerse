@@ -1,4 +1,4 @@
-import { User, Product, Order, Category, Review } from '../models/index.js';
+import { User, Product, Order, Category, Review, Activity } from '../models/index.js';
 import { AppError, asyncHandler } from '../middleware/errorHandler.js';
 import imageService from '../services/imageService.js';
 import logger from '../utils/logger.js';
@@ -1167,5 +1167,660 @@ export const getAnalytics = asyncHandler(async (req, res, next) => {
     success: true,
     message: 'Analytics data retrieved successfully',
     data: analyticsData
+  });
+
+  res.status(200).json({
+    success: true,
+    message: `Bulk stock update completed. ${successful} successful, ${failed} failed`,
+    data: {
+      results,
+      summary: {
+        total: updates.length,
+        successful,
+        failed
+      }
+    }
+  });
+});
+
+// @desc    Get low stock products
+// @route   GET /api/admin/inventory/low-stock
+// @access  Private (Admin only)
+export const getLowStockProducts = asyncHandler(async (req, res, next) => {
+  const { threshold } = req.query;
+  
+  const products = await Product.find({
+    'stock.trackQuantity': true,
+    status: 'active',
+    $expr: { $lte: ['$stock.quantity', '$stock.lowStockThreshold'] }
+  })
+  .select('name sku stock category sales')
+  .populate('category', 'name')
+  .sort({ 'stock.quantity': 1 });
+
+  res.status(200).json({
+    success: true,
+    message: 'Low stock products retrieved successfully',
+    data: {
+      products,
+      count: products.length
+    }
+  });
+});
+
+// @desc    Update product stock
+// @route   PUT /api/admin/inventory/:id/stock
+// @access  Private (Admin only)
+export const updateProductStock = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { quantity, reason = 'manual_update' } = req.body;
+
+  const product = await Product.findById(id);
+  if (!product) {
+    return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
+  }
+
+  const oldQuantity = product.stock.quantity;
+  product.stock.quantity = quantity;
+  
+  await product.save();
+
+  logger.info('Stock updated by admin', {
+    productId: id,
+    adminId: req.user._id,
+    oldQuantity,
+    newQuantity: quantity,
+    reason,
+    ip: req.ip
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Stock updated successfully',
+    data: {
+      product: {
+        _id: product._id,
+        name: product.name,
+        stock: product.stock
+      }
+    }
+  });
+});
+
+// @desc    Bulk update stock
+// @route   PUT /api/admin/inventory/bulk-update
+// @access  Private (Admin only)
+export const bulkUpdateStock = asyncHandler(async (req, res, next) => {
+  const { updates } = req.body; // Array of {productId, quantity, reason}
+
+  if (!Array.isArray(updates) || updates.length === 0) {
+    return next(new AppError('Updates array is required', 400, 'INVALID_INPUT'));
+  }
+
+  const results = [];
+  
+  for (const update of updates) {
+    try {
+      const product = await Product.findById(update.productId);
+      if (!product) {
+        results.push({ 
+          productId: update.productId, 
+          success: false, 
+          error: 'Product not found' 
+        });
+        continue;
+      }
+
+      const oldQuantity = product.stock.quantity;
+      product.stock.quantity = update.quantity;
+      await product.save();
+
+      results.push({ 
+        productId: update.productId, 
+        success: true, 
+        oldQuantity, 
+        newQuantity: update.quantity 
+      });
+    } catch (error) {
+      results.push({ 
+        productId: update.productId, 
+        success: false, 
+        error: error.message 
+      });
+    }
+  }
+
+  const successful = results.filter(r => r.success).length;
+  const failed = results.filter(r => !r.success).length;
+
+  logger.info('Bulk stock update completed', {
+    adminId: req.user._id,
+    total: updates.length,
+    successful,
+    failed,
+    ip: req.ip
+  });
+
+  res.status(200).json({
+    success: true,
+    message: `Bulk stock update completed. ${successful} successful, ${failed} failed`,
+    data: {
+      results,
+      summary: {
+        total: updates.length,
+        successful,
+        failed
+      }
+    }
+  });
+});
+
+// @desc    Get inventory analytics
+// @route   GET /api/admin/inventory/analytics
+// @access  Private (Admin only)
+export const getInventoryAnalytics = asyncHandler(async (req, res, next) => {
+  const [
+    totalProducts,
+    lowStockCount,
+    outOfStockCount,
+    totalStockValue,
+    topSellingProducts
+  ] = await Promise.all([
+    Product.countDocuments({ status: 'active' }),
+    Product.countDocuments({
+      'stock.trackQuantity': true,
+      status: 'active',
+      $expr: { $lte: ['$stock.quantity', '$stock.lowStockThreshold'] }
+    }),
+    Product.countDocuments({
+      'stock.trackQuantity': true,
+      status: 'active',
+      'stock.quantity': 0
+    }),
+    Product.aggregate([
+      { $match: { status: 'active' } },
+      { $group: { _id: null, total: { $sum: { $multiply: ['$stock.quantity', '$price'] } } } }
+    ]),
+    Product.find({ status: 'active' })
+      .sort({ 'sales.totalSold': -1 })
+      .limit(10)
+      .select('name sales.totalSold stock.quantity')
+  ]);
+
+  res.status(200).json({
+    success: true,
+    message: 'Inventory analytics retrieved successfully',
+    data: {
+      overview: {
+        totalProducts,
+        lowStockCount,
+        outOfStockCount,
+        totalStockValue: totalStockValue[0]?.total || 0
+      },
+      topSellingProducts
+    }
+  });
+});
+
+// @desc    Get user activities
+// @route   GET /api/admin/users/:id/activities
+// @access  Private (Admin only)
+export const getUserActivities = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { 
+    type, 
+    limit = 50, 
+    page = 1, 
+    startDate, 
+    endDate 
+  } = req.query;
+
+  const user = await User.findById(id);
+  if (!user) {
+    return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
+  }
+
+  const skip = (page - 1) * limit;
+  const activities = await Activity.getUserActivities(id, {
+    type,
+    limit: parseInt(limit),
+    skip,
+    startDate,
+    endDate
+  });
+
+  const totalActivities = await Activity.countDocuments({
+    user: id,
+    ...(type && { type }),
+    ...(startDate || endDate) && {
+      timestamp: {
+        ...(startDate && { $gte: new Date(startDate) }),
+        ...(endDate && { $lte: new Date(endDate) })
+      }
+    }
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'User activities retrieved successfully',
+    data: {
+      activities,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalActivities / limit),
+        totalActivities,
+        hasNext: skip + activities.length < totalActivities,
+        hasPrev: page > 1
+      }
+    }
+  });
+});
+
+// @desc    Get activity statistics
+// @route   GET /api/admin/analytics/activities
+// @access  Private (Admin only)
+export const getActivityAnalytics = asyncHandler(async (req, res, next) => {
+  const { days = 30 } = req.query;
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - parseInt(days));
+
+  const [
+    totalActivities,
+    activityByType,
+    activityByDay,
+    topActiveUsers
+  ] = await Promise.all([
+    Activity.countDocuments({ timestamp: { $gte: startDate } }),
+    
+    Activity.aggregate([
+      { $match: { timestamp: { $gte: startDate } } },
+      { $group: { _id: '$type', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]),
+    
+    Activity.aggregate([
+      { $match: { timestamp: { $gte: startDate } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]),
+    
+    Activity.aggregate([
+      { $match: { timestamp: { $gte: startDate } } },
+      { $group: { _id: '$user', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          count: 1,
+          'user.firstName': 1,
+          'user.lastName': 1,
+          'user.email': 1
+        }
+      }
+    ])
+  ]);
+
+  res.status(200).json({
+    success: true,
+    message: 'Activity analytics retrieved successfully',
+    data: {
+      overview: {
+        totalActivities,
+        period: `${days} days`
+      },
+      activityByType,
+      activityByDay,
+      topActiveUsers
+    }
+  });
+});
+
+// @desc    Get comprehensive analytics dashboard
+// @route   GET /api/admin/analytics/comprehensive
+// @access  Private (Admin only)
+export const getComprehensiveAnalytics = asyncHandler(async (req, res, next) => {
+  const { period = '30d' } = req.query;
+  
+  // Calculate date range based on period
+  const now = new Date();
+  let startDate = new Date();
+  
+  switch (period) {
+    case '7d':
+      startDate.setDate(now.getDate() - 7);
+      break;
+    case '30d':
+      startDate.setDate(now.getDate() - 30);
+      break;
+    case '90d':
+      startDate.setDate(now.getDate() - 90);
+      break;
+    case '1y':
+      startDate.setFullYear(now.getFullYear() - 1);
+      break;
+    default:
+      startDate.setDate(now.getDate() - 30);
+  }
+
+  const [
+    // Revenue Analytics
+    revenueData,
+    revenueByDay,
+    revenueByCategory,
+    
+    // Order Analytics
+    orderStats,
+    ordersByStatus,
+    ordersByDay,
+    
+    // Product Analytics
+    topSellingProducts,
+    lowStockProducts,
+    productsByCategory,
+    
+    // User Analytics
+    userGrowth,
+    usersByStatus,
+    userActivity,
+    
+    // Geographic Analytics
+    ordersByRegion
+  ] = await Promise.all([
+    // Revenue Analytics
+    Order.aggregate([
+      { $match: { createdAt: { $gte: startDate }, status: { $in: ['completed', 'delivered'] } } },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$totalAmount' },
+          averageOrderValue: { $avg: '$totalAmount' },
+          totalOrders: { $sum: 1 }
+        }
+      }
+    ]),
+    
+    // Revenue by day
+    Order.aggregate([
+      { $match: { createdAt: { $gte: startDate }, status: { $in: ['completed', 'delivered'] } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          revenue: { $sum: '$totalAmount' },
+          orders: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]),
+    
+    // Revenue by category
+    Order.aggregate([
+      { $match: { createdAt: { $gte: startDate }, status: { $in: ['completed', 'delivered'] } } },
+      { $unwind: '$items' },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'items.product',
+          foreignField: '_id',
+          as: 'product'
+        }
+      },
+      { $unwind: '$product' },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'product.category',
+          foreignField: '_id',
+          as: 'category'
+        }
+      },
+      { $unwind: '$category' },
+      {
+        $group: {
+          _id: '$category.name',
+          revenue: { $sum: { $multiply: ['$items.quantity', '$items.price'] } },
+          orders: { $sum: 1 }
+        }
+      },
+      { $sort: { revenue: -1 } }
+    ]),
+    
+    // Order Statistics
+    Order.aggregate([
+      { $match: { createdAt: { $gte: startDate } } },
+      {
+        $group: {
+          _id: null,
+          totalOrders: { $sum: 1 },
+          completedOrders: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+          pendingOrders: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } },
+          cancelledOrders: { $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] } }
+        }
+      }
+    ]),
+    
+    // Orders by status
+    Order.aggregate([
+      { $match: { createdAt: { $gte: startDate } } },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]),
+    
+    // Orders by day
+    Order.aggregate([
+      { $match: { createdAt: { $gte: startDate } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]),
+    
+    // Top selling products
+    Order.aggregate([
+      { $match: { createdAt: { $gte: startDate }, status: { $in: ['completed', 'delivered'] } } },
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: '$items.product',
+          totalSold: { $sum: '$items.quantity' },
+          revenue: { $sum: { $multiply: ['$items.quantity', '$items.price'] } }
+        }
+      },
+      {
+        $lookup: {
+          from: 'products',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'product'
+        }
+      },
+      { $unwind: '$product' },
+      {
+        $project: {
+          name: '$product.name',
+          totalSold: 1,
+          revenue: 1
+        }
+      },
+      { $sort: { totalSold: -1 } },
+      { $limit: 10 }
+    ]),
+    
+    // Low stock products
+    Product.find({
+      'stock.trackQuantity': true,
+      status: 'active',
+      $expr: { $lte: ['$stock.quantity', '$stock.lowStockThreshold'] }
+    })
+    .select('name stock')
+    .limit(10),
+    
+    // Products by category
+    Product.aggregate([
+      { $match: { status: 'active' } },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'category',
+          foreignField: '_id',
+          as: 'category'
+        }
+      },
+      { $unwind: '$category' },
+      { $group: { _id: '$category.name', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]),
+    
+    // User growth
+    User.aggregate([
+      { $match: { createdAt: { $gte: startDate } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          newUsers: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]),
+    
+    // Users by status
+    User.aggregate([
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]),
+    
+    // User activity (if Activity model exists)
+    Activity.aggregate([
+      { $match: { timestamp: { $gte: startDate } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
+          activities: { $sum: 1 },
+          uniqueUsers: { $addToSet: '$user' }
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          activities: 1,
+          uniqueUsers: { $size: '$uniqueUsers' }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]),
+    
+    // Orders by region (based on shipping address)
+    Order.aggregate([
+      { $match: { createdAt: { $gte: startDate } } },
+      {
+        $group: {
+          _id: '$shippingAddress.state',
+          orders: { $sum: 1 },
+          revenue: { $sum: '$totalAmount' }
+        }
+      },
+      { $sort: { orders: -1 } },
+      { $limit: 10 }
+    ])
+  ]);
+
+  res.status(200).json({
+    success: true,
+    message: 'Comprehensive analytics retrieved successfully',
+    data: {
+      period,
+      dateRange: { startDate, endDate: now },
+      revenue: {
+        overview: revenueData[0] || { totalRevenue: 0, averageOrderValue: 0, totalOrders: 0 },
+        byDay: revenueByDay,
+        byCategory: revenueByCategory
+      },
+      orders: {
+        overview: orderStats[0] || { totalOrders: 0, completedOrders: 0, pendingOrders: 0, cancelledOrders: 0 },
+        byStatus: ordersByStatus,
+        byDay: ordersByDay
+      },
+      products: {
+        topSelling: topSellingProducts,
+        lowStock: lowStockProducts,
+        byCategory: productsByCategory
+      },
+      users: {
+        growth: userGrowth,
+        byStatus: usersByStatus,
+        activity: userActivity
+      },
+      geographic: {
+        ordersByRegion
+      }
+    }
+  });
+});
+
+// @desc    Get real-time dashboard metrics
+// @route   GET /api/admin/analytics/realtime
+// @access  Private (Admin only)
+export const getRealtimeMetrics = asyncHandler(async (req, res, next) => {
+  const now = new Date();
+  const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const lastHour = new Date(now.getTime() - 60 * 60 * 1000);
+
+  const [
+    activeUsers,
+    recentOrders,
+    recentActivities,
+    systemHealth
+  ] = await Promise.all([
+    // Active users (users with activity in last hour)
+    Activity.distinct('user', { timestamp: { $gte: lastHour } }).then(users => users.length),
+    
+    // Recent orders (last 24 hours)
+    Order.find({ createdAt: { $gte: last24Hours } })
+      .populate('user', 'firstName lastName email')
+      .select('_id totalAmount status createdAt')
+      .sort({ createdAt: -1 })
+      .limit(10),
+    
+    // Recent activities (last hour)
+    Activity.find({ timestamp: { $gte: lastHour } })
+      .populate('user', 'firstName lastName')
+      .select('type description timestamp user')
+      .sort({ timestamp: -1 })
+      .limit(20),
+    
+    // System health metrics
+    Promise.resolve({
+      uptime: process.uptime(),
+      memoryUsage: process.memoryUsage(),
+      timestamp: now
+    })
+  ]);
+
+  res.status(200).json({
+    success: true,
+    message: 'Real-time metrics retrieved successfully',
+    data: {
+      activeUsers,
+      recentOrders,
+      recentActivities,
+      systemHealth,
+      timestamp: now
+    }
   });
 });
