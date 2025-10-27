@@ -53,6 +53,8 @@ import {
   handleValidationErrors,
   validationRateLimit
 } from './src/middleware/enhancedValidation.js';
+// Import performance monitoring
+import performanceMonitor from './src/middleware/performanceMonitor.js';
 // Import enhanced CORS handling
 import {
   corsErrorDetector,
@@ -72,6 +74,7 @@ import notificationRoutes from './src/routes/notifications.js';
 import userProfileRoutes from './src/routes/userProfile.js';
 import searchRoutes from './src/routes/search.js';
 import securityRoutes from './src/routes/security.js';
+import performanceRoutes from './src/routes/performance.js';
 // Initialize Passport strategies
 initializePassport();
 // Connect to MongoDB
@@ -130,7 +133,7 @@ if (NODE_ENV === 'development') {
   app.use(productionLogger);
 }
 // Performance monitoring
-app.use(performanceMonitor);
+app.use(performanceMonitor.monitorRequest());
 // Static file serving configuration
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -191,6 +194,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/profile', userProfileRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/security', securityRoutes);
+app.use('/api/performance', performanceRoutes);
 // Health check endpoints
 import healthCheck from './src/utils/healthCheck.js';
 import healthMonitor from './src/utils/healthMonitor.js';
