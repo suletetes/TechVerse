@@ -257,7 +257,7 @@ export const mockFetch = (responses = {}) => {
       });
     }
     
-    if (url.includes('/api/auth/profile')) {
+    if (url.includes('/api/auth/me')) {
       return Promise.resolve({
         ok: true,
         status: 200,
