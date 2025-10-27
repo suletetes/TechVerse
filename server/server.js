@@ -53,8 +53,7 @@ import {
   handleValidationErrors,
   validationRateLimit
 } from './src/middleware/enhancedValidation.js';
-// Import performance monitoring
-// import performanceMonitor from './src/middleware/performanceMonitor.js';
+// Import performance monitoring (imported from middleware/index.js)
 // Import enhanced CORS handling
 import {
   corsErrorDetector,
