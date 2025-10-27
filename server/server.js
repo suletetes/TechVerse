@@ -42,6 +42,17 @@ import {
   trackFailedAuth,
   securityAuditLogger
 } from './src/middleware/securityMiddleware.js';
+// Import CSRF protection
+import {
+  conditionalCSRF,
+  adminCSRFProtection,
+  csrfErrorHandler
+} from './src/middleware/csrfProtection.js';
+// Import enhanced validation
+import {
+  handleValidationErrors,
+  validationRateLimit
+} from './src/middleware/enhancedValidation.js';
 // Import enhanced CORS handling
 import {
   corsErrorDetector,
@@ -60,6 +71,7 @@ import uploadRoutes from './src/routes/upload.js';
 import notificationRoutes from './src/routes/notifications.js';
 import userProfileRoutes from './src/routes/userProfile.js';
 import searchRoutes from './src/routes/search.js';
+import securityRoutes from './src/routes/security.js';
 // Initialize Passport strategies
 initializePassport();
 // Connect to MongoDB
@@ -103,6 +115,12 @@ app.use(express.urlencoded({
 // Enhanced input sanitization and security checks
 // app.use(inputSanitization); // Temporarily disabled - causing validation issues
 app.use(suspiciousActivityDetector);
+
+// Validation rate limiting
+app.use(validationRateLimit);
+
+// CSRF protection for state-changing operations
+app.use(conditionalCSRF);
 // Session and Passport will be initialized in async startup function
 // Logging middleware
 if (NODE_ENV === 'development') {
@@ -172,6 +190,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/profile', userProfileRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/security', securityRoutes);
 // Health check endpoints
 import healthCheck from './src/utils/healthCheck.js';
 import healthMonitor from './src/utils/healthMonitor.js';
@@ -290,6 +309,10 @@ app.post('/api/health/monitor/stop', (req, res) => {
 app.use(notFound);
 // CORS error handling (before global error handler)
 app.use(corsErrorHandler);
+
+// CSRF error handling (before global error handler)
+app.use(csrfErrorHandler);
+
 // Sentry error handler (before global error handler)
 app.use(sentryConfig.getErrorHandler());
 // Global error handling middleware (must be last)
