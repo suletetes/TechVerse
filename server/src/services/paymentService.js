@@ -1,4 +1,5 @@
-import Stripe from 'stripe';
+// Optional Stripe import - will be loaded dynamically if available
+let Stripe = null;
 import logger from '../utils/logger.js';
 
 class PaymentService {
@@ -6,12 +7,28 @@ class PaymentService {
     this.stripe = null;
     this.isConfigured = false;
     this.webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    this.initializeStripe();
+    // Initialize asynchronously
+    this.initializeStripe().catch(error => {
+      logger.error('Failed to initialize payment service', error);
+    });
   }
 
   // Initialize Stripe
-  initializeStripe() {
+  async initializeStripe() {
     try {
+      // Try to load Stripe dynamically
+      if (!Stripe) {
+        try {
+          const stripeModule = await import('stripe');
+          Stripe = stripeModule.default;
+        } catch (importError) {
+          logger.warn('Stripe package not available. Payment service will be disabled.', {
+            error: importError.message
+          });
+          return;
+        }
+      }
+
       if (!process.env.STRIPE_SECRET_KEY) {
         logger.warn('Stripe configuration missing. Payment service will be disabled.');
         return;

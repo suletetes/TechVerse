@@ -1,4 +1,12 @@
-import { hash, verify } from '@node-rs/argon2';
+// Optional Argon2 import - will fallback to bcrypt if not available
+let argon2 = null;
+try {
+  const argon2Module = await import('@node-rs/argon2');
+  argon2 = argon2Module;
+} catch (error) {
+  console.warn('Argon2 not available, using bcrypt fallback:', error.message);
+}
+
 import bcrypt from 'bcryptjs';
 import logger from '../utils/logger.js';
 
@@ -22,9 +30,9 @@ class PasswordService {
   }
 
   /**
-   * Hash a password using Argon2
+   * Hash a password using Argon2 (if available) or bcrypt fallback
    * @param {string} password - Plain text password
-   * @returns {Promise<string>} - Hashed password with Argon2 prefix
+   * @returns {Promise<string>} - Hashed password
    */
   async hashPassword(password) {
     try {
@@ -36,18 +44,32 @@ class PasswordService {
         throw new Error('Password must be at least 6 characters long');
       }
 
-      const hashedPassword = await hash(password, this.argon2Options);
-      
-      // Add prefix to identify Argon2 hashes
-      const prefixedHash = `$argon2id${hashedPassword}`;
+      // Use Argon2 if available, otherwise fallback to bcrypt
+      if (argon2) {
+        const hashedPassword = await argon2.hash(password, this.argon2Options);
+        
+        // Add prefix to identify Argon2 hashes
+        const prefixedHash = `$argon2id${hashedPassword}`;
 
-      logger.debug('Password hashed successfully with Argon2', {
-        passwordLength: password.length,
-        hashLength: prefixedHash.length,
-        algorithm: 'argon2id'
-      });
+        logger.debug('Password hashed successfully with Argon2', {
+          passwordLength: password.length,
+          hashLength: prefixedHash.length,
+          algorithm: 'argon2id'
+        });
 
-      return prefixedHash;
+        return prefixedHash;
+      } else {
+        // Fallback to bcrypt
+        const hashedPassword = await bcrypt.hash(password, this.bcryptRounds);
+        
+        logger.debug('Password hashed successfully with bcrypt', {
+          passwordLength: password.length,
+          hashLength: hashedPassword.length,
+          algorithm: 'bcrypt'
+        });
+
+        return hashedPassword;
+      }
     } catch (error) {
       logger.error('Password hashing failed', {
         error: error.message,
@@ -70,10 +92,10 @@ class PasswordService {
       }
 
       // Check if it's an Argon2 hash (has our custom prefix)
-      if (hash.startsWith('$argon2id')) {
+      if (hash.startsWith('$argon2id') && argon2) {
         // Remove our custom prefix and verify with Argon2
         const actualHash = hash.substring('$argon2id'.length);
-        const isValid = await verify(actualHash, password);
+        const isValid = await argon2.verify(actualHash, password);
         
         logger.debug('Password verification completed', {
           algorithm: 'argon2id',
@@ -85,8 +107,8 @@ class PasswordService {
       }
 
       // Check if it's a standard Argon2 hash (without our prefix)
-      if (hash.startsWith('$argon2')) {
-        const isValid = await verify(hash, password);
+      if (hash.startsWith('$argon2') && argon2) {
+        const isValid = await argon2.verify(hash, password);
         
         logger.debug('Password verification completed', {
           algorithm: 'argon2',

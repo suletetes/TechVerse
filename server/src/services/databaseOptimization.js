@@ -6,6 +6,12 @@ class DatabaseOptimizationService {
   // Create optimized indexes for better performance
   async createOptimizedIndexes() {
     try {
+      // Skip index creation if disabled
+      if (process.env.SKIP_INDEX_CREATION === 'true') {
+        logger.info('Skipping database index creation (disabled by environment variable)');
+        return;
+      }
+      
       logger.info('Creating optimized database indexes...');
 
       // Product indexes for search and filtering
