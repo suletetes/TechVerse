@@ -1,5 +1,5 @@
 import express from 'express';
-import { requireAuth, requireRole } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 import { auditSystemConfiguration } from '../middleware/adminAuditLogger.js';
 import enhancedLogger from '../utils/enhancedLogger.js';
 import performanceMonitor from '../middleware/performanceMonitor.js';
@@ -15,7 +15,7 @@ const router = express.Router();
  */
 
 // Apply authentication and admin role requirement to all routes
-router.use(requireAuth);
+router.use(authenticate);
 router.use(requireRole(['admin', 'super_admin']));
 
 /**

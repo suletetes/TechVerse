@@ -35,7 +35,9 @@ import {
   updateProduct,
   deleteProduct,
   getOrderById,
-  updateOrderStatus
+  updateOrderStatus,
+  getAdminProfile,
+  updateAdminProfile
 } from '../controllers/adminController.js';
 import {
   getSecurityDashboard,
@@ -115,6 +117,10 @@ const bulkSectionUpdateValidation = [
 
 // All routes require admin authentication
 router.use(authenticate, requireAdmin);
+
+// Admin profile routes
+router.get('/profile', getAdminProfile);
+router.put('/profile', updateAdminProfile);
 
 // Dashboard routes
 router.get('/dashboard', getDashboardStats);
