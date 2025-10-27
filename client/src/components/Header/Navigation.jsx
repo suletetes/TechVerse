@@ -12,7 +12,7 @@ const Navigation = () => {
 
     // Debug logging removed for cleaner console
 
-    const wishlistCount = getWishlistCount();
+    const wishlistCount = isAuthenticated ? getWishlistCount() : 0;
 
     const handleLogout = async () => {
         try {

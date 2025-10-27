@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, useAdmin } from '../../context';
+import API_BASE_URL from '../../api/config.js';
 import { LoadingSpinner } from '../../components/Common';
 import {
     AdminSidebar,
@@ -295,8 +296,8 @@ const AdminProfile = () => {
         try {
             console.log('Saving admin profile:', adminProfileData);
             
-            // Simulate API call with proper error handling
-            const response = await fetch('/api/admin/profile', {
+            // API call with proper error handling
+            const response = await fetch(`${API_BASE_URL}/admin/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

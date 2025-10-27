@@ -122,7 +122,7 @@ const WishlistContext = createContext();
 // Provider component
 export const WishlistProvider = ({ children }) => {
   const [state, dispatch] = useReducer(wishlistReducer, initialState);
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
 
   // Safely access notification context without throwing error
   const notificationContext = useContext(NotificationContext);
@@ -353,8 +353,12 @@ export const WishlistProvider = ({ children }) => {
 
   // Load wishlist on mount and authentication changes
   useEffect(() => {
+    // Wait for auth loading to complete before making any API calls
+    if (isLoading) return;
+    
+    // Load wishlist for authenticated users or guest users
     loadWishlist();
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.id, isLoading]);
 
   // Auto-sync wishlist when user logs in
   useEffect(() => {
