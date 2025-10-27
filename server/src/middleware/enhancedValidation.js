@@ -171,11 +171,11 @@ export const detectCommandInjection = (fieldName, excludeFields = []) => {
     if (excludeFields.includes(fieldName)) return true;
     
     const commandPatterns = [
-      /[;&|`${}\\[\\]]/,
-      /(\\n|\\r)/,
-      /(\\.\\.\\/|\\.\\.\\\\/)/,
-      /(\\x[0-9a-f]{2})/i,
-      /(eval\\s*\\(|exec\\s*\\(|system\\s*\\()/i
+      /[;&|`${}[\]]/,
+      /(\n|\r)/,
+      /(\.\.\/|\.\.\\)/,
+      /(\x[0-9a-f]{2})/i,
+      /(eval\s*\(|exec\s*\(|system\s*\()/i
     ];
     
     const suspiciousPattern = commandPatterns.find(pattern => pattern.test(value));
@@ -205,10 +205,11 @@ export const detectPathTraversal = (fieldName) => {
     if (typeof value !== 'string') return true;
     
     const pathTraversalPatterns = [
-      /\\.\\.\\/|\\.\\.\\\\/,
+      /\.\.\//g,
+      /\.\.\\/g,
       /%2e%2e%2f|%2e%2e%5c/i,
       /\\x2e\\x2e\\x2f|\\x2e\\x2e\\x5c/i,
-      /\\/etc\\/passwd|\\/windows\\/system32/i
+      /\/etc\/passwd|\/windows\/system32/i
     ];
     
     const suspiciousPattern = pathTraversalPatterns.find(pattern => pattern.test(value));
@@ -308,7 +309,7 @@ export const securePasswordValidation = (fieldName = 'password', options = {}) =
         errors.push('at least one number');
       }
       
-      if (requireSpecialChars && !/[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]/.test(value)) {
+      if (requireSpecialChars && !/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(value)) {
         errors.push('at least one special character');
       }
       
@@ -326,7 +327,7 @@ export const securePasswordValidation = (fieldName = 'password', options = {}) =
       
       // Check for personal information in password (if user data available)
       if (req.body.email && value.toLowerCase().includes(req.body.email.split('@')[0].toLowerCase())) {
-        errors.push('a password that doesn\\'t contain your email');
+        errors.push('a password that doesn\'t contain your email');
       }
       
       if (errors.length > 0) {
