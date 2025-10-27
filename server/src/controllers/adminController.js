@@ -2106,3 +2106,119 @@ export const optimizeDatabase = asyncHandler(async (req, res, next) => {
     message: 'Database optimization completed successfully'
   });
 });
+
+// @desc    Get admin profile
+// @route   GET /api/admin/profile
+// @access  Private (Admin only)
+export const getAdminProfile = asyncHandler(async (req, res, next) => {
+  const requestId = req.id || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  try {
+    logger.info('[admin/profile] Get profile request received', { 
+      requestId, 
+      adminId: req.user._id 
+    });
+
+    // Get admin user data (excluding sensitive fields)
+    const admin = await User.findById(req.user._id).select('-password -refreshTokens -emailVerificationToken -passwordResetToken');
+    
+    if (!admin) {
+      return next(new AppError('Admin not found', 404));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Admin profile retrieved successfully',
+      data: {
+        profile: admin
+      }
+    });
+
+  } catch (error) {
+    logger.error('[admin/profile] Error getting admin profile', {
+      requestId,
+      error: error.message,
+      stack: error.stack,
+      adminId: req.user._id
+    });
+    
+    return next(new AppError('Failed to retrieve admin profile', 500));
+  }
+});
+
+// @desc    Update admin profile
+// @route   PUT /api/admin/profile
+// @access  Private (Admin only)
+export const updateAdminProfile = asyncHandler(async (req, res, next) => {
+  const requestId = req.id || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  try {
+    logger.info('[admin/profile] Update profile request received', { 
+      requestId, 
+      adminId: req.user._id,
+      updateFields: Object.keys(req.body)
+    });
+
+    const { firstName, lastName, email, phone, bio, preferences } = req.body;
+
+    // Find admin user
+    const admin = await User.findById(req.user._id);
+    
+    if (!admin) {
+      return next(new AppError('Admin not found', 404));
+    }
+
+    // Check if email is being changed and if it's already taken
+    if (email && email !== admin.email) {
+      const existingUser = await User.findOne({ email, _id: { $ne: req.user._id } });
+      if (existingUser) {
+        return next(new AppError('Email already in use', 400));
+      }
+    }
+
+    // Update allowed fields
+    const updateData = {};
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    if (email !== undefined) updateData.email = email;
+    if (phone !== undefined) updateData.phone = phone;
+    if (bio !== undefined) updateData.bio = bio;
+    if (preferences !== undefined) updateData.preferences = { ...admin.preferences, ...preferences };
+
+    // Update the admin profile
+    const updatedAdmin = await User.findByIdAndUpdate(
+      req.user._id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password -refreshTokens -emailVerificationToken -passwordResetToken');
+
+    logger.info('[admin/profile] Admin profile updated successfully', {
+      requestId,
+      adminId: req.user._id,
+      updatedFields: Object.keys(updateData)
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Admin profile updated successfully',
+      data: {
+        profile: updatedAdmin
+      }
+    });
+
+  } catch (error) {
+    logger.error('[admin/profile] Error updating admin profile', {
+      requestId,
+      error: error.message,
+      stack: error.stack,
+      adminId: req.user._id
+    });
+    
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return next(new AppError(`Validation error: ${validationErrors.join(', ')}`, 400));
+    }
+    
+    return next(new AppError('Failed to update admin profile', 500));
+  }
+});

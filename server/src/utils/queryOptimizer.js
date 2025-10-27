@@ -11,10 +11,12 @@ class QueryOptimizer {
   constructor() {
     this.queryCache = optionalCache;
     this.slowQueryThreshold = 1000; // 1 second
-    this.enableQueryLogging = process.env.NODE_ENV === 'development';
+    this.enableQueryLogging = process.env.NODE_ENV === 'development' && process.env.DISABLE_QUERY_LOGGING !== 'true';
     this.queryStats = new Map();
     
-    this.setupMongoosePlugins();
+    if (!process.env.DISABLE_QUERY_LOGGING) {
+      this.setupMongoosePlugins();
+    }
   }
 
   /**

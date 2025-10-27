@@ -28,7 +28,7 @@ class WishlistService extends BaseApiService {
         return this.delete(`/users/wishlist/${productId}`);
     }
 
-    async getWishlistCount() {
+    async fetchWishlistCount() {
         try {
             const response = await this.read('/users/wishlist');
             return {
@@ -42,6 +42,33 @@ class WishlistService extends BaseApiService {
                 count: 0,
                 error: error.response?.data?.message || 'Failed to get wishlist count'
             };
+        }
+    }
+
+    // Utility functions for local state (no API calls)
+    getWishlistCount(items = []) {
+        return Array.isArray(items) ? items.length : 0;
+    }
+
+    isInWishlist(productId, items = []) {
+        if (!productId || !Array.isArray(items)) return false;
+        return items.some(item => 
+            item.product?._id === productId || 
+            item.product === productId || 
+            item._id === productId
+        );
+    }
+
+    async syncWishlist(productIds = []) {
+        if (!Array.isArray(productIds) || productIds.length === 0) {
+            return { success: true, message: 'No items to sync' };
+        }
+        
+        try {
+            return this.create('/users/wishlist/sync', { productIds });
+        } catch (error) {
+            console.error('Error syncing wishlist:', error);
+            throw error;
         }
     }
 }
