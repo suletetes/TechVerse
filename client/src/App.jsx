@@ -24,6 +24,8 @@ import {
     AdminOrderManagement,
     AdminProductManagement
 } from "./pages"
+import EditProfile from "./pages/EditProfile"
+import "./utils/uiUpdateSummary" // UI update summary and verification
 
 
 import {
@@ -142,6 +144,14 @@ const router = createBrowserRouter([
                 element: (
                     <UserRoute>
                         <UserProfile />
+                    </UserRoute>
+                ),
+            },
+            {
+                path: 'profile/edit',
+                element: (
+                    <UserRoute>
+                        <EditProfile />
                     </UserRoute>
                 ),
             },

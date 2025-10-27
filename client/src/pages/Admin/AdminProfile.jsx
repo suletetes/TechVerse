@@ -293,21 +293,65 @@ const AdminProfile = () => {
 
     const handleSaveAdminProfile = async () => {
         try {
-            // Here you would typically call an API to save the profile
             console.log('Saving admin profile:', adminProfileData);
-            setIsEditingProfile(false);
-            // You can add actual API call here
+            
+            // Simulate API call with proper error handling
+            const response = await fetch('/api/admin/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(adminProfileData)
+            });
+            
+            if (response.ok) {
+                const updatedProfile = await response.json();
+                setAdminProfileData(updatedProfile);
+                setIsEditingProfile(false);
+                
+                // Show success message
+                alert('Admin profile updated successfully!');
+                console.log('✅ Admin profile saved successfully');
+            } else {
+                throw new Error(`Failed to update profile: ${response.status}`);
+            }
         } catch (error) {
-            console.error('Error saving admin profile:', error);
+            console.error('❌ Error saving admin profile:', error);
+            
+            // For now, still allow the edit to complete (since backend might not be ready)
+            setIsEditingProfile(false);
+            alert('Profile updated locally. Note: Backend integration needed for persistence.');
         }
     };
 
     const handleAdminAvatarChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            // Handle avatar upload
             console.log('Avatar file selected:', file);
-            // You can add actual file upload logic here
+            
+            // Validate file type and size
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                alert('File size must be less than 5MB');
+                return;
+            }
+            
+            // Create preview URL
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                setAdminProfileData(prev => ({
+                    ...prev,
+                    avatar: event.target.result
+                }));
+            };
+            reader.readAsDataURL(file);
+            
+            console.log('✅ Avatar preview updated');
         }
     };
 
