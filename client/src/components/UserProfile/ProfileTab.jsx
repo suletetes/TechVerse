@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context';
+import { useUserProfile } from '../../context/UserProfileContext';
 import { LoadingSpinner } from '../Common';
 
 const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
-    const { user, updateProfile, isLoading } = useAuth();
+    const { user } = useAuth();
+    const { profile, updateProfile, loading } = useUserProfile();
     const [isEditing, setIsEditing] = useState(false);
     const [profileData, setProfileData] = useState({
         firstName: '',
@@ -17,29 +19,30 @@ const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
 
     // Load user data when component mounts
     useEffect(() => {
-        if (user) {
+        const userData = profile || user;
+        if (userData) {
             // Convert ISO date to yyyy-MM-dd format for HTML date input
             let formattedDate = '';
-            if (user.dateOfBirth) {
+            if (userData.dateOfBirth) {
                 try {
-                    const date = new Date(user.dateOfBirth);
+                    const date = new Date(userData.dateOfBirth);
                     formattedDate = date.toISOString().split('T')[0];
                 } catch (error) {
-                    console.warn('Invalid date format:', user.dateOfBirth);
+                    console.warn('Invalid date format:', userData.dateOfBirth);
                 }
             }
             
             setProfileData({
-                firstName: user.firstName || '',
-                lastName: user.lastName || '',
-                email: user.email || '',
-                phone: user.phone || '',
+                firstName: userData.firstName || '',
+                lastName: userData.lastName || '',
+                email: userData.email || '',
+                phone: userData.phone || '',
                 dateOfBirth: formattedDate,
-                gender: user.gender || '',
-                avatar: user.avatar || ''
+                gender: userData.gender || '',
+                avatar: userData.avatar || ''
             });
         }
-    }, [user]);
+    }, [user, profile]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -80,7 +83,7 @@ const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
         return Math.round((completedFields.length / fields.length) * 100);
     };
 
-    if (isLoading) {
+    if (loading) {
         return (
             <div className="store-card fill-card d-flex justify-content-center align-items-center" style={{ minHeight: '300px' }}>
                 <LoadingSpinner size="lg" />

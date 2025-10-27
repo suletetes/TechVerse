@@ -455,11 +455,10 @@ export const AdminProvider = ({ children }) => {
       console.error('[AdminContext] Dashboard stats error:', error);
       const errorMessage = error?.response?.data?.message || error?.message || 'Failed to load dashboard statistics';
       dispatch({ type: ADMIN_ACTIONS.SET_DASHBOARD_ERROR, payload: errorMessage });
-      showNotification(`Dashboard Error: ${errorMessage}`, 'error');
-      // Don't re-throw to prevent uncaught promise rejection
+      // Remove showNotification to prevent infinite re-renders
       return null;
     }
-  }, [isAuthenticated, isAdmin, showNotification]);
+  }, [isAuthenticated, isAdmin]);
 
   const loadAnalytics = useCallback(async (params = {}) => {
     if (!isAuthenticated || !isAdmin()) {
@@ -697,10 +696,10 @@ export const AdminProvider = ({ children }) => {
       return response;
     } catch (error) {
       dispatch({ type: ADMIN_ACTIONS.SET_CATEGORIES_ERROR, payload: error.message });
-      showNotification(error.message, 'error');
-      throw error;
+      // Remove showNotification to prevent infinite re-renders
+      return null;
     }
-  }, [isAuthenticated, isAdmin, showNotification]);
+  }, [isAuthenticated, isAdmin]);
 
   const createCategory = useCallback(async (categoryData) => {
     if (!isAuthenticated || !isAdmin()) {
