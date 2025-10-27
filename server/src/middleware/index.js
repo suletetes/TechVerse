@@ -15,3 +15,4 @@ export { default as errorHandler } from './errorHandler.js';
 export { default as upload } from './upload.js';
 export { default as security } from './security.js';
 export { default as logging } from './logging.js';
+export { default as performanceMonitor } from './performanceMonitor.js';

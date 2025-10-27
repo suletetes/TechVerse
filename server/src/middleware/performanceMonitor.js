@@ -13,9 +13,12 @@ class PerformanceMonitor {
     this.memoryWarningThreshold = 0.8; // 80% memory usage
     this.cpuWarningThreshold = 0.8; // 80% CPU usage
     this.enableDetailedLogging = process.env.NODE_ENV === 'development';
+    this.isDisabled = process.env.DISABLE_PERFORMANCE_MONITORING === 'true';
     
-    // Start system monitoring
-    this.startSystemMonitoring();
+    // Start system monitoring only if not disabled
+    if (!this.isDisabled) {
+      this.startSystemMonitoring();
+    }
   }
 
   /**
@@ -23,6 +26,11 @@ class PerformanceMonitor {
    */
   monitorRequest() {
     return (req, res, next) => {
+      // Skip monitoring if disabled
+      if (this.isDisabled) {
+        return next();
+      }
+      
       const startTime = process.hrtime.bigint();
       const startMemory = process.memoryUsage();
       

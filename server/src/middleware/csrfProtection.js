@@ -44,12 +44,15 @@ const csrfProtection = (req, res, next) => {
   next();
 };
 
-// Add CSRF token to request object
-req.csrfToken = () => {
-  if (!req.session.csrfToken) {
-    req.session.csrfToken = generateCSRFToken();
-  }
-  return req.session.csrfToken;
+// CSRF token middleware - adds csrfToken method to request
+export const addCSRFToken = (req, res, next) => {
+  req.csrfToken = () => {
+    if (!req.session.csrfToken) {
+      req.session.csrfToken = generateCSRFToken();
+    }
+    return req.session.csrfToken;
+  };
+  next();
 };
 
 /**

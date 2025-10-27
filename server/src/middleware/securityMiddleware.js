@@ -36,6 +36,11 @@ try {
  * Enhanced rate limiting with security monitoring
  */
 export const createSecureRateLimit = (options = {}) => {
+  // Return a no-op middleware if rate limiting is disabled
+  if (process.env.DISABLE_RATE_LIMITING === 'true') {
+    return (req, res, next) => next();
+  }
+  
   const defaultOptions = {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100,
