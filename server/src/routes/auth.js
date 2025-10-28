@@ -137,7 +137,11 @@ const updateProfileValidation = [
   body('dateOfBirth')
     .optional()
     .isISO8601()
-    .withMessage('Please provide a valid date of birth')
+    .withMessage('Please provide a valid date of birth'),
+  body('gender')
+    .optional()
+    .isIn(['male', 'female', 'other', 'prefer-not-to-say'])
+    .withMessage('Gender must be one of: male, female, other, prefer-not-to-say')
 ];
 
 // Public routes with enhanced security
