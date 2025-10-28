@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth, useAdmin } from '../../context';
 import API_BASE_URL from '../../api/config.js';
 import { LoadingSpinner } from '../../components/Common';
+import { tokenManager } from '../../utils/tokenManager.js';
 import {
     AdminSidebar,
     AdminHeader,
@@ -297,25 +298,34 @@ const AdminProfile = () => {
             console.log('Saving admin profile:', adminProfileData);
             
             // API call with proper error handling
+            const token = tokenManager.getToken();
+            if (!token) {
+                throw new Error('No authentication token found. Please log in again.');
+            }
+
             const response = await fetch(`${API_BASE_URL}/admin/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(adminProfileData)
             });
             
             if (response.ok) {
-                const updatedProfile = await response.json();
-                setAdminProfileData(updatedProfile);
+                const result = await response.json();
+                // Update the admin profile data with the returned profile
+                if (result.success && result.data && result.data.profile) {
+                    setAdminProfileData(result.data.profile);
+                }
                 setIsEditingProfile(false);
                 
                 // Show success message
                 alert('Admin profile updated successfully!');
                 console.log('✅ Admin profile saved successfully');
             } else {
-                throw new Error(`Failed to update profile: ${response.status}`);
+                const errorData = await response.json();
+                throw new Error(`Failed to update profile: ${response.status} - ${errorData.message || 'Unknown error'}`);
             }
         } catch (error) {
             console.error('❌ Error saving admin profile:', error);

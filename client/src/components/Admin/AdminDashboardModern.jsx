@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useAdmin } from '../../context';
 import '../../assets/css/admin-dashboard-modern.css';
 
@@ -15,26 +15,30 @@ const AdminDashboardModern = () => {
     } = useAdmin();
 
     const [dateRange, setDateRange] = useState('7days');
-    const [isInitialized, setIsInitialized] = useState(false);
+    const hasInitialized = useRef(false);
 
-    // Memoize the load functions to prevent infinite re-renders
-    const loadData = useCallback(() => {
-        if (!isInitialized) {
+    // Load initial data only once
+    useEffect(() => {
+        if (!hasInitialized.current) {
+            hasInitialized.current = true;
             loadDashboardStats({ period: dateRange });
             loadCategories();
-            setIsInitialized(true);
         }
-    }, [isInitialized, dateRange]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Handle date range changes separately
+    useEffect(() => {
+        if (hasInitialized.current) {
+            loadDashboardStats({ period: dateRange });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dateRange]);
 
     // Handle date range changes separately
     const handleDateRangeChange = useCallback((newRange) => {
         setDateRange(newRange);
-        loadDashboardStats({ period: newRange });
-    }, [loadDashboardStats]);
-
-    useEffect(() => {
-        loadData();
-    }, [loadData]);
+    }, []);
 
     // Safe data extraction with fallbacks
     const stats = useMemo(() => dashboardStats?.overview || {

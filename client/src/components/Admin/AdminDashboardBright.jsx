@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '../../context';
 
@@ -16,24 +16,30 @@ const AdminDashboardBright = ({ setActiveTab }) => {
     } = useAdmin();
 
     const [dateRange, setDateRange] = useState('7days');
-    const [isInitialized, setIsInitialized] = useState(false);
+    const hasInitialized = useRef(false);
 
     // Load initial data only once
     useEffect(() => {
-        if (!isInitialized) {
+        if (!hasInitialized.current) {
+            hasInitialized.current = true;
             loadDashboardStats({ period: dateRange });
             loadCategories();
-            setIsInitialized(true);
         }
-    }, [isInitialized]); // Remove functions from dependencies
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Handle date range changes separately
+    useEffect(() => {
+        if (hasInitialized.current) {
+            loadDashboardStats({ period: dateRange });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dateRange]);
 
     // Handle date range changes separately
     const handleDateRangeChange = useCallback((newRange) => {
         setDateRange(newRange);
-        if (isInitialized) {
-            loadDashboardStats({ period: newRange });
-        }
-    }, [isInitialized]); // Remove loadDashboardStats from dependencies
+    }, []);
 
     // Safe data extraction with fallbacks
     const stats = useMemo(() => dashboardStats?.overview || {
