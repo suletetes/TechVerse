@@ -696,19 +696,28 @@ export const seedDatabase = async () => {
         console.log('👥 Creating users...');
         const users = [];
         for (const userData of seedData.users) {
-            const user = await User.create(userData);
+            // Use the same method that worked in our test
+            const user = await User.create({
+                firstName: userData.firstName,
+                lastName: userData.lastName,
+                email: userData.email,
+                password: userData.password,
+                role: userData.role,
+                isActive: userData.isActive,
+                isEmailVerified: userData.isEmailVerified
+                // Don't set accountStatus here - let the pre-save hook handle it
+            });
             
-            // Fix accountStatus for admin users (pre-save middleware sets it to 'pending')
+            // Only update account status if needed, using findByIdAndUpdate to avoid middleware issues
             if (userData.accountStatus === 'active' && user.accountStatus === 'pending') {
-                await User.updateOne(
-                    { _id: user._id },
-                    { 
-                        accountStatus: 'active',
-                        isEmailVerified: true 
-                    }
-                );
+                await User.findByIdAndUpdate(user._id, { 
+                    accountStatus: 'active',
+                    isEmailVerified: true 
+                }, { 
+                    new: false,  // Don't return the updated document
+                    runValidators: false  // Don't run validators to avoid middleware
+                });
                 user.accountStatus = 'active';
-                user.isEmailVerified = true;
             }
             
             users.push(user);

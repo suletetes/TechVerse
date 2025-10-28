@@ -19,7 +19,8 @@ const generateCSRFToken = () => {
 
 // Validate CSRF token
 const validateCSRFToken = (req) => {
-  const cookieToken = req.cookies['csrf-token'];
+  // Handle case where cookies might not be parsed
+  const cookieToken = req.cookies ? req.cookies['csrf-token'] : null;
   const headerToken = req.headers['x-csrf-token'] || 
                      req.headers['csrf-token'] ||
                      req.body._csrf ||
@@ -141,6 +142,7 @@ export const conditionalCSRF = (req, res, next) => {
   const skipPaths = [
     '/api/auth/login',
     '/api/auth/register',
+    '/api/auth/logout',
     '/api/auth/refresh',
     '/api/webhook' // Webhook endpoints
   ];
@@ -195,7 +197,7 @@ export const doubleSubmitCookie = (req, res, next) => {
     return next();
   }
 
-  const cookieToken = req.cookies['csrf-token'];
+  const cookieToken = req.cookies ? req.cookies['csrf-token'] : null;
   const headerToken = req.headers['x-csrf-token'];
 
   if (!cookieToken || !headerToken || cookieToken !== headerToken) {

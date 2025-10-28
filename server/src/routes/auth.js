@@ -142,17 +142,7 @@ const updateProfileValidation = [
 
 // Public routes with enhanced security
 router.post('/register', authRateLimit, registerValidation, validate, register);
-// Debug middleware to log request body
-const debugLoginRequest = (req, res, next) => {
-  console.log('=== LOGIN REQUEST DEBUG ===');
-  console.log('Request body:', req.body);
-  console.log('Content-Type:', req.get('Content-Type'));
-  console.log('Request headers:', req.headers);
-  console.log('========================');
-  next();
-};
-
-router.post('/login', authRateLimit, debugLoginRequest, loginValidation, validate, authenticateLocal, login);
+router.post('/login', authRateLimit, loginValidation, validate, authenticateLocal, login);
 router.post('/logout', logout);
 router.post('/refresh-token', authRateLimit, refreshToken);
 router.post('/forgot-password', authRateLimit, validateAuthInput, forgotPasswordValidation, validate, forgotPassword);
