@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 
 // Load environment variables first
 dotenv.config();
@@ -114,6 +115,10 @@ app.use(express.urlencoded({
   extended: true,
   limit: '10mb'
 }));
+
+// Cookie parsing middleware
+app.use(cookieParser());
+
 // Enhanced input sanitization and security checks
 // app.use(inputSanitization); // Temporarily disabled - causing validation issues
 app.use(suspiciousActivityDetector);
