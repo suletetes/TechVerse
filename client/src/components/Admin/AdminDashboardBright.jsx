@@ -8,11 +8,7 @@ const AdminDashboardBright = ({ setActiveTab }) => {
         dashboardStats, 
         isDashboardLoading, 
         dashboardError, 
-        loadDashboardStats,
-        categories,
-        isCategoriesLoading,
-        categoriesError,
-        loadCategories
+        loadDashboardStats
     } = useAdmin();
 
     const [dateRange, setDateRange] = useState('7days');
@@ -23,7 +19,6 @@ const AdminDashboardBright = ({ setActiveTab }) => {
         if (!hasInitialized.current) {
             hasInitialized.current = true;
             loadDashboardStats({ period: dateRange });
-            loadCategories();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -65,7 +60,7 @@ const AdminDashboardBright = ({ setActiveTab }) => {
         return new Intl.NumberFormat('en-GB').format(num || 0);
     }, []);
 
-    if (isDashboardLoading && !isInitialized) {
+    if (isDashboardLoading && !hasInitialized.current) {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '500px' }}>
                 <div className="text-center">
@@ -406,7 +401,7 @@ const AdminDashboardBright = ({ setActiveTab }) => {
                 </div>
             </div>
 
-            {/* Categories Section - Fixed to prevent infinite refresh */}
+            {/* Quick Actions & System Status */}
             <div className="row">
                 <div className="col-12">
                     <div className="card border-0" style={{ 
@@ -418,81 +413,155 @@ const AdminDashboardBright = ({ setActiveTab }) => {
                         <div className="card-header bg-transparent border-0 pb-0 pt-4 px-4">
                             <div className="d-flex justify-content-between align-items-center">
                                 <h4 className="fw-bold text-dark mb-0">
-                                    <i className="fas fa-tags text-success me-2"></i>
-                                    Categories Overview
+                                    <i className="fas fa-bolt text-primary me-2"></i>
+                                    Quick Actions & System Status
                                 </h4>
-                                <button 
-                                    onClick={() => setActiveTab && setActiveTab('categories')} 
-                                    className="btn btn-success btn-lg px-4" 
-                                    style={{ borderRadius: '15px', fontWeight: '600' }}
-                                >
-                                    <i className="fas fa-plus me-2"></i>Manage Categories
-                                </button>
+                                <div className="badge bg-success bg-opacity-10 text-success px-3 py-2" style={{ borderRadius: '15px' }}>
+                                    <i className="fas fa-check-circle me-1"></i>
+                                    System Online
+                                </div>
                             </div>
                         </div>
                         <div className="card-body p-4">
-                            {isCategoriesLoading ? (
-                                <div className="text-center py-5">
-                                    <div className="spinner-border text-primary mb-3" style={{ width: '3rem', height: '3rem' }}>
-                                        <span className="visually-hidden">Loading categories...</span>
-                                    </div>
-                                    <h5 className="text-primary">Loading Categories...</h5>
-                                </div>
-                            ) : categoriesError ? (
-                                <div className="alert alert-warning border-0" style={{ 
-                                    backgroundColor: '#fff3cd', 
-                                    borderRadius: '15px',
-                                    border: '2px solid #ffc107'
-                                }}>
-                                    <div className="d-flex align-items-center">
-                                        <i className="fas fa-exclamation-triangle text-warning me-3 fs-4"></i>
-                                        <div>
-                                            <h6 className="fw-bold mb-1">Categories Error</h6>
-                                            <p className="mb-0">{categoriesError}</p>
+                            {/* Quick Actions Grid */}
+                            <div className="row g-4 mb-5">
+                                <div className="col-xl-3 col-lg-4 col-md-6">
+                                    <div 
+                                        className="d-flex align-items-center p-4 h-100 cursor-pointer hover-lift" 
+                                        style={{ 
+                                            backgroundColor: '#e3f2fd', 
+                                            borderRadius: '15px',
+                                            border: '2px solid #2196f3',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onClick={() => setActiveTab && setActiveTab('products')}
+                                    >
+                                        <div className="flex-shrink-0 me-3">
+                                            <div className="bg-primary rounded-circle p-3">
+                                                <i className="fas fa-plus text-white fs-4"></i>
+                                            </div>
+                                        </div>
+                                        <div className="flex-grow-1">
+                                            <h6 className="fw-bold mb-1 text-primary">Add Product</h6>
+                                            <p className="text-muted mb-0 small">Create new product</p>
                                         </div>
                                     </div>
                                 </div>
-                            ) : Array.isArray(categories) && categories.length > 0 ? (
-                                <div className="row g-4">
-                                    {categories.slice(0, 6).map((category, index) => (
-                                        category && typeof category === 'object' && category.name ? (
-                                            <div key={category._id || category.name || index} className="col-xl-4 col-lg-6 col-md-6">
-                                                <div className="d-flex align-items-center p-4 h-100" style={{ 
-                                                    backgroundColor: '#f8f9fa', 
-                                                    borderRadius: '15px',
-                                                    border: '2px solid #dee2e6',
-                                                    transition: 'all 0.3s ease'
-                                                }}>
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <div className="bg-primary rounded-circle p-3">
-                                                            <i className={`fas fa-${category.icon || 'tag'} text-white fs-4`}></i>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex-grow-1">
-                                                        <h5 className="fw-bold mb-1 text-dark">{category.name}</h5>
-                                                        <p className="text-muted mb-0 fw-semibold">{category.productCount || 0} products</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : null
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-5">
-                                    <div className="mb-4">
-                                        <i className="fas fa-tags text-muted" style={{ fontSize: '4rem' }}></i>
-                                    </div>
-                                    <h4 className="fw-bold text-dark mb-3">No Categories Found</h4>
-                                    <p className="text-muted mb-4 fs-5">Start by creating your first product category to organize your inventory.</p>
-                                    <button 
-                                        onClick={() => setActiveTab && setActiveTab('categories')} 
-                                        className="btn btn-primary btn-lg px-5" 
-                                        style={{ borderRadius: '15px', fontWeight: '600' }}
+
+                                <div className="col-xl-3 col-lg-4 col-md-6">
+                                    <div 
+                                        className="d-flex align-items-center p-4 h-100 cursor-pointer hover-lift" 
+                                        style={{ 
+                                            backgroundColor: '#f3e5f5', 
+                                            borderRadius: '15px',
+                                            border: '2px solid #9c27b0',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onClick={() => setActiveTab && setActiveTab('orders')}
                                     >
-                                        <i className="fas fa-plus me-2"></i>Create First Category
-                                    </button>
+                                        <div className="flex-shrink-0 me-3">
+                                            <div className="bg-purple rounded-circle p-3" style={{ backgroundColor: '#9c27b0' }}>
+                                                <i className="fas fa-shopping-cart text-white fs-4"></i>
+                                            </div>
+                                        </div>
+                                        <div className="flex-grow-1">
+                                            <h6 className="fw-bold mb-1" style={{ color: '#9c27b0' }}>View Orders</h6>
+                                            <p className="text-muted mb-0 small">Manage orders</p>
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
+
+                                <div className="col-xl-3 col-lg-4 col-md-6">
+                                    <div 
+                                        className="d-flex align-items-center p-4 h-100 cursor-pointer hover-lift" 
+                                        style={{ 
+                                            backgroundColor: '#e8f5e8', 
+                                            borderRadius: '15px',
+                                            border: '2px solid #4caf50',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onClick={() => setActiveTab && setActiveTab('users')}
+                                    >
+                                        <div className="flex-shrink-0 me-3">
+                                            <div className="bg-success rounded-circle p-3">
+                                                <i className="fas fa-users text-white fs-4"></i>
+                                            </div>
+                                        </div>
+                                        <div className="flex-grow-1">
+                                            <h6 className="fw-bold mb-1 text-success">Manage Users</h6>
+                                            <p className="text-muted mb-0 small">User management</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="col-xl-3 col-lg-4 col-md-6">
+                                    <div 
+                                        className="d-flex align-items-center p-4 h-100 cursor-pointer hover-lift" 
+                                        style={{ 
+                                            backgroundColor: '#fff3e0', 
+                                            borderRadius: '15px',
+                                            border: '2px solid #ff9800',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onClick={() => setActiveTab && setActiveTab('analytics')}
+                                    >
+                                        <div className="flex-shrink-0 me-3">
+                                            <div className="bg-warning rounded-circle p-3">
+                                                <i className="fas fa-chart-bar text-white fs-4"></i>
+                                            </div>
+                                        </div>
+                                        <div className="flex-grow-1">
+                                            <h6 className="fw-bold mb-1 text-warning">Analytics</h6>
+                                            <p className="text-muted mb-0 small">View reports</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* System Status */}
+                            <div className="row g-4">
+                                <div className="col-md-4">
+                                    <div className="text-center p-4" style={{ 
+                                        backgroundColor: '#f8f9fa', 
+                                        borderRadius: '15px',
+                                        border: '1px solid #dee2e6'
+                                    }}>
+                                        <div className="mb-3">
+                                            <i className="fas fa-server text-success fs-2"></i>
+                                        </div>
+                                        <h6 className="fw-bold text-success mb-1">Server Status</h6>
+                                        <p className="text-muted mb-0 small">All systems operational</p>
+                                    </div>
+                                </div>
+
+                                <div className="col-md-4">
+                                    <div className="text-center p-4" style={{ 
+                                        backgroundColor: '#f8f9fa', 
+                                        borderRadius: '15px',
+                                        border: '1px solid #dee2e6'
+                                    }}>
+                                        <div className="mb-3">
+                                            <i className="fas fa-database text-info fs-2"></i>
+                                        </div>
+                                        <h6 className="fw-bold text-info mb-1">Database</h6>
+                                        <p className="text-muted mb-0 small">Connected & healthy</p>
+                                    </div>
+                                </div>
+
+                                <div className="col-md-4">
+                                    <div className="text-center p-4" style={{ 
+                                        backgroundColor: '#f8f9fa', 
+                                        borderRadius: '15px',
+                                        border: '1px solid #dee2e6'
+                                    }}>
+                                        <div className="mb-3">
+                                            <i className="fas fa-shield-alt text-primary fs-2"></i>
+                                        </div>
+                                        <h6 className="fw-bold text-primary mb-1">Security</h6>
+                                        <p className="text-muted mb-0 small">All secure</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

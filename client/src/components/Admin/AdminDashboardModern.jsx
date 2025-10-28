@@ -7,11 +7,7 @@ const AdminDashboardModern = () => {
         dashboardStats, 
         isDashboardLoading, 
         dashboardError, 
-        loadDashboardStats,
-        categories,
-        isCategoriesLoading,
-        categoriesError,
-        loadCategories
+        loadDashboardStats
     } = useAdmin();
 
     const [dateRange, setDateRange] = useState('7days');
@@ -22,7 +18,6 @@ const AdminDashboardModern = () => {
         if (!hasInitialized.current) {
             hasInitialized.current = true;
             loadDashboardStats({ period: dateRange });
-            loadCategories();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -72,7 +67,7 @@ const AdminDashboardModern = () => {
         products: { value: stats.totalProducts, growth: 5.7, trend: 'up' }
     }), [stats]);
 
-    if (isDashboardLoading && !isInitialized) {
+    if (isDashboardLoading && !hasInitialized.current) {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '500px' }}>
                 <div className="text-center">
@@ -292,62 +287,116 @@ const AdminDashboardModern = () => {
                 </div>
             </div>
 
-            {/* Categories Overview */}
+            {/* Quick Actions Panel */}
             <div className="row">
                 <div className="col-12">
                     <div className="card border-0 shadow-sm">
                         <div className="card-header bg-transparent border-0 pb-0">
                             <div className="d-flex justify-content-between align-items-center">
-                                <h5 className="card-title mb-0 fw-semibold">Categories Overview</h5>
-                                <button className="btn btn-outline-primary btn-sm">
-                                    <i className="fas fa-plus me-2"></i>Add Category
-                                </button>
+                                <h5 className="card-title mb-0 fw-semibold">Quick Actions</h5>
+                                <div className="badge bg-success bg-opacity-10 text-success">
+                                    <i className="fas fa-check-circle me-1"></i>
+                                    Ready
+                                </div>
                             </div>
                         </div>
                         <div className="card-body">
-                            {isCategoriesLoading ? (
-                                <div className="text-center py-5">
-                                    <div className="spinner-border text-primary mb-3" role="status">
-                                        <span className="visually-hidden">Loading categories...</span>
-                                    </div>
-                                    <p className="text-muted mb-0">Loading categories...</p>
-                                </div>
-                            ) : categoriesError ? (
-                                <div className="alert alert-warning border-0 bg-warning bg-opacity-10">
-                                    <div className="d-flex align-items-center">
-                                        <i className="fas fa-exclamation-triangle text-warning me-3"></i>
-                                        <div>
-                                            <strong>Categories Error</strong>
-                                            <p className="mb-0 small">Categories could not be loaded: {categoriesError}</p>
+                            <div className="row g-3">
+                                <div className="col-xl-3 col-lg-4 col-md-6">
+                                    <div 
+                                        className="d-flex align-items-center p-3 bg-primary bg-opacity-10 rounded-3 h-100 hover-shadow transition-all cursor-pointer"
+                                        onClick={() => setActiveTab && setActiveTab('products')}
+                                    >
+                                        <div className="flex-shrink-0 me-3">
+                                            <div className="bg-primary rounded-circle p-2">
+                                                <i className="fas fa-plus text-white"></i>
+                                            </div>
+                                        </div>
+                                        <div className="flex-grow-1">
+                                            <h6 className="fw-semibold mb-1 text-primary">Add Product</h6>
+                                            <small className="text-muted">Create new item</small>
                                         </div>
                                     </div>
                                 </div>
-                            ) : Array.isArray(categories) && categories.length > 0 ? (
-                                <div className="row g-3">
-                                    {categories.slice(0, 8).map(category => (
-                                        category && typeof category === 'object' && category.name ? (
-                                            <div key={category._id || category.name} className="col-xl-3 col-lg-4 col-md-6">
-                                                <div className="d-flex align-items-center p-3 bg-light rounded-3 h-100 hover-shadow transition-all">
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <div className="bg-primary bg-opacity-10 rounded-circle p-2">
-                                                            <i className={`fas fa-${category.icon || 'tag'} text-primary`}></i>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex-grow-1">
-                                                        <h6 className="fw-semibold mb-1">{category.name}</h6>
-                                                        <small className="text-muted">{category.productCount || 0} products</small>
-                                                    </div>
-                                                </div>
+
+                                <div className="col-xl-3 col-lg-4 col-md-6">
+                                    <div 
+                                        className="d-flex align-items-center p-3 bg-success bg-opacity-10 rounded-3 h-100 hover-shadow transition-all cursor-pointer"
+                                        onClick={() => setActiveTab && setActiveTab('orders')}
+                                    >
+                                        <div className="flex-shrink-0 me-3">
+                                            <div className="bg-success rounded-circle p-2">
+                                                <i className="fas fa-shopping-cart text-white"></i>
                                             </div>
-                                        ) : null
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-5">
-                                    <div className="bg-light rounded-circle p-4 d-inline-flex mb-3">
-                                        <i className="fas fa-tags text-muted fs-1"></i>
+                                        </div>
+                                        <div className="flex-grow-1">
+                                            <h6 className="fw-semibold mb-1 text-success">View Orders</h6>
+                                            <small className="text-muted">Manage orders</small>
+                                        </div>
                                     </div>
-                                    <h6 className="fw-semibold mb-2">No Categories Found</h6>
+                                </div>
+
+                                <div className="col-xl-3 col-lg-4 col-md-6">
+                                    <div 
+                                        className="d-flex align-items-center p-3 bg-info bg-opacity-10 rounded-3 h-100 hover-shadow transition-all cursor-pointer"
+                                        onClick={() => setActiveTab && setActiveTab('users')}
+                                    >
+                                        <div className="flex-shrink-0 me-3">
+                                            <div className="bg-info rounded-circle p-2">
+                                                <i className="fas fa-users text-white"></i>
+                                            </div>
+                                        </div>
+                                        <div className="flex-grow-1">
+                                            <h6 className="fw-semibold mb-1 text-info">Manage Users</h6>
+                                            <small className="text-muted">User accounts</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="col-xl-3 col-lg-4 col-md-6">
+                                    <div 
+                                        className="d-flex align-items-center p-3 bg-warning bg-opacity-10 rounded-3 h-100 hover-shadow transition-all cursor-pointer"
+                                        onClick={() => setActiveTab && setActiveTab('analytics')}
+                                    >
+                                        <div className="flex-shrink-0 me-3">
+                                            <div className="bg-warning rounded-circle p-2">
+                                                <i className="fas fa-chart-line text-white"></i>
+                                            </div>
+                                        </div>
+                                        <div className="flex-grow-1">
+                                            <h6 className="fw-semibold mb-1 text-warning">Analytics</h6>
+                                            <small className="text-muted">View reports</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr className="my-4" />
+
+                            {/* System Health Status */}
+                            <div className="row g-3">
+                                <div className="col-md-4">
+                                    <div className="text-center p-3 bg-light rounded-3">
+                                        <i className="fas fa-server text-success fs-3 mb-2"></i>
+                                        <h6 className="fw-semibold text-success mb-1">Server</h6>
+                                        <small className="text-muted">Online</small>
+                                    </div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="text-center p-3 bg-light rounded-3">
+                                        <i className="fas fa-database text-info fs-3 mb-2"></i>
+                                        <h6 className="fw-semibold text-info mb-1">Database</h6>
+                                        <small className="text-muted">Connected</small>
+                                    </div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="text-center p-3 bg-light rounded-3">
+                                        <i className="fas fa-shield-alt text-primary fs-3 mb-2"></i>
+                                        <h6 className="fw-semibold text-primary mb-1">Security</h6>
+                                        <small className="text-muted">Protected</small>
+                                    </div>
+                                </div>
+                            </div>
                                     <p className="text-muted mb-3">Start by creating your first product category.</p>
                                     <button className="btn btn-primary">
                                         <i className="fas fa-plus me-2"></i>Create Category

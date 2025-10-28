@@ -422,7 +422,7 @@ const AdminContext = createContext();
 // Provider component
 export const AdminProvider = ({ children }) => {
   const [state, dispatch] = useReducer(adminReducer, initialState);
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, user } = useAuth();
   
   // Temporary notification function - will be enhanced later
   const showNotification = useCallback((message, type = 'info') => {
@@ -683,8 +683,11 @@ export const AdminProvider = ({ children }) => {
   }, [isAuthenticated, isAdmin, showNotification]);
 
   // Category management methods
+  // Memoize admin status to prevent unnecessary re-renders
+  const isUserAdmin = useMemo(() => isAdmin(), [isAuthenticated, user?.role]);
+
   const loadCategories = useCallback(async () => {
-    if (!isAuthenticated || !isAdmin()) {
+    if (!isAuthenticated || !isUserAdmin) {
       dispatch({ type: ADMIN_ACTIONS.SET_CATEGORIES_ERROR, payload: 'Admin access required' });
       return;
     }
@@ -699,7 +702,7 @@ export const AdminProvider = ({ children }) => {
       // Remove showNotification to prevent infinite re-renders
       return null;
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isUserAdmin]);
 
   const createCategory = useCallback(async (categoryData) => {
     if (!isAuthenticated || !isAdmin()) {
