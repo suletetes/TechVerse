@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import { userProfileService } from '../api/services/userProfileService';
+import { useAuth } from './AuthContext';
 
 // Action types
 const PROFILE_ACTIONS = {
@@ -117,6 +118,7 @@ const UserProfileContext = createContext();
 // Provider component
 export const UserProfileProvider = ({ children }) => {
     const [state, dispatch] = useReducer(userProfileReducer, initialState);
+    const { refreshProfile: refreshAuthProfile } = useAuth();
 
     // Load profile
     const loadProfile = useCallback(async () => {
@@ -143,10 +145,23 @@ export const UserProfileProvider = ({ children }) => {
             dispatch({ type: PROFILE_ACTIONS.SET_LOADING, payload: true });
             const response = await userProfileService.updateProfile(profileData);
             const profile = response.data?.user || null;
+            
+            // Update UserProfile context
             dispatch({ 
                 type: PROFILE_ACTIONS.UPDATE_PROFILE, 
                 payload: profile 
             });
+            
+            // Refresh AuthContext to ensure user data is updated everywhere
+            if (profile) {
+                try {
+                    await refreshAuthProfile();
+                } catch (authError) {
+                    console.warn('Failed to refresh auth profile:', authError);
+                    // Don't throw here as the main update was successful
+                }
+            }
+            
             return response;
         } catch (error) {
             dispatch({ 
@@ -155,7 +170,7 @@ export const UserProfileProvider = ({ children }) => {
             });
             throw error;
         }
-    }, []);
+    }, [refreshAuthProfile]);
 
     // Load addresses
     const loadAddresses = useCallback(async () => {

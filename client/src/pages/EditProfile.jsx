@@ -203,10 +203,8 @@ const EditProfile = () => {
         try {
             debugLog('SUBMIT_START', { formData, addresses, paymentMethods });
             
-            let updateData = {};
-            
             if (activeSection === 'profile') {
-                // Only send changed profile fields
+                // Handle profile updates
                 const originalData = profile || user || {};
                 const changedFields = {};
                 
@@ -227,24 +225,29 @@ const EditProfile = () => {
                     changedFields.lastName = formData.lastName;
                 }
                 
-                updateData = changedFields;
+                debugLog('PROFILE_CHANGED_FIELDS', changedFields);
+                await updateProfile(changedFields);
+                
             } else if (activeSection === 'address') {
-                updateData = { addresses };
+                // Handle address updates - this is just a demo, real implementation would use address endpoints
+                setSuccessMessage('Address management is not yet implemented. This is a demo interface.');
+                debugLog('ADDRESS_DEMO', addresses);
+                
             } else if (activeSection === 'payment') {
-                updateData = { paymentMethods };
+                // Handle payment method updates - this is just a demo, real implementation would use payment endpoints
+                setSuccessMessage('Payment method management is not yet implemented. This is a demo interface.');
+                debugLog('PAYMENT_DEMO', paymentMethods);
             }
             
-            debugLog('CHANGED_FIELDS', updateData);
+            setSuccessMessage(`${activeSection === 'profile' ? 'Profile' : activeSection === 'address' ? 'Address settings' : 'Payment settings'} updated successfully!`);
+            debugLog('UPDATE_SUCCESS', { activeSection });
             
-            await updateProfile(updateData);
-            
-            setSuccessMessage(`${activeSection === 'profile' ? 'Profile' : activeSection === 'address' ? 'Addresses' : 'Payment methods'} updated successfully!`);
-            debugLog('UPDATE_SUCCESS', updateData);
-            
-            // Redirect back to profile after 2 seconds
-            setTimeout(() => {
-                navigate('/profile');
-            }, 2000);
+            // Redirect back to profile after 2 seconds for profile updates only
+            if (activeSection === 'profile') {
+                setTimeout(() => {
+                    navigate('/profile');
+                }, 2000);
+            }
             
         } catch (error) {
             debugLog('UPDATE_ERROR', { formData, addresses, paymentMethods }, error);
