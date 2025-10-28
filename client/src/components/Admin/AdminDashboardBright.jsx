@@ -492,7 +492,7 @@ const AdminDashboardBright = ({ setActiveTab }) => {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 .hover-lift {
                     transition: all 0.3s ease !important;
                 }

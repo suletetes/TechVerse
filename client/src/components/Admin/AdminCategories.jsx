@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const AdminCategories = ({ categories = [], setActiveTab, onSave, onDelete }) => {
+const AdminCategories = ({ categories = [], setActiveTab, onSave, onDelete, isLoading = false, error = null }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [showAddForm, setShowAddForm] = useState(false);
@@ -666,6 +666,40 @@ const AdminCategories = ({ categories = [], setActiveTab, onSave, onDelete }) =>
                         onClick={handleSaveCategory}
                     >
                         {editingCategory ? 'Update Category' : 'Create Category'}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Handle loading state
+    if (isLoading) {
+        return (
+            <div className="store-card fill-card">
+                <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                    <div className="text-center">
+                        <div className="spinner-border text-primary mb-3" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                        <p className="text-muted">Loading categories...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Handle error state
+    if (error) {
+        return (
+            <div className="store-card fill-card">
+                <div className="alert alert-danger" role="alert">
+                    <h4 className="alert-heading">Error Loading Categories</h4>
+                    <p>{error}</p>
+                    <button 
+                        className="btn btn-outline-danger"
+                        onClick={() => window.location.reload()}
+                    >
+                        Retry
                     </button>
                 </div>
             </div>
