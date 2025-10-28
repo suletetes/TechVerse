@@ -144,6 +144,9 @@ export const conditionalCSRF = (req, res, next) => {
     '/api/auth/register',
     '/api/auth/logout',
     '/api/auth/refresh',
+    '/api/auth/profile',
+    '/api/users/profile',
+    '/api/admin/profile',
     '/api/webhook' // Webhook endpoints
   ];
 

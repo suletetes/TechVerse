@@ -99,7 +99,7 @@ class BaseApiService {
       try {
         const transformedResponse = transformResponse(standardizedResponse, this.transformationType);
         
-        if (this.debugMode && this.enableLogging) {
+        if (this.debugMode && this.enableLogging && import.meta.env?.DEV) {
           console.log(`🔄 Response transformed (${this.serviceName}):`, {
             original: standardizedResponse,
             transformed: transformedResponse,

@@ -1,8 +1,15 @@
 import connectDB from './src/config/database.js';
 import { User } from './src/models/index.js';
+import bcrypt from 'bcryptjs';
 
 async function createAdmin() {
     try {
+        console.log('⚠️  WARNING: This script is deprecated!');
+        console.log('Please use the seeding script instead: npm run seed:dev');
+        console.log('or: node scripts/seedDatabase.js');
+        console.log('\nThe seeding script provides more comprehensive data setup.');
+        console.log('Continuing with basic user creation...\n');
+        
         console.log('Connecting to database...');
         await connectDB();
         console.log('Connected to database');
@@ -12,39 +19,18 @@ async function createAdmin() {
         await User.deleteOne({ email: 'john.smith@example.com' });
         console.log('Deleted existing users');
         
-        // Create admin user
+        // Create admin user with explicit password verification
+        const adminPassword = 'Admin123!';
+        console.log(`Creating admin with password: ${adminPassword}`);
+        
         const adminUser = new User({
             firstName: 'Admin',
             lastName: 'User',
             email: 'admin@techverse.com',
-            password: 'Admin123!',
+            password: adminPassword,
             role: 'admin',
             isEmailVerified: true,
-            accountStatus: 'active',
-            profile: {
-                bio: 'System Administrator',
-                preferences: {
-                    notifications: {
-                        email: true,
-                        push: true,
-                        sms: false
-                    },
-                    privacy: {
-                        profileVisibility: 'private',
-                        showEmail: false,
-                        showPhone: false
-                    }
-                }
-            },
-            permissions: [
-                'admin:read',
-                'admin:write',
-                'admin:delete',
-                'users:manage',
-                'products:manage',
-                'orders:manage',
-                'analytics:view'
-            ]
+            accountStatus: 'active'
         });
         
         await adminUser.save();
@@ -55,30 +41,26 @@ async function createAdmin() {
             isEmailVerified: true 
         });
         
+        // Verify the password was hashed correctly
+        const savedAdmin = await User.findOne({ email: 'admin@techverse.com' }).select('+password');
+        const passwordVerification = await savedAdmin.comparePassword(adminPassword);
+        
+        if (!passwordVerification) {
+            throw new Error('❌ Password verification failed! Admin user creation failed.');
+        }
+        
+        console.log('✅ Admin user created and password verified');
+        
         // Create regular user
+        const userPassword = 'User123!';
         const regularUser = new User({
             firstName: 'John',
             lastName: 'Smith',
             email: 'john.smith@example.com',
-            password: 'User123!',
+            password: userPassword,
             role: 'user',
             isEmailVerified: true,
-            accountStatus: 'active',
-            profile: {
-                bio: 'Regular user for testing',
-                preferences: {
-                    notifications: {
-                        email: true,
-                        push: false,
-                        sms: false
-                    },
-                    privacy: {
-                        profileVisibility: 'public',
-                        showEmail: false,
-                        showPhone: false
-                    }
-                }
-            }
+            accountStatus: 'active'
         });
         
         await regularUser.save();
@@ -89,9 +71,21 @@ async function createAdmin() {
             isEmailVerified: true 
         });
         
+        // Verify the regular user password
+        const savedUser = await User.findOne({ email: 'john.smith@example.com' }).select('+password');
+        const userPasswordVerification = await savedUser.comparePassword(userPassword);
+        
+        if (!userPasswordVerification) {
+            throw new Error('❌ Password verification failed! Regular user creation failed.');
+        }
+        
+        console.log('✅ Regular user created and password verified');
+        
         console.log('\n🎉 Users created successfully!');
         console.log('Admin: admin@techverse.com / Admin123!');
         console.log('User: john.smith@example.com / User123!');
+        console.log('\n💡 Tip: Use the seeding script for complete data setup:');
+        console.log('   node scripts/seedDatabase.js');
         
         process.exit(0);
     } catch (error) {
