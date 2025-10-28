@@ -9,7 +9,7 @@ class PasswordService {
   constructor() {
     // Use consistent bcrypt rounds
     this.bcryptRounds = 12;
-    
+
     // Log initialization
     logger.info('Password service initialized with bcrypt', {
       rounds: this.bcryptRounds,
@@ -35,7 +35,7 @@ class PasswordService {
       // Generate salt and hash password
       const salt = await bcrypt.genSalt(this.bcryptRounds);
       const hashedPassword = await bcrypt.hash(password, salt);
-      
+
       logger.debug('Password hashed successfully', {
         passwordLength: password.length,
         hashLength: hashedPassword.length,
@@ -79,7 +79,7 @@ class PasswordService {
 
       // Use bcrypt for all password verification
       const isValid = await bcrypt.compare(password, hash);
-      
+
       logger.debug('Password verification completed', {
         algorithm: 'bcrypt',
         isValid,
@@ -125,10 +125,10 @@ class PasswordService {
         logger.info('Migrating Argon2 hash to bcrypt', {
           oldHashLength: oldHash.length
         });
-        
+
         // Create new bcrypt hash
         const newHash = await this.hashPassword(password);
-        
+
         logger.info('Password hash migrated successfully', {
           oldAlgorithm: 'argon2',
           newAlgorithm: 'bcrypt',
@@ -141,7 +141,7 @@ class PasswordService {
 
       // For bcrypt hashes, verify first then create new hash if needed
       const isValid = await this.verifyPassword(password, oldHash);
-      
+
       if (!isValid) {
         logger.warn('Migration failed - password verification failed');
         return null;
@@ -149,7 +149,7 @@ class PasswordService {
 
       // Create new hash with current settings
       const newHash = await this.hashPassword(password);
-      
+
       logger.info('Password hash refreshed successfully', {
         algorithm: 'bcrypt',
         oldHashLength: oldHash.length,
