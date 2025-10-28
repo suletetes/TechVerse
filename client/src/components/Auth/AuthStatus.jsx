@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useAuthSecurity } from '../../hooks/useAuthSecurity.js';
 import {
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 
 const AuthStatus = ({ showDetails = false, className = '' }) => {
+    const navigate = useNavigate();
     const {
         user,
         isAuthenticated,
@@ -93,7 +95,10 @@ const AuthStatus = ({ showDetails = false, className = '' }) => {
                 <h3 className="text-lg font-semibold text-gray-900">Account Status</h3>
                 {isAuthenticated && (
                     <button
-                        onClick={() => logout()}
+                        onClick={async () => {
+                            await logout();
+                            navigate('/');
+                        }}
                         className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
                         title="Sign out"
                     >

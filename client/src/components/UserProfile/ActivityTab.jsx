@@ -2,14 +2,14 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 const ActivityTab = ({ 
-    recentlyViewed, 
-    setRecentlyViewed, 
-    wishlistCategories, 
-    priceAlerts, 
-    setPriceAlerts, 
-    handleRecentlyViewedAction, 
-    handleWishlistCategoryAction, 
-    handlePriceAlertAction 
+    recentlyViewed = [], 
+    setRecentlyViewed = () => {}, 
+    wishlistCategories = [], 
+    priceAlerts = [], 
+    setPriceAlerts = () => {}, 
+    handleRecentlyViewedAction = () => {}, 
+    handleWishlistCategoryAction = () => {}, 
+    handlePriceAlertAction = () => {} 
 }) => {
     return (
         <div className="store-card fill-card">
