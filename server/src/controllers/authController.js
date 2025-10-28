@@ -657,7 +657,7 @@ export const getProfile = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/auth/profile
 // @access  Private
 export const updateProfile = asyncHandler(async (req, res, next) => {
-  const allowedFields = ['firstName', 'lastName', 'phone', 'dateOfBirth', 'preferences'];
+  const allowedFields = ['firstName', 'lastName', 'phone', 'dateOfBirth', 'gender', 'preferences'];
   const updates = {};
 
   // Only allow specific fields to be updated

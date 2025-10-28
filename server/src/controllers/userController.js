@@ -26,7 +26,7 @@ export const getUserProfile = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/users/profile
 // @access  Private
 export const updateUserProfile = asyncHandler(async (req, res, next) => {
-  const allowedFields = ['firstName', 'lastName', 'phone', 'dateOfBirth', 'preferences'];
+  const allowedFields = ['firstName', 'lastName', 'phone', 'dateOfBirth', 'gender', 'preferences'];
   const updates = {};
 
   allowedFields.forEach(field => {
