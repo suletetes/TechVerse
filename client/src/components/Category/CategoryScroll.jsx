@@ -13,7 +13,7 @@ const CategoryScroll = () => {
         { title: 'Audio', imgSrc: 'img/headphones.svg', link: '/products?category=audio' },
         { title: 'Cameras', imgSrc: 'img/camera.svg', link: '/products?category=cameras' },
         { title: 'Accessories', imgSrc: 'img/accessories.svg', link: '/products?category=accessories' },
-        { title: 'Gift Card', imgSrc: 'img/gift-card.svg', link: '/products?category=gift-cards' }
+        // { title: 'Gift Card', imgSrc: 'img/gift-card.svg', link: '/products?category=gift-cards' }
     ];
 
     return (

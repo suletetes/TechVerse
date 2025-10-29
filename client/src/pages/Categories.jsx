@@ -18,12 +18,12 @@ import accessoriesImg from "../assets/images/Accessories.jpg";
 const Categories = () => {
     const { categories, isLoading, error, loadCategories } = useProduct();
 
-    // Default categories with images
+    // Default categories with images - matching the required format
     const defaultCategories = [
         {
             id: 'phones',
             name: 'Phones',
-            slug: 'phones',
+            slug: 'Phones',
             description: 'Latest smartphones and mobile devices',
             image: phonesImg,
             productCount: 45,
@@ -32,7 +32,7 @@ const Categories = () => {
         {
             id: 'tablets',
             name: 'Tablets',
-            slug: 'tablets',
+            slug: 'Tablets',
             description: 'iPads and Android tablets',
             image: tabletsImg,
             productCount: 28,
@@ -41,7 +41,7 @@ const Categories = () => {
         {
             id: 'computers',
             name: 'Computers',
-            slug: 'computers',
+            slug: 'Computers',
             description: 'Laptops, desktops, and accessories',
             image: computerImg,
             productCount: 67,
@@ -50,7 +50,7 @@ const Categories = () => {
         {
             id: 'tvs',
             name: 'TVs',
-            slug: 'tvs',
+            slug: 'TVs',
             description: 'Smart TVs and entertainment systems',
             image: tvImg,
             productCount: 32,
@@ -59,7 +59,7 @@ const Categories = () => {
         {
             id: 'gaming',
             name: 'Gaming',
-            slug: 'gaming',
+            slug: 'Gaming',
             description: 'Gaming consoles and accessories',
             image: gameImg,
             productCount: 89,
@@ -68,7 +68,7 @@ const Categories = () => {
         {
             id: 'watches',
             name: 'Watches',
-            slug: 'watches',
+            slug: 'Watches',
             description: 'Smartwatches and fitness trackers',
             image: watchImg,
             productCount: 23,
@@ -77,7 +77,7 @@ const Categories = () => {
         {
             id: 'audio',
             name: 'Audio',
-            slug: 'audio',
+            slug: 'Audio',
             description: 'Headphones, speakers, and audio gear',
             image: audioImg,
             productCount: 56,
@@ -86,7 +86,7 @@ const Categories = () => {
         {
             id: 'cameras',
             name: 'Cameras',
-            slug: 'cameras',
+            slug: 'Cameras',
             description: 'Digital cameras and photography equipment',
             image: cameraImg,
             productCount: 34,
@@ -95,7 +95,7 @@ const Categories = () => {
         {
             id: 'accessories',
             name: 'Accessories',
-            slug: 'accessories',
+            slug: 'Accessories',
             description: 'Cases, chargers, and tech accessories',
             image: accessoriesImg,
             productCount: 78,
