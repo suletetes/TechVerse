@@ -8,7 +8,8 @@ import { UserRoles } from './services/authService.js';
 import {
     Contact,
     HomeLayout,
-    Category,
+    Categories,
+    Products,
     Product,
     OrderConfirmation,
     PaymentPage,
@@ -56,8 +57,16 @@ const router = createBrowserRouter([
                 element: <Home />,
             },
             {
-                path: 'category/:categorySlug?',
-                element: <Category />,
+                path: 'categories',
+                element: <Categories />,
+            },
+            {
+                path: 'products',
+                element: <Products />,
+            },
+            {
+                path: 'category/:categorySlug',
+                element: <Products />,
             },
             {
                 path: 'product/:id',
