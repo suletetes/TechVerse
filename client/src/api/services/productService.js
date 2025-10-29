@@ -25,7 +25,7 @@ class ProductService extends BaseApiService {
     const {
       page = 1,
       limit = 20,
-      sort = 'createdAt',
+      sort = 'newest',
       order = 'desc',
       category,
       minPrice,
@@ -33,8 +33,23 @@ class ProductService extends BaseApiService {
       inStock,
       featured,
       search,
+      brand,
       ...otherParams
     } = params;
+
+    // If there's a search term with at least 2 characters, use the search endpoint
+    if (search && search.trim() && search.trim().length >= 2) {
+      return this.searchProducts(search.trim(), {
+        page,
+        limit,
+        sort,
+        category,
+        minPrice,
+        maxPrice,
+        brand,
+        ...otherParams
+      });
+    }
 
     const queryParams = {
       page,
@@ -50,7 +65,7 @@ class ProductService extends BaseApiService {
     if (maxPrice !== undefined) queryParams.maxPrice = maxPrice;
     if (inStock !== undefined) queryParams.inStock = inStock;
     if (featured !== undefined) queryParams.featured = featured;
-    if (search) queryParams.search = search;
+    if (brand) queryParams.brand = brand;
 
     return this.getPaginated(this.endpoints.BASE, page, limit, {
       params: queryParams
@@ -69,7 +84,21 @@ class ProductService extends BaseApiService {
   // Search products
   async searchProducts(query, filters = {}) {
     if (!query || query.trim().length < 2) {
-      throw new Error('Search query must be at least 2 characters');
+      // Return empty results instead of throwing error for short queries
+      return {
+        success: true,
+        data: {
+          products: [],
+          pagination: {
+            currentPage: 1,
+            totalPages: 0,
+            totalProducts: 0,
+            hasNextPage: false,
+            hasPrevPage: false,
+            limit: filters.limit || 20
+          }
+        }
+      };
     }
 
     const {
@@ -302,7 +331,21 @@ class ProductService extends BaseApiService {
     } = searchParams;
 
     if (!query || query.trim().length < 2) {
-      throw new Error('Search query must be at least 2 characters');
+      // Return empty results instead of throwing error for short queries
+      return {
+        success: true,
+        data: {
+          products: [],
+          pagination: {
+            currentPage: 1,
+            totalPages: 0,
+            totalProducts: 0,
+            hasNextPage: false,
+            hasPrevPage: false,
+            limit
+          }
+        }
+      };
     }
 
     return this.search(this.endpoints.SEARCH, query, {

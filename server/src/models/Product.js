@@ -549,10 +549,13 @@ productSchema.statics.searchProducts = function (searchTerm, options = {}) {
   // Sorting
   const sortOptions = {
     'relevance': { score: { $meta: 'textScore' } },
+    'newest': { createdAt: -1 },
+    'name': { name: 1 },
+    'price-low': { price: 1 },
+    'price-high': { price: -1 },
+    'rating': { 'rating.average': -1 },
     'price_asc': { price: 1 },
     'price_desc': { price: -1 },
-    'rating': { 'rating.average': -1 },
-    'newest': { createdAt: -1 },
     'popularity': { 'sales.totalSold': -1 }
   };
 

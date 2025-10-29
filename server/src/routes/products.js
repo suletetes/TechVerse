@@ -122,7 +122,7 @@ const searchValidation = [
     .withMessage('Maximum price must be a positive number'),
   query('sort')
     .optional()
-    .isIn(['name', 'price', 'rating', 'createdAt', '-name', '-price', '-rating', '-createdAt'])
+    .isIn(['newest', 'oldest', 'name', 'price-low', 'price-high', 'rating', 'price', 'createdAt', '-name', '-price', '-rating', '-createdAt'])
     .withMessage('Invalid sort option'),
   ...commonValidations.pagination()
 ];
