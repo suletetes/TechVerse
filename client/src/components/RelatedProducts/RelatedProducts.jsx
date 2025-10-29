@@ -145,7 +145,7 @@ const RelatedProducts = ({ productId: propProductId, limit = 4 }) => {
                         </div>
 
                         <div className="text-center mt-4">
-                            <Link to="/category" className="btn btn-outline-primary btn-rd px-4">
+                            <Link to="/products" className="btn btn-outline-primary btn-rd px-4">
                                 <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
                                     <path fill="currentColor"
                                           d="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z"/>
@@ -157,7 +157,7 @@ const RelatedProducts = ({ productId: propProductId, limit = 4 }) => {
                 ) : (
                     <div className="text-center py-4">
                         <p className="text-muted">No related products available at the moment.</p>
-                        <Link to="/category" className="btn btn-primary btn-rd px-4">
+                        <Link to="/products" className="btn btn-primary btn-rd px-4">
                             Browse All Products
                         </Link>
                     </div>
