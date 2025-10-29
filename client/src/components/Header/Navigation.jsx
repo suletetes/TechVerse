@@ -63,7 +63,11 @@ const Navigation = () => {
                                             Home
                                         </NavLink>
 
-                                        <NavLink to="/category">
+                                        <NavLink to="/categories">
+                                            Categories
+                                        </NavLink>
+
+                                        <NavLink to="/products">
                                             Products
                                         </NavLink>
 

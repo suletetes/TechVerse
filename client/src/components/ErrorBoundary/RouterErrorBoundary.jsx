@@ -187,7 +187,7 @@ const ProductionRouterErrorUI = ({ error }) => {
                                             Back to Home
                                         </Link>
                                         <Link
-                                            to="/category"
+                                            to="/products"
                                             className="btn btn-outline-primary btn-rd btn-lg d-flex align-items-center justify-content-center px-4"
                                         >
                                             <svg width="20" height="20" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
@@ -271,7 +271,7 @@ const ProductionRouterErrorUI = ({ error }) => {
                                             </Link>
                                         </div>
                                         <div className="col-md-4">
-                                            <Link to="/category" className="btn btn-outline-secondary btn-sm w-100">
+                                            <Link to="/products" className="btn btn-outline-secondary btn-sm w-100">
                                                 Browse Products
                                             </Link>
                                         </div>
