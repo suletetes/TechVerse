@@ -26,19 +26,20 @@ const ProductCardList = ({ product }) => {
                 
                 {/* Product Image */}
                 <div className="flex-shrink-0" style={{width: '200px'}}>
-                    <Link to={product.link}>
+                    <Link to={`/product/${product._id || product.id}`}>
                         <picture>
                             <source type="image/webp" srcSet={product.webp} />
                             <img
-                                src={product.image}
-                                alt={product.name}
+                                src={product.image || '/placeholder-image.jpg'}
+                                alt={product.name || 'Product'}
                                 className="img-fluid"
                                 width="200"
                                 height="200"
                                 style={{
                                     transition: 'transform 0.3s ease',
                                     objectFit: 'cover',
-                                    borderRadius: '8px 0 0 8px'
+                                    borderRadius: '8px 0 0 8px',
+                                    cursor: 'pointer'
                                 }}
                                 onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
                                 onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
@@ -50,10 +51,12 @@ const ProductCardList = ({ product }) => {
                 {/* Product Details */}
                 <div className="flex-grow-1 p-3 d-flex flex-column justify-content-between">
                     <div>
-                        <h5 className="tc-6533 mb-2 lg-sub-title">{product.name}</h5>
-                        <p className="text-muted mb-2">{product.brand}</p>
+                        <Link to={`/product/${product._id || product.id}`} className="text-decoration-none">
+                            <h5 className="tc-6533 mb-2 lg-sub-title">{product.name || 'Product Name'}</h5>
+                        </Link>
+                        <p className="text-muted mb-2">{product.brand || 'Brand'}</p>
                         <div className="d-flex align-items-center mb-2">
-                            <span className="tc-6533 fw-bold me-3">{product.price}</span>
+                            <span className="tc-6533 fw-bold me-3">${product.price || 'Price'}</span>
                             <div className="d-flex align-items-center">
                                 {[...Array(5)].map((_, i) => (
                                     <i 

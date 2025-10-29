@@ -32,7 +32,7 @@ const ProductFilters = ({
                         <input
                             type="text"
                             className="form-control"
-                            placeholder="Search phones..."
+                            placeholder="Search products..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             style={{
@@ -54,6 +54,7 @@ const ProductFilters = ({
                         onChange={(e) => setSortBy(e.target.value)}
                         style={{borderRadius: '25px', border: '2px solid #e0e0e0'}}
                     >
+                        <option value="newest">Newest First</option>
                         <option value="name">Sort by Name</option>
                         <option value="price-low">Price: Low to High</option>
                         <option value="price-high">Price: High to Low</option>
