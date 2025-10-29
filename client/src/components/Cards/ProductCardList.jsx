@@ -8,7 +8,9 @@ const ProductCardList = ({ product }) => {
                 {/* Rating Badge */}
                 <div className="position-absolute top-0 end-0 m-2">
                     <span className="badge bg-warning text-dark">
-                        <i className="fa fa-star"></i> {product.rating}
+                        <i className="fa fa-star"></i> {typeof product.rating === 'object' 
+                            ? product.rating?.average?.toFixed(1) || '0.0'
+                            : product.rating?.toFixed(1) || '0.0'}
                     </span>
                 </div>
                 
@@ -56,11 +58,17 @@ const ProductCardList = ({ product }) => {
                                 {[...Array(5)].map((_, i) => (
                                     <i 
                                         key={i} 
-                                        className={`fa fa-star ${i < Math.floor(product.rating) ? 'text-warning' : 'text-muted'}`}
+                                        className={`fa fa-star ${i < Math.floor(
+                                            typeof product.rating === 'object' 
+                                                ? product.rating?.average || 0
+                                                : product.rating || 0
+                                        ) ? 'text-warning' : 'text-muted'}`}
                                         style={{fontSize: '0.8rem'}}
                                     ></i>
                                 ))}
-                                <span className="small text-muted ms-1">({product.rating})</span>
+                                <span className="small text-muted ms-1">({typeof product.rating === 'object' 
+                                    ? product.rating?.average?.toFixed(1) || '0.0'
+                                    : product.rating?.toFixed(1) || '0.0'})</span>
                             </div>
                         </div>
                     </div>
@@ -75,11 +83,11 @@ const ProductCardList = ({ product }) => {
                             </button>
                         </div>
                         <Link
-                            to={product.link}
+                            to={`/product/${product._id || product.id}`}
                             className="btn btn-sm btn-rd btn-c-2101 buy-btn"
                             style={{transition: 'all 0.3s ease', minWidth: '100px'}}
                         >
-                            Buy Now
+                            View Product
                         </Link>
                     </div>
                 </div>

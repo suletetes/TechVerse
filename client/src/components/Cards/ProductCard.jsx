@@ -27,12 +27,14 @@ const ProductCard = ({ product }) => {
 
     return (
         <div className="text-start d-flex col-md-6 col-lg-4 mb-4">
-            <div className="store-card fill-card position-relative">
+            <div className="store-card fill-card position-relative" style={{ cursor: 'pointer' }} onClick={() => window.location.href = `/product/${product._id || product.id}`}>
                 {/* Rating Badge */}
                 {product.rating && (
                     <div className="position-absolute top-0 end-0 m-2">
                         <span className="badge bg-warning text-dark">
-                            <i className="fa fa-star"></i> {product.rating}
+                            <i className="fa fa-star"></i> {typeof product.rating === 'object' 
+                                ? product.rating?.average?.toFixed(1) || '0.0'
+                                : product.rating?.toFixed(1) || '0.0'}
                         </span>
                     </div>
                 )}
@@ -74,11 +76,11 @@ const ProductCard = ({ product }) => {
                     </div>
                     <div className="col-lg-4 align-self-end">
                         <Link
-                            to={product.link || '#'}
+                            to={`/product/${product._id || product.id}`}
                             className={`btn btn-sm btn-rd float-lg-end buy-btn w-100 ${!inStock ? 'btn-secondary disabled' : 'btn-c-2101'}`}
                             style={{transition: 'all 0.3s ease', pointerEvents: !inStock ? 'none' : 'auto'}}
                         >
-                            {inStock ? 'Buy Now' : 'Out of Stock'}
+                            {inStock ? 'View Product' : 'Out of Stock'}
                         </Link>
                     </div>
                 </div>
