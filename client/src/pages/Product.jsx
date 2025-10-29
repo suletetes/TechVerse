@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useProduct, useCart, useWishlist, useAuth } from "../context";
 import { LoadingSpinner } from "../components/Common";
 import {
@@ -302,37 +302,6 @@ const Product = () => {
         <section className="bloc l-bloc full-width-bloc" id="bloc-7">
             <div className="container bloc-md bloc-lg-md">
                 <div className="row">
-                    {/* Category Navigation Pane - Full Width */}
-                    <div className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mb-4">
-                        <ProductCategoryPane
-                            category={
-                                typeof currentProduct.category === 'object' 
-                                    ? currentProduct.category?.name || "Products"
-                                    : currentProduct.category || "Products"
-                            }
-                            subcategory={
-                                typeof currentProduct.subcategory === 'object'
-                                    ? currentProduct.subcategory?.name || ""
-                                    : currentProduct.subcategory || ""
-                            }
-                            breadcrumbs={currentProduct.breadcrumbs || [
-                                { name: 'Home', path: '/' },
-                                { 
-                                    name: typeof currentProduct.category === 'object' 
-                                        ? currentProduct.category?.name || 'Products'
-                                        : currentProduct.category || 'Products', 
-                                    path: `/category/${
-                                        typeof currentProduct.category === 'object'
-                                            ? currentProduct.category?.slug || ''
-                                            : currentProduct.category || ''
-                                    }` 
-                                },
-                                { name: currentProduct.name, path: `/product/${currentProduct.slug || id}` }
-                            ]}
-                            relatedCategories={Array.isArray(currentProduct.relatedCategories) ? currentProduct.relatedCategories : []}
-                        />
-                    </div>
-
                     {/* Title */}
                     <div
                         className="text-start offset-lg-1 col-lg-10 mb-4 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1">
