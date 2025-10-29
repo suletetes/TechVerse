@@ -11,14 +11,10 @@ const Products = () => {
     // Context hooks
     const { 
         products, 
-        categories,
         pagination,
-        filters,
         isLoading, 
         error,
         loadProducts,
-        loadProductsByCategory,
-        loadCategories,
         setFilters,
         clearFilters: clearProductFilters
     } = useProduct();
@@ -36,32 +32,26 @@ const Products = () => {
         inStock: searchParams.get('inStock') ? searchParams.get('inStock') === 'true' : null
     });
 
-    // Load data on mount and when category changes
+    // Load products on mount and when filters change
     useEffect(() => {
-        loadCategories();
-        
         // Get category from URL params or query params
         const categoryFromQuery = searchParams.get('category');
         const effectiveCategory = categorySlug || categoryFromQuery;
         
+        // Build filters object
+        const filters = {
+            ...localFilters,
+            page: 1,
+            limit: 12
+        };
+        
+        // Add category filter if specified
         if (effectiveCategory) {
-            // Load products by category
-            const categoryFilters = {
-                ...localFilters,
-                category: effectiveCategory,
-                page: 1,
-                limit: 12
-            };
-            loadProductsByCategory(effectiveCategory, categoryFilters);
-        } else {
-            // Load all products
-            const allFilters = {
-                ...localFilters,
-                page: 1,
-                limit: 12
-            };
-            loadProducts(allFilters);
+            filters.category = effectiveCategory;
         }
+        
+        // Load products with filters
+        loadProducts(filters);
     }, [categorySlug, searchParams.get('category')]); // Depend on both URL param and query param
 
     // Update URL params when filters change
@@ -85,19 +75,28 @@ const Products = () => {
         const categoryFromQuery = searchParams.get('category');
         const effectiveCategory = categorySlug || categoryFromQuery;
         
-        // Reload products with new filters
+        // Build filters object
+        const filters = {
+            ...localFilters,
+            page: 1,
+            limit: 12
+        };
+        
+        // Add category filter if specified
         if (effectiveCategory) {
-            loadProductsByCategory(effectiveCategory, { ...localFilters, page: 1, limit: 12 });
-        } else {
-            loadProducts({ ...localFilters, page: 1, limit: 12 });
+            filters.category = effectiveCategory;
         }
+        
+        // Always use loadProducts with filters
+        loadProducts(filters);
     }, [localFilters, categorySlug, searchParams.get('category')]); // Depend on both URL param and query param
 
     // Get current category info
     const categoryFromQuery = searchParams.get('category');
     const effectiveCategory = categorySlug || categoryFromQuery;
-    const currentCategory = Array.isArray(categories) ? categories.find(cat => cat.slug === effectiveCategory) : null;
-    const categoryName = currentCategory?.name || (effectiveCategory ? effectiveCategory.charAt(0).toUpperCase() + effectiveCategory.slice(1) : 'All Products');
+    const categoryName = effectiveCategory 
+        ? effectiveCategory.charAt(0).toUpperCase() + effectiveCategory.slice(1) 
+        : 'All Products';
 
     // Get unique brands from current products for filters
     const brands = useMemo(() => {
@@ -121,15 +120,23 @@ const Products = () => {
     };
 
     const handlePageChange = (page) => {
-        const newFilters = { ...localFilters, page };
         const categoryFromQuery = searchParams.get('category');
         const effectiveCategory = categorySlug || categoryFromQuery;
         
+        // Build filters object with new page
+        const filters = {
+            ...localFilters,
+            page,
+            limit: 12
+        };
+        
+        // Add category filter if specified
         if (effectiveCategory) {
-            loadProductsByCategory(effectiveCategory, { ...newFilters, limit: 12 });
-        } else {
-            loadProducts({ ...newFilters, limit: 12 });
+            filters.category = effectiveCategory;
         }
+        
+        // Always use loadProducts with filters
+        loadProducts(filters);
     };
 
     const clearFilters = () => {
@@ -189,16 +196,11 @@ const Products = () => {
                     <div className="col-lg-12 ps-0 pe-0 mb-4">
                         <div className="d-flex justify-content-between align-items-center">
                             <div>
-                                <h1 className="tc-6533 mb-0">
-                                    {effectiveCategory ? categoryName : 'All Products'}
-                                </h1>
-                                {currentCategory?.description ? (
-                                    <p className="tc-6533 opacity-75 mb-0">{currentCategory.description}</p>
-                                ) : !effectiveCategory && (
-                                    <p className="tc-6533 opacity-75 mb-0">Discover our complete range of products</p>
-                                )}
-                                {effectiveCategory && !currentCategory && (
+                                <h1 className="tc-6533 mb-0">{categoryName}</h1>
+                                {effectiveCategory ? (
                                     <p className="tc-6533 opacity-75 mb-0">Browse {categoryName} products</p>
+                                ) : (
+                                    <p className="tc-6533 opacity-75 mb-0">Discover our complete range of products</p>
                                 )}
                             </div>
                             <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode}/>
@@ -226,7 +228,7 @@ const Products = () => {
                         inStock={localFilters.inStock}
                         setInStock={(value) => handleFilterChange('inStock', value)}
                         brands={brands}
-                        categories={categories}
+                        categories={[]} // Empty array since we're not loading categories
                         priceRange={priceRange}
                         onClearFilters={clearFilters}
                         resultsCount={pagination.total || (Array.isArray(products) ? products.length : 0)}

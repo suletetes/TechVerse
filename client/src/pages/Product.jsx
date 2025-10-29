@@ -309,6 +309,33 @@ const Product = () => {
                         {currentProduct.subtitle && (
                             <p className="tc-6533 opacity-75 mb-0">{currentProduct.subtitle}</p>
                         )}
+                        {/* Quick Rating Display */}
+                        {currentProduct.averageRating && (
+                            <div className="product-rating-quick d-flex align-items-center mt-2">
+                                <div className="stars me-2">
+                                    {[...Array(5)].map((_, i) => (
+                                        <i 
+                                            key={i} 
+                                            className={`fas fa-star ${i < Math.floor(
+                                                typeof currentProduct.averageRating === 'object' 
+                                                    ? currentProduct.averageRating?.average || 0 
+                                                    : currentProduct.averageRating || 0
+                                            ) ? 'text-warning' : 'text-muted'}`}
+                                        ></i>
+                                    ))}
+                                </div>
+                                <span className="rating-text text-muted">
+                                    {(typeof currentProduct.averageRating === 'object' 
+                                        ? currentProduct.averageRating?.average || 0 
+                                        : currentProduct.averageRating || 0
+                                    ).toFixed(1)} ({
+                                        typeof currentProduct.reviewCount === 'object' 
+                                            ? currentProduct.reviewCount?.count || 0 
+                                            : currentProduct.reviewCount || 0
+                                    } reviews)
+                                </span>
+                            </div>
+                        )}
                     </div>
 
                     {/* Product Media Gallery */}
@@ -359,8 +386,12 @@ const Product = () => {
                                     price={getCurrentPrice()}
                                     originalPrice={currentProduct.originalPrice}
                                     discount={currentProduct.discount}
-                                    rating={currentProduct.averageRating}
-                                    reviewCount={currentProduct.reviewCount}
+                                    rating={typeof currentProduct.averageRating === 'object' 
+                                        ? currentProduct.averageRating?.average || 0 
+                                        : currentProduct.averageRating || 0}
+                                    reviewCount={typeof currentProduct.reviewCount === 'object' 
+                                        ? currentProduct.reviewCount?.count || 0 
+                                        : currentProduct.reviewCount || 0}
                                     inStock={currentProduct.inStock}
                                     stockCount={currentProduct.stockCount}
                                     isInWishlist={productInWishlist}
@@ -427,8 +458,12 @@ const Product = () => {
                         <ReviewsSection
                             productId={currentProduct._id}
                             reviews={reviews}
-                            averageRating={currentProduct.averageRating}
-                            totalReviews={currentProduct.reviewCount}
+                            averageRating={typeof currentProduct.averageRating === 'object' 
+                                ? currentProduct.averageRating?.average || 0 
+                                : currentProduct.averageRating || 0}
+                            totalReviews={typeof currentProduct.reviewCount === 'object' 
+                                ? currentProduct.reviewCount?.count || 0 
+                                : currentProduct.reviewCount || 0}
                             showWriteReview={isAuthenticated}
                             onSubmitReview={handleSubmitReview}
                             productInfo={{
