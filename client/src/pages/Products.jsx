@@ -11,10 +11,12 @@ const Products = () => {
     // Context hooks
     const { 
         products, 
+        categories,
         pagination,
         isLoading, 
         error,
         loadProducts,
+        loadCategories,
         setFilters,
         clearFilters: clearProductFilters
     } = useProduct();
@@ -23,7 +25,7 @@ const Products = () => {
     const [viewMode, setViewMode] = useState("grid");
     const [localFilters, setLocalFilters] = useState({
         search: searchParams.get('search') || '',
-        sort: searchParams.get('sort') || 'createdAt',
+        sort: searchParams.get('sort') || 'newest',
         order: searchParams.get('order') || 'desc',
         minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : null,
         maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : null,
@@ -31,6 +33,11 @@ const Products = () => {
         category: searchParams.get('category') || '',
         inStock: searchParams.get('inStock') ? searchParams.get('inStock') === 'true' : null
     });
+
+    // Load categories on mount
+    useEffect(() => {
+        loadCategories();
+    }, [loadCategories]);
 
     // Load products on mount and when filters change
     useEffect(() => {
@@ -119,6 +126,35 @@ const Products = () => {
         }));
     };
 
+    // Debounced search effect
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            // Only trigger search if the search term has changed and is different from URL
+            const currentSearch = localFilters.search || '';
+            const urlSearch = searchParams.get('search') || '';
+            
+            if (currentSearch !== urlSearch) {
+                // Trigger search after 500ms delay
+                const categoryFromQuery = searchParams.get('category');
+                const effectiveCategory = categorySlug || categoryFromQuery;
+                
+                const filters = {
+                    ...localFilters,
+                    page: 1,
+                    limit: 12
+                };
+                
+                if (effectiveCategory) {
+                    filters.category = effectiveCategory;
+                }
+                
+                loadProducts(filters);
+            }
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [localFilters.search]);
+
     const handlePageChange = (page) => {
         const categoryFromQuery = searchParams.get('category');
         const effectiveCategory = categorySlug || categoryFromQuery;
@@ -140,14 +176,25 @@ const Products = () => {
     };
 
     const clearFilters = () => {
+        // Clear URL parameters
+        const newParams = new URLSearchParams();
+        // Keep category if it's from URL path
+        if (categorySlug) {
+            // Don't add category to query params if it's from URL path
+        } else {
+            // Clear all query params
+        }
+        setSearchParams(newParams);
+        
+        // Reset local filters to defaults
         setLocalFilters({
             search: '',
-            sort: 'createdAt',
+            sort: 'newest',
             order: 'desc',
             minPrice: null,
             maxPrice: null,
             brand: '',
-            category: '',
+            category: categorySlug || '', // Keep category if from URL
             inStock: null
         });
         clearProductFilters();
@@ -228,7 +275,7 @@ const Products = () => {
                         inStock={localFilters.inStock}
                         setInStock={(value) => handleFilterChange('inStock', value)}
                         brands={brands}
-                        categories={[]} // Empty array since we're not loading categories
+                        categories={categories || []}
                         priceRange={priceRange}
                         onClearFilters={clearFilters}
                         resultsCount={pagination.total || (Array.isArray(products) ? products.length : 0)}

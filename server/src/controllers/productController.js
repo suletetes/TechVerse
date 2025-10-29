@@ -5,6 +5,26 @@ import logger from '../utils/logger.js';
 import { PAGINATION_DEFAULTS } from '../utils/constants.js';
 import { formatProductImages, getBaseUrl } from '../utils/imageUtils.js';
 
+// Helper function to find category by name or slug
+const findCategoryByNameOrSlug = async (categoryName) => {
+  if (!categoryName) return null;
+  
+  // If it's already an ObjectId, return it
+  if (typeof categoryName === 'string' && categoryName.match(/^[0-9a-fA-F]{24}$/)) {
+    return categoryName;
+  }
+  
+  // Find category by name or slug (case insensitive)
+  const categoryDoc = await Category.findOne({
+    $or: [
+      { name: { $regex: new RegExp(`^${categoryName}$`, 'i') } },
+      { slug: { $regex: new RegExp(`^${categoryName}$`, 'i') } }
+    ]
+  });
+  
+  return categoryDoc ? categoryDoc._id : null;
+};
+
 // @desc    Get all products with filtering, sorting, and pagination
 // @route   GET /api/products
 // @access  Public
@@ -29,7 +49,29 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
     visibility: 'public'
   };
 
-  if (category) filter.category = category;
+  if (category) {
+    const categoryId = await findCategoryByNameOrSlug(category);
+    if (categoryId) {
+      filter.category = categoryId;
+    } else {
+      // If category not found, return empty results
+      return res.status(200).json({
+        success: true,
+        message: 'No products found for this category',
+        data: {
+          products: [],
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages: 0,
+            totalProducts: 0,
+            hasNextPage: false,
+            hasPrevPage: false,
+            limit: limitNum
+          }
+        }
+      });
+    }
+  }
   if (brand) filter.brand = { $in: Array.isArray(brand) ? brand : [brand] };
   if (minPrice || maxPrice) {
     filter.price = {};
@@ -44,9 +86,12 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
   const sortOptions = {
     'newest': { createdAt: -1 },
     'oldest': { createdAt: 1 },
+    'name': { name: 1 },
+    'price-low': { price: 1 },
+    'price-high': { price: -1 },
+    'rating': { 'rating.average': -1 },
     'price_asc': { price: 1 },
     'price_desc': { price: -1 },
-    'rating': { 'rating.average': -1 },
     'name_asc': { name: 1 },
     'name_desc': { name: -1 },
     'popularity': { 'sales.totalSold': -1 }
@@ -337,7 +382,7 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
     q: searchTerm,
     page = PAGINATION_DEFAULTS.PAGE,
     limit = PAGINATION_DEFAULTS.LIMIT,
-    sort = 'relevance',
+    sort = 'newest',
     category,
     brand,
     minPrice,
@@ -349,12 +394,39 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
     return next(new AppError('Search term is required', 400, 'SEARCH_TERM_REQUIRED'));
   }
 
+  // Handle category filtering
+  let categoryFilter = undefined;
+  if (category) {
+    const categoryId = await findCategoryByNameOrSlug(category);
+    if (categoryId) {
+      categoryFilter = [categoryId];
+    } else {
+      // If category not found, return empty results
+      return res.status(200).json({
+        success: true,
+        message: 'No products found for this category',
+        data: {
+          products: [],
+          searchTerm,
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages: 0,
+            totalProducts: 0,
+            hasNextPage: false,
+            hasPrevPage: false,
+            limit: Math.min(parseInt(limit), PAGINATION_DEFAULTS.MAX_LIMIT)
+          }
+        }
+      });
+    }
+  }
+
   // Build search options
   const searchOptions = {
     page: parseInt(page),
     limit: Math.min(parseInt(limit), PAGINATION_DEFAULTS.MAX_LIMIT),
     sort,
-    category: category ? (Array.isArray(category) ? category : [category]) : undefined,
+    category: categoryFilter,
     brand: brand ? (Array.isArray(brand) ? brand : [brand]) : undefined,
     minPrice: minPrice ? parseFloat(minPrice) : undefined,
     maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
@@ -363,7 +435,9 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
 
   // Execute search
   const products = await Product.searchProducts(searchTerm, searchOptions);
-  const totalProducts = await Product.countDocuments({
+  
+  // Build count query with same filters
+  const countFilter = {
     $and: [
       { status: 'active', visibility: 'public' },
       {
@@ -375,7 +449,14 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
         ]
       }
     ]
-  });
+  };
+  
+  // Add category filter to count query if present
+  if (categoryFilter) {
+    countFilter.$and.push({ category: { $in: categoryFilter } });
+  }
+  
+  const totalProducts = await Product.countDocuments(countFilter);
 
   // Calculate pagination
   const totalPages = Math.ceil(totalProducts / searchOptions.limit);

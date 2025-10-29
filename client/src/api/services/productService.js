@@ -22,6 +22,7 @@ class ProductService extends BaseApiService {
 
   // Get all products with filters, sorting, and pagination
   async getProducts(params = {}) {
+    try {
     const {
       page = 1,
       limit = 20,
@@ -37,18 +38,45 @@ class ProductService extends BaseApiService {
       ...otherParams
     } = params;
 
-    // If there's a search term with at least 2 characters, use the search endpoint
-    if (search && search.trim() && search.trim().length >= 2) {
-      return this.searchProducts(search.trim(), {
-        page,
-        limit,
-        sort,
-        category,
-        minPrice,
-        maxPrice,
-        brand,
-        ...otherParams
-      });
+    // Handle search queries
+    if (search !== undefined && search !== null) {
+      const trimmedSearch = search.toString().trim();
+      
+      if (trimmedSearch.length >= 2) {
+        // Use search endpoint for valid search queries
+        try {
+          return this.searchProducts(trimmedSearch, {
+            page,
+            limit,
+            sort,
+            category,
+            minPrice,
+            maxPrice,
+            brand,
+            ...otherParams
+          });
+        } catch (error) {
+          console.warn('Search failed, falling back to regular products:', error.message);
+          // Fall through to regular product loading
+        }
+      } else if (trimmedSearch.length > 0) {
+        // Return empty results for short search queries
+        return {
+          success: true,
+          data: {
+            products: [],
+            pagination: {
+              currentPage: page,
+              totalPages: 0,
+              totalProducts: 0,
+              hasNextPage: false,
+              hasPrevPage: false,
+              limit
+            }
+          }
+        };
+      }
+      // If search is empty string, continue to regular product loading
     }
 
     const queryParams = {
@@ -70,6 +98,24 @@ class ProductService extends BaseApiService {
     return this.getPaginated(this.endpoints.BASE, page, limit, {
       params: queryParams
     });
+    } catch (error) {
+      console.error('getProducts error:', error);
+      // Return empty results as fallback
+      return {
+        success: true,
+        data: {
+          products: [],
+          pagination: {
+            currentPage: params.page || 1,
+            totalPages: 0,
+            totalProducts: 0,
+            hasNextPage: false,
+            hasPrevPage: false,
+            limit: params.limit || 20
+          }
+        }
+      };
+    }
   }
 
   // Get single product by ID
@@ -83,14 +129,17 @@ class ProductService extends BaseApiService {
 
   // Search products
   async searchProducts(query, filters = {}) {
-    if (!query || query.trim().length < 2) {
-      // Return empty results instead of throwing error for short queries
+    // Handle empty or short queries gracefully
+    const trimmedQuery = query ? query.trim() : '';
+    
+    if (!trimmedQuery || trimmedQuery.length < 2) {
+      // Return empty results for short queries
       return {
         success: true,
         data: {
           products: [],
           pagination: {
-            currentPage: 1,
+            currentPage: filters.page || 1,
             totalPages: 0,
             totalProducts: 0,
             hasNextPage: false,
@@ -107,12 +156,12 @@ class ProductService extends BaseApiService {
       category,
       minPrice,
       maxPrice,
-      sort = 'relevance',
+      sort = 'newest',
       ...otherFilters
     } = filters;
 
     const params = {
-      q: query.trim(),
+      q: trimmedQuery,
       page,
       limit,
       sort,
@@ -124,7 +173,26 @@ class ProductService extends BaseApiService {
     if (minPrice !== undefined) params.minPrice = minPrice;
     if (maxPrice !== undefined) params.maxPrice = maxPrice;
 
-    return this.search(this.endpoints.SEARCH, query, params);
+    try {
+      return this.search(this.endpoints.SEARCH, trimmedQuery, params);
+    } catch (error) {
+      // If search fails, return empty results instead of throwing
+      console.warn('Search failed:', error.message);
+      return {
+        success: true,
+        data: {
+          products: [],
+          pagination: {
+            currentPage: page,
+            totalPages: 0,
+            totalProducts: 0,
+            hasNextPage: false,
+            hasPrevPage: false,
+            limit
+          }
+        }
+      };
+    }
   }
 
   // Get featured products
