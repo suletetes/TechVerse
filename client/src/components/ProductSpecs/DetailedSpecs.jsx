@@ -1,132 +1,57 @@
 import React, { useState } from 'react';
 
 const DetailedSpecs = ({ 
-    product,
-    productName,
-    specifications
-}) => {
-    // Handle backend data
-    const name = productName || product?.name || "Product";
-    const backendSpecs = specifications || product?.specifications || [];
-    
-    // Process backend specifications into grouped format
-    const processSpecifications = (specs) => {
-        if (specs.length === 0) {
-            // Return default specifications if none provided
-            return {
-                "Display & Design": [
-                    { label: 'Display Size', value: '11-inch Liquid Retina', highlight: true },
-                    { label: 'Resolution', value: '2388 x 1668 pixels at 264 ppi' },
-                    { label: 'Display Technology', value: 'IPS LCD with True Tone' },
-                    { label: 'Brightness', value: '500 nits max brightness' },
-                    { label: 'Color Gamut', value: 'P3 wide color gamut' },
-                    { label: 'Dimensions', value: '247.6 × 178.5 × 6.1 mm' },
-                    { label: 'Weight', value: '466g (Wi-Fi) / 468g (Cellular)' },
-                    { label: 'Colors', value: 'Silver, Blue, Pink, Purple, Starlight' }
-                ],
-                "Performance": [
-                    { label: 'Processor', value: 'Apple M2 chip', highlight: true },
-                    { label: 'CPU', value: '8-core CPU with 4 performance and 4 efficiency cores' },
-                    { label: 'GPU', value: '10-core GPU' },
-                    { label: 'Neural Engine', value: '16-core Neural Engine' },
-                    { label: 'Memory', value: '8GB unified memory' },
-                    { label: 'Storage Options', value: '128GB, 256GB, 512GB, 1TB' }
-                ]
-            };
-        }
-
-        // Group specifications by category
-        const grouped = specs.reduce((groups, spec) => {
-            const category = formatCategoryName(spec.category || 'General');
-            if (!groups[category]) {
-                groups[category] = [];
-            }
-            groups[category].push({
-                label: spec.name,
-                value: spec.value,
-                highlight: isHighlightSpec(spec.name, spec.category)
-            });
-            return groups;
-        }, {});
-
-        return grouped;
-    };
-
-    // Helper function to format category names
-    const formatCategoryName = (category) => {
-        if (!category || typeof category !== 'string') {
-            return 'General';
-        }
-        
-        const categoryMap = {
-            'display': 'Display & Design',
-            'design': 'Display & Design',
-            'performance': 'Performance',
-            'camera': 'Camera & Audio',
-            'audio': 'Camera & Audio',
-            'connectivity': 'Connectivity',
-            'battery': 'Battery & Power',
-            'power': 'Battery & Power',
-            'compatibility': 'Compatibility',
-            'general': 'General'
-        };
-        
-        return categoryMap[category.toLowerCase()] || 
-               category.charAt(0).toUpperCase() + category.slice(1);
-    };
-
-    // Helper function to determine if a spec should be highlighted
-    const isHighlightSpec = (name, category) => {
-        const highlightKeywords = [
-            'processor', 'cpu', 'display', 'screen', 'camera', 'battery', 
-            'storage', 'memory', 'wifi', 'bluetooth', 'size', 'weight'
-        ];
-        
-        const nameWords = name.toLowerCase().split(' ');
-        return highlightKeywords.some(keyword => 
-            nameWords.some(word => word.includes(keyword))
-        );
-    };
-
-    const processedSpecs = processSpecifications(backendSpecs);
-
-    // Add product-specific information to specifications
-    if (product) {
-        // Add basic product info to General category if it doesn't exist
-        if (!processedSpecs['General']) {
-            processedSpecs['General'] = [];
-        }
-        
-        if (product.brand && !processedSpecs['General'].some(spec => spec.label === 'Brand')) {
-            processedSpecs['General'].unshift({
-                label: 'Brand',
-                value: product.brand,
-                highlight: true
-            });
-        }
-        
-        if (product.sku && !processedSpecs['General'].some(spec => spec.label === 'SKU')) {
-            processedSpecs['General'].push({
-                label: 'SKU',
-                value: product.sku,
-                highlight: false
-            });
-        }
-
-        // Add weight if available and not already in specs
-        if (product.weight && !Object.values(processedSpecs).flat().some(spec => spec.label.toLowerCase().includes('weight'))) {
-            if (!processedSpecs['Display & Design']) {
-                processedSpecs['Display & Design'] = [];
-            }
-            processedSpecs['Display & Design'].push({
-                label: 'Weight',
-                value: `${product.weight?.value || 'N/A'} ${product.weight?.unit || ''}`,
-                highlight: false
-            });
-        }
+    productName = "Tablet Air",
+    specifications = {
+        "Display & Design": [
+            { label: 'Display Size', value: '11-inch Liquid Retina', highlight: true },
+            { label: 'Resolution', value: '2388 x 1668 pixels at 264 ppi' },
+            { label: 'Display Technology', value: 'IPS LCD with True Tone' },
+            { label: 'Brightness', value: '500 nits max brightness' },
+            { label: 'Color Gamut', value: 'P3 wide color gamut' },
+            { label: 'Dimensions', value: '247.6 × 178.5 × 6.1 mm' },
+            { label: 'Weight', value: '466g (Wi-Fi) / 468g (Cellular)' },
+            { label: 'Colors', value: 'Silver, Blue, Pink, Purple, Starlight' }
+        ],
+        "Performance": [
+            { label: 'Processor', value: 'Apple M2 chip', highlight: true },
+            { label: 'CPU', value: '8-core CPU with 4 performance and 4 efficiency cores' },
+            { label: 'GPU', value: '10-core GPU' },
+            { label: 'Neural Engine', value: '16-core Neural Engine' },
+            { label: 'Memory', value: '8GB unified memory' },
+            { label: 'Storage Options', value: '128GB, 256GB, 512GB, 1TB' }
+        ],
+        "Camera & Audio": [
+            { label: 'Rear Camera', value: '12MP Wide camera', highlight: true },
+            { label: 'Front Camera', value: '12MP Ultra Wide front camera' },
+            { label: 'Video Recording', value: '4K video recording at 24, 25, 30, or 60 fps' },
+            { label: 'Audio', value: 'Stereo speakers in landscape mode' },
+            { label: 'Microphones', value: 'Dual microphones for calls and video recording' }
+        ],
+        "Connectivity": [
+            { label: 'Wi-Fi', value: 'Wi-Fi 6E (802.11ax)', highlight: true },
+            { label: 'Bluetooth', value: 'Bluetooth 5.3' },
+            { label: 'Cellular', value: '5G (sub-6 GHz and mmWave) - Cellular models' },
+            { label: 'Connector', value: 'USB-C with support for Thunderbolt 4' },
+            { label: 'Location', value: 'GPS, GLONASS, Galileo, QZSS, BeiDou' }
+        ],
+        "Battery & Power": [
+            { label: 'Battery Life', value: 'Up to 10 hours', highlight: true },
+            { label: 'Video Playback', value: 'Up to 10 hours of video playback' },
+            { label: 'Audio Playback', value: 'Up to 9 hours of audio playback' },
+            { label: 'Charging', value: 'Fast charging with 20W adapter (sold separately)' },
+            { label: 'Power Adapter', value: '20W USB-C Power Adapter' }
+        ],
+        "Compatibility": [
+            { label: 'Apple Pencil', value: 'Apple Pencil (2nd generation)', highlight: true },
+            { label: 'Keyboard', value: 'Magic Keyboard, Smart Keyboard Folio' },
+            { label: 'Operating System', value: 'iPadOS 17' },
+            { label: 'Accessibility', value: 'Full range of accessibility features' }
+        ]
     }
-    const [activeSection, setActiveSection] = useState(Object.keys(processedSpecs)[0]);
-    const [expandedSections, setExpandedSections] = useState(new Set([Object.keys(processedSpecs)[0]]));
+}) => {
+    const [activeSection, setActiveSection] = useState(Object.keys(specifications)[0]);
+    const [expandedSections, setExpandedSections] = useState(new Set([Object.keys(specifications)[0]]));
 
     const toggleSection = (section) => {
         const newExpanded = new Set(expandedSections);
@@ -183,13 +108,13 @@ const DetailedSpecs = ({
                         <svg width="24" height="24" viewBox="0 0 24 24" className="me-3 text-primary">
                             <path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 2 2h12c1.11 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
                         </svg>
-                        {name} - Detailed Specifications
+                        {productName} - Detailed Specifications
                     </h4>
 
                     {/* Specification Sections */}
                     <div className="specs-accordion">
-                        {Object.entries(processedSpecs).map(([sectionName, specs], index) => (
-                            <div key={sectionName} className={`spec-section mb-3 ${index === Object.keys(processedSpecs).length - 1 ? 'mb-0' : ''}`}>
+                        {Object.entries(specifications).map(([sectionName, specs], index) => (
+                            <div key={sectionName} className={`spec-section mb-3 ${index === Object.keys(specifications).length - 1 ? 'mb-0' : ''}`}>
                                 <div 
                                     className={`spec-section-header p-3 rounded-3 cursor-pointer border ${
                                         expandedSections.has(sectionName) 
@@ -289,6 +214,8 @@ const DetailedSpecs = ({
                     </div>
 
                     {/* Comparison Link */}
+
+                    {/*  
                     <div className="text-center mt-4">
                         <button className="btn btn-outline-primary btn-rd">
                             <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
@@ -297,6 +224,7 @@ const DetailedSpecs = ({
                             Compare with Similar Products
                         </button>
                     </div>
+                    */}
                 </div>
             </div>
         </div>
