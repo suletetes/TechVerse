@@ -21,7 +21,7 @@ const Home = () => {
                 console.error('Error loading categories:', error);
             }
         };
-        
+
         loadInitialData();
     }, [loadCategories]);
 
