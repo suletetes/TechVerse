@@ -60,6 +60,12 @@ const categorySchema = new mongoose.Schema({
     default: 0
   },
   
+  // Technical specifications for products in this category
+  specifications: [{
+    category: { type: String, required: true }, // e.g., "Display & Design"
+    fields: [{ type: String, required: true }] // e.g., ["Display Size", "Resolution", "Brightness"]
+  }],
+  
   // Attributes for products in this category
   attributes: [{
     name: { type: String, required: true },

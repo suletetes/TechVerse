@@ -12,6 +12,9 @@ import {
   createCategory,
   updateCategory,
   deleteCategory,
+  getAdminCategories,
+  getCategorySpecifications,
+  updateCategorySpecifications,
   setProductsInSection,
   getProductsInSection,
   removeProductFromSection,
@@ -146,9 +149,12 @@ router.put('/orders/:id/status', authenticate, requireAdmin, [
 
 // Category management routes
 router.get('/categories', getAllCategories);
+router.get('/categories/admin', getAdminCategories);
 router.post('/categories', categoryValidation, validate, createCategory);
 router.put('/categories/:id', commonValidations.mongoId('id'), categoryValidation, validate, updateCategory);
 router.delete('/categories/:id', commonValidations.mongoId('id'), validate, deleteCategory);
+router.get('/categories/:slug/specifications', getCategorySpecifications);
+router.put('/categories/:id/specifications', commonValidations.mongoId('id'), validate, updateCategorySpecifications);
 
 // Section management routes
 router.get('/sections', getSectionOverview);
