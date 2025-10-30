@@ -2222,3 +2222,60 @@ export const updateAdminProfile = asyncHandler(async (req, res, next) => {
     return next(new AppError('Failed to update admin profile', 500));
   }
 });
+
+// @desc    Get all categories for admin
+// @route   GET /api/admin/categories/admin
+// @access  Private (Admin only)
+export const getAdminCategories = asyncHandler(async (req, res, next) => {
+  const categories = await Category.find({})
+    .sort({ displayOrder: 1, name: 1 })
+    .populate('parent', 'name slug');
+
+  res.status(200).json({
+    success: true,
+    message: 'Categories retrieved successfully',
+    data: categories
+  });
+});
+
+// @desc    Get category specifications template
+// @route   GET /api/admin/categories/:slug/specifications
+// @access  Private (Admin only)
+export const getCategorySpecifications = asyncHandler(async (req, res, next) => {
+  const { slug } = req.params;
+
+  const category = await Category.findOne({ slug });
+  if (!category) {
+    return next(new AppError('Category not found', 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Category specifications retrieved successfully',
+    data: {
+      specifications: category.specifications || []
+    }
+  });
+});
+
+// @desc    Update category specifications
+// @route   PUT /api/admin/categories/:id/specifications
+// @access  Private (Admin only)
+export const updateCategorySpecifications = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { specifications } = req.body;
+
+  const category = await Category.findById(id);
+  if (!category) {
+    return next(new AppError('Category not found', 404));
+  }
+
+  category.specifications = specifications;
+  await category.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Category specifications updated successfully',
+    data: category
+  });
+});
