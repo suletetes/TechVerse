@@ -309,33 +309,7 @@ const Product = () => {
                         {currentProduct.subtitle && (
                             <p className="tc-6533 opacity-75 mb-0">{currentProduct.subtitle}</p>
                         )}
-                        {/* Quick Rating Display */}
-                        {(currentProduct.averageRating || currentProduct.rating) && (
-                            <div className="product-rating-quick d-flex align-items-center mt-2">
-                                <div className="stars me-2">
-                                    {[...Array(5)].map((_, i) => (
-                                        <i 
-                                            key={i} 
-                                            className={`fas fa-star ${i < Math.floor(
-                                                currentProduct.rating?.average || 
-                                                currentProduct.averageRating?.average || 
-                                                currentProduct.averageRating || 0
-                                            ) ? 'text-warning' : 'text-muted'}`}
-                                        ></i>
-                                    ))}
-                                </div>
-                                <span className="rating-text text-muted">
-                                    {(currentProduct.rating?.average || 
-                                      currentProduct.averageRating?.average || 
-                                      currentProduct.averageRating || 0
-                                    ).toFixed(1)} ({
-                                        currentProduct.rating?.count || 
-                                        currentProduct.reviewCount?.count || 
-                                        currentProduct.reviewCount || 0
-                                    } reviews)
-                                </span>
-                            </div>
-                        )}
+
                     </div>
 
                     {/* Product Media Gallery */}
@@ -386,11 +360,11 @@ const Product = () => {
                                     price={getCurrentPrice()}
                                     originalPrice={currentProduct.originalPrice}
                                     discount={currentProduct.discount}
-                                    rating={typeof currentProduct.averageRating === 'object' 
-                                        ? currentProduct.averageRating?.average || 0 
+                                    rating={typeof currentProduct.averageRating === 'object'
+                                        ? currentProduct.averageRating?.average || 0
                                         : currentProduct.averageRating || 0}
-                                    reviewCount={typeof currentProduct.reviewCount === 'object' 
-                                        ? currentProduct.reviewCount?.count || 0 
+                                    reviewCount={typeof currentProduct.reviewCount === 'object'
+                                        ? currentProduct.reviewCount?.count || 0
                                         : currentProduct.reviewCount || 0}
                                     inStock={currentProduct.inStock || (currentProduct.stock?.quantity > 0 && currentProduct.status === 'active')}
                                     stockCount={currentProduct.stockCount || currentProduct.stock?.quantity}
@@ -452,17 +426,72 @@ const Product = () => {
                         />
                     </div>
 
+                    {/* Detailed Specifications Section - Full Width */}
+                    <div
+                        className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
+                        <DetailedSpecs
+                            productName="Tablet Air"
+                            specifications={{
+                                "Display & Design": [
+                                    { label: 'Display Size', value: '11-inch Liquid Retina', highlight: true },
+                                    { label: 'Resolution', value: '2388 x 1668 pixels at 264 ppi' },
+                                    { label: 'Display Technology', value: 'IPS LCD with True Tone' },
+                                    { label: 'Brightness', value: '500 nits max brightness' },
+                                    { label: 'Color Gamut', value: 'P3 wide color gamut' },
+                                    { label: 'Dimensions', value: '247.6 × 178.5 × 6.1 mm' },
+                                    { label: 'Weight', value: '466g (Wi-Fi) / 468g (Cellular)' },
+                                    { label: 'Colors', value: 'Silver, Blue, Pink, Purple, Starlight' }
+                                ],
+                                "Performance": [
+                                    { label: 'Processor', value: 'Apple M2 chip', highlight: true },
+                                    { label: 'CPU', value: '8-core CPU with 4 performance and 4 efficiency cores' },
+                                    { label: 'GPU', value: '10-core GPU' },
+                                    { label: 'Neural Engine', value: '16-core Neural Engine' },
+                                    { label: 'Memory', value: '8GB unified memory' },
+                                    { label: 'Storage Options', value: '128GB, 256GB, 512GB, 1TB' }
+                                ],
+                                "Camera & Audio": [
+                                    { label: 'Rear Camera', value: '12MP Wide camera', highlight: true },
+                                    { label: 'Front Camera', value: '12MP Ultra Wide front camera' },
+                                    { label: 'Video Recording', value: '4K video recording at 24, 25, 30, or 60 fps' },
+                                    { label: 'Audio', value: 'Stereo speakers in landscape mode' },
+                                    { label: 'Microphones', value: 'Dual microphones for calls and video recording' }
+                                ],
+                                "Connectivity": [
+                                    { label: 'Wi-Fi', value: 'Wi-Fi 6E (802.11ax)', highlight: true },
+                                    { label: 'Bluetooth', value: 'Bluetooth 5.3' },
+                                    { label: 'Cellular', value: '5G (sub-6 GHz and mmWave) - Cellular models' },
+                                    { label: 'Connector', value: 'USB-C with support for Thunderbolt 4' },
+                                    { label: 'Location', value: 'GPS, GLONASS, Galileo, QZSS, BeiDou' }
+                                ],
+                                "Battery & Power": [
+                                    { label: 'Battery Life', value: 'Up to 10 hours', highlight: true },
+                                    { label: 'Video Playback', value: 'Up to 10 hours of video playback' },
+                                    { label: 'Audio Playback', value: 'Up to 9 hours of audio playback' },
+                                    { label: 'Charging', value: 'Fast charging with 20W adapter (sold separately)' },
+                                    { label: 'Power Adapter', value: '20W USB-C Power Adapter' }
+                                ],
+                                "Compatibility": [
+                                    { label: 'Apple Pencil', value: 'Apple Pencil (2nd generation)', highlight: true },
+                                    { label: 'Keyboard', value: 'Magic Keyboard, Smart Keyboard Folio' },
+                                    { label: 'Operating System', value: 'iPadOS 17' },
+                                    { label: 'Accessibility', value: 'Full range of accessibility features' }
+                                ]
+                            }}
+                        />
+                    </div>
+
                     {/* Customer Reviews Section - Full Width Below */}
                     <div
                         className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
                         <ReviewsSection
                             productId={currentProduct._id}
                             reviews={reviews}
-                            averageRating={typeof currentProduct.averageRating === 'object' 
-                                ? currentProduct.averageRating?.average || 0 
+                            averageRating={typeof currentProduct.averageRating === 'object'
+                                ? currentProduct.averageRating?.average || 0
                                 : currentProduct.averageRating || 0}
-                            totalReviews={typeof currentProduct.reviewCount === 'object' 
-                                ? currentProduct.reviewCount?.count || 0 
+                            totalReviews={typeof currentProduct.reviewCount === 'object'
+                                ? currentProduct.reviewCount?.count || 0
                                 : currentProduct.reviewCount || 0}
                             showWriteReview={isAuthenticated}
                             onSubmitReview={handleSubmitReview}
@@ -478,16 +507,7 @@ const Product = () => {
                         />
                     </div>
 
-                     {/* Detailed Specifications Section - Full Width */}
-                    {currentProduct.detailedSpecifications && (
-                        <div
-                            className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
-                            <DetailedSpecs 
-                                productName={currentProduct.name}
-                                specifications={currentProduct.detailedSpecifications}
-                            />
-                        </div>
-                    )}
+
 
                     {/* Related Products Section */}
                     <div
