@@ -3,7 +3,7 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary, RouterErrorBoundary } from './components';
 import { AppProviders } from './context';
-import RouteGuard, { AdminRoute, UserRoute, AuthenticatedRoute } from './components/auth/RouteGuard.jsx';
+import { AdminGuard, UserGuard, AuthGuard } from './components/Auth/AuthGuard.jsx';
 import { UserRoles } from './services/authService.js';
 import {
     Contact,
@@ -25,6 +25,7 @@ import {
     AdminOrderManagement,
     AdminProductManagement
 } from "./pages"
+import { CategoryManagement } from "./pages/admin"
 import EditProfile from "./pages/EditProfile"
 import "./utils/uiUpdateSummary" // UI update summary and verification
 
@@ -117,75 +118,91 @@ const router = createBrowserRouter([
             {
                 path: 'admin',
                 element: (
-                    <AdminRoute>
+                    <AdminGuard>
                         <AdminProfile />
-                    </AdminRoute>
+                    </AdminGuard>
                 ),
             },
             {
                 path: 'admin/orders',
                 element: (
-                    <AdminRoute requiredPermissions={['manage_orders', 'view_admin_panel']}>
+                    <AdminGuard>
                         <AdminOrderManagement />
-                    </AdminRoute>
+                    </AdminGuard>
                 ),
             },
             {
                 path: 'admin/products',
                 element: (
-                    <AdminRoute requiredPermissions={['manage_products', 'view_admin_panel']}>
+                    <AdminGuard>
                         <AdminProductManagement />
-                    </AdminRoute>
+                    </AdminGuard>
+                ),
+            },
+            {
+                path: 'admin/categories',
+                element: (
+                    <AdminGuard>
+                        <CategoryManagement />
+                    </AdminGuard>
+                ),
+            },
+            {
+                path: 'admin/categories/:slug/specifications',
+                element: (
+                    <AdminGuard>
+                        <CategoryManagement />
+                    </AdminGuard>
                 ),
             },
 
-            // User routes - protected with UserRoute guard
+            // User routes - protected with UserGuard
             {
                 path: 'profile',
                 element: (
-                    <UserRoute>
+                    <UserGuard>
                         <UserProfile />
-                    </UserRoute>
+                    </UserGuard>
                 ),
             },
             {
                 path: 'profile/:tab',
                 element: (
-                    <UserRoute>
+                    <UserGuard>
                         <UserProfile />
-                    </UserRoute>
+                    </UserGuard>
                 ),
             },
             {
                 path: 'profile/edit',
                 element: (
-                    <UserRoute>
+                    <UserGuard>
                         <EditProfile />
-                    </UserRoute>
+                    </UserGuard>
                 ),
             },
             {
                 path: 'user/order/:orderId',
                 element: (
-                    <UserRoute>
+                    <UserGuard>
                         <OrderDetails />
-                    </UserRoute>
+                    </UserGuard>
                 ),
             },
             {
                 path: 'user/order/:orderId/tracking',
                 element: (
-                    <UserRoute>
+                    <UserGuard>
                         <OrderTracking />
-                    </UserRoute>
+                    </UserGuard>
                 ),
             },
             {
                 path: 'user/order/:orderId/review',
                 element: (
-                    <UserRoute>
+                    <UserGuard>
                         <OrderReview />
-                    </UserRoute>
+                    </UserGuard>
                 ),
             },
 
@@ -193,33 +210,33 @@ const router = createBrowserRouter([
             {
                 path: 'order-confirmation',
                 element: (
-                    <AuthenticatedRoute>
+                    <AuthGuard>
                         <OrderConfirmation />
-                    </AuthenticatedRoute>
+                    </AuthGuard>
                 ),
             },
             {
                 path: 'payment',
                 element: (
-                    <AuthenticatedRoute>
+                    <AuthGuard>
                         <PaymentPage />
-                    </AuthenticatedRoute>
+                    </AuthGuard>
                 ),
             },
             {
                 path: 'wishlist',
                 element: (
-                    <AuthenticatedRoute>
+                    <AuthGuard>
                         <Wishlist />
-                    </AuthenticatedRoute>
+                    </AuthGuard>
                 ),
             },
             {
                 path: 'cart',
                 element: (
-                    <AuthenticatedRoute>
+                    <AuthGuard>
                         <Cart />
-                    </AuthenticatedRoute>
+                    </AuthGuard>
                 ),
             },
 

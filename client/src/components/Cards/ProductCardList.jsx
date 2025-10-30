@@ -36,7 +36,11 @@ const ProductCardList = ({ product }) => {
                         <picture>
                             <source type="image/webp" srcSet={product.webp} />
                             <img
-                                src={product.image || '/placeholder-image.jpg'}
+                                src={
+                                    product.images && product.images.length > 0 
+                                        ? product.images.find(img => img.isPrimary)?.url || product.images[0]?.url
+                                        : product.image || '/placeholder-image.jpg'
+                                }
                                 alt={product.name || 'Product'}
                                 className="img-fluid"
                                 width="200"
