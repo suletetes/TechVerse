@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useProduct } from "../context";
 import { LoadingSpinner } from "../components/Common";
@@ -263,23 +263,21 @@ const Products = () => {
                             )}
 
                             {/* Products */}
-                            {viewMode === 'grid' ? (
-                                Array.isArray(products) && products.map((product) => (
+                            {Array.isArray(products) && products.map((product) => (
+                                viewMode === 'grid' ? (
                                     <ProductCard
                                         key={product._id}
                                         product={product}
                                         showWishlist={true}
                                     />
-                                ))
-                            ) : (
-                                Array.isArray(products) && products.map((product) => (
+                                ) : (
                                     <ProductCardList
                                         key={product._id}
                                         product={product}
                                         showWishlist={true}
                                     />
-                                ))
-                            )}
+                                )
+                            ))}
                         </React.Fragment>
                     )}
 

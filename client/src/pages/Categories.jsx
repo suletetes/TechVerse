@@ -183,7 +183,7 @@ const Categories = () => {
                             {featuredCategories.map((category) => (
                                 <div key={category.id || category._id} className="col-lg-4 col-md-6 col-sm-12 mb-4">
                                     <Link
-                                        to={`/products?category=${category.slug}`}
+                                        to={`/products?category=${category.name || category.slug}`}
                                         className="text-decoration-none"
                                     >
                                         <div className="category-card h-100 border rounded-3 overflow-hidden shadow-sm hover-shadow-lg transition-all">
@@ -223,7 +223,7 @@ const Categories = () => {
                     {displayCategories.map((category) => (
                         <div key={category.id || category._id} className="col-lg-4 col-md-6 col-sm-6 mb-4">
                             <Link
-                                to={`/products?category=${category.slug}`}
+                                to={`/products?category=${category.name || category.slug}`}
                                 className="text-decoration-none"
                             >
                                 <div className="category-card-medium h-100 border rounded-3 overflow-hidden shadow-sm hover-shadow transition-all">
