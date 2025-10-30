@@ -101,30 +101,38 @@ const productReducer = (state, action) => {
       return { ...state, error: null };
 
     case PRODUCT_ACTIONS.LOAD_PRODUCTS_SUCCESS:
+      const responseData = action.payload.data || action.payload;
+      const products = responseData.products || responseData.data?.products || [];
+      const paginationData = responseData.pagination || {};
+      
       return {
         ...state,
-        products: action.payload.data || [],
+        products: products,
         pagination: {
-          page: action.payload.page || 1,
-          limit: action.payload.limit || 20,
-          total: action.payload.total || 0,
-          totalPages: action.payload.totalPages || 0,
-          hasMore: action.payload.hasMore || false
+          page: paginationData.currentPage || paginationData.page || 1,
+          limit: paginationData.limit || 20,
+          total: paginationData.totalProducts || paginationData.total || 0,
+          totalPages: paginationData.totalPages || 0,
+          hasMore: paginationData.hasNextPage || paginationData.hasMore || false
         },
         isLoading: false,
         error: null
       };
 
     case PRODUCT_ACTIONS.LOAD_MORE_PRODUCTS_SUCCESS:
+      const moreResponseData = action.payload.data || action.payload;
+      const moreProducts = moreResponseData.products || moreResponseData.data?.products || [];
+      const morePaginationData = moreResponseData.pagination || {};
+      
       return {
         ...state,
-        products: [...state.products, ...(action.payload.data || [])],
+        products: [...state.products, ...moreProducts],
         pagination: {
-          page: action.payload.page || state.pagination.page + 1,
-          limit: action.payload.limit || state.pagination.limit,
-          total: action.payload.total || state.pagination.total,
-          totalPages: action.payload.totalPages || state.pagination.totalPages,
-          hasMore: action.payload.hasMore || false
+          page: morePaginationData.currentPage || morePaginationData.page || state.pagination.page + 1,
+          limit: morePaginationData.limit || state.pagination.limit,
+          total: morePaginationData.totalProducts || morePaginationData.total || state.pagination.total,
+          totalPages: morePaginationData.totalPages || state.pagination.totalPages,
+          hasMore: morePaginationData.hasNextPage || morePaginationData.hasMore || false
         },
         isLoading: false,
         error: null
@@ -179,9 +187,10 @@ const productReducer = (state, action) => {
       };
 
     case PRODUCT_ACTIONS.LOAD_PRODUCT_SUCCESS:
+      const productData = action.payload.data?.product || action.payload.data || action.payload;
       return {
         ...state,
-        currentProduct: action.payload.data || action.payload,
+        currentProduct: productData,
         isLoading: false,
         error: null
       };

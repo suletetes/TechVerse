@@ -36,6 +36,8 @@ const ProductCard = ({ product }) => {
         (product.stock.quantity && product.stock.quantity > 0)
     );
 
+
+
     return (
         <div className="text-start d-flex col-md-6 col-lg-4 mb-4">
             <div className="store-card fill-card position-relative w-100">
