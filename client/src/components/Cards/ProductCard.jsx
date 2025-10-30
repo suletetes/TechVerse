@@ -42,10 +42,16 @@ const ProductCard = ({ product }) => {
                 {/* Category Badge */}
                 <div className="position-absolute top-0 start-0 m-2" style={{ zIndex: 10 }}>
                     <span className="badge bg-primary">
-                        {product.category && typeof product.category === 'string' 
-                            ? product.category.charAt(0).toUpperCase() + product.category.slice(1)
-                            : product.category?.name || 'Category'
-                        }
+                        {(() => {
+                            if (!product.category) return 'Category';
+                            if (typeof product.category === 'string') {
+                                return product.category.charAt(0).toUpperCase() + product.category.slice(1);
+                            }
+                            if (typeof product.category === 'object' && product.category.name) {
+                                return product.category.name.charAt(0).toUpperCase() + product.category.name.slice(1);
+                            }
+                            return 'Category';
+                        })()}
                     </span>
                 </div>
                 
