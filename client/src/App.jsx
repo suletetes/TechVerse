@@ -3,7 +3,7 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary, RouterErrorBoundary } from './components';
 import { AppProviders } from './context';
-import { AdminGuard, UserGuard, AuthGuard } from './components/Auth/AuthGuard.jsx';
+import AuthGuard, { AdminGuard, UserGuard } from './components/Auth/AuthGuard.jsx';
 import { UserRoles } from './services/authService.js';
 import {
     Contact,
