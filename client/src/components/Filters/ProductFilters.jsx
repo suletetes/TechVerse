@@ -86,11 +86,17 @@ const ProductFilters = ({
                         style={{borderRadius: '25px', border: '2px solid #e0e0e0'}}
                     >
                         <option value="">All Categories</option>
-                        {Array.isArray(categories) && categories.map(category => (
-                            <option key={category._id || category.slug || category} value={category.slug || category}>
-                                {category.name || (typeof category === 'string' ? category.charAt(0).toUpperCase() + category.slice(1) : 'Unknown Category')}
-                            </option>
-                        ))}
+                        {Array.isArray(categories) && categories.map(category => {
+                            // Always use the category name as the value to prevent ObjectId issues
+                            const categoryValue = category.name || category.slug || category;
+                            const categoryDisplay = category.name || (typeof category === 'string' ? category.charAt(0).toUpperCase() + category.slice(1) : 'Unknown Category');
+                            
+                            return (
+                                <option key={category._id || category.slug || category} value={categoryValue}>
+                                    {categoryDisplay}
+                                </option>
+                            );
+                        })}
                     </select>
                 </div>
 

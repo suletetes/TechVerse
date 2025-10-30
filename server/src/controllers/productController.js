@@ -5,26 +5,6 @@ import logger from '../utils/logger.js';
 import { PAGINATION_DEFAULTS } from '../utils/constants.js';
 import { formatProductImages, getBaseUrl } from '../utils/imageUtils.js';
 
-// Helper function to find category by name or slug
-const findCategoryByNameOrSlug = async (categoryName) => {
-  if (!categoryName) return null;
-  
-  // If it's already an ObjectId, return it
-  if (typeof categoryName === 'string' && categoryName.match(/^[0-9a-fA-F]{24}$/)) {
-    return categoryName;
-  }
-  
-  // Find category by name or slug (case insensitive)
-  const categoryDoc = await Category.findOne({
-    $or: [
-      { name: { $regex: new RegExp(`^${categoryName}$`, 'i') } },
-      { slug: { $regex: new RegExp(`^${categoryName}$`, 'i') } }
-    ]
-  });
-  
-  return categoryDoc ? categoryDoc._id : null;
-};
-
 // @desc    Get all products with filtering, sorting, and pagination
 // @route   GET /api/products
 // @access  Public
@@ -50,26 +30,43 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
   };
 
   if (category) {
-    const categoryId = await findCategoryByNameOrSlug(category);
-    if (categoryId) {
-      filter.category = categoryId;
-    } else {
-      // If category not found, return empty results
-      return res.status(200).json({
-        success: true,
-        message: 'No products found for this category',
-        data: {
-          products: [],
-          pagination: {
-            currentPage: parseInt(page),
-            totalPages: 0,
-            totalProducts: 0,
-            hasNextPage: false,
-            hasPrevPage: false,
-            limit: limitNum
-          }
+    // Handle category by name or ObjectId
+    if (typeof category === 'string' && !category.match(/^[0-9a-fA-F]{24}$/)) {
+      // If it's not an ObjectId, find the category by name or slug
+      try {
+        const categoryDoc = await Category.findOne({
+          $or: [
+            { name: { $regex: new RegExp(`^${category}$`, 'i') } },
+            { slug: { $regex: new RegExp(`^${category}$`, 'i') } }
+          ]
+        });
+        
+        if (categoryDoc) {
+          filter.category = categoryDoc._id;
+        } else {
+          // If category not found, return empty results
+          return res.status(200).json({
+            success: true,
+            message: 'No products found for this category',
+            data: {
+              products: [],
+              pagination: {
+                currentPage: parseInt(page),
+                totalPages: 0,
+                totalProducts: 0,
+                hasNextPage: false,
+                hasPrevPage: false,
+                limit: limitNum
+              }
+            }
+          });
         }
-      });
+      } catch (error) {
+        logger.error('Error finding category:', error);
+        filter.category = category; // Fallback to original value
+      }
+    } else {
+      filter.category = category;
     }
   }
   if (brand) filter.brand = { $in: Array.isArray(brand) ? brand : [brand] };
@@ -114,9 +111,16 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
     Product.countDocuments(filter)
   ]);
 
+  // Transform products to include category name as string for frontend compatibility
+  const transformedProducts = products.map(product => ({
+    ...product,
+    categoryName: product.category?.name || product.category,
+    category: product.category?.name || product.category // Use category name instead of ObjectId
+  }));
+
   // Format image URLs for all products
   const baseUrl = getBaseUrl(req);
-  const formattedProducts = products.map(product => ({
+  const formattedProducts = transformedProducts.map(product => ({
     ...product,
     images: formatProductImages(product.images, baseUrl)
   }));
@@ -397,27 +401,43 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
   // Handle category filtering
   let categoryFilter = undefined;
   if (category) {
-    const categoryId = await findCategoryByNameOrSlug(category);
-    if (categoryId) {
-      categoryFilter = [categoryId];
-    } else {
-      // If category not found, return empty results
-      return res.status(200).json({
-        success: true,
-        message: 'No products found for this category',
-        data: {
-          products: [],
-          searchTerm,
-          pagination: {
-            currentPage: parseInt(page),
-            totalPages: 0,
-            totalProducts: 0,
-            hasNextPage: false,
-            hasPrevPage: false,
-            limit: Math.min(parseInt(limit), PAGINATION_DEFAULTS.MAX_LIMIT)
-          }
+    if (typeof category === 'string' && !category.match(/^[0-9a-fA-F]{24}$/)) {
+      // If it's not an ObjectId, find the category by name or slug
+      try {
+        const categoryDoc = await Category.findOne({
+          $or: [
+            { name: { $regex: new RegExp(`^${category}$`, 'i') } },
+            { slug: { $regex: new RegExp(`^${category}$`, 'i') } }
+          ]
+        });
+        
+        if (categoryDoc) {
+          categoryFilter = [categoryDoc._id];
+        } else {
+          // If category not found, return empty results
+          return res.status(200).json({
+            success: true,
+            message: 'No products found for this category',
+            data: {
+              products: [],
+              searchTerm,
+              pagination: {
+                currentPage: parseInt(page),
+                totalPages: 0,
+                totalProducts: 0,
+                hasNextPage: false,
+                hasPrevPage: false,
+                limit: Math.min(parseInt(limit), PAGINATION_DEFAULTS.MAX_LIMIT)
+              }
+            }
+          });
         }
-      });
+      } catch (error) {
+        logger.error('searchProducts - Error finding category:', error);
+        categoryFilter = Array.isArray(category) ? category : [category]; // Fallback
+      }
+    } else {
+      categoryFilter = Array.isArray(category) ? category : [category];
     }
   }
 
@@ -434,7 +454,14 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
   };
 
   // Execute search
-  const products = await Product.searchProducts(searchTerm, searchOptions);
+  const rawProducts = await Product.searchProducts(searchTerm, searchOptions);
+  
+  // Transform products to include category name as string for frontend compatibility
+  const products = Array.isArray(rawProducts) ? rawProducts.map(product => ({
+    ...product,
+    categoryName: product.category?.name || product.category,
+    category: product.category?.name || product.category // Use category name instead of ObjectId
+  })) : [];
   
   // Build count query with same filters
   const countFilter = {
@@ -452,7 +479,7 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
   };
   
   // Add category filter to count query if present
-  if (categoryFilter) {
+  if (categoryFilter && categoryFilter.length > 0) {
     countFilter.$and.push({ category: { $in: categoryFilter } });
   }
   

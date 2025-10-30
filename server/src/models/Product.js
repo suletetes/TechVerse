@@ -537,7 +537,7 @@ productSchema.statics.searchProducts = function (searchTerm, options = {}) {
     ]
   };
 
-  let queryBuilder = this.find(query);
+  let queryBuilder = this.find(query).populate('category', 'name slug');
 
   // Apply same filters and sorting as findByCategory
   if (options.minPrice) queryBuilder = queryBuilder.where('price').gte(options.minPrice);

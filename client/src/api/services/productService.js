@@ -18,6 +18,11 @@ class ProductService extends BaseApiService {
         timeout: 15000 // Products can have larger payloads
       }
     });
+    
+    // Simple cache for categories to reduce API calls
+    this.categoriesCache = null;
+    this.categoriesCacheTime = null;
+    this.CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   }
 
   // Get all products with filters, sorting, and pagination
@@ -60,6 +65,7 @@ class ProductService extends BaseApiService {
           // Fall through to regular product loading
         }
       } else if (trimmedSearch.length > 0) {
+        console.log('Returning empty results for short search query');
         // Return empty results for short search queries
         return {
           success: true,
@@ -77,6 +83,7 @@ class ProductService extends BaseApiService {
         };
       }
       // If search is empty string, continue to regular product loading
+      console.log('Search is empty, continuing to regular product loading');
     }
 
     const queryParams = {
@@ -132,7 +139,10 @@ class ProductService extends BaseApiService {
     // Handle empty or short queries gracefully
     const trimmedQuery = query ? query.trim() : '';
     
+    console.log('searchProducts called with:', { query, trimmedQuery, length: trimmedQuery.length });
+    
     if (!trimmedQuery || trimmedQuery.length < 2) {
+      console.log('Returning empty results for short query');
       // Return empty results for short queries
       return {
         success: true,
@@ -169,7 +179,9 @@ class ProductService extends BaseApiService {
     };
 
     // Add optional filters
-    if (category) params.category = category;
+    if (category) {
+      params.category = category;
+    }
     if (minPrice !== undefined) params.minPrice = minPrice;
     if (maxPrice !== undefined) params.maxPrice = maxPrice;
 
@@ -354,9 +366,22 @@ class ProductService extends BaseApiService {
     return this.read(this.endpoints.QUICK_PICKS, { limit });
   }
 
-  // Get product categories
+  // Get product categories with caching
   async getCategories() {
-    return this.read(this.endpoints.CATEGORIES);
+    // Check if we have cached categories that are still valid
+    const now = Date.now();
+    if (this.categoriesCache && this.categoriesCacheTime && (now - this.categoriesCacheTime) < this.CACHE_DURATION) {
+      return this.categoriesCache;
+    }
+    
+    // Fetch fresh categories
+    const result = await this.read(this.endpoints.CATEGORIES);
+    
+    // Cache the result
+    this.categoriesCache = result;
+    this.categoriesCacheTime = now;
+    
+    return result;
   }
 
   // Get related products

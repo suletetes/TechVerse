@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useProduct } from "../context";
 import { LoadingSpinner } from "../components/Common";
@@ -7,16 +7,14 @@ import { ProductFilters, ProductCard, ProductCardList, Pagination, ViewToggle } 
 const Products = () => {
     const { categorySlug } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
-
+    
     // Context hooks
-    const {
-        products,
-        categories,
+    const { 
+        products, 
         pagination,
-        isLoading,
+        isLoading, 
         error,
         loadProducts,
-        loadCategories,
         setFilters,
         clearFilters: clearProductFilters
     } = useProduct();
@@ -34,67 +32,70 @@ const Products = () => {
         inStock: searchParams.get('inStock') ? searchParams.get('inStock') === 'true' : null
     });
 
-    // Load categories on mount
+    // Load products on mount and when filters change
     useEffect(() => {
-        loadCategories();
-    }, [loadCategories]);
-
-    // Debounced search function
-    const debouncedLoadProducts = useCallback(
-        debounce((filters) => {
-            loadProducts(filters);
-        }, 300),
-        [loadProducts]
-    );
-
-    // Main effect to handle all filter changes
-    useEffect(() => {
+        // Get category from URL params or query params
         const categoryFromQuery = searchParams.get('category');
         const effectiveCategory = categorySlug || categoryFromQuery;
-
+        
         // Build filters object
         const filters = {
             ...localFilters,
             page: 1,
             limit: 12
         };
-
+        
         // Add category filter if specified
         if (effectiveCategory) {
             filters.category = effectiveCategory;
         }
+        
+        // Load products with filters
+        loadProducts(filters);
+    }, [categorySlug, searchParams.get('category')]); // Depend on both URL param and query param
 
-        // Update URL params without causing re-render
+    // Update URL params when filters change
+    useEffect(() => {
         const params = new URLSearchParams();
-        Object.entries(filters).forEach(([key, value]) => {
-            if (value !== null && value !== '' && value !== undefined && key !== 'page' && key !== 'limit') {
+        
+        Object.entries(localFilters).forEach(([key, value]) => {
+            if (value !== null && value !== '' && value !== undefined) {
                 params.set(key, value.toString());
             }
         });
+        
+        setSearchParams(params);
+    }, [localFilters, setSearchParams]);
 
-        // Only update URL if it's different
-        const currentParams = searchParams.toString();
-        const newParams = params.toString();
-        if (currentParams !== newParams) {
-            setSearchParams(params, { replace: true });
+    // Apply filters to context when local filters change
+    useEffect(() => {
+        setFilters(localFilters);
+        
+        // Get effective category
+        const categoryFromQuery = searchParams.get('category');
+        const effectiveCategory = categorySlug || categoryFromQuery;
+        
+        // Build filters object
+        const filters = {
+            ...localFilters,
+            page: 1,
+            limit: 12
+        };
+        
+        // Add category filter if specified
+        if (effectiveCategory) {
+            filters.category = effectiveCategory;
         }
-
-        // Apply filters to context
-        setFilters(filters);
-
-        // Use debounced loading for search, immediate for other filters
-        if (localFilters.search && localFilters.search.length > 0) {
-            debouncedLoadProducts(filters);
-        } else {
-            loadProducts(filters);
-        }
-    }, [localFilters, categorySlug]);
+        
+        // Always use loadProducts with filters
+        loadProducts(filters);
+    }, [localFilters, categorySlug, searchParams.get('category')]); // Depend on both URL param and query param
 
     // Get current category info
     const categoryFromQuery = searchParams.get('category');
     const effectiveCategory = categorySlug || categoryFromQuery;
-    const categoryName = effectiveCategory
-        ? effectiveCategory.charAt(0).toUpperCase() + effectiveCategory.slice(1)
+    const categoryName = effectiveCategory 
+        ? effectiveCategory.charAt(0).toUpperCase() + effectiveCategory.slice(1) 
         : 'All Products';
 
     // Get unique brands from current products for filters
@@ -111,37 +112,74 @@ const Products = () => {
         return [Math.min(...prices), Math.max(...prices)];
     }, [products]);
 
-    const handleFilterChange = useCallback((filterName, value) => {
+    const handleFilterChange = (filterName, value) => {
         setLocalFilters(prev => ({
             ...prev,
             [filterName]: value
         }));
-    }, []);
+    };
 
-    const handlePageChange = useCallback((page) => {
+    // Debounced search effect
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            // Only trigger search if the search term has changed and is different from URL
+            const currentSearch = localFilters.search || '';
+            const urlSearch = searchParams.get('search') || '';
+            
+            if (currentSearch !== urlSearch) {
+                // Trigger search after 500ms delay
+                const categoryFromQuery = searchParams.get('category');
+                const effectiveCategory = categorySlug || categoryFromQuery;
+                
+                const filters = {
+                    ...localFilters,
+                    page: 1,
+                    limit: 12
+                };
+                
+                if (effectiveCategory) {
+                    filters.category = effectiveCategory;
+                }
+                
+
+                loadProducts(filters);
+            }
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [localFilters.search]);
+
+    const handlePageChange = (page) => {
         const categoryFromQuery = searchParams.get('category');
         const effectiveCategory = categorySlug || categoryFromQuery;
-
+        
         // Build filters object with new page
         const filters = {
             ...localFilters,
             page,
             limit: 12
         };
-
+        
         // Add category filter if specified
         if (effectiveCategory) {
             filters.category = effectiveCategory;
         }
-
+        
+        // Always use loadProducts with filters
         loadProducts(filters);
-    }, [localFilters, categorySlug, searchParams, loadProducts]);
+    };
 
-    const clearFilters = useCallback(() => {
+    const clearFilters = () => {
         // Clear URL parameters
         const newParams = new URLSearchParams();
+        // Keep category if it's from URL path
+        if (categorySlug) {
+            // Don't add category to query params if it's from URL path
+        } else {
+            // Clear all query params
+        }
         setSearchParams(newParams);
-
+        
         // Reset local filters to defaults
         setLocalFilters({
             search: '',
@@ -154,7 +192,7 @@ const Products = () => {
             inStock: null
         });
         clearProductFilters();
-    }, [categorySlug, setSearchParams, clearProductFilters]);
+    };
 
     // Show loading state
     if (isLoading && (!Array.isArray(products) || products.length === 0)) {
@@ -178,7 +216,7 @@ const Products = () => {
                         <div className="alert alert-danger">
                             <h4>Error Loading Products</h4>
                             <p>{error}</p>
-                            <button
+                            <button 
                                 className="btn btn-primary"
                                 onClick={() => window.location.reload()}
                             >
@@ -206,7 +244,7 @@ const Products = () => {
                                     <p className="tc-6533 opacity-75 mb-0">Discover our complete range of products</p>
                                 )}
                             </div>
-                            <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+                            <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode}/>
                         </div>
                     </div>
 
@@ -231,7 +269,7 @@ const Products = () => {
                         inStock={localFilters.inStock}
                         setInStock={(value) => handleFilterChange('inStock', value)}
                         brands={brands}
-                        categories={categories || []}
+                        categories={[]} // Empty array since we're not loading categories
                         priceRange={priceRange}
                         onClearFilters={clearFilters}
                         resultsCount={pagination.total || (Array.isArray(products) ? products.length : 0)}
@@ -251,7 +289,7 @@ const Products = () => {
                             </div>
                         </div>
                     ) : (
-                        <React.Fragment key="products-container">
+                        <>
                             {/* Loading overlay for filter changes */}
                             {isLoading && Array.isArray(products) && products.length > 0 && (
                                 <div className="col-12 mb-3">
@@ -261,26 +299,26 @@ const Products = () => {
                                     </div>
                                 </div>
                             )}
-
+                            
                             {/* Products */}
                             {viewMode === 'grid' ? (
-                                Array.isArray(products) && products.map((product) => (
-                                    <ProductCard
-                                        key={product._id}
+                                Array.isArray(products) ? products.map((product) => (
+                                    <ProductCard 
+                                        key={product._id} 
                                         product={product}
                                         showWishlist={true}
                                     />
-                                ))
+                                )) : []
                             ) : (
-                                Array.isArray(products) && products.map((product) => (
-                                    <ProductCardList
-                                        key={product._id}
+                                Array.isArray(products) ? products.map((product) => (
+                                    <ProductCardList 
+                                        key={product._id} 
                                         product={product}
                                         showWishlist={true}
                                     />
-                                ))
+                                )) : []
                             )}
-                        </React.Fragment>
+                        </>
                     )}
 
                     {/* Pagination */}
@@ -300,18 +338,5 @@ const Products = () => {
         </div>
     );
 };
-
-// Debounce utility function (moved outside component to prevent recreation)
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
 
 export default Products;
