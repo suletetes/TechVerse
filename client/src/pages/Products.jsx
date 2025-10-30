@@ -39,6 +39,17 @@ const Products = () => {
         loadCategories();
     }, [loadCategories]);
 
+    // Load initial products on mount
+    useEffect(() => {
+        const initialFilters = {
+            page: 1,
+            limit: 12,
+            sort: 'newest',
+            order: 'desc'
+        };
+        loadProducts(initialFilters);
+    }, []); // Only run once on mount
+
     // Debounced search function
     const debouncedLoadProducts = useCallback(
         debounce((filters) => {
