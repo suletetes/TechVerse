@@ -44,6 +44,18 @@ import {
   trackFailedAuth,
   securityAuditLogger
 } from './src/middleware/securityMiddleware.js';
+// Import performance optimization middleware
+import {
+  createDatabaseIndexes,
+  queryPerformanceMonitor,
+  performanceMonitor as perfMonitor
+} from './src/utils/performanceOptimizer.js';
+import {
+  initializeCacheManager,
+  cacheStats,
+  lazyLoadingMiddleware
+} from './src/middleware/cacheMiddleware.js';
+import { lazyLoadingMiddleware as imageOptimizer } from './src/utils/imageOptimizer.js';
 // Import CSRF protection
 import {
   conditionalCSRF,
@@ -104,6 +116,15 @@ app.use(requestId);
 app.use(helmet(helmetConfig));
 app.use(securityHeaders);
 app.use(compression());
+
+// Performance monitoring middleware
+app.use(perfMonitor.trackResponseTime);
+app.use(queryPerformanceMonitor);
+app.use(cacheStats);
+
+// Image optimization middleware for static files
+app.use(imageOptimizer);
+
 // Security monitoring middleware
 app.use(securityAuditLogger);
 app.use(trackFailedAuth);
@@ -427,6 +448,52 @@ async function initializeServer() {
 async function startServer() {
   try {
     await initializeServer();
+    
+    // Initialize performance optimizations
+    try {
+      enhancedLogger.info('Initializing performance optimizations...');
+      
+      // Create database indexes for better query performance
+      const indexResult = await createDatabaseIndexes();
+      if (indexResult.success) {
+        enhancedLogger.info('Database indexes created successfully');
+      } else {
+        enhancedLogger.warn('Some database indexes failed to create', { error: indexResult.error });
+      }
+      
+      // Initialize cache manager (Redis optional)
+      let redisClient = null;
+      try {
+        if (process.env.REDIS_URL && process.env.ENABLE_REDIS_CACHE !== 'false') {
+          const Redis = (await import('ioredis')).default;
+          redisClient = new Redis(process.env.REDIS_URL, {
+            retryDelayOnFailover: 100,
+            maxRetriesPerRequest: 3,
+            lazyConnect: true
+          });
+          
+          await redisClient.ping();
+          enhancedLogger.info('Redis cache connected successfully');
+        } else {
+          enhancedLogger.info('Redis cache disabled or not configured, using memory cache');
+        }
+      } catch (error) {
+        enhancedLogger.warn('Redis cache connection failed, falling back to memory cache', {
+          error: error.message
+        });
+        redisClient = null;
+      }
+      
+      // Initialize cache manager with optional Redis
+      initializeCacheManager(redisClient);
+      
+    } catch (error) {
+      enhancedLogger.error('Performance optimization initialization failed', {
+        error: error.message
+      });
+      // Continue without performance optimizations
+    }
+    
     const server = app.listen(PORT, async () => {
       // Log server startup information
       healthCheck.logServerStartup(PORT, NODE_ENV);
