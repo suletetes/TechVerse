@@ -1,9 +1,9 @@
-import os from 'os';
-import process from 'process';
-import logger from '../utils/logger.js';
+/**
+ * Performance Optimization Service
+ * Provides comprehensive performance monitoring and optimization features
+ */
 
-class PerformanceService {
-  constructor() {
+import optionalCache from '..
     this.metrics = {
       requests: new Map(),
       memory: [],

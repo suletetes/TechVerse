@@ -6,6 +6,7 @@ export { default as userService } from './userService.js';
 export { default as adminService } from './adminService.js';
 export { default as cartService } from './cartService.js';
 export { default as wishlistService } from './wishlistService.js';
+export { default as searchService } from './searchService.js';
 export { default as reviewService } from './reviewService.js';
 export { default as uploadService } from './uploadService.js';
 export { default as enhancedApiService } from './enhancedApiService.js';
