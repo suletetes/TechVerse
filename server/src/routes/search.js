@@ -3,7 +3,10 @@ import { query } from 'express-validator';
 import {
   searchProducts,
   getAutocomplete,
-  getSearchFilters
+  getSearchFilters,
+  getSearchSuggestions,
+  getPopularSearches,
+  trackSearchAnalytics
 } from '../controllers/searchController.js';
 import { validate } from '../middleware/validation.js';
 
@@ -54,5 +57,8 @@ const autocompleteValidation = [
 router.get('/products', searchValidation, validate, searchProducts);
 router.get('/autocomplete', autocompleteValidation, validate, getAutocomplete);
 router.get('/filters', getSearchFilters);
+router.get('/suggestions', getSearchSuggestions);
+router.get('/popular', getPopularSearches);
+router.post('/analytics', trackSearchAnalytics);
 
 export default router;

@@ -6,9 +6,6 @@ import {
   addAddress,
   updateAddress,
   deleteAddress,
-  addPaymentMethod,
-  updatePaymentMethod,
-  deletePaymentMethod,
   getWishlist,
   addToWishlist,
   removeFromWishlist,
@@ -18,6 +15,8 @@ import {
   removeFromCart,
   clearCart
 } from '../controllers/userController.js';
+import paymentService from '../services/paymentService.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
 import { authenticate } from '../middleware/passportAuth.js';
 import { validate, commonValidations } from '../middleware/validation.js';
 // import { activityTrackers } from '../middleware/activityTracker.js';
@@ -239,5 +238,114 @@ router.post('/cart', cartItemValidation, validate, addToCart);
 router.put('/cart/:itemId', cartUpdateValidation, validate, updateCartItem);
 router.delete('/cart/:itemId', commonValidations.mongoId('itemId'), validate, removeFromCart);
 router.delete('/cart', clearCart);
+
+// Payment method routes
+// @desc    Get user's payment methods
+// @route   GET /api/users/payment-methods
+// @access  Private
+router.get('/payment-methods', authenticate, asyncHandler(async (req, res, next) => {
+  const paymentMethods = await paymentService.getPaymentMethods(req.user._id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Payment methods retrieved successfully',
+    data: {
+      paymentMethods,
+      count: paymentMethods.length
+    }
+  });
+}));
+
+// @desc    Add payment method
+// @route   POST /api/users/payment-methods
+// @access  Private
+router.post('/payment-methods', authenticate, [
+  body('type').isIn(['credit_card', 'debit_card', 'paypal', 'apple_pay', 'google_pay']).withMessage('Invalid payment method type'),
+  body('cardNumber').if(body('type').isIn(['credit_card', 'debit_card'])).notEmpty().withMessage('Card number is required for card payments'),
+  body('expiryMonth').if(body('type').isIn(['credit_card', 'debit_card'])).isInt({ min: 1, max: 12 }).withMessage('Valid expiry month is required'),
+  body('expiryYear').if(body('type').isIn(['credit_card', 'debit_card'])).isInt({ min: new Date().getFullYear() }).withMessage('Valid expiry year is required'),
+  body('cardholderName').if(body('type').isIn(['credit_card', 'debit_card'])).trim().isLength({ min: 2, max: 100 }).withMessage('Cardholder name is required'),
+  body('isDefault').optional().isBoolean().withMessage('isDefault must be boolean'),
+  body('billingAddress').optional().isObject().withMessage('Billing address must be an object'),
+  body('email').if(body('type').equals('paypal')).isEmail().withMessage('Valid email is required for PayPal'),
+  body('accountId').if(body('type').isIn(['apple_pay', 'google_pay'])).optional().isString().withMessage('Account ID must be string')
+], validate, asyncHandler(async (req, res, next) => {
+  const paymentMethod = await paymentService.addPaymentMethod(req.user._id, req.body);
+
+  res.status(201).json({
+    success: true,
+    message: 'Payment method added successfully',
+    data: { paymentMethod }
+  });
+}));
+
+// @desc    Update payment method
+// @route   PUT /api/users/payment-methods/:id
+// @access  Private
+router.put('/payment-methods/:id', authenticate, [
+  param('id').isString().withMessage('Payment method ID is required'),
+  body('isDefault').optional().isBoolean().withMessage('isDefault must be boolean'),
+  body('cardholderName').optional().trim().isLength({ min: 2, max: 100 }).withMessage('Cardholder name must be 2-100 characters'),
+  body('billingAddress').optional().isObject().withMessage('Billing address must be an object')
+], validate, asyncHandler(async (req, res, next) => {
+  const paymentMethod = await paymentService.updatePaymentMethod(req.user._id, req.params.id, req.body);
+
+  res.status(200).json({
+    success: true,
+    message: 'Payment method updated successfully',
+    data: { paymentMethod }
+  });
+}));
+
+// @desc    Delete payment method
+// @route   DELETE /api/users/payment-methods/:id
+// @access  Private
+router.delete('/payment-methods/:id', authenticate, [
+  param('id').isString().withMessage('Payment method ID is required')
+], validate, asyncHandler(async (req, res, next) => {
+  const result = await paymentService.deletePaymentMethod(req.user._id, req.params.id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Payment method deleted successfully',
+    data: result
+  });
+}));
+
+// @desc    Set default payment method
+// @route   PUT /api/users/payment-methods/:id/default
+// @access  Private
+router.put('/payment-methods/:id/default', authenticate, [
+  param('id').isString().withMessage('Payment method ID is required')
+], validate, asyncHandler(async (req, res, next) => {
+  const paymentMethod = await paymentService.setDefaultPaymentMethod(req.user._id, req.params.id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Default payment method updated successfully',
+    data: { paymentMethod }
+  });
+}));
+
+// @desc    Process payment
+// @route   POST /api/users/payment-methods/process
+// @access  Private
+router.post('/payment-methods/process', authenticate, [
+  body('paymentMethodId').isString().withMessage('Payment method ID is required'),
+  body('amount').isFloat({ min: 0.01 }).withMessage('Amount must be positive'),
+  body('currency').optional().isString().withMessage('Currency must be string'),
+  body('orderId').isMongoId().withMessage('Valid order ID is required')
+], validate, asyncHandler(async (req, res, next) => {
+  const paymentResult = await paymentService.processPayment({
+    ...req.body,
+    userId: req.user._id
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Payment processed successfully',
+    data: paymentResult
+  });
+}));
 
 export default router;
