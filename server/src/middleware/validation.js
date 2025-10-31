@@ -325,20 +325,153 @@ export const validationSets = {
       .optional()
       .isObject()
       .withMessage('Options must be an object')
+  ],
+
+  // Wishlist item validation
+  wishlistItem: [
+    body('notes')
+      .optional()
+      .trim()
+      .isLength({ max: 500 })
+      .withMessage('Notes must be less than 500 characters')
+  ],
+
+  // Wishlist sync validation
+  wishlistSync: [
+    body('productIds')
+      .isArray({ min: 1, max: 100 })
+      .withMessage('Product IDs must be an array with 1-100 items'),
+    body('productIds.*')
+      .isMongoId()
+      .withMessage('Each product ID must be valid')
+  ],
+
+  // Review validation (enhanced)
+  reviewCreate: [
+    body('productId')
+      .notEmpty()
+      .withMessage('Product ID is required')
+      .isMongoId()
+      .withMessage('Invalid product ID format'),
+    commonValidations.rating('rating'),
+    commonValidations.text('title', 5, 100),
+    commonValidations.text('comment', 10, 1000),
+    body('pros')
+      .optional()
+      .isArray({ max: 5 })
+      .withMessage('Maximum 5 pros allowed'),
+    body('pros.*')
+      .optional()
+      .trim()
+      .isLength({ max: 200 })
+      .withMessage('Each pro must be less than 200 characters'),
+    body('cons')
+      .optional()
+      .isArray({ max: 5 })
+      .withMessage('Maximum 5 cons allowed'),
+    body('cons.*')
+      .optional()
+      .trim()
+      .isLength({ max: 200 })
+      .withMessage('Each con must be less than 200 characters'),
+    body('orderId')
+      .optional()
+      .isMongoId()
+      .withMessage('Invalid order ID format')
+  ],
+
+  // Review update validation
+  reviewUpdate: [
+    body('title')
+      .optional()
+      .trim()
+      .isLength({ min: 5, max: 100 })
+      .withMessage('Title must be between 5 and 100 characters'),
+    body('comment')
+      .optional()
+      .trim()
+      .isLength({ min: 10, max: 1000 })
+      .withMessage('Comment must be between 10 and 1000 characters'),
+    body('pros')
+      .optional()
+      .isArray({ max: 5 })
+      .withMessage('Maximum 5 pros allowed'),
+    body('pros.*')
+      .optional()
+      .trim()
+      .isLength({ max: 200 })
+      .withMessage('Each pro must be less than 200 characters'),
+    body('cons')
+      .optional()
+      .isArray({ max: 5 })
+      .withMessage('Maximum 5 cons allowed'),
+    body('cons.*')
+      .optional()
+      .trim()
+      .isLength({ max: 200 })
+      .withMessage('Each con must be less than 200 characters')
+  ],
+
+  // Review helpful vote validation
+  reviewHelpfulVote: [
+    body('helpful')
+      .isBoolean()
+      .withMessage('Helpful must be true or false')
+  ],
+
+  // Review report validation
+  reviewReport: [
+    body('reason')
+      .isIn(['spam', 'inappropriate', 'fake', 'offensive', 'other'])
+      .withMessage('Invalid report reason'),
+    body('details')
+      .optional()
+      .trim()
+      .isLength({ max: 500 })
+      .withMessage('Details must be less than 500 characters')
+  ],
+
+  // Pagination validation (enhanced)
+  paginationWithSort: [
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('Page must be a positive integer')
+      .toInt(),
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 50 })
+      .withMessage('Limit must be between 1 and 50')
+      .toInt(),
+    query('sort')
+      .optional()
+      .isIn(['newest', 'oldest', 'rating_high', 'rating_low', 'helpful'])
+      .withMessage('Invalid sort option'),
+    query('rating')
+      .optional()
+      .isInt({ min: 1, max: 5 })
+      .withMessage('Rating filter must be between 1 and 5')
+      .toInt(),
+    query('verified')
+      .optional()
+      .isBoolean()
+      .withMessage('Verified must be true or false')
+      .toBoolean()
   ]
 };
 
-// Custom validation for file uploads
+// Enhanced file upload validation
 export const validateFileUpload = (fieldName, options = {}) => {
   const {
     maxSize = 5 * 1024 * 1024, // 5MB
     allowedTypes = ['image/jpeg', 'image/png', 'image/webp'],
-    maxFiles = 1
+    maxFiles = 1,
+    required = false
   } = options;
 
   return (req, res, next) => {
     if (!req.files || !req.files[fieldName]) {
-      if (options.required) {
+      if (required) {
         return res.status(400).json({
           success: false,
           message: `${fieldName} is required`,
@@ -361,6 +494,7 @@ export const validateFileUpload = (fieldName, options = {}) => {
     }
 
     for (const file of files) {
+      // File size validation
       if (file.size > maxSize) {
         return res.status(400).json({
           success: false,
@@ -369,11 +503,36 @@ export const validateFileUpload = (fieldName, options = {}) => {
         });
       }
 
+      // File type validation
       if (!allowedTypes.includes(file.mimetype)) {
         return res.status(400).json({
           success: false,
           message: `File type must be one of: ${allowedTypes.join(', ')}`,
           code: 'INVALID_FILE_TYPE'
+        });
+      }
+
+      // Additional security checks
+      const fileName = file.name || file.originalname || '';
+      
+      // Check for dangerous file extensions
+      const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif', '.com', '.js', '.jar', '.php', '.asp', '.jsp'];
+      const hasExtension = dangerousExtensions.some(ext => fileName.toLowerCase().endsWith(ext));
+      
+      if (hasExtension) {
+        return res.status(400).json({
+          success: false,
+          message: 'File type not allowed for security reasons',
+          code: 'DANGEROUS_FILE_TYPE'
+        });
+      }
+
+      // Check for suspicious file names
+      if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid file name',
+          code: 'INVALID_FILE_NAME'
         });
       }
     }
@@ -382,23 +541,64 @@ export const validateFileUpload = (fieldName, options = {}) => {
   };
 };
 
-// Sanitize input middleware
+// Specific file upload validators
+export const validateProductImages = validateFileUpload('images', {
+  maxSize: 10 * 1024 * 1024, // 10MB
+  allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+  maxFiles: 5,
+  required: false
+});
+
+export const validateUserAvatar = validateFileUpload('avatar', {
+  maxSize: 2 * 1024 * 1024, // 2MB
+  allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+  maxFiles: 1,
+  required: false
+});
+
+export const validateReviewImages = validateFileUpload('images', {
+  maxSize: 5 * 1024 * 1024, // 5MB
+  allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+  maxFiles: 3,
+  required: false
+});
+
+// Enhanced input sanitization middleware
 export const sanitizeInput = (req, res, next) => {
-  // Remove any potential XSS attempts
+  // Remove any potential XSS attempts and malicious content
   const sanitizeValue = (value) => {
     if (typeof value === 'string') {
       return value
+        // Remove script tags
         .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        // Remove javascript: protocol
         .replace(/javascript:/gi, '')
-        .replace(/on\w+\s*=/gi, '');
+        // Remove event handlers
+        .replace(/on\w+\s*=/gi, '')
+        // Remove data: URLs (except images)
+        .replace(/data:(?!image\/)/gi, 'data-blocked:')
+        // Remove vbscript: protocol
+        .replace(/vbscript:/gi, '')
+        // Remove expression() CSS
+        .replace(/expression\s*\(/gi, 'blocked(')
+        // Remove import statements
+        .replace(/@import/gi, 'blocked-import')
+        // Trim whitespace
+        .trim();
     }
     return value;
   };
 
   const sanitizeObject = (obj) => {
+    if (!obj || typeof obj !== 'object') return;
+    
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
-        if (typeof obj[key] === 'object' && obj[key] !== null) {
+        if (Array.isArray(obj[key])) {
+          obj[key] = obj[key].map(item => 
+            typeof item === 'object' ? sanitizeObject(item) : sanitizeValue(item)
+          );
+        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
           sanitizeObject(obj[key]);
         } else {
           obj[key] = sanitizeValue(obj[key]);
@@ -407,6 +607,7 @@ export const sanitizeInput = (req, res, next) => {
     }
   };
 
+  // Sanitize all input sources
   sanitizeObject(req.body);
   sanitizeObject(req.query);
   sanitizeObject(req.params);
@@ -414,8 +615,76 @@ export const sanitizeInput = (req, res, next) => {
   next();
 };
 
-// Export specific validation functions
+// Advanced security validation middleware
+export const validateSecurityHeaders = (req, res, next) => {
+  // Check for suspicious headers
+  const suspiciousHeaders = [
+    'x-forwarded-host',
+    'x-original-url',
+    'x-rewrite-url'
+  ];
+
+  for (const header of suspiciousHeaders) {
+    if (req.headers[header]) {
+      logger.warn('Suspicious header detected', {
+        header,
+        value: req.headers[header],
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+    }
+  }
+
+  // Validate Content-Type for POST/PUT requests
+  if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+    const contentType = req.get('Content-Type');
+    if (!contentType || (!contentType.includes('application/json') && !contentType.includes('multipart/form-data'))) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid Content-Type header',
+        code: 'INVALID_CONTENT_TYPE'
+      });
+    }
+  }
+
+  next();
+};
+
+// Rate limiting validation for sensitive operations
+export const validateSensitiveOperation = (req, res, next) => {
+  // Check if user is performing too many sensitive operations
+  const sensitiveOperations = [
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/auth/forgot-password',
+    '/api/auth/reset-password',
+    '/api/reviews',
+    '/api/orders'
+  ];
+
+  const isSensitive = sensitiveOperations.some(op => req.originalUrl.includes(op));
+  
+  if (isSensitive) {
+    // Add timestamp for rate limiting tracking
+    req.sensitiveOperation = {
+      timestamp: Date.now(),
+      operation: req.originalUrl,
+      ip: req.ip
+    };
+  }
+
+  next();
+};
+
+// Export specific validation functions for new routes
 export const validateCartItem = [...validationSets.cartItem, validate];
+export const validateWishlistItem = [...validationSets.wishlistItem, validate];
+export const validateWishlistSync = [...validationSets.wishlistSync, validate];
+export const validateReviewCreate = [...validationSets.reviewCreate, validate];
+export const validateReviewUpdate = [...validationSets.reviewUpdate, validate];
+export const validateReviewHelpfulVote = [...validationSets.reviewHelpfulVote, validate];
+export const validateReviewReport = [...validationSets.reviewReport, validate];
+export const validatePaginationWithSort = [...validationSets.paginationWithSort, validate];
 
 export default {
   validate,
@@ -423,5 +692,22 @@ export default {
   validationSets,
   validateFileUpload,
   sanitizeInput,
-  validateCartItem
+  validateSecurityHeaders,
+  validateSensitiveOperation,
+  // Cart validations
+  validateCartItem,
+  // Wishlist validations
+  validateWishlistItem,
+  validateWishlistSync,
+  // Review validations
+  validateReviewCreate,
+  validateReviewUpdate,
+  validateReviewHelpfulVote,
+  validateReviewReport,
+  // Pagination validation
+  validatePaginationWithSort,
+  // File upload validations
+  validateProductImages,
+  validateUserAvatar,
+  validateReviewImages
 };
