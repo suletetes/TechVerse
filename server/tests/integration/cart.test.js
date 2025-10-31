@@ -1,13 +1,13 @@
 import request from 'supertest';
 import mongoose from 'mongoose';
 import app from '../../server.js';
-import { User, Product, Cart, Category } from '../../src/models/index.js';
+import { User, Product, Category, Cart } from '../../src/models/index.js';
 
 describe('Cart Integration Tests', () => {
-  let authToken;
   let testUser;
-  let testProduct;
+  let authToken;
   let testCategory;
+  let testProducts = [];
 
   beforeAll(async () => {
     await mongoose.connect(process.env.MONGODB_TEST_URI || 'mongodb://localhost:27017/techverse_test');
@@ -19,48 +19,70 @@ describe('Cart Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    // Clear collections
+    // Clear all collections
     await User.deleteMany({});
     await Product.deleteMany({});
-    await Cart.deleteMany({});
     await Category.deleteMany({});
+    await Cart.deleteMany({});
 
     // Create test category
-    testCategory = new Category({
+    testCategory = await Category.create({
       name: 'Electronics',
       slug: 'electronics',
       isActive: true
     });
-    await testCategory.save();
 
-    // Create test user
-    testUser = new User({
+    // Create test products
+    const productData = [
+      {
+        name: 'Gaming Laptop',
+        description: 'High-performance gaming laptop',
+        price: 1299.99,
+        category: testCategory._id,
+        brand: 'TechBrand',
+        createdBy: new mongoose.Types.ObjectId(),
+        status: 'active',
+        visibility: 'public',
+        stock: { quantity: 5, trackQuantity: true },
+        images: [{ url: 'laptop1.jpg', isPrimary: true }]
+      },
+      {
+        name: 'Wireless Mouse',
+        description: 'Ergonomic wireless mouse',
+        price: 49.99,
+        category: testCategory._id,
+        brand: 'TechBrand',
+        createdBy: new mongoose.Types.ObjectId(),
+        status: 'active',
+        visibility: 'public',
+        stock: { quantity: 20, trackQuantity: true },
+        images: [{ url: 'mouse1.jpg', isPrimary: true }]
+      },
+      {
+        name: 'Out of Stock Item',
+        description: 'This item is out of stock',
+        price: 99.99,
+        category: testCategory._id,
+        brand: 'TechBrand',
+        createdBy: new mongoose.Types.ObjectId(),
+        status: 'active',
+        visibility: 'public',
+        stock: { quantity: 0, trackQuantity: true },
+        images: [{ url: 'item1.jpg', isPrimary: true }]
+      }
+    ];
+
+    testProducts = await Product.insertMany(productData);
+
+    // Create and authenticate test user
+    testUser = await User.create({
       firstName: 'John',
       lastName: 'Doe',
       email: 'john.doe@example.com',
       password: 'Password123!',
       isEmailVerified: true
     });
-    await testUser.save();
 
-    // Create test product
-    testProduct = new Product({
-      name: 'Test Laptop',
-      description: 'A test laptop for integration testing',
-      price: 999.99,
-      category: testCategory._id,
-      brand: 'TestBrand',
-      createdBy: testUser._id,
-      status: 'active',
-      visibility: 'public',
-      stock: {
-        quantity: 10,
-        trackQuantity: true
-      }
-    });
-    await testProduct.save();
-
-    // Login to get auth token
     const loginResponse = await request(app)
       .post('/api/auth/login')
       .send({
@@ -71,128 +93,167 @@ describe('Cart Integration Tests', () => {
     authToken = loginResponse.body.data.tokens.accessToken;
   });
 
-  describe('GET /api/users/cart', () => {
+  describe('GET /api/cart', () => {
     it('should return empty cart for new user', async () => {
       const response = await request(app)
-        .get('/api/users/cart')
+        .get('/api/cart')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.cart.items).toHaveLength(0);
+      expect(response.body.data.cart.subtotal).toBe(0);
+      expect(response.body.data.cart.total).toBe(0);
+    });
+
+    it('should return cart with items', async () => {
+      // First add items to cart
+      await request(app)
+        .post('/api/cart/add')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          productId: testProducts[0]._id,
+          quantity: 2
+        });
+
+      const response = await request(app)
+        .get('/api/cart')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.cart.items).toHaveLength(1);
+      expect(response.body.data.cart.items[0].quantity).toBe(2);
+      expect(response.body.data.cart.items[0].product.name).toBe('Gaming Laptop');
     });
 
     it('should require authentication', async () => {
-      const response = await request(app)
-        .get('/api/users/cart')
+      await request(app)
+        .get('/api/cart')
         .expect(401);
-
-      expect(response.body.success).toBe(false);
     });
   });
 
-  describe('POST /api/users/cart', () => {
-    it('should add item to cart successfully', async () => {
-      const cartItem = {
-        productId: testProduct._id.toString(),
-        quantity: 2
-      };
-
+  describe('POST /api/cart/add', () => {
+    it('should add new item to cart', async () => {
       const response = await request(app)
-        .post('/api/users/cart')
+        .post('/api/cart/add')
         .set('Authorization', `Bearer ${authToken}`)
-        .send(cartItem)
+        .send({
+          productId: testProducts[0]._id,
+          quantity: 2
+        })
         .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.cart.items).toHaveLength(1);
       expect(response.body.data.cart.items[0].quantity).toBe(2);
-      expect(response.body.data.cart.items[0].product._id).toBe(testProduct._id.toString());
+      expect(response.body.data.cart.items[0].product._id).toBe(testProducts[0]._id.toString());
     });
 
     it('should update quantity if item already in cart', async () => {
-      const cartItem = {
-        productId: testProduct._id.toString(),
-        quantity: 1
-      };
-
       // Add item first time
       await request(app)
-        .post('/api/users/cart')
+        .post('/api/cart/add')
         .set('Authorization', `Bearer ${authToken}`)
-        .send(cartItem)
-        .expect(200);
+        .send({
+          productId: testProducts[0]._id,
+          quantity: 1
+        });
 
       // Add same item again
       const response = await request(app)
-        .post('/api/users/cart')
+        .post('/api/cart/add')
         .set('Authorization', `Bearer ${authToken}`)
-        .send(cartItem)
+        .send({
+          productId: testProducts[0]._id,
+          quantity: 2
+        })
         .expect(200);
 
-      expect(response.body.success).toBe(true);
       expect(response.body.data.cart.items).toHaveLength(1);
-      expect(response.body.data.cart.items[0].quantity).toBe(2);
+      expect(response.body.data.cart.items[0].quantity).toBe(3);
     });
 
-    it('should reject adding item with insufficient stock', async () => {
-      const cartItem = {
-        productId: testProduct._id.toString(),
-        quantity: 15 // More than available stock (10)
-      };
-
+    it('should reject invalid product ID', async () => {
       const response = await request(app)
-        .post('/api/users/cart')
+        .post('/api/cart/add')
         .set('Authorization', `Bearer ${authToken}`)
-        .send(cartItem)
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Insufficient stock');
-    });
-
-    it('should reject adding non-existent product', async () => {
-      const cartItem = {
-        productId: new mongoose.Types.ObjectId().toString(),
-        quantity: 1
-      };
-
-      const response = await request(app)
-        .post('/api/users/cart')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send(cartItem)
+        .send({
+          productId: new mongoose.Types.ObjectId(),
+          quantity: 1
+        })
         .expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Product not found');
     });
 
-    it('should validate request data', async () => {
-      const invalidCartItem = {
-        productId: 'invalid-id',
-        quantity: -1
-      };
-
+    it('should reject out of stock items', async () => {
       const response = await request(app)
-        .post('/api/users/cart')
+        .post('/api/cart/add')
         .set('Authorization', `Bearer ${authToken}`)
-        .send(invalidCartItem)
+        .send({
+          productId: testProducts[2]._id, // Out of stock item
+          quantity: 1
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('out of stock');
+    });
+
+    it('should reject quantity exceeding stock', async () => {
+      const response = await request(app)
+        .post('/api/cart/add')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          productId: testProducts[0]._id, // Stock: 5
+          quantity: 10
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Insufficient stock');
+    });
+
+    it('should validate required fields', async () => {
+      const response = await request(app)
+        .post('/api/cart/add')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          quantity: 1
+          // Missing productId
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should validate quantity is positive', async () => {
+      const response = await request(app)
+        .post('/api/cart/add')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          productId: testProducts[0]._id,
+          quantity: 0
+        })
         .expect(400);
 
       expect(response.body.success).toBe(false);
     });
   });
 
-  describe('PUT /api/users/cart/:itemId', () => {
+  describe('PUT /api/cart/update/:itemId', () => {
     let cartItemId;
 
     beforeEach(async () => {
       // Add item to cart first
       const addResponse = await request(app)
-        .post('/api/users/cart')
+        .post('/api/cart/add')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          productId: testProduct._id.toString(),
+          productId: testProducts[0]._id,
           quantity: 2
         });
 
@@ -201,50 +262,67 @@ describe('Cart Integration Tests', () => {
 
     it('should update cart item quantity', async () => {
       const response = await request(app)
-        .put(`/api/users/cart/${cartItemId}`)
+        .put(`/api/cart/update/${cartItemId}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .send({ quantity: 5 })
+        .send({
+          quantity: 3
+        })
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.cart.items[0].quantity).toBe(5);
+      expect(response.body.data.cart.items[0].quantity).toBe(3);
     });
 
-    it('should reject update with insufficient stock', async () => {
+    it('should reject invalid item ID', async () => {
       const response = await request(app)
-        .put(`/api/users/cart/${cartItemId}`)
+        .put(`/api/cart/update/${new mongoose.Types.ObjectId()}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .send({ quantity: 15 })
+        .send({
+          quantity: 3
+        })
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Cart item not found');
+    });
+
+    it('should reject quantity exceeding stock', async () => {
+      const response = await request(app)
+        .put(`/api/cart/update/${cartItemId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          quantity: 10 // Exceeds stock of 5
+        })
         .expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Insufficient stock');
     });
 
-    it('should reject update for non-existent cart item', async () => {
-      const fakeItemId = new mongoose.Types.ObjectId().toString();
-
+    it('should remove item when quantity is 0', async () => {
       const response = await request(app)
-        .put(`/api/users/cart/${fakeItemId}`)
+        .put(`/api/cart/update/${cartItemId}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .send({ quantity: 3 })
-        .expect(404);
+        .send({
+          quantity: 0
+        })
+        .expect(200);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Cart item not found');
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.cart.items).toHaveLength(0);
     });
   });
 
-  describe('DELETE /api/users/cart/:itemId', () => {
+  describe('DELETE /api/cart/remove/:itemId', () => {
     let cartItemId;
 
     beforeEach(async () => {
       // Add item to cart first
       const addResponse = await request(app)
-        .post('/api/users/cart')
+        .post('/api/cart/add')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          productId: testProduct._id.toString(),
+          productId: testProducts[0]._id,
           quantity: 2
         });
 
@@ -253,7 +331,7 @@ describe('Cart Integration Tests', () => {
 
     it('should remove item from cart', async () => {
       const response = await request(app)
-        .delete(`/api/users/cart/${cartItemId}`)
+        .delete(`/api/cart/remove/${cartItemId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -261,93 +339,225 @@ describe('Cart Integration Tests', () => {
       expect(response.body.data.cart.items).toHaveLength(0);
     });
 
-    it('should handle removing non-existent item gracefully', async () => {
-      const fakeItemId = new mongoose.Types.ObjectId().toString();
-
+    it('should handle non-existent item gracefully', async () => {
       const response = await request(app)
-        .delete(`/api/users/cart/${fakeItemId}`)
+        .delete(`/api/cart/remove/${new mongoose.Types.ObjectId()}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
 
       expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Cart item not found');
     });
   });
 
-  describe('DELETE /api/users/cart', () => {
+  describe('DELETE /api/cart/clear', () => {
     beforeEach(async () => {
-      // Add items to cart
+      // Add multiple items to cart
       await request(app)
-        .post('/api/users/cart')
+        .post('/api/cart/add')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          productId: testProduct._id.toString(),
+          productId: testProducts[0]._id,
           quantity: 2
+        });
+
+      await request(app)
+        .post('/api/cart/add')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          productId: testProducts[1]._id,
+          quantity: 1
         });
     });
 
-    it('should clear entire cart', async () => {
+    it('should clear all items from cart', async () => {
       const response = await request(app)
-        .delete('/api/users/cart')
+        .delete('/api/cart/clear')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.cart.items).toHaveLength(0);
+      expect(response.body.message).toContain('cleared');
+
+      // Verify cart is empty
+      const cartResponse = await request(app)
+        .get('/api/cart')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(cartResponse.body.data.cart.items).toHaveLength(0);
+    });
+
+    it('should handle empty cart gracefully', async () => {
+      // Clear cart first
+      await request(app)
+        .delete('/api/cart/clear')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      // Try to clear again
+      const response = await request(app)
+        .delete('/api/cart/clear')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
     });
   });
 
-  describe('Cart Workflow Integration', () => {
-    it('should handle complete cart workflow', async () => {
-      // 1. Get empty cart
-      let response = await request(app)
-        .get('/api/users/cart')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.data.cart.items).toHaveLength(0);
-
-      // 2. Add item to cart
-      response = await request(app)
-        .post('/api/users/cart')
+  describe('POST /api/cart/validate', () => {
+    beforeEach(async () => {
+      // Add items to cart
+      await request(app)
+        .post('/api/cart/add')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          productId: testProduct._id.toString(),
-          quantity: 3
-        })
-        .expect(200);
-
-      expect(response.body.data.cart.items).toHaveLength(1);
-      const itemId = response.body.data.cart.items[0]._id;
-
-      // 3. Update item quantity
-      response = await request(app)
-        .put(`/api/users/cart/${itemId}`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({ quantity: 5 })
-        .expect(200);
-
-      expect(response.body.data.cart.items[0].quantity).toBe(5);
-
-      // 4. Add another item (same product)
-      response = await request(app)
-        .post('/api/users/cart')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          productId: testProduct._id.toString(),
+          productId: testProducts[0]._id,
           quantity: 2
-        })
-        .expect(200);
+        });
 
-      expect(response.body.data.cart.items).toHaveLength(1);
-      expect(response.body.data.cart.items[0].quantity).toBe(7); // 5 + 2
+      await request(app)
+        .post('/api/cart/add')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          productId: testProducts[1]._id,
+          quantity: 1
+        });
+    });
 
-      // 5. Clear cart
-      response = await request(app)
-        .delete('/api/users/cart')
+    it('should validate cart successfully', async () => {
+      const response = await request(app)
+        .post('/api/cart/validate')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body.data.cart.items).toHaveLength(0);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.valid).toBe(true);
+      expect(response.body.data.issues).toHaveLength(0);
+    });
+
+    it('should identify stock issues', async () => {
+      // Reduce stock of first product to create issue
+      await Product.findByIdAndUpdate(testProducts[0]._id, {
+        'stock.quantity': 1
+      });
+
+      const response = await request(app)
+        .post('/api/cart/validate')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.valid).toBe(false);
+      expect(response.body.data.issues).toHaveLength(1);
+      expect(response.body.data.issues[0].type).toBe('insufficient_stock');
+    });
+
+    it('should identify unavailable products', async () => {
+      // Make first product inactive
+      await Product.findByIdAndUpdate(testProducts[0]._id, {
+        status: 'inactive'
+      });
+
+      const response = await request(app)
+        .post('/api/cart/validate')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.valid).toBe(false);
+      expect(response.body.data.issues).toHaveLength(1);
+      expect(response.body.data.issues[0].type).toBe('product_unavailable');
+    });
+  });
+
+  describe('Cart Persistence', () => {
+    it('should persist cart across sessions', async () => {
+      // Add item to cart
+      await request(app)
+        .post('/api/cart/add')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          productId: testProducts[0]._id,
+          quantity: 2
+        });
+
+      // Simulate new session by getting new token
+      const newLoginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'john.doe@example.com',
+          password: 'Password123!'
+        });
+
+      const newAuthToken = newLoginResponse.body.data.tokens.accessToken;
+
+      // Check cart with new token
+      const response = await request(app)
+        .get('/api/cart')
+        .set('Authorization', `Bearer ${newAuthToken}`)
+        .expect(200);
+
+      expect(response.body.data.cart.items).toHaveLength(1);
+      expect(response.body.data.cart.items[0].quantity).toBe(2);
+    });
+  });
+
+  describe('Cart Calculations', () => {
+    it('should calculate subtotal and total correctly', async () => {
+      // Add multiple items
+      await request(app)
+        .post('/api/cart/add')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          productId: testProducts[0]._id, // $1299.99
+          quantity: 2
+        });
+
+      await request(app)
+        .post('/api/cart/add')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          productId: testProducts[1]._id, // $49.99
+          quantity: 1
+        });
+
+      const response = await request(app)
+        .get('/api/cart')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      const expectedSubtotal = (1299.99 * 2) + (49.99 * 1);
+      expect(response.body.data.cart.subtotal).toBeCloseTo(expectedSubtotal, 2);
+      expect(response.body.data.cart.total).toBeCloseTo(expectedSubtotal, 2);
+    });
+  });
+
+  describe('Concurrent Cart Operations', () => {
+    it('should handle concurrent add operations safely', async () => {
+      const promises = [];
+      
+      // Simulate multiple concurrent add operations
+      for (let i = 0; i < 3; i++) {
+        promises.push(
+          request(app)
+            .post('/api/cart/add')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send({
+              productId: testProducts[1]._id,
+              quantity: 1
+            })
+        );
+      }
+
+      await Promise.all(promises);
+
+      // Check final cart state
+      const response = await request(app)
+        .get('/api/cart')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.data.cart.items).toHaveLength(1);
+      expect(response.body.data.cart.items[0].quantity).toBe(3);
     });
   });
 });
