@@ -20,6 +20,9 @@ import sessionConfig from './src/config/session.js';
 
 // Initialize Sentry after imports
 // sentryConfig.initialize();
+
+// Setup global error handlers for uncaught exceptions
+setupGlobalErrorHandlers();
 // Import middleware
 import {
   errorHandler,
@@ -56,6 +59,14 @@ import {
   lazyLoadingMiddleware
 } from './src/middleware/cacheMiddleware.js';
 import { lazyLoadingMiddleware as imageOptimizer } from './src/utils/imageOptimizer.js';
+// Import enhanced security middleware
+import {
+  secureErrorHandler,
+  secureNotFoundHandler,
+  setupGlobalErrorHandlers,
+  sanitizeRequest,
+  enhancedSecurityHeaders
+} from './src/middleware/secureErrorHandler.js';
 // Import CSRF protection
 import {
   conditionalCSRF,
@@ -115,7 +126,11 @@ app.use(requestId);
 // Security middleware
 app.use(helmet(helmetConfig));
 app.use(securityHeaders);
+app.use(enhancedSecurityHeaders); // Additional security headers
 app.use(compression());
+
+// Request sanitization (before parsing)
+app.use(sanitizeRequest);
 
 // Performance monitoring middleware
 app.use(perfMonitor.trackResponseTime);
@@ -351,7 +366,7 @@ app.post('/api/health/monitor/stop', (req, res) => {
   }
 });
 // 404 handler for undefined routes
-app.use(notFound);
+app.use(secureNotFoundHandler);
 // CORS error handling (before global error handler)
 app.use(corsErrorHandler);
 
@@ -360,8 +375,8 @@ app.use(csrfErrorHandler);
 
 // Sentry error handler (before global error handler)
 app.use(sentryConfig.getErrorHandler());
-// Global error handling middleware (must be last)
-app.use(errorHandler);
+// Enhanced secure error handling middleware (must be last)
+app.use(secureErrorHandler);
 // Graceful shutdown handling
 const gracefulShutdown = async (signal) => {
   enhancedLogger.info(`Received ${signal}. Starting graceful shutdown...`);

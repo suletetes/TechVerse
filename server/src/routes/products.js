@@ -22,6 +22,12 @@ import {
 import { authenticate, requireAdmin, optionalAuth, apiRateLimit } from '../middleware/passportAuth.js';
 import { validate, commonValidations } from '../middleware/validation.js';
 import { Product } from '../models/index.js';
+import {
+  cacheProductList,
+  cacheProductDetail,
+  cacheCategoryList,
+  cacheSearchResults
+} from '../middleware/cacheMiddleware.js';
 
 const router = express.Router();
 
@@ -134,17 +140,17 @@ const sectionValidation = [
   ...commonValidations.pagination()
 ];
 
-// Public routes with rate limiting
-router.get('/', apiRateLimit, commonValidations.pagination(), validate, optionalAuth, getAllProducts);
-router.get('/search', apiRateLimit, searchValidation, validate, optionalAuth, searchProducts);
-router.get('/categories', apiRateLimit, getCategories);
-router.get('/featured', apiRateLimit, commonValidations.pagination(), validate, getFeaturedProducts);
-router.get('/top-sellers', apiRateLimit, commonValidations.pagination(), validate, getTopSellingProducts);
-router.get('/latest', apiRateLimit, commonValidations.pagination(), validate, getLatestProducts);
-router.get('/on-sale', apiRateLimit, commonValidations.pagination(), validate, getProductsOnSale);
-router.get('/weekly-deals', apiRateLimit, commonValidations.pagination(), validate, getWeeklyDeals);
-router.get('/quick-picks', apiRateLimit, commonValidations.pagination(), validate, getQuickPicks);
-router.get('/section/:section', sectionValidation, validate, getProductsBySection);
+// Public routes with rate limiting and caching
+router.get('/', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, optionalAuth, getAllProducts);
+router.get('/search', apiRateLimit, cacheSearchResults, searchValidation, validate, optionalAuth, searchProducts);
+router.get('/categories', apiRateLimit, cacheCategoryList, getCategories);
+router.get('/featured', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getFeaturedProducts);
+router.get('/top-sellers', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getTopSellingProducts);
+router.get('/latest', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getLatestProducts);
+router.get('/on-sale', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getProductsOnSale);
+router.get('/weekly-deals', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getWeeklyDeals);
+router.get('/quick-picks', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getQuickPicks);
+router.get('/section/:section', cacheProductList, sectionValidation, validate, getProductsBySection);
 router.get('/category/:categoryId', 
   [commonValidations.mongoId('categoryId'), ...commonValidations.pagination()], 
   validate, 
@@ -167,7 +173,7 @@ const productIdOrSlugValidation = [
     })
 ];
 
-router.get('/:id', productIdOrSlugValidation, validate, optionalAuth, getProductById);
+router.get('/:id', cacheProductDetail, productIdOrSlugValidation, validate, optionalAuth, getProductById);
 router.get('/:id/reviews', 
   [productIdOrSlugValidation[0], ...commonValidations.pagination()], 
   validate, 
