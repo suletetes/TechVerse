@@ -6,6 +6,7 @@ export { default as userService } from './userService.js';
 export { default as adminService } from './adminService.js';
 export { default as cartService } from './cartService.js';
 export { default as wishlistService } from './wishlistService.js';
+export { default as reviewService } from './reviewService.js';
 export { default as uploadService } from './uploadService.js';
 export { default as enhancedApiService } from './enhancedApiService.js';
 export { default as apiUtils } from './apiUtils.js';
@@ -21,6 +22,7 @@ import userService from './userService.js';
 import adminService from './adminService.js';
 import cartService from './cartService.js';
 import wishlistService from './wishlistService.js';
+import reviewService from './reviewService.js';
 import uploadService from './uploadService.js';
 import enhancedApiService from './enhancedApiService.js';
 import apiUtils from './apiUtils.js';
@@ -37,6 +39,7 @@ export const apiServices = {
   admin: adminService,
   cart: cartService,
   wishlist: wishlistService,
+  review: reviewService,
   upload: uploadService,
   enhanced: enhancedApiService,
   utils: apiUtils,

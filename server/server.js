@@ -77,6 +77,7 @@ import securityRoutes from './src/routes/security.js';
 import performanceRoutes from './src/routes/performance.js';
 import cartRoutes from './src/routes/cart.js';
 import wishlistRoutes from './src/routes/wishlist.js';
+import reviewRoutes from './src/routes/reviews.js';
 // Initialize Passport strategies
 initializePassport();
 // Connect to MongoDB
@@ -203,6 +204,7 @@ app.use('/api/security', securityRoutes);
 app.use('/api/performance', performanceRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/reviews', reviewRoutes);
 // Health check endpoints
 import healthCheck from './src/utils/healthCheck.js';
 import healthMonitor from './src/utils/healthMonitor.js';

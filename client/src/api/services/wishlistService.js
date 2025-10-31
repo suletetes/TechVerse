@@ -6,7 +6,7 @@ class WishlistService extends BaseApiService {
             serviceName: 'WishlistService',
             baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
             endpoints: {
-                wishlist: '/users/wishlist'
+                wishlist: '/wishlist'
             },
             cacheEnabled: false, // Wishlist data should always be fresh
             retryEnabled: true,
@@ -17,23 +17,23 @@ class WishlistService extends BaseApiService {
     }
 
     async getWishlist() {
-        return this.read('/users/wishlist');
+        return this.read('/wishlist');
     }
 
     async addToWishlist(productId, notes = '') {
-        return this.create(`/users/wishlist/${productId}`, { notes });
+        return this.create(`/wishlist/add/${productId}`, { notes });
     }
 
     async removeFromWishlist(productId) {
-        return this.delete(`/users/wishlist/${productId}`);
+        return this.delete(`/wishlist/remove/${productId}`);
     }
 
     async fetchWishlistCount() {
         try {
-            const response = await this.read('/users/wishlist');
+            const response = await this.read('/wishlist/summary');
             return {
                 success: true,
-                count: response.data?.wishlist?.items?.length || 0
+                count: response.data?.totalItems || 0
             };
         } catch (error) {
             console.error('Error getting wishlist count:', error);
@@ -65,11 +65,23 @@ class WishlistService extends BaseApiService {
         }
         
         try {
-            return this.create('/users/wishlist/sync', { productIds });
+            return this.create('/wishlist/sync', { productIds });
         } catch (error) {
             console.error('Error syncing wishlist:', error);
             throw error;
         }
+    }
+
+    async checkWishlistStatus(productId) {
+        return this.read(`/wishlist/check/${productId}`);
+    }
+
+    async moveToCart(productId, quantity = 1, options = {}) {
+        return this.create(`/wishlist/move-to-cart/${productId}`, { quantity, options });
+    }
+
+    async clearWishlist() {
+        return this.delete('/wishlist/clear');
     }
 }
 
