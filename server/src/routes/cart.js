@@ -9,7 +9,7 @@ const router = express.Router();
 // Get user's cart
 router.get('/', authenticate, async (req, res) => {
     try {
-        const cart = await Cart.findOne({ user: req.user.id })
+        const cart = await Cart.findOne({ user: req.user._id })
             .populate({
                 path: 'items.product',
                 select: 'name price images stock variants status'
@@ -86,9 +86,9 @@ router.post('/add', authenticate, validateCartItem, async (req, res) => {
         }
 
         // Find or create cart
-        let cart = await Cart.findOne({ user: req.user.id });
+        let cart = await Cart.findOne({ user: req.user._id });
         if (!cart) {
-            cart = new Cart({ user: req.user.id, items: [] });
+            cart = new Cart({ user: req.user._id, items: [] });
         }
 
         // Check if item already exists in cart
@@ -160,7 +160,7 @@ router.put('/update/:itemId', authenticate, async (req, res) => {
             });
         }
 
-        const cart = await Cart.findOne({ user: req.user.id });
+        const cart = await Cart.findOne({ user: req.user._id });
         if (!cart) {
             return res.status(404).json({
                 success: false,
@@ -217,7 +217,7 @@ router.delete('/remove/:itemId', authenticate, async (req, res) => {
     try {
         const { itemId } = req.params;
 
-        const cart = await Cart.findOne({ user: req.user.id });
+        const cart = await Cart.findOne({ user: req.user._id });
         if (!cart) {
             return res.status(404).json({
                 success: false,
@@ -253,7 +253,7 @@ router.delete('/remove/:itemId', authenticate, async (req, res) => {
 router.delete('/clear', authenticate, async (req, res) => {
     try {
         await Cart.findOneAndUpdate(
-            { user: req.user.id },
+            { user: req.user._id },
             { items: [], updatedAt: new Date() },
             { new: true }
         );
@@ -280,7 +280,7 @@ router.delete('/clear', authenticate, async (req, res) => {
 // Validate cart before checkout
 router.post('/validate', authenticate, async (req, res) => {
     try {
-        const cart = await Cart.findOne({ user: req.user.id })
+        const cart = await Cart.findOne({ user: req.user._id })
             .populate('items.product');
 
         if (!cart || cart.items.length === 0) {
