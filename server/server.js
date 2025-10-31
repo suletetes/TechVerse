@@ -10,6 +10,7 @@ dotenv.config();
 
 // Import other modules after environment is loaded
 import connectDB from './src/config/database.js';
+import { createSearchIndexes } from './src/utils/searchIndexes.js';
 import logger from './src/utils/logger.js';
 import enhancedLogger from './src/utils/enhancedLogger.js';
 import sentryConfig from './src/config/sentry.js';
@@ -78,10 +79,17 @@ import performanceRoutes from './src/routes/performance.js';
 import cartRoutes from './src/routes/cart.js';
 import wishlistRoutes from './src/routes/wishlist.js';
 import reviewRoutes from './src/routes/reviews.js';
+import specificationRoutes from './src/routes/specifications.js';
+import stockRoutes from './src/routes/stock.js';
 // Initialize Passport strategies
 initializePassport();
 // Connect to MongoDB
 connectDB();
+
+// Initialize search indexes for better performance
+createSearchIndexes().catch(error => {
+  logger.warn('Failed to create search indexes:', error.message);
+});
 const app = express();
 const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -205,6 +213,8 @@ app.use('/api/performance', performanceRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/specifications', specificationRoutes);
+app.use('/api/stock', stockRoutes);
 // Health check endpoints
 import healthCheck from './src/utils/healthCheck.js';
 import healthMonitor from './src/utils/healthMonitor.js';

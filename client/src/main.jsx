@@ -6,6 +6,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "./assets/css/style.css";
 import "./assets/css/ecommerce.css";
 import "./assets/css/category-enhancements.css";
+import "./assets/css/variant-colors.css";
 
 const root = ReactDOM.createRoot(document.getElementById("app"));
 root.render(<App />);
