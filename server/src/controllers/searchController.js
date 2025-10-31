@@ -17,7 +17,9 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
     sortBy = 'relevance',
     sortOrder = 'desc',
     page = 1,
-    limit = 20
+    limit = 20,
+    tags = '',
+    specifications = ''
   } = req.query;
 
   // Build search query
@@ -56,6 +58,46 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
   // Stock filter
   if (inStock === 'true') {
     searchQuery['stock.quantity'] = { $gt: 0 };
+  }
+
+  // Tags filter
+  if (tags) {
+    const tagArray = tags.split(',').map(tag => tag.trim()).filter(Boolean);
+    if (tagArray.length > 0) {
+      searchQuery.tags = { $in: tagArray.map(tag => new RegExp(tag, 'i')) };
+    }
+  }
+
+  // Specifications filter
+  if (specifications) {
+    try {
+      const specFilters = JSON.parse(specifications);
+      const specQueries = [];
+      
+      Object.entries(specFilters).forEach(([category, specs]) => {
+        Object.entries(specs).forEach(([specName, values]) => {
+          if (Array.isArray(values) && values.length > 0) {
+            specQueries.push({
+              'specifications': {
+                $elemMatch: {
+                  category: category,
+                  name: specName,
+                  value: { $in: values }
+                }
+              }
+            });
+          }
+        });
+      });
+      
+      if (specQueries.length > 0) {
+        searchQuery.$and = searchQuery.$and || [];
+        searchQuery.$and.push(...specQueries);
+      }
+    } catch (error) {
+      // Invalid JSON, ignore specifications filter
+      console.warn('Invalid specifications filter:', error.message);
+    }
   }
 
   // Build sort options
@@ -104,7 +146,7 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
   // Get search suggestions if no results
   let suggestions = [];
   if (products.length === 0 && q) {
-    suggestions = await getSearchSuggestions(q);
+    suggestions = await getSearchSuggestionsInternal(q);
   }
 
   // Get facets for filtering
@@ -258,8 +300,117 @@ export const getSearchFilters = asyncHandler(async (req, res, next) => {
   });
 });
 
-// Helper function to get search suggestions
-async function getSearchSuggestions(query) {
+// @desc    Get search suggestions for empty results
+// @route   GET /api/search/suggestions
+// @access  Public
+export const getSearchSuggestions = asyncHandler(async (req, res, next) => {
+  const { q = '' } = req.query;
+
+  if (!q || q.length < 2) {
+    return res.status(200).json({
+      success: true,
+      data: { suggestions: [] }
+    });
+  }
+
+  try {
+    // Get similar products based on partial matches
+    const suggestions = await Product.find({
+      status: 'active',
+      visibility: 'public',
+      $or: [
+        { name: { $regex: q.split(' ')[0], $options: 'i' } },
+        { brand: { $regex: q, $options: 'i' } },
+        { tags: { $in: [new RegExp(q, 'i')] } }
+      ]
+    })
+      .select('name brand')
+      .limit(5)
+      .lean();
+
+    const suggestionList = suggestions.map(p => p.name);
+
+    res.status(200).json({
+      success: true,
+      data: { suggestions: suggestionList }
+    });
+  } catch (error) {
+    logger.error('Error getting search suggestions:', error);
+    res.status(200).json({
+      success: true,
+      data: { suggestions: [] }
+    });
+  }
+});
+
+// @desc    Get popular search terms
+// @route   GET /api/search/popular
+// @access  Public
+export const getPopularSearches = asyncHandler(async (req, res, next) => {
+  const { limit = 10 } = req.query;
+
+  try {
+    // For now, return static popular searches
+    // In a real app, this would come from search analytics
+    const popularSearches = [
+      'iPhone 15',
+      'MacBook Pro',
+      'Samsung Galaxy',
+      'iPad Air',
+      'AirPods Pro',
+      'PlayStation 5',
+      'Nintendo Switch',
+      'Dell XPS',
+      'Sony WH-1000XM5',
+      'Apple Watch'
+    ].slice(0, parseInt(limit));
+
+    res.status(200).json({
+      success: true,
+      data: { searches: popularSearches }
+    });
+  } catch (error) {
+    logger.error('Error getting popular searches:', error);
+    res.status(200).json({
+      success: true,
+      data: { searches: [] }
+    });
+  }
+});
+
+// @desc    Track search analytics
+// @route   POST /api/search/analytics
+// @access  Public
+export const trackSearchAnalytics = asyncHandler(async (req, res, next) => {
+  const { query, resultsCount, filters = {} } = req.body;
+
+  try {
+    // In a real app, you would save this to a search analytics collection
+    // For now, just log it
+    logger.info('Search Analytics:', {
+      query,
+      resultsCount,
+      filters,
+      timestamp: new Date(),
+      userAgent: req.get('User-Agent'),
+      ip: req.ip
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Analytics tracked successfully'
+    });
+  } catch (error) {
+    logger.error('Error tracking search analytics:', error);
+    res.status(200).json({
+      success: true,
+      message: 'Analytics tracking failed'
+    });
+  }
+});
+
+// Helper function to get search suggestions (internal use)
+async function getSearchSuggestionsInternal(query) {
   try {
     // Get similar products based on partial matches
     const suggestions = await Product.find({
