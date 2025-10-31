@@ -17,6 +17,14 @@ const cartItemSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  options: {
+    type: Object,
+    default: {}
+  },
+  priceModifier: {
+    type: Number,
+    default: 0
+  },
   addedAt: {
     type: Date,
     default: Date.now
@@ -49,7 +57,10 @@ const cartSchema = new mongoose.Schema({
 
 // Calculate totals before saving
 cartSchema.pre('save', function() {
-  this.subtotal = this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  this.subtotal = this.items.reduce((sum, item) => {
+    const itemPrice = item.price + (item.priceModifier || 0);
+    return sum + (itemPrice * item.quantity);
+  }, 0);
   this.total = this.subtotal; // Can add tax/shipping later
 });
 

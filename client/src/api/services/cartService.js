@@ -6,7 +6,7 @@ class CartService extends BaseApiService {
             serviceName: 'CartService',
             baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
             endpoints: {
-                cart: '/users/cart'
+                cart: '/cart'
             },
             cacheEnabled: false, // Cart data should always be fresh
             retryEnabled: true,
@@ -17,23 +17,27 @@ class CartService extends BaseApiService {
     }
 
     async getCart() {
-        return this.read('/users/cart');
+        return this.read('/cart');
     }
 
-    async addToCart(productId, quantity = 1) {
-        return this.create('/users/cart', { productId, quantity });
+    async addToCart(productId, quantity = 1, options = {}) {
+        return this.create('/cart/add', { productId, quantity, options });
     }
 
     async updateCartItem(itemId, quantity) {
-        return this.update(`/users/cart/${itemId}`, { quantity });
+        return this.update(`/cart/update/${itemId}`, { quantity });
     }
 
     async removeFromCart(itemId) {
-        return this.delete(`/users/cart/${itemId}`);
+        return this.delete(`/cart/remove/${itemId}`);
     }
 
     async clearCart() {
-        return this.delete('/users/cart');
+        return this.delete('/cart/clear');
+    }
+
+    async validateCart() {
+        return this.create('/cart/validate', {});
     }
 }
 
