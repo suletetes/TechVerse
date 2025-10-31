@@ -307,6 +307,24 @@ export const validationSets = {
       .optional()
       .isIn(['home', 'work', 'other'])
       .withMessage('Address type must be home, work, or other')
+  ],
+
+  // Cart item validation
+  cartItem: [
+    body('productId')
+      .notEmpty()
+      .withMessage('Product ID is required')
+      .isMongoId()
+      .withMessage('Invalid product ID format'),
+    body('quantity')
+      .optional()
+      .isInt({ min: 1, max: 99 })
+      .withMessage('Quantity must be between 1 and 99')
+      .toInt(),
+    body('options')
+      .optional()
+      .isObject()
+      .withMessage('Options must be an object')
   ]
 };
 
@@ -396,10 +414,14 @@ export const sanitizeInput = (req, res, next) => {
   next();
 };
 
+// Export specific validation functions
+export const validateCartItem = [...validationSets.cartItem, validate];
+
 export default {
   validate,
   commonValidations,
   validationSets,
   validateFileUpload,
-  sanitizeInput
+  sanitizeInput,
+  validateCartItem
 };
