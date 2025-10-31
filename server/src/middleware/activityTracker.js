@@ -1,119 +1,139 @@
+// User Activity Tracking Middleware
+// Tracks user interactions, page views, and system events
+
 import { Activity } from '../models/index.js';
 import logger from '../utils/logger.js';
 
-// Middleware to track user activities
-export const trackActivity = (type, getDescription, getMetadata = null) => {
+/**
+ * Track user activity middleware
+ * @param {string} action - Action type
+ * @param {string} resource - Resource type
+ * @param {Object} options - Additional options
+ * @returns {Function} Express middleware
+ */
+export const trackActivity = (action, resource, options = {}) => {
   return async (req, res, next) => {
-    // Store original res.json to intercept successful responses
-    const originalJson = res.json;
-    
-    res.json = function(data) {
-      // Only log activity on successful responses (2xx status codes)
-      if (res.statusCode >= 200 && res.statusCode < 300 && req.user) {
-        setImmediate(async () => {
-          try {
-            const description = typeof getDescription === 'function' 
-              ? getDescription(req, res, data) 
-              : getDescription;
-            
-            const metadata = getMetadata 
-              ? (typeof getMetadata === 'function' ? getMetadata(req, res, data) : getMetadata)
-              : {};
-
-            await Activity.logActivity(
-              req.user._id,
-              type,
-              description,
-              metadata,
-              req
-            );
-          } catch (error) {
-            logger.error('Activity tracking failed:', error);
-          }
-        });
+    try {
+      // Skip tracking for non-authenticated users if required
+      if (options.requireAuth && !req.user) {
+        return next();
       }
-      
-      return originalJson.call(this, data);
-    };
-    
+
+      const activityData = {
+        user: req.user?._id || null,
+        action,
+        resource,
+        resourceId: options.getResourceId ? options.getResourceId(req) : null,
+        ipAddress: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        details: options.getDetails ? options.getDetails(req) : {},
+        sessionId: req.sessionID || null,
+        timestamp: new Date()
+      };
+
+      // Create activity record
+      await Activity.create(activityData);
+
+      // Update user's last active timestamp
+      if (req.user) {
+        req.user.lastActive = new Date();
+        await req.user.save();
+      }
+
+    } catch (error) {
+      // Don't fail the request if activity tracking fails
+      logger.error('Activity tracking error', {
+        action,
+        resource,
+        userId: req.user?._id,
+        error: error.message
+      });
+    }
+
     next();
   };
 };
 
-// Helper function to create activity tracking middleware
-export const createActivityTracker = (type, description, metadata = {}) => {
-  return trackActivity(type, description, metadata);
+/**
+ * Track page view activity
+ */
+export const trackPageView = trackActivity('page_view', 'Page', {
+  getDetails: (req) => ({
+    path: req.path,
+    method: req.method,
+    query: req.query,
+    referrer: req.get('Referer')
+  })
+});
+
+/**
+ * Track product view activity
+ */
+export const trackProductView = trackActivity('product_view', 'Product', {
+  getResourceId: (req) => req.params.id,
+  getDetails: (req) => ({
+    productId: req.params.id,
+    source: req.query.source || 'direct'
+  })
+});
+
+/**
+ * Track search activity
+ */
+export const trackSearch = trackActivity('search', 'Search', {
+  getDetails: (req) => ({
+    query: req.query.q || req.body.query,
+    category: req.query.category,
+    filters: req.query.filters,
+    resultsCount: req.searchResults?.length || 0
+  })
+});
+
+/**
+ * Track cart activity
+ */
+export const trackCartActivity = (actionType) => {
+  return trackActivity(`cart_${actionType}`, 'Cart', {
+    requireAuth: true,
+    getDetails: (req) => ({
+      productId: req.body.productId || req.params.productId,
+      quantity: req.body.quantity,
+      variantId: req.body.variantId
+    })
+  });
 };
 
-// Pre-defined activity trackers
-export const activityTrackers = {
-  login: trackActivity('login', 'User logged in', (req) => ({
-    method: req.body.method || 'email',
-    rememberMe: req.body.rememberMe || false
-  })),
-  
-  logout: trackActivity('logout', 'User logged out'),
-  
-  profileUpdate: trackActivity('profile_update', 'Profile updated', (req) => ({
-    updatedFields: Object.keys(req.body)
-  })),
-  
-  passwordChange: trackActivity('password_change', 'Password changed'),
-  
-  productView: trackActivity('product_view', (req) => `Viewed product: ${req.params.id}`, (req) => ({
-    productId: req.params.id
-  })),
-  
-  productSearch: trackActivity('product_search', (req) => `Searched for: ${req.query.search}`, (req) => ({
-    query: req.query.search,
-    category: req.query.category,
-    filters: req.query
-  })),
-  
-  cartAdd: trackActivity('cart_add', (req) => 'Added item to cart', (req) => ({
-    productId: req.body.productId,
-    quantity: req.body.quantity
-  })),
-  
-  cartRemove: trackActivity('cart_remove', (req) => 'Removed item from cart', (req) => ({
-    itemId: req.params.itemId
-  })),
-  
-  cartUpdate: trackActivity('cart_update', (req) => 'Updated cart item', (req) => ({
-    itemId: req.params.itemId,
-    quantity: req.body.quantity
-  })),
-  
-  wishlistAdd: trackActivity('wishlist_add', (req) => 'Added item to wishlist', (req) => ({
-    productId: req.params.productId
-  })),
-  
-  wishlistRemove: trackActivity('wishlist_remove', (req) => 'Removed item from wishlist', (req) => ({
-    productId: req.params.productId
-  })),
-  
-  orderCreate: trackActivity('order_create', 'Created new order', (req, res, data) => ({
-    orderId: data?.data?.order?._id,
-    totalAmount: data?.data?.order?.totalAmount
-  })),
-  
-  addressAdd: trackActivity('address_add', 'Added new address', (req) => ({
-    addressType: req.body.type
-  })),
-  
-  addressUpdate: trackActivity('address_update', 'Updated address', (req) => ({
-    addressId: req.params.id
-  })),
-  
-  addressDelete: trackActivity('address_delete', 'Deleted address', (req) => ({
-    addressId: req.params.id
-  })),
-  
-  paymentMethodAdd: trackActivity('payment_method_add', 'Added payment method', (req) => ({
-    type: req.body.type
-  })),
-  
-  paymentMethodDelete: trackActivity('payment_method_delete', 'Deleted payment method', (req) => ({
-    paymentMethodId: req.params.id
-  }))
+/**
+ * Track wishlist activity
+ */
+export const trackWishlistActivity = (actionType) => {
+  return trackActivity(`wishlist_${actionType}`, 'Wishlist', {
+    requireAuth: true,
+    getDetails: (req) => ({
+      productId: req.body.productId || req.params.productId
+    })
+  });
+};
+
+/**
+ * Track authentication activity
+ */
+export const trackAuthActivity = (actionType) => {
+  return trackActivity(`auth_${actionType}`, 'Authentication', {
+    getDetails: (req) => ({
+      email: req.body.email,
+      method: actionType,
+      success: !req.authError
+    })
+  });
+};
+
+export default {
+  trackActivity,
+  trackPageView,
+  trackProductView,
+  trackSearch,
+  trackCartActivity,
+  trackWishlistActivity,
+  trackAuthActivity
 };
