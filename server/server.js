@@ -20,9 +20,6 @@ import sessionConfig from './src/config/session.js';
 
 // Initialize Sentry after imports
 // sentryConfig.initialize();
-
-// Setup global error handlers for uncaught exceptions
-setupGlobalErrorHandlers();
 // Import middleware
 import {
   errorHandler,
@@ -55,8 +52,7 @@ import {
 } from './src/utils/performanceOptimizer.js';
 import {
   initializeCacheManager,
-  cacheStats,
-  lazyLoadingMiddleware
+  cacheStats
 } from './src/middleware/cacheMiddleware.js';
 import { lazyLoadingMiddleware as imageOptimizer } from './src/utils/imageOptimizer.js';
 // Import enhanced security middleware
@@ -67,6 +63,10 @@ import {
   sanitizeRequest,
   enhancedSecurityHeaders
 } from './src/middleware/secureErrorHandler.js';
+
+// Setup global error handlers for uncaught exceptions
+setupGlobalErrorHandlers();
+
 // Import CSRF protection
 import {
   conditionalCSRF,

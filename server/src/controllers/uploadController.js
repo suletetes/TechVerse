@@ -232,8 +232,8 @@ export default {
   getImageInfo,
   testImageAccessibility
 };
-// 
-Enhanced upload functions for Task 24
+
+// Enhanced upload functions for Task 24
 
 // @desc    Upload product images with optimization
 // @route   POST /api/upload/product-images

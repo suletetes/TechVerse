@@ -42,7 +42,7 @@ const IMAGE_CONFIG = {
 export const optimizeImage = async (inputPath, outputDir, filename, options = {}) => {
   try {
     const {
-      sizes = ['thumbnail', 'small', medium', 'large'],
+      sizes = ['thumbnail', 'small', 'medium', 'large'],
       formats = IMAGE_CONFIG.outputFormats,
       quality = null
     } = options;
