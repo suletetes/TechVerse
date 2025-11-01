@@ -27,10 +27,6 @@ const ProductOptions = ({
     const storages = storageVariant?.options || storageOptions || [];
 
     // Helper function to calculate price with modifier
-    const calculatePrice = (basePrice, priceModifier) => {
-        return basePrice + (priceModifier || 0);
-    };
-
     // Helper function to calculate price with modifier
     const calculatePrice = (basePrice, priceModifier) => {
         return basePrice + (priceModifier || 0);
