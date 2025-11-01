@@ -13,7 +13,10 @@ import {
   addToCart,
   updateCartItem,
   removeFromCart,
-  clearCart
+  clearCart,
+  addPaymentMethod,
+  updatePaymentMethod,
+  deletePaymentMethod
 } from '../controllers/userController.js';
 import paymentService from '../services/paymentService.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
