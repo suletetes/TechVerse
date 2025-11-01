@@ -118,9 +118,8 @@ export const specificationTemplates = {
       { name: 'Charging', required: true },
       { name: 'Power Consumption', required: false }
     ]
-  }
-}; 
- // TV specifications
+  },
+  // TV specifications
   tvs: {
     'Display Technology': [
       { name: 'Screen Size', required: true },
@@ -370,8 +369,9 @@ export const specificationTemplates = {
       { name: 'Durability Features', required: false }
     ]
   }
-};// Sample
- specification data for different product types
+};
+
+// Sample specification data for different product types
 export const sampleSpecifications = {
   // Phone sample specs
   phones: {
