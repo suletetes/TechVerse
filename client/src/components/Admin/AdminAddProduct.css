@@ -899,8 +899,9 @@ t Analysis Card */
     width: 100%;
     justify-content: space-between;
   }
-}/
-* Main Image Preview */
+}
+
+/* Main Image Preview */
 .main-image-preview {
   text-align: center;
 }
