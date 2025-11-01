@@ -2,6 +2,7 @@
   "name": "techverse-ecommerce",
   "version": "1.0.0",
   "description": "MERN Stack E-commerce Platform",
+  "type": "module",
   "main": "server/server.js",
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",

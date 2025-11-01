@@ -1,31 +1,40 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import '@testing-library/jest-dom';
-import UserProfile from '../UserProfile';
+import { renderWithProviders, screen } from '../../test/testUtils.jsx';
+import UserProfile from '../UserProfile.jsx';
 
 // Mock the UserProfileLayout component
-vi.mock('../../components/UserProfile', () => ({
-  UserProfileLayout: vi.fn(({ initialTab }) => (
+vi.mock('../../components/UserProfile/UserProfileLayout.jsx', () => ({
+  default: vi.fn(({ initialTab }) => (
     <div data-testid="user-profile-layout">
       <span data-testid="initial-tab">{initialTab === null ? 'null' : initialTab}</span>
     </div>
   ))
 }));
 
+// Mock useSearchParams
+const mockSearchParams = new URLSearchParams();
+const mockSetSearchParams = vi.fn();
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useSearchParams: () => [mockSearchParams, mockSetSearchParams]
+  };
+});
+
 describe('UserProfile Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSearchParams.clear();
   });
 
   describe('URL Parameter Handling', () => {
     it('should render UserProfileLayout with null initialTab when no tab parameter', () => {
-      render(
-        <MemoryRouter initialEntries={['/user']}>
-          <UserProfile />
-        </MemoryRouter>
-      );
+      renderWithProviders(<UserProfile />, {
+        initialEntries: ['/user']
+      });
 
       expect(screen.getByTestId('user-profile-layout')).toBeInTheDocument();
       expect(screen.getByTestId('initial-tab')).toHaveTextContent('null');

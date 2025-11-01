@@ -84,6 +84,10 @@ describe('TokenManager', () => {
     it('should validate JWT token format correctly', () => {
       const validToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyMyIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsImV4cCI6OTk5OTk5OTk5OSwiaWF0IjoxNjAwMDAwMDAwfQ.signature';
       
+      // Mock Date.now to return a time before token expiration
+      const mockNow = 1600000000 * 1000; // Convert to milliseconds
+      vi.spyOn(Date, 'now').mockReturnValue(mockNow);
+      
       // Mock atob to return valid JSON
       global.atob = vi.fn()
         .mockReturnValueOnce('{"alg":"HS256","typ":"JWT"}') // header
@@ -93,6 +97,9 @@ describe('TokenManager', () => {
       expect(validation.valid).toBe(true);
       expect(validation.payload).toBeDefined();
       expect(validation.payload.id).toBe('123');
+      
+      // Restore Date.now
+      vi.restoreAllMocks();
     });
 
     it('should reject invalid token format', () => {
