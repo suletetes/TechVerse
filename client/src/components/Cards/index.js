@@ -3,6 +3,7 @@
 export { default as LatestProducts } from './LatestProducts';
 export { default as ProductCard } from './ProductCard';
 export { default as ProductCardList } from './ProductCardList';
+export { default as FastProductCard } from './FastProductCard';
 export { default as QuickPickCard } from './QuickPickCard';
 export { default as TopSellerProducts } from './TopSellerProducts';
 export { default as WeeklyDeals } from './WeeklyDeals';

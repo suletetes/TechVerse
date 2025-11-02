@@ -33,19 +33,15 @@ const Home = () => {
 
             {/* latest-products */}
             <LatestProducts
-                limit={12}
+                limit={8}
                 autoLoad={true}
-                onSuccess={(data) => console.log('Latest products loaded:', data.length)}
-                onError={(error) => console.error('Latest products error:', error)}
             />
             {/* latest-products END */}
 
             {/* top-seller-products */}
             <TopSellerProducts
-                limit={12}
+                limit={8}
                 autoLoad={true}
-                onSuccess={(data) => console.log('Top seller products loaded:', data.length)}
-                onError={(error) => console.error('Top seller products error:', error)}
             />
             {/* top-seller-products END */}
 

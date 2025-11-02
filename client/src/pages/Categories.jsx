@@ -105,7 +105,7 @@ const Categories = () => {
 
     useEffect(() => {
         loadCategories();
-    }, []);
+    }, [loadCategories]);
 
     // Only show categories that we have images for (from defaultCategories)
     const displayCategories = defaultCategories.map(defaultCat => {

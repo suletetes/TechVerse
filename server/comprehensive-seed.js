@@ -14,7 +14,7 @@ import mongoose from 'mongoose';
 import { faker } from '@faker-js/faker';
 import connectDB from './src/config/database.js';
 import { User, Product, Category, Order, Review, Activity } from './src/models/index.js';
-import { generateSpecifications } from './src/utils/specificationGenerator.js';
+import { generateSpecificationsForProduct } from './src/utils/specificationGenerator.js';
 import { generateStockLevel, generatePricing } from './src/utils/stockPricingGenerator.js';
 import { generateProductSEO, generateProductImages } from './src/utils/seoGenerator.js';
 import logger from './src/utils/logger.js';
@@ -229,11 +229,9 @@ class ComprehensiveSeed {
       paymentMethods: [this.generatePaymentMethod()],
       preferences: {
         newsletter: true,
-        notifications: {
-          email: true,
-          sms: false,
-          push: true
-        }
+        notifications: true,
+        emailMarketing: true,
+        smsMarketing: false
       }
     });
 
@@ -247,34 +245,20 @@ class ComprehensiveSeed {
         lastName,
         email: faker.internet.email({ firstName, lastName }).toLowerCase(),
         password: 'User123!',
-        role: 'customer',
-        emailVerified: faker.datatype.boolean(0.8), // 80% verified
-        isActive: faker.datatype.boolean(0.95), // 95% active
-        accountStatus: faker.helpers.weightedArrayElement([
-          { weight: 85, value: 'active' },
-          { weight: 10, value: 'inactive' },
-          { weight: 5, value: 'suspended' }
-        ]),
-        profile: {
-          phone: faker.phone.number(),
-          dateOfBirth: faker.date.birthdate({ min: 18, max: 70, mode: 'age' }),
-          gender: faker.helpers.arrayElement(['male', 'female', 'other', 'prefer-not-to-say'])
-        },
-        addresses: Array.from({ length: faker.number.int({ min: 1, max: 3 }) }, () => this.generateAddress()),
-        paymentMethods: Array.from({ length: faker.number.int({ min: 0, max: 2 }) }, () => this.generatePaymentMethod()),
+        role: 'user',
+        phone: faker.helpers.arrayElement(['+447700900123', '+447700900456', '+447700900789']),
+        dateOfBirth: faker.date.birthdate({ min: 18, max: 70, mode: 'age' }),
+        gender: faker.helpers.arrayElement(['male', 'female', 'other', 'prefer-not-to-say']),
+        isActive: faker.datatype.boolean(0.95),
+        isEmailVerified: faker.datatype.boolean(0.8),
+        addresses: Array.from({ length: faker.number.int({ min: 1, max: 2 }) }, () => this.generateAddress()),
+        paymentMethods: Array.from({ length: faker.number.int({ min: 0, max: 1 }) }, () => this.generatePaymentMethod()),
         preferences: {
           newsletter: faker.datatype.boolean(0.6),
-          notifications: {
-            email: faker.datatype.boolean(0.8),
-            sms: faker.datatype.boolean(0.3),
-            push: faker.datatype.boolean(0.7)
-          }
-        },
-        createdAt: faker.date.between({ 
-          from: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), 
-          to: new Date() 
-        }),
-        lastActive: faker.date.recent({ days: 30 })
+          notifications: faker.datatype.boolean(0.8),
+          emailMarketing: faker.datatype.boolean(0.4),
+          smsMarketing: faker.datatype.boolean(0.2)
+        }
       });
     }
 
@@ -290,14 +274,13 @@ class ComprehensiveSeed {
       type: faker.helpers.arrayElement(['home', 'work', 'other']),
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
-      company: faker.datatype.boolean(0.3) ? faker.company.name() : '',
-      address1: faker.location.streetAddress(),
-      address2: faker.datatype.boolean(0.2) ? faker.location.secondaryAddress() : '',
+      company: faker.datatype.boolean(0.3) ? faker.company.name() : undefined,
+      address: faker.location.streetAddress(),
+      apartment: faker.datatype.boolean(0.2) ? faker.location.secondaryAddress() : undefined,
       city: faker.location.city(),
-      state: faker.location.state({ abbreviated: true }),
-      zipCode: faker.location.zipCode(),
-      country: 'US',
-      phone: faker.phone.number(),
+      postcode: faker.helpers.arrayElement(['SW1A 1AA', 'M1 1AA', 'B33 8TH', 'W1A 0AX', 'EC1A 1BB']),
+      country: 'United Kingdom',
+      phone: faker.helpers.arrayElement(['+447700900123', '+447700900456', '+447700900789']),
       isDefault: true
     };
   }
@@ -306,34 +289,30 @@ class ComprehensiveSeed {
    * Generate realistic payment method
    */
   generatePaymentMethod() {
-    const type = faker.helpers.arrayElement(['credit_card', 'debit_card', 'paypal']);
+    const type = faker.helpers.arrayElement(['card', 'paypal']);
     
     if (type === 'paypal') {
       return {
-        id: `pm_${Date.now()}_${faker.string.alphanumeric(8)}`,
         type,
-        isDefault: true,
-        wallet: {
-          provider: 'paypal',
-          email: faker.internet.email()
-        },
-        billingAddress: this.generateAddress()
+        paypalEmail: faker.internet.email(),
+        isDefault: true
       };
     }
 
     return {
-      id: `pm_${Date.now()}_${faker.string.alphanumeric(8)}`,
       type,
-      isDefault: true,
-      card: {
-        last4: faker.finance.creditCardNumber().slice(-4),
-        maskedNumber: `****-****-****-${faker.finance.creditCardNumber().slice(-4)}`,
-        expiryMonth: faker.number.int({ min: 1, max: 12 }),
-        expiryYear: faker.number.int({ min: 2024, max: 2030 }),
-        cardholderName: faker.person.fullName(),
-        brand: faker.helpers.arrayElement(['visa', 'mastercard', 'amex'])
+      cardLast4: faker.finance.creditCardNumber().slice(-4),
+      cardBrand: faker.helpers.arrayElement(['visa', 'mastercard', 'amex']),
+      expiryMonth: faker.number.int({ min: 1, max: 12 }),
+      expiryYear: faker.number.int({ min: 2025, max: 2030 }),
+      cardholderName: faker.person.fullName(),
+      billingAddress: {
+        address: faker.location.streetAddress(),
+        city: faker.location.city(),
+        postcode: faker.helpers.arrayElement(['SW1A 1AA', 'M1 1AA', 'B33 8TH']),
+        country: 'United Kingdom'
       },
-      billingAddress: this.generateAddress()
+      isDefault: true
     };
   }
 
@@ -383,7 +362,7 @@ class ComprehensiveSeed {
     );
 
     // Generate specifications
-    const specifications = generateSpecifications(category.slug, name, brand);
+    const specifications = generateSpecificationsForProduct(category.slug, name, { brand });
     
     // Generate SEO data
     const seoData = generateProductSEO({ name, brand, shortDescription: faker.commerce.productDescription() }, category.slug);
@@ -393,6 +372,7 @@ class ComprehensiveSeed {
 
     return {
       name,
+      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + faker.string.alphanumeric(4).toLowerCase(),
       subtitle: faker.commerce.productAdjective() + ' ' + faker.commerce.productMaterial(),
       description: faker.commerce.productDescription() + ' ' + faker.lorem.paragraph(),
       shortDescription: faker.commerce.productDescription(),
@@ -410,6 +390,7 @@ class ComprehensiveSeed {
       featured: faker.datatype.boolean(0.2), // 20% featured
       status: 'active',
       seo: seoData,
+      createdBy: this.users[0]._id, // Admin user
       createdAt: faker.date.between({ 
         from: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000), 
         to: new Date() 
@@ -619,7 +600,7 @@ class ComprehensiveSeed {
         { weight: 5, value: 'cancelled' }
       ]),
       payment: {
-        method: user.paymentMethods[0]?.id || 'pm_default',
+        method: user.paymentMethods[0]?.type || 'card',
         status: 'completed',
         amount: total
       },
@@ -642,13 +623,24 @@ class ComprehensiveSeed {
     console.log('⭐ Seeding reviews...');
     
     const reviews = [];
+    const userProductPairs = new Set(); // Track user-product combinations to avoid duplicates
     
     for (const product of this.products) {
       const reviewCount = faker.number.int(SEED_CONFIG.reviewsPerProduct);
+      const availableUsers = [...this.users.slice(1)]; // Skip admin, create copy
+      faker.helpers.shuffle(availableUsers); // Randomize user order
       
-      for (let i = 0; i < reviewCount; i++) {
-        const review = this.generateReview(product);
-        reviews.push(review);
+      let createdReviews = 0;
+      for (let i = 0; i < Math.min(reviewCount, availableUsers.length); i++) {
+        const user = availableUsers[i];
+        const pairKey = `${user._id}-${product._id}`;
+        
+        if (!userProductPairs.has(pairKey)) {
+          userProductPairs.add(pairKey);
+          const review = this.generateReview(product, user);
+          reviews.push(review);
+          createdReviews++;
+        }
       }
     }
 
@@ -659,8 +651,7 @@ class ComprehensiveSeed {
   /**
    * Generate realistic review
    */
-  generateReview(product) {
-    const user = faker.helpers.arrayElement(this.users.slice(1)); // Skip admin
+  generateReview(product, user) {
     const rating = faker.helpers.weightedArrayElement([
       { weight: 5, value: 1 },
       { weight: 10, value: 2 },
@@ -668,6 +659,52 @@ class ComprehensiveSeed {
       { weight: 35, value: 4 },
       { weight: 35, value: 5 }
     ]);
+
+    // Generate helpful votes array
+    const helpfulCount = faker.number.int({ min: 0, max: 15 });
+    const helpful = [];
+    const usedUsers = new Set();
+    
+    for (let i = 0; i < helpfulCount; i++) {
+      let randomUser;
+      do {
+        randomUser = faker.helpers.arrayElement(this.users);
+      } while (usedUsers.has(randomUser._id.toString()) && usedUsers.size < this.users.length);
+      
+      if (!usedUsers.has(randomUser._id.toString())) {
+        usedUsers.add(randomUser._id.toString());
+        helpful.push({
+          user: randomUser._id,
+          votedAt: faker.date.between({ 
+            from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 
+            to: new Date() 
+          })
+        });
+      }
+    }
+
+    // Generate not helpful votes array
+    const notHelpfulCount = faker.number.int({ min: 0, max: 5 });
+    const notHelpful = [];
+    const usedUsersNotHelpful = new Set([...usedUsers]); // Don't let same user vote both ways
+    
+    for (let i = 0; i < notHelpfulCount; i++) {
+      let randomUser;
+      do {
+        randomUser = faker.helpers.arrayElement(this.users);
+      } while (usedUsersNotHelpful.has(randomUser._id.toString()) && usedUsersNotHelpful.size < this.users.length);
+      
+      if (!usedUsersNotHelpful.has(randomUser._id.toString())) {
+        usedUsersNotHelpful.add(randomUser._id.toString());
+        notHelpful.push({
+          user: randomUser._id,
+          votedAt: faker.date.between({ 
+            from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 
+            to: new Date() 
+          })
+        });
+      }
+    }
 
     return {
       user: user._id,
@@ -681,7 +718,8 @@ class ComprehensiveSeed {
         { weight: 5, value: 'rejected' }
       ]),
       verified: faker.datatype.boolean(0.7), // 70% verified purchases
-      helpful: faker.number.int({ min: 0, max: 25 }),
+      helpful,
+      notHelpful,
       createdAt: faker.date.between({ 
         from: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), 
         to: new Date() 
@@ -714,24 +752,23 @@ class ComprehensiveSeed {
    * Generate realistic user activity
    */
   generateActivity(user) {
-    const actions = [
-      'page_view', 'product_view', 'search', 'cart_add', 'cart_remove',
-      'wishlist_add', 'wishlist_remove', 'user_login', 'profile_update'
+    const activityTypes = [
+      'product_view', 'product_search', 'cart_add', 'cart_remove',
+      'wishlist_add', 'wishlist_remove', 'login', 'profile_update'
     ];
 
-    const action = faker.helpers.arrayElement(actions);
+    const type = faker.helpers.arrayElement(activityTypes);
     const product = faker.helpers.arrayElement(this.products);
 
     return {
       user: user._id,
-      action,
-      resource: action.includes('product') ? 'Product' : action.includes('cart') ? 'Cart' : 'Page',
-      resourceId: action.includes('product') ? product._id : null,
+      type,
+      description: this.generateActivityDescription(type, product, user),
+      metadata: this.generateActivityDetails(type, product),
       ipAddress: faker.internet.ip(),
       userAgent: faker.internet.userAgent(),
-      details: this.generateActivityDetails(action, product),
       sessionId: faker.string.uuid(),
-      createdAt: faker.date.between({ 
+      timestamp: faker.date.between({ 
         from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 
         to: new Date() 
       })
@@ -739,29 +776,63 @@ class ComprehensiveSeed {
   }
 
   /**
+   * Generate activity description
+   */
+  generateActivityDescription(type, product, user) {
+    const descriptions = {
+      product_view: `Viewed product: ${product.name}`,
+      product_search: `Searched for: ${faker.commerce.productName()}`,
+      cart_add: `Added ${product.name} to cart`,
+      cart_remove: `Removed ${product.name} from cart`,
+      wishlist_add: `Added ${product.name} to wishlist`,
+      wishlist_remove: `Removed ${product.name} from wishlist`,
+      login: `User logged in`,
+      profile_update: `Updated profile information`
+    };
+
+    return descriptions[type] || `Performed ${type} action`;
+  }
+
+  /**
    * Generate activity details
    */
-  generateActivityDetails(action, product) {
+  generateActivityDetails(type, product) {
     const detailsMap = {
-      page_view: {
-        path: faker.helpers.arrayElement(['/products', '/categories', '/cart', '/profile']),
-        method: 'GET'
-      },
       product_view: {
         productId: product._id,
+        productName: product.name,
         source: faker.helpers.arrayElement(['search', 'category', 'recommendation'])
       },
-      search: {
+      product_search: {
         query: faker.commerce.productName(),
         resultsCount: faker.number.int({ min: 0, max: 50 })
       },
       cart_add: {
         productId: product._id,
+        productName: product.name,
         quantity: faker.number.int({ min: 1, max: 3 })
+      },
+      cart_remove: {
+        productId: product._id,
+        productName: product.name
+      },
+      wishlist_add: {
+        productId: product._id,
+        productName: product.name
+      },
+      wishlist_remove: {
+        productId: product._id,
+        productName: product.name
+      },
+      login: {
+        method: faker.helpers.arrayElement(['email', 'google', 'github'])
+      },
+      profile_update: {
+        fields: faker.helpers.arrayElements(['firstName', 'lastName', 'phone', 'preferences'], { min: 1, max: 3 })
       }
     };
 
-    return detailsMap[action] || {};
+    return detailsMap[type] || {};
   }
 
   /**
