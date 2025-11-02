@@ -275,7 +275,7 @@ export const cacheStats = (req, res, next) => {
   res.on('finish', () => {
     const cacheHeader = res.getHeader('X-Cache');
     if (cacheHeader) {
-      enhancedLogger.metrics('Cache operation', {
+      enhancedLogger.performance('Cache operation', {
         result: cacheHeader,
         endpoint: req.originalUrl,
         method: req.method,

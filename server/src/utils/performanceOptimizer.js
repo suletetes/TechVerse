@@ -380,7 +380,7 @@ export const performanceMonitor = {
       }
       
       // Track response time metrics
-      enhancedLogger.metrics('API response time', {
+      enhancedLogger.performance('API response time', {
         method: req.method,
         url: req.originalUrl,
         duration,
@@ -402,7 +402,7 @@ export const performanceMonitor = {
       external: Math.round(memUsage.external / 1024 / 1024)
     };
     
-    enhancedLogger.metrics('Memory usage', memUsageMB);
+    enhancedLogger.performance('Memory usage', memUsageMB);
     
     // Alert if memory usage is high
     if (memUsageMB.heapUsed > 500) { // 500MB threshold
