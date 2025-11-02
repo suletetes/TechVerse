@@ -17,6 +17,7 @@ import { User, Product, Category, Order, Review, Activity } from './src/models/i
 import { generateSpecificationsForProduct } from './src/utils/specificationGenerator.js';
 import { generateStockLevel, generatePricing } from './src/utils/stockPricingGenerator.js';
 import { generateProductSEO, generateProductImages } from './src/utils/seoGenerator.js';
+import passwordService from './src/services/passwordService.js';
 import logger from './src/utils/logger.js';
 
 // Seeding configuration
@@ -210,12 +211,13 @@ class ComprehensiveSeed {
     
     const users = [];
     
-    // Create admin user
+    // Create admin user with hashed password
+    const adminPassword = await passwordService.hashPassword('Admin123!');
     users.push({
       firstName: 'Admin',
       lastName: 'User',
       email: 'admin@techverse.com',
-      password: 'Admin123!',
+      password: adminPassword,
       role: 'admin',
       emailVerified: true,
       isActive: true,
@@ -235,6 +237,9 @@ class ComprehensiveSeed {
       }
     });
 
+    // Hash the user password once for all users
+    const userPassword = await passwordService.hashPassword('User123!');
+
     // Create regular users
     for (let i = 0; i < SEED_CONFIG.users - 1; i++) {
       const firstName = faker.person.firstName();
@@ -244,7 +249,7 @@ class ComprehensiveSeed {
         firstName,
         lastName,
         email: faker.internet.email({ firstName, lastName }).toLowerCase(),
-        password: 'User123!',
+        password: userPassword,
         role: 'user',
         phone: faker.helpers.arrayElement(['+447700900123', '+447700900456', '+447700900789']),
         dateOfBirth: faker.date.birthdate({ min: 18, max: 70, mode: 'age' }),

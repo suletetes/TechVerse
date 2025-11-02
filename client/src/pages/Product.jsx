@@ -95,14 +95,14 @@ const Product = () => {
             }));
         }
         
-        // Fallback media gallery
+        // Fallback media gallery with working placeholder images
         return [
             {
                 id: 'main-image',
                 type: 'image',
-                src: '../img/tablet-lg.jpg',
-                webp: '../img/tablet-lg.webp',
-                thumbnail: '../img/tablet-thumb.jpg',
+                src: 'https://picsum.photos/800/600?random=1',
+                webp: 'https://picsum.photos/800/600?random=1',
+                thumbnail: 'https://picsum.photos/200/150?random=1',
                 alt: `${currentProduct?.name || 'Product'} - Main View`,
                 title: 'Main View'
             }
