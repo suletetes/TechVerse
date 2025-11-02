@@ -328,11 +328,12 @@ export const ProductProvider = ({ children }) => {
       dispatch({ type: actionType, payload: response });
       return response;
     } catch (error) {
+      console.error('❌ Error loading products:', error);
       dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
       showNotification(error.message, 'error');
       throw error;
     }
-  }, [showNotification]); // Remove state dependencies
+  }, [showNotification]);
 
   // Load more products (pagination)
   const loadMoreProducts = useCallback(async (currentPagination, isCurrentlyLoading) => {

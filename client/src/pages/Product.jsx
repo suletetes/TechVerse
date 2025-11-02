@@ -1,0 +1,485 @@
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useParams, useNavigate } from 'react-router-dom';
+import { useProduct } from '../context';
+import { LoadingSpinner } from '../components/Common';
+import {
+    ProductMediaGallery,
+    ProductThumbnails,
+    ProductCategoryPane,
+    ProductInfo,
+    ProductOptions,
+    ProductQuantity,
+    ProductActions,
+    ProductIncludes,
+    TechnicalSpecs,
+    KeyFeatures,
+    ProductHighlights,
+    DetailedSpecs,
+    ReviewsSection,
+    RelatedProducts,
+    ProductFAQ
+} from "../components"
+
+// Import product-specific CSS enhancements
+import '../assets/css/product-enhancements.css';
+
+const Product = () => {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    
+    const {
+        currentProduct,
+        isLoading,
+        error,
+        loadProduct,
+        clearCurrentProduct
+    } = useProduct();
+
+    const [selectedColor, setSelectedColor] = useState('silver');
+    const [selectedStorage, setSelectedStorage] = useState('128GB');
+    const [isInWishlist, setIsInWishlist] = useState(false);
+    const [quantity, setQuantity] = useState(1);
+    const [selectedMedia, setSelectedMedia] = useState('main-image');
+    const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+
+    // Memoized options based on product data from database
+    const colorOptions = useMemo(() => {
+        if (currentProduct?.brand === 'Apple') {
+            return [
+                { id: 'silver', name: 'Silver', class: 'silver-dot' },
+                { id: 'space-gray', name: 'Space Gray', class: 'space-gray-dot' },
+                { id: 'gold', name: 'Gold', class: 'gold-dot' }
+            ];
+        } else if (currentProduct?.brand === 'Samsung') {
+            return [
+                { id: 'phantom-black', name: 'Phantom Black', class: 'black-dot' },
+                { id: 'phantom-silver', name: 'Phantom Silver', class: 'silver-dot' }
+            ];
+        }
+        return [
+            { id: 'silver', name: 'Silver', class: 'silver-dot' },
+            { id: 'blue', name: 'Blue', class: 'blue-dot' },
+            { id: 'white', name: 'White', class: 'white-dot' },
+            { id: 'black', name: 'Black', class: '' },
+            { id: 'red', name: 'Red', class: 'red-dot' },
+            { id: 'green', name: 'Green', class: 'green-dot' }
+        ];
+    }, [currentProduct?.brand]);
+
+    const storageOptions = useMemo(() => {
+        if (currentProduct?.category?.name?.includes('Smartphones') || currentProduct?.category?.name?.includes('Tablets')) {
+            return [
+                { id: '128GB', name: '128GB', price: currentProduct?.price || 0 },
+                { id: '256GB', name: '256GB', price: (currentProduct?.price || 0) + 100 },
+                { id: '512GB', name: '512GB', price: (currentProduct?.price || 0) + 200 }
+            ];
+        }
+        return [
+            { id: '128GB', name: '128GB', price: currentProduct?.price || 1999 },
+            { id: '256GB', name: '256GB', price: (currentProduct?.price || 1999) + 100 },
+            { id: '512GB', name: '512GB', price: (currentProduct?.price || 1999) + 200 }
+        ];
+    }, [currentProduct?.category?.name, currentProduct?.price]);
+
+    // Media gallery from database with fallback
+    const mediaGallery = useMemo(() => {
+        if (currentProduct?.images && currentProduct.images.length > 0) {
+            return currentProduct.images.map((image, index) => ({
+                id: image.id || `image-${index}`,
+                type: 'image',
+                src: image.url,
+                webp: image.webp || image.url,
+                thumbnail: image.thumbnail || image.url,
+                alt: image.alt || `${currentProduct.name} - View ${index + 1}`,
+                title: image.title || `View ${index + 1}`
+            }));
+        }
+        
+        // Fallback media gallery
+        return [
+            {
+                id: 'main-image',
+                type: 'image',
+                src: '../img/tablet-lg.jpg',
+                webp: '../img/tablet-lg.webp',
+                thumbnail: '../img/tablet-thumb.jpg',
+                alt: `${currentProduct?.name || 'Product'} - Main View`,
+                title: 'Main View'
+            }
+        ];
+    }, [currentProduct?.images, currentProduct?.name]);
+
+    // Memoized price calculation
+    const getCurrentPrice = useMemo(() => {
+        const storage = storageOptions.find(s => s.id === selectedStorage);
+        return storage ? storage.price : (currentProduct?.price || 1999);
+    }, [selectedStorage, storageOptions, currentProduct?.price]);
+
+    const handleAddToCart = useCallback(() => {
+        // Add to cart logic here
+        console.log('Added to cart:', {
+            product: currentProduct?.name || 'Product',
+            color: selectedColor,
+            storage: selectedStorage,
+            quantity: quantity,
+            price: getCurrentPrice
+        });
+        // You can add toast notification here
+        alert('Product added to cart!');
+    }, [currentProduct?.name, selectedColor, selectedStorage, quantity, getCurrentPrice]);
+
+    const handleBuyNow = useCallback(() => {
+        // Buy now logic - could add to cart and redirect to checkout
+        handleAddToCart();
+        // Redirect to payment page
+    }, [handleAddToCart]);
+
+    const toggleWishlist = useCallback(() => {
+        setIsInWishlist(!isInWishlist);
+        // Add wishlist logic here
+        console.log(isInWishlist ? 'Removed from wishlist' : 'Added to wishlist');
+    }, [isInWishlist]);
+
+    const handleMediaSelect = useCallback((mediaId) => {
+        setSelectedMedia(mediaId);
+        setIsVideoPlaying(false);
+    }, []);
+
+    const handlePreviousMedia = useCallback(() => {
+        const currentIndex = mediaGallery.findIndex(media => media.id === selectedMedia);
+        const previousIndex = currentIndex > 0 ? currentIndex - 1 : mediaGallery.length - 1;
+        handleMediaSelect(mediaGallery[previousIndex].id);
+    }, [mediaGallery, selectedMedia, handleMediaSelect]);
+
+    const handleNextMedia = useCallback(() => {
+        const currentIndex = mediaGallery.findIndex(media => media.id === selectedMedia);
+        const nextIndex = currentIndex < mediaGallery.length - 1 ? currentIndex + 1 : 0;
+        handleMediaSelect(mediaGallery[nextIndex].id);
+    }, [mediaGallery, selectedMedia, handleMediaSelect]);
+
+    // Load product on mount
+    useEffect(() => {
+        console.log('Product component mounted with id:', id);
+        if (id) {
+            console.log('Loading product with id:', id);
+            loadProduct(id).then(result => {
+                console.log('Product loaded successfully:', result);
+            }).catch(error => {
+                console.error('Error loading product:', error);
+            });
+        }
+        
+        return () => {
+            clearCurrentProduct();
+        };
+    }, [id, loadProduct, clearCurrentProduct]);
+
+    // Initialize variants from product data
+    useEffect(() => {
+        if (currentProduct) {
+            // Set default color and storage based on product type
+            if (currentProduct.brand === 'Apple') {
+                setSelectedColor('silver');
+            } else if (currentProduct.brand === 'Samsung') {
+                setSelectedColor('phantom-black');
+            }
+            
+            if (currentProduct.category?.name?.includes('Smartphones') || currentProduct.category?.name?.includes('Tablets')) {
+                setSelectedStorage('128GB');
+            }
+        }
+    }, [currentProduct]);
+
+    // Debug logging
+    console.log('Product component state:', { 
+        id, 
+        currentProduct: currentProduct ? 'exists' : 'null', 
+        isLoading, 
+        error 
+    });
+    
+    if (currentProduct) {
+        console.log('Product data structure:', {
+            name: currentProduct.name,
+            price: currentProduct.price,
+            category: currentProduct.category,
+            specifications: currentProduct.specifications?.length || 0,
+            images: currentProduct.images?.length || 0,
+            brand: currentProduct.brand,
+            stock: currentProduct.stock
+        });
+    }
+
+    // Loading state
+    if (isLoading && !currentProduct) {
+        console.log('Showing loading state');
+        return (
+            <div className="bloc bgc-5700 none full-width-bloc l-bloc" id="product-loading">
+                <div className="container bloc-md-sm bloc-md bloc-lg-md">
+                    <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                        <LoadingSpinner size="lg" />
+                        <div className="ms-3">
+                            <p className="tc-6533">Loading product {id}...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="bloc bgc-5700 none full-width-bloc l-bloc" id="product-error">
+                <div className="container bloc-md-sm bloc-md bloc-lg-md">
+                    <div className="text-center py-5">
+                        <div className="alert alert-danger">
+                            <h4>Error Loading Product</h4>
+                            <p>{error}</p>
+                            <div className="mt-3">
+                                <button
+                                    className="btn btn-primary me-2"
+                                    onClick={() => loadProduct(id)}
+                                >
+                                    Try Again
+                                </button>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => navigate('/products')}
+                                >
+                                    Browse Products
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Product not found
+    if (!currentProduct && !isLoading) {
+        return (
+            <div className="bloc bgc-5700 none full-width-bloc l-bloc" id="product-not-found">
+                <div className="container bloc-md-sm bloc-md bloc-lg-md">
+                    <div className="text-center py-5">
+                        <div className="tc-6533">
+                            <i className="fa fa-search fa-3x mb-3 opacity-50"></i>
+                            <h4>Product Not Found</h4>
+                            <p>The product you're looking for doesn't exist or has been removed.</p>
+                            <button
+                                className="btn btn-c-2101 btn-rd"
+                                onClick={() => navigate('/products')}
+                            >
+                                Browse Products
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    const product = currentProduct;
+
+    const handleSubmitReview = (reviewData) => {
+        console.log('Review submitted for Tablet Air:', reviewData);
+        // Handle review submission logic here
+        // You could send this to your backend API
+        const reviewWithProduct = {
+            ...reviewData,
+            productId: 'tablet-air-001',
+            productName: 'Tablet Air',
+            selectedColor,
+            selectedStorage,
+            submittedAt: new Date().toISOString()
+        };
+        console.log('Complete review data:', reviewWithProduct);
+        alert(`Thank you for your ${reviewData.rating}-star review of the Tablet Air!`);
+    };
+
+    return (
+        <section className="bloc l-bloc full-width-bloc" id="bloc-7">
+            <div className="container bloc-md bloc-lg-md">
+                <div className="row">
+                    {/* Category Navigation Pane - Full Width
+                    <div className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mb-4">
+                        <ProductCategoryPane 
+                            category={product?.category || 'Products'}
+                            subcategory={typeof product?.category === 'object' ? product.category.name : product?.category || 'All Products'}
+                            breadcrumbs={[
+                                { name: 'Home', path: '/' },
+                                { name: 'Products', path: '/products' },
+                                ...(product?.category ? [{ 
+                                    name: typeof product.category === 'object' ? product.category.name : product.category, 
+                                    path: `/products?category=${typeof product.category === 'object' ? product.category.slug : product.category}` 
+                                }] : []),
+                                { name: product?.name || 'Product', path: `/product/${id}` }
+                            ]}
+                            relatedCategories={[
+                                { name: 'Similar Products', path: `/products?category=${typeof product?.category === 'object' ? product.category.slug : product?.category}`, count: 12 },
+                                { name: 'Same Brand', path: `/products?brand=${product?.brand}`, count: 8 },
+                                { name: 'Price Range', path: `/products?minPrice=${Math.floor((product?.price || 0) * 0.8)}&maxPrice=${Math.ceil((product?.price || 0) * 1.2)}`, count: 15 }
+                            ]}
+                        />
+                    </div>
+                  */}
+                  
+                    {/* Title */}
+                    <div
+                        className="text-start offset-lg-1 col-lg-10 mb-4 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1">
+                        <h1 className="tc-6533 mb-0">{product?.name || 'Product'}</h1>
+                    </div>
+
+                    {/* Product Media Gallery */}
+                    <div
+                        className="text-start offset-lg-1 mb-2 col-lg-6 mb-md-2 mb-lg-0 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1">
+                        {/* Main Media Display */}
+                        <ProductMediaGallery
+                            mediaGallery={mediaGallery}
+                            selectedMedia={selectedMedia}
+                            isVideoPlaying={isVideoPlaying}
+                            onMediaSelect={handleMediaSelect}
+                            onVideoToggle={setIsVideoPlaying}
+                            onPreviousMedia={handlePreviousMedia}
+                            onNextMedia={handleNextMedia}
+                        />
+
+                        {/* Media Thumbnails */}
+                        <ProductThumbnails
+                            mediaGallery={mediaGallery}
+                            selectedMedia={selectedMedia}
+                            onMediaSelect={handleMediaSelect}
+                            onPreviousMedia={handlePreviousMedia}
+                            onNextMedia={handleNextMedia}
+                        />
+
+                        {/* Quick Technical Specs */}
+                        <TechnicalSpecs 
+                            specifications={product?.specifications?.slice(0, 4) || []}
+                        />
+
+                        {/* Key Features */}
+                        <KeyFeatures 
+                            features={product?.features || 
+                                // Generate features from specifications if no explicit features
+                                product?.specifications?.slice(0, 4).map(spec => `${spec.name}: ${spec.value}`) || 
+                                ['High-quality product', 'Premium materials', 'Advanced technology', 'Excellent performance']
+                            }
+                        />
+                    </div>
+
+                    {/* Right Column - Product Details and Customer Reviews */}
+                    <div className="col-lg-4 col-md-10 offset-md-1 offset-lg-0 col-sm-10 offset-sm-1 col-10 offset-1">
+                        {/* Product Details */}
+                        <div className="text-start mb-4">
+                            <div className="store-card outline-card fill-card">
+                                <ProductInfo
+                                    price={getCurrentPrice}
+                                    comparePrice={product?.compareAtPrice}
+                                    rating={product?.rating}
+                                    stock={product?.stock}
+                                    brand={product?.brand}
+                                    isInWishlist={isInWishlist}
+                                    onToggleWishlist={toggleWishlist}
+                                />
+                                <p>
+                                    {product?.description || product?.shortDescription || 'Product description goes here...'}
+                                </p>
+
+                                <div className="divider-h"></div>
+
+                                <ProductOptions
+                                    colorOptions={colorOptions}
+                                    storageOptions={storageOptions}
+                                    selectedColor={selectedColor}
+                                    selectedStorage={selectedStorage}
+                                    onColorChange={setSelectedColor}
+                                    onStorageChange={setSelectedStorage}
+                                />
+
+                                <div className="divider-h"></div>
+
+                                <ProductQuantity
+                                    quantity={quantity}
+                                    onQuantityChange={setQuantity}
+                                />
+
+                                <ProductActions
+                                    totalPrice={getCurrentPrice * quantity}
+                                    isOutOfStock={product?.stock?.quantity === 0}
+                                    onBuyNow={handleBuyNow}
+                                    onAddToCart={handleAddToCart}
+                                />
+
+                                <ProductIncludes />
+                            </div>
+                        </div>
+
+                        {/* Product Highlights */}
+                        <ProductHighlights />
+                    </div>
+
+                    {/* Customer Reviews Section - Full Width Below */}
+                    <div
+                        className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
+                        <ReviewsSection 
+                            showWriteReview={false} 
+                            onSubmitReview={handleSubmitReview}
+                            productInfo={{
+                                id: product?._id || 'product-001',
+                                name: product?.name || 'Product',
+                                variant: `${selectedColor} - ${selectedStorage}`,
+                                image: product?.images?.[0]?.url || '../img/tablet-thumb.jpg'
+                            }}
+                        />
+                    </div>
+
+                    {/* Detailed Specifications Section - Full Width */}
+                    <div
+                        className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
+                        <DetailedSpecs 
+                            productName={product?.name || 'Product'}
+                            specifications={product?.specifications ? 
+                                // Convert database specifications to component format
+                                product.specifications.reduce((acc, spec) => {
+                                    const category = spec.category || 'General';
+                                    if (!acc[category]) acc[category] = [];
+                                    acc[category].push({
+                                        label: spec.name,
+                                        value: spec.value,
+                                        highlight: spec.category === 'performance' || spec.category === 'display'
+                                    });
+                                    return acc;
+                                }, {}) :
+                                // Fallback specifications
+                                {
+                                    "General": [
+                                        { label: 'Brand', value: product?.brand || 'Unknown', highlight: true },
+                                        { label: 'Price', value: `$${product?.price || 0}` },
+                                        { label: 'Category', value: typeof product?.category === 'object' ? product.category.name : product?.category || 'Product' }
+                                    ]
+                                }
+                            }
+                        />
+                    </div>
+
+                    {/* Related Products Section */}
+                    <div
+                        className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
+                        <RelatedProducts />
+                    </div>
+
+                    {/* FAQ Section 
+                    <div
+                        className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-4">
+                        <ProductFAQ />
+                    </div>
+                    */}
+                </div>
+            </div>
+        </section>
+    );
+};
+
+export default Product;

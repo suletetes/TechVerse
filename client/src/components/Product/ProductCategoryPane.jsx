@@ -2,22 +2,35 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 const ProductCategoryPane = ({ 
-    category = 'Tablets', 
-    subcategory = 'iPad & Tablets',
+    category = 'Products', 
+    subcategory = 'All Products',
     breadcrumbs = [
         { name: 'Home', path: '/' },
-        { name: 'Electronics', path: '/category/electronics' },
-        { name: 'Tablets', path: '/category/tablets' },
-        { name: 'iPad & Tablets', path: '/category/tablets/ipad' }
+        { name: 'Products', path: '/products' }
     ],
-    relatedCategories = [
-        { name: 'iPad Pro', path: '/category/tablets/ipad-pro', count: 12 },
-        { name: 'iPad Air', path: '/category/tablets/ipad-air', count: 8 },
-        { name: 'iPad Mini', path: '/category/tablets/ipad-mini', count: 6 },
-        { name: 'Android Tablets', path: '/category/tablets/android', count: 15 },
-        { name: 'Tablet Accessories', path: '/category/tablets/accessories', count: 24 }
-    ]
+    relatedCategories = []
 }) => {
+    // Safely extract category name - handle both string and object types
+    const getCategoryName = (cat) => {
+        if (typeof cat === 'string') return cat;
+        if (typeof cat === 'object' && cat !== null) {
+            return cat.name || cat.title || cat.slug || 'Category';
+        }
+        return 'Category';
+    };
+
+    // Safely extract category slug for URLs
+    const getCategorySlug = (cat) => {
+        if (typeof cat === 'string') return cat.toLowerCase().replace(/\s+/g, '-');
+        if (typeof cat === 'object' && cat !== null) {
+            return cat.slug || cat.name?.toLowerCase().replace(/\s+/g, '-') || 'category';
+        }
+        return 'category';
+    };
+
+    const categoryName = getCategoryName(category);
+    const categorySlug = getCategorySlug(category);
+
     return (
         <div className="category-pane mb-4">
             {/* Breadcrumb Navigation */}
@@ -26,7 +39,7 @@ const ProductCategoryPane = ({
                     <ol className="breadcrumb mb-0 bg-light rounded-3 p-3">
                         {breadcrumbs.map((crumb, index) => (
                             <li 
-                                key={crumb.name}
+                                key={crumb.name || index}
                                 className={`breadcrumb-item ${index === breadcrumbs.length - 1 ? 'active' : ''}`}
                                 {...(index === breadcrumbs.length - 1 ? { 'aria-current': 'page' } : {})}
                             >
@@ -56,24 +69,24 @@ const ProductCategoryPane = ({
                             </svg>
                         </div>
                         <div>
-                            <h5 className="mb-1 tc-6533 fw-bold">{category}</h5>
-                            <p className="text-muted small mb-0">Browse our {category.toLowerCase()} collection</p>
+                            <h5 className="mb-1 tc-6533 fw-bold">{categoryName}</h5>
+                            <p className="text-muted small mb-0">Browse our {categoryName.toLowerCase()} collection</p>
                         </div>
                     </div>
 
                     {/* Quick Category Actions */}
                     <div className="d-flex gap-2 mb-3">
                         <Link 
-                            to={`/category/${category.toLowerCase()}`}
+                            to={`/products?category=${categorySlug}`}
                             className="btn btn-outline-primary btn-sm btn-rd"
                         >
                             <svg width="16" height="16" viewBox="0 0 24 24" className="me-1">
                                 <path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
                             </svg>
-                            View All {category}
+                            View All {categoryName}
                         </Link>
                         <Link 
-                            to="/category"
+                            to="/categories"
                             className="btn btn-outline-secondary btn-sm btn-rd"
                         >
                             <svg width="16" height="16" viewBox="0 0 24 24" className="me-1">
@@ -84,22 +97,24 @@ const ProductCategoryPane = ({
                     </div>
 
                     {/* Related Categories */}
-                    <div className="related-categories">
-                        <h6 className="fw-semibold mb-3 text-muted">Related Categories</h6>
-                        <div className="row g-2">
-                            {relatedCategories.map((relatedCat) => (
-                                <div key={relatedCat._id || relatedCat.name} className="col-12">
-                                    <Link 
-                                        to={relatedCat.path}
-                                        className="d-flex justify-content-between align-items-center p-2 rounded-2 text-decoration-none hover-bg-light border border-light"
-                                    >
-                                        <span className="text-dark small">{relatedCat.name}</span>
-                                        <span className="badge bg-light text-muted">{relatedCat.count}</span>
-                                    </Link>
-                                </div>
-                            ))}
+                    {relatedCategories && relatedCategories.length > 0 && (
+                        <div className="related-categories">
+                            <h6 className="fw-semibold mb-3 text-muted">Related Categories</h6>
+                            <div className="row g-2">
+                                {relatedCategories.map((relatedCat, index) => (
+                                    <div key={relatedCat._id || relatedCat.name || index} className="col-12">
+                                        <Link 
+                                            to={relatedCat.path || `/products?category=${getCategorySlug(relatedCat)}`}
+                                            className="d-flex justify-content-between align-items-center p-2 rounded-2 text-decoration-none hover-bg-light border border-light"
+                                        >
+                                            <span className="text-dark small">{getCategoryName(relatedCat)}</span>
+                                            <span className="badge bg-light text-muted">{relatedCat.count || 0}</span>
+                                        </Link>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Category Features */}
                     <div className="category-features mt-4 pt-3 border-top">

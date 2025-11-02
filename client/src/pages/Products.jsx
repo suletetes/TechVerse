@@ -21,6 +21,8 @@ const Products = () => {
         clearFilters: clearProductFilters
     } = useProduct();
 
+    // Remove debug logging for performance
+
     // Local state
     const [viewMode, setViewMode] = useState("grid");
     const [localFilters, setLocalFilters] = useState({
@@ -48,7 +50,7 @@ const Products = () => {
             order: 'desc'
         };
         loadProducts(initialFilters);
-    }, []); // Only run once on mount
+    }, [loadProducts]); // Add loadProducts as dependency
 
     // Debounced search function
     const debouncedLoadProducts = useCallback(
@@ -248,6 +250,8 @@ const Products = () => {
                         resultsCount={pagination.total || (Array.isArray(products) ? products.length : 0)}
                         isLoading={isLoading}
                     />
+
+                    {/* Remove debug info for production */}
 
                     {/* Products Grid/List */}
                     {(!Array.isArray(products) || products.length === 0) && !isLoading ? (
