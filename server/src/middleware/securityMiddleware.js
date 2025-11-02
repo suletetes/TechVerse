@@ -295,6 +295,44 @@ export const inputSanitization = (req, res, next) => {
 };
 
 /**
+ * Static asset 404 handler - reduces noise from missing images/assets
+ */
+export const staticAsset404Handler = (req, res, next) => {
+  // Check if this is a request for a static asset
+  const isStaticAsset = /\.(jpg|jpeg|png|gif|webp|svg|ico|css|js|woff|woff2|ttf|eot)$/i.test(req.originalUrl);
+  
+  if (isStaticAsset) {
+    // Log once per unique missing asset (not every request)
+    const assetPath = req.originalUrl;
+    const cacheKey = `missing_asset_${assetPath}`;
+    
+    // Simple in-memory cache to avoid spam logging
+    if (!staticAsset404Handler._loggedAssets) {
+      staticAsset404Handler._loggedAssets = new Set();
+    }
+    
+    if (!staticAsset404Handler._loggedAssets.has(cacheKey)) {
+      staticAsset404Handler._loggedAssets.add(cacheKey);
+      enhancedLogger.warn('Static asset not found', {
+        url: assetPath,
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        category: 'static_assets'
+      });
+    }
+    
+    // Return 404 for static assets without further processing
+    return res.status(404).json({
+      success: false,
+      message: 'Asset not found',
+      code: 'ASSET_NOT_FOUND'
+    });
+  }
+  
+  next();
+};
+
+/**
  * Suspicious activity detection middleware
  */
 export const suspiciousActivityDetector = (req, res, next) => {
@@ -302,17 +340,25 @@ export const suspiciousActivityDetector = (req, res, next) => {
   const userAgent = req.get('User-Agent');
   const endpoint = req.originalUrl;
 
+  // Skip suspicious activity detection for static assets
+  const isStaticAsset = /\.(jpg|jpeg|png|gif|webp|svg|ico|css|js|woff|woff2|ttf|eot)$/i.test(endpoint);
+  if (isStaticAsset) {
+    return next();
+  }
+
   // Check for suspicious patterns
   const suspiciousIndicators = [];
 
-  // Missing or suspicious User-Agent
-  if (!userAgent || userAgent.length < 10 ||
-    /bot|crawler|spider|scraper/i.test(userAgent)) {
+  // Missing or suspicious User-Agent (but allow legitimate browsers)
+  if (!userAgent || userAgent.length < 10) {
+    suspiciousIndicators.push('missing_user_agent');
+  } else if (/bot|crawler|spider|scraper/i.test(userAgent) && 
+             !/googlebot|bingbot|slurp|duckduckbot/i.test(userAgent)) {
     suspiciousIndicators.push('suspicious_user_agent');
   }
 
   // Unusual request patterns
-  if (req.method === 'POST' && !req.body) {
+  if (req.method === 'POST' && !req.body && !req.is('multipart/form-data')) {
     suspiciousIndicators.push('empty_post_body');
   }
 
@@ -328,8 +374,8 @@ export const suspiciousActivityDetector = (req, res, next) => {
     suspiciousIndicators.push('unauthenticated_admin_access');
   }
 
-  // Track suspicious activity
-  if (suspiciousIndicators.length > 0) {
+  // Track suspicious activity (only if significant indicators)
+  if (suspiciousIndicators.length > 1) {
     securityMonitor.trackSuspiciousRequest(identifier, {
       endpoint,
       userAgent,
@@ -393,35 +439,62 @@ export const trackFailedAuth = (req, res, next) => {
  */
 export const securityAuditLogger = (req, res, next) => {
   const startTime = Date.now();
+  
+  // Skip logging for static assets and common non-critical requests
+  const skipLogging = (url, method) => {
+    // Skip static assets
+    if (/\.(jpg|jpeg|png|gif|webp|svg|ico|css|js|woff|woff2|ttf|eot)$/i.test(url)) {
+      return true;
+    }
+    
+    // Skip health checks and monitoring endpoints
+    if (url.includes('/health') || url.includes('/ping') || url.includes('/status')) {
+      return true;
+    }
+    
+    // Skip favicon requests
+    if (url.includes('favicon')) {
+      return true;
+    }
+    
+    return false;
+  };
 
-  // Log request start
-  enhancedLogger.audit('Request started', {
-    method: req.method,
-    url: req.originalUrl,
-    ip: req.ip,
-    userAgent: req.get('User-Agent'),
-    userId: req.user?._id,
-    requestId: req.id,
-    timestamp: new Date().toISOString()
-  });
+  const shouldLog = !skipLogging(req.originalUrl, req.method);
+
+  // Log request start only for important requests
+  if (shouldLog) {
+    enhancedLogger.audit('Request started', {
+      method: req.method,
+      url: req.originalUrl,
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      userId: req.user?._id,
+      requestId: req.id,
+      timestamp: new Date().toISOString()
+    });
+  }
 
   // Override res.end to log response
   const originalEnd = res.end;
   res.end = function (...args) {
     const duration = Date.now() - startTime;
 
-    enhancedLogger.audit('Request completed', {
-      method: req.method,
-      url: req.originalUrl,
-      statusCode: res.statusCode,
-      duration,
-      ip: req.ip,
-      userId: req.user?._id,
-      requestId: req.id,
-      timestamp: new Date().toISOString()
-    });
+    // Always log completed requests for important endpoints or errors
+    if (shouldLog || res.statusCode >= 400) {
+      enhancedLogger.audit('Request completed', {
+        method: req.method,
+        url: req.originalUrl,
+        statusCode: res.statusCode,
+        duration,
+        ip: req.ip,
+        userId: req.user?._id,
+        requestId: req.id,
+        timestamp: new Date().toISOString()
+      });
+    }
 
-    // Track performance issues
+    // Track performance issues (always check, regardless of logging)
     if (duration > 5000) { // 5 seconds threshold
       enhancedLogger.performance('Slow request detected', {
         method: req.method,
@@ -456,6 +529,7 @@ export default {
   sensitiveRateLimit,
   securityHeaders,
   inputSanitization,
+  staticAsset404Handler,
   suspiciousActivityDetector,
   trackFailedAuth,
   securityAuditLogger

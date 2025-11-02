@@ -40,6 +40,7 @@ import {
   apiRateLimit,
   securityHeaders,
   inputSanitization,
+  staticAsset404Handler,
   suspiciousActivityDetector,
   trackFailedAuth,
   securityAuditLogger
@@ -140,6 +141,9 @@ app.use(cacheStats);
 
 // Image optimization middleware for static files
 app.use(imageOptimizer);
+
+// Handle static asset 404s early to reduce noise
+app.use(staticAsset404Handler);
 
 // Security monitoring middleware
 app.use(securityAuditLogger);
