@@ -12,10 +12,10 @@ class ProductService extends BaseApiService {
       serviceName: 'ProductService',
       baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
       endpoints: API_ENDPOINTS.PRODUCTS,
-      cacheEnabled: true,
+      cacheEnabled: false, // Disable caching for now to avoid issues
       retryEnabled: true,
       defaultOptions: {
-        timeout: 15000 // Products can have larger payloads
+        timeout: 15000
       }
     });
     
@@ -28,100 +28,108 @@ class ProductService extends BaseApiService {
   // Get all products with filters, sorting, and pagination
   async getProducts(params = {}) {
     try {
-    const {
-      page = 1,
-      limit = 20,
-      sort = 'newest',
-      order = 'desc',
-      category,
-      minPrice,
-      maxPrice,
-      inStock,
-      featured,
-      search,
-      brand,
-      ...otherParams
-    } = params;
+      const {
+        page = 1,
+        limit = 20,
+        sort = 'newest',
+        order = 'desc',
+        category,
+        minPrice,
+        maxPrice,
+        inStock,
+        featured,
+        search,
+        brand,
+        ...otherParams
+      } = params;
 
-    // Handle search queries
-    if (search !== undefined && search !== null) {
-      const trimmedSearch = search.toString().trim();
-      
-      if (trimmedSearch.length >= 2) {
-        // Use search endpoint for valid search queries
-        try {
-          return this.searchProducts(trimmedSearch, {
-            page,
-            limit,
-            sort,
-            category,
-            minPrice,
-            maxPrice,
-            brand,
-            ...otherParams
-          });
-        } catch (error) {
-          console.warn('Search failed, falling back to regular products:', error.message);
-          // Fall through to regular product loading
-        }
-      } else if (trimmedSearch.length > 0) {
-        console.log('Returning empty results for short search query');
-        // Return empty results for short search queries
-        return {
-          success: true,
-          data: {
-            products: [],
-            pagination: {
-              currentPage: page,
-              totalPages: 0,
-              totalProducts: 0,
-              hasNextPage: false,
-              hasPrevPage: false,
-              limit
+      // Handle search queries
+      if (search !== undefined && search !== null) {
+        const trimmedSearch = search.toString().trim();
+        
+        if (trimmedSearch.length >= 2) {
+          // Use search endpoint for valid search queries
+          try {
+            return this.searchProducts(trimmedSearch, {
+              page,
+              limit,
+              sort,
+              category,
+              minPrice,
+              maxPrice,
+              brand,
+              ...otherParams
+            });
+          } catch (error) {
+            console.warn('Search failed, falling back to regular products:', error.message);
+            // Fall through to regular product loading
+          }
+        } else if (trimmedSearch.length > 0) {
+          // Return empty results for short search queries
+          return {
+            success: true,
+            data: {
+              products: [],
+              pagination: {
+                currentPage: page,
+                totalPages: 0,
+                totalProducts: 0,
+                hasNextPage: false,
+                hasPrevPage: false,
+                limit
+              }
             }
-          }
-        };
-      }
-      // If search is empty string, continue to regular product loading
-      console.log('Search is empty, continuing to regular product loading');
-    }
-
-    const queryParams = {
-      page,
-      limit,
-      sort,
-      order,
-      ...otherParams
-    };
-
-    // Add optional filters
-    if (category) queryParams.category = category;
-    if (minPrice !== undefined) queryParams.minPrice = minPrice;
-    if (maxPrice !== undefined) queryParams.maxPrice = maxPrice;
-    if (inStock !== undefined) queryParams.inStock = inStock;
-    if (featured !== undefined) queryParams.featured = featured;
-    if (brand) queryParams.brand = brand;
-
-    return this.getPaginated(this.endpoints.BASE, page, limit, {
-      params: queryParams
-    });
-    } catch (error) {
-      console.error('getProducts error:', error);
-      // Return empty results as fallback
-      return {
-        success: true,
-        data: {
-          products: [],
-          pagination: {
-            currentPage: params.page || 1,
-            totalPages: 0,
-            totalProducts: 0,
-            hasNextPage: false,
-            hasPrevPage: false,
-            limit: params.limit || 20
-          }
+          };
         }
+      }
+
+      const queryParams = {
+        page,
+        limit,
+        sort,
+        order,
+        ...otherParams
       };
+
+      // Add optional filters
+      if (category) queryParams.category = category;
+      if (minPrice !== undefined) queryParams.minPrice = minPrice;
+      if (maxPrice !== undefined) queryParams.maxPrice = maxPrice;
+      if (inStock !== undefined) queryParams.inStock = inStock;
+      if (featured !== undefined) queryParams.featured = featured;
+      if (brand) queryParams.brand = brand;
+
+      // Make direct API call instead of using complex service layer
+      const baseURL = this.baseURL || 'http://localhost:5000/api';
+      const endpoint = '/products';
+      
+      const searchParams = new URLSearchParams();
+      Object.entries(queryParams).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, value.toString());
+        }
+      });
+      
+      const url = `${baseURL}${endpoint}?${searchParams.toString()}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+      
+    } catch (error) {
+      console.error('❌ getProducts error:', error);
+      throw error; // Don't return empty results, let the error bubble up
     }
   }
 

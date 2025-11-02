@@ -375,11 +375,13 @@ const Product = () => {
                         <div className="text-start mb-4">
                             <div className="store-card outline-card fill-card">
                                 <ProductInfo
+                                    product={product}
                                     price={getCurrentPrice}
-                                    comparePrice={product?.compareAtPrice}
-                                    rating={product?.rating}
-                                    stock={product?.stock}
-                                    brand={product?.brand}
+                                    originalPrice={product?.compareAtPrice}
+                                    rating={product?.rating?.average}
+                                    reviewCount={product?.rating?.count}
+                                    inStock={product?.stock?.quantity > 0}
+                                    stockCount={product?.stock?.quantity}
                                     isInWishlist={isInWishlist}
                                     onToggleWishlist={toggleWishlist}
                                 />
