@@ -6,7 +6,7 @@ import { LoadingSpinner } from '../../components/Common';
 import { tokenManager } from '../../utils/tokenManager.js';
 import {
     AdminSidebar,
-    AdminHeader,
+    // AdminHeader removed
     AdminDashboard,
     AdminProducts,
     AdminOrders,
@@ -602,12 +602,7 @@ const AdminProfile = () => {
 
                     {/* Main Content */}
                     <div className="col-lg-9 col-xl-10">
-                        <AdminHeader
-                            activeTab={activeTab}
-                            adminData={adminData}
-                            sidebarOpen={sidebarOpen}
-                            setSidebarOpen={setSidebarOpen}
-                        />
+                        {/* AdminHeader removed for cleaner interface */}
 
                         <div className="p-4">
                             {/* Enhanced Notifications Bar */}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AdminHeader } from '../../components/Admin';
+// AdminHeader removed for cleaner interface
 import { OrdersTable } from '../../components/tables';
 
 const AdminOrderManagement = () => {
@@ -109,12 +109,7 @@ const AdminOrderManagement = () => {
 
     return (
         <div className="min-vh-100 bg-light">
-            <AdminHeader 
-                activeTab="orders"
-                adminData={adminData}
-                sidebarOpen={false}
-                setSidebarOpen={() => {}}
-            />
+            {/* AdminHeader removed for cleaner interface */}
             
             <div className="container-fluid p-4">
                 {/* Page Header */}
