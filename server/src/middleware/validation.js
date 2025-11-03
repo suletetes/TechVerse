@@ -14,18 +14,13 @@ export const validate = (req, res, next) => {
       location: error.location
     }));
     
-    // Enhanced debugging
-    console.log('=== VALIDATION FAILED DEBUG ===');
-    console.log('Request body:', req.body);
-    console.log('Validation errors:', errorMessages);
-    console.log('Raw errors:', errors.array());
-    console.log('==============================');
-    
+    // Log validation errors for debugging
     logger.warn('Validation failed', {
       endpoint: req.originalUrl,
       method: req.method,
       errors: errorMessages,
-      requestBody: req.body,
+      query: req.query,
+      body: req.body,
       userId: req.user?._id
     });
     
@@ -146,8 +141,8 @@ export const commonValidations = {
       .toInt(),
     query('limit')
       .optional()
-      .isInt({ min: 1, max: 100 })
-      .withMessage('Limit must be between 1 and 100')
+      .isInt({ min: 1, max: 1000 })
+      .withMessage('Limit must be between 1 and 1000')
       .toInt()
   ],
 

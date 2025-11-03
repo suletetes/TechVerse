@@ -19,8 +19,11 @@ class CacheService {
 
       this.redis = new Redis(process.env.REDIS_URL, {
         retryDelayOnFailover: 100,
-        maxRetriesPerRequest: 3,
-        lazyConnect: true
+        maxRetriesPerRequest: 2,
+        lazyConnect: true,
+        connectTimeout: 2000,
+        commandTimeout: 2000,
+        maxLoadingTimeout: 2000
       });
 
       this.redis.on('connect', () => {

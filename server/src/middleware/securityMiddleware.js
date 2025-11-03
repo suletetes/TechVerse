@@ -15,8 +15,11 @@ try {
   const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
   redisClient = new Redis(redisUrl, {
     retryDelayOnFailover: 100,
-    maxRetriesPerRequest: 3,
-    lazyConnect: true
+    maxRetriesPerRequest: 2,
+    lazyConnect: true,
+    connectTimeout: 2000,
+    commandTimeout: 2000,
+    maxLoadingTimeout: 2000
   });
 
   redisClient.on('error', (error) => {

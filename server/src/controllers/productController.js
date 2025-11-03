@@ -13,6 +13,7 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
     page = PAGINATION_DEFAULTS.PAGE,
     limit = PAGINATION_DEFAULTS.LIMIT,
     sort = 'newest',
+    order, // Accept order parameter but don't use it for predefined sorts
     category,
     brand,
     minPrice,
@@ -112,11 +113,46 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
   ]);
 
   // Transform products to include category name as string for frontend compatibility
-  const transformedProducts = products.map(product => ({
-    ...product,
-    categoryName: product.category?.name || product.category,
-    category: product.category?.name || product.category // Use category name instead of ObjectId
-  }));
+  const transformedProducts = products.map(product => {
+    // Ensure category is always a string, never an object
+    let categoryName = '';
+    if (product.category) {
+      if (typeof product.category === 'string') {
+        categoryName = product.category;
+      } else if (product.category.name) {
+        categoryName = product.category.name;
+      } else if (product.category._id) {
+        categoryName = product.category._id.toString();
+      }
+    }
+    
+    // Ensure stock is properly formatted for frontend
+    let stockQuantity = 0;
+    let stockStatus = 'out_of_stock';
+    if (product.stock) {
+      if (typeof product.stock === 'object') {
+        stockQuantity = product.stock.quantity || 0;
+        stockStatus = stockQuantity > 0 ? 'in_stock' : 'out_of_stock';
+      } else if (typeof product.stock === 'number') {
+        stockQuantity = product.stock;
+        stockStatus = stockQuantity > 0 ? 'in_stock' : 'out_of_stock';
+      }
+    }
+    
+    return {
+      ...product,
+      categoryName,
+      category: categoryName, // Always use string for category
+      stockQuantity,
+      stockStatus,
+      // Keep original stock object for admin use but ensure it's not rendered directly
+      stock: {
+        quantity: stockQuantity,
+        lowStockThreshold: product.stock?.lowStockThreshold || 5,
+        trackQuantity: product.stock?.trackQuantity || true
+      }
+    };
+  });
 
   // Format image URLs for all products
   const baseUrl = getBaseUrl(req);
@@ -196,11 +232,48 @@ export const getProductById = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Format image URLs
+  // Format image URLs and transform category
   const baseUrl = getBaseUrl(req);
+  const productObj = product.toObject();
+  
+  // Ensure category is always a string, never an object
+  let categoryName = '';
+  if (productObj.category) {
+    if (typeof productObj.category === 'string') {
+      categoryName = productObj.category;
+    } else if (productObj.category.name) {
+      categoryName = productObj.category.name;
+    } else if (productObj.category._id) {
+      categoryName = productObj.category._id.toString();
+    }
+  }
+  
+  // Ensure stock is properly formatted for frontend
+  let stockQuantity = 0;
+  let stockStatus = 'out_of_stock';
+  if (productObj.stock) {
+    if (typeof productObj.stock === 'object') {
+      stockQuantity = productObj.stock.quantity || 0;
+      stockStatus = stockQuantity > 0 ? 'in_stock' : 'out_of_stock';
+    } else if (typeof productObj.stock === 'number') {
+      stockQuantity = productObj.stock;
+      stockStatus = stockQuantity > 0 ? 'in_stock' : 'out_of_stock';
+    }
+  }
+  
   const formattedProduct = {
-    ...product.toObject(),
-    images: formatProductImages(product.images, baseUrl)
+    ...productObj,
+    categoryName,
+    category: categoryName, // Always use string for category
+    stockQuantity,
+    stockStatus,
+    // Keep original stock object for admin use but ensure it's not rendered directly
+    stock: {
+      quantity: stockQuantity,
+      lowStockThreshold: productObj.stock?.lowStockThreshold || 5,
+      trackQuantity: productObj.stock?.trackQuantity || true
+    },
+    images: formatProductImages(productObj.images, baseUrl)
   };
 
   res.status(200).json({
@@ -457,11 +530,46 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
   const rawProducts = await Product.searchProducts(searchTerm, searchOptions);
   
   // Transform products to include category name as string for frontend compatibility
-  const products = Array.isArray(rawProducts) ? rawProducts.map(product => ({
-    ...product,
-    categoryName: product.category?.name || product.category,
-    category: product.category?.name || product.category // Use category name instead of ObjectId
-  })) : [];
+  const products = Array.isArray(rawProducts) ? rawProducts.map(product => {
+    // Ensure category is always a string, never an object
+    let categoryName = '';
+    if (product.category) {
+      if (typeof product.category === 'string') {
+        categoryName = product.category;
+      } else if (product.category.name) {
+        categoryName = product.category.name;
+      } else if (product.category._id) {
+        categoryName = product.category._id.toString();
+      }
+    }
+    
+    // Ensure stock is properly formatted for frontend
+    let stockQuantity = 0;
+    let stockStatus = 'out_of_stock';
+    if (product.stock) {
+      if (typeof product.stock === 'object') {
+        stockQuantity = product.stock.quantity || 0;
+        stockStatus = stockQuantity > 0 ? 'in_stock' : 'out_of_stock';
+      } else if (typeof product.stock === 'number') {
+        stockQuantity = product.stock;
+        stockStatus = stockQuantity > 0 ? 'in_stock' : 'out_of_stock';
+      }
+    }
+    
+    return {
+      ...product,
+      categoryName,
+      category: categoryName, // Always use string for category
+      stockQuantity,
+      stockStatus,
+      // Keep original stock object for admin use but ensure it's not rendered directly
+      stock: {
+        quantity: stockQuantity,
+        lowStockThreshold: product.stock?.lowStockThreshold || 5,
+        trackQuantity: product.stock?.trackQuantity || true
+      }
+    };
+  }) : [];
   
   // Build count query with same filters
   const countFilter = {

@@ -116,8 +116,20 @@ const searchValidation = [
     .withMessage('Search query must be between 1 and 100 characters'),
   query('category')
     .optional()
-    .isMongoId()
-    .withMessage('Invalid category ID'),
+    .custom((value) => {
+      // Allow MongoDB ObjectId, category name, or slug
+      if (/^[0-9a-fA-F]{24}$/.test(value)) {
+        return true; // Valid ObjectId
+      }
+      if (typeof value === 'string' && value.length >= 2 && value.length <= 100) {
+        return true; // Valid name or slug
+      }
+      throw new Error('Category must be a valid ObjectId, name, or slug');
+    }),
+  query('brand')
+    .optional()
+    .isString()
+    .withMessage('Brand must be a string'),
   query('minPrice')
     .optional()
     .isFloat({ min: 0 })
@@ -128,8 +140,29 @@ const searchValidation = [
     .withMessage('Maximum price must be a positive number'),
   query('sort')
     .optional()
-    .isIn(['newest', 'oldest', 'name', 'price-low', 'price-high', 'rating', 'price', 'createdAt', '-name', '-price', '-rating', '-createdAt'])
-    .withMessage('Invalid sort option'),
+    .custom((value) => {
+      const validSorts = ['newest', 'oldest', 'name', 'price-low', 'price-high', 'rating', 'price', 'createdAt', 'price_asc', 'price_desc', 'name_asc', 'name_desc', 'popularity'];
+      if (validSorts.includes(value)) {
+        return true;
+      }
+      throw new Error(`Invalid sort option: ${value}. Valid options are: ${validSorts.join(', ')}`);
+    }),
+  query('order')
+    .optional()
+    .isIn(['asc', 'desc'])
+    .withMessage('Order must be asc or desc'),
+  query('featured')
+    .optional()
+    .isIn(['true', 'false'])
+    .withMessage('Featured must be true or false'),
+  query('section')
+    .optional()
+    .isIn(['latest', 'topSeller', 'quickPick', 'weeklyDeal'])
+    .withMessage('Invalid section'),
+  query('status')
+    .optional()
+    .isIn(['active', 'inactive', 'draft'])
+    .withMessage('Invalid status'),
   ...commonValidations.pagination()
 ];
 
@@ -141,7 +174,7 @@ const sectionValidation = [
 ];
 
 // Public routes with rate limiting and caching
-router.get('/', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, optionalAuth, getAllProducts);
+router.get('/', apiRateLimit, cacheProductList, searchValidation, validate, optionalAuth, getAllProducts);
 router.get('/search', apiRateLimit, cacheSearchResults, searchValidation, validate, optionalAuth, searchProducts);
 router.get('/categories', apiRateLimit, cacheCategoryList, getCategories);
 router.get('/featured', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getFeaturedProducts);
