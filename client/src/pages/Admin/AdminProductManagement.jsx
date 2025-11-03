@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 // AdminHeader removed for cleaner interface
 import { ProductsTable } from '../../components/tables';
-import { productService } from '../../api/services';
+import { adminService } from '../../api/services';
 
 const AdminProductManagement = () => {
     const [products, setProducts] = useState([]);
@@ -10,6 +10,12 @@ const AdminProductManagement = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
+        // Test authentication first
+        const token = localStorage.getItem('token');
+        console.log('🔐 Auth check on component mount:');
+        console.log('  Token exists:', !!token);
+        console.log('  Token preview:', token ? `${token.substring(0, 20)}...` : 'none');
+        
         fetchProducts();
     }, []);
 
@@ -18,8 +24,40 @@ const AdminProductManagement = () => {
             setLoading(true);
             setError(null);
             
-            const response = await productService.getProducts({ limit: 100 });
-            const backendProducts = response?.data?.products || response?.products || [];
+            console.log('🔍 Fetching admin products...');
+            console.log('Auth token exists:', !!localStorage.getItem('token'));
+            
+            const response = await adminService.getAdminProducts({ limit: 100 });
+            
+            console.log('📦 Admin API Response:', response);
+            console.log('Response type:', typeof response);
+            console.log('Response keys:', Object.keys(response || {}));
+            
+            // Try multiple ways to extract products
+            let backendProducts = [];
+            
+            if (response?.data?.products) {
+                backendProducts = response.data.products;
+                console.log('✅ Found products in response.data.products');
+            } else if (response?.products) {
+                backendProducts = response.products;
+                console.log('✅ Found products in response.products');
+            } else if (response?.data && Array.isArray(response.data)) {
+                backendProducts = response.data;
+                console.log('✅ Found products in response.data (array)');
+            } else if (Array.isArray(response)) {
+                backendProducts = response;
+                console.log('✅ Found products in response (direct array)');
+            } else {
+                console.log('❌ No products found in any expected location');
+                console.log('Full response structure:', JSON.stringify(response, null, 2));
+            }
+            
+            console.log(`📊 Extracted ${backendProducts.length} products`);
+            
+            if (backendProducts.length > 0) {
+                console.log('Sample product:', backendProducts[0]);
+            }
             
             // Transform backend data to component format
             const transformedProducts = backendProducts.map(product => {
@@ -33,10 +71,38 @@ const AdminProductManagement = () => {
                     stockValue = product.stockQuantity;
                 }
                 
+                // Safely extract category name with comprehensive fallbacks
+                let categoryName = 'Uncategorized';
+                
+                // Try multiple sources for category information
+                if (product.category) {
+                    if (typeof product.category === 'string') {
+                        categoryName = product.category;
+                    } else if (product.category && typeof product.category === 'object') {
+                        categoryName = product.category.name || product.category.slug || product.category._id || 'Uncategorized';
+                    }
+                } else if (product.categoryName) {
+                    categoryName = product.categoryName;
+                } else if (product.categorySlug) {
+                    // Convert slug to readable name
+                    categoryName = product.categorySlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                }
+                
+                // Debug logging for first few products
+                if (process.env.NODE_ENV === 'development' && products.length < 3) {
+                    console.log(`Product "${product.name}" category data:`, {
+                        category: product.category,
+                        categoryName: product.categoryName,
+                        categorySlug: product.categorySlug,
+                        extractedName: categoryName,
+                        categoryType: typeof product.category
+                    });
+                }
+                
                 return {
                     id: product._id,
                     name: product.name,
-                    category: product.category?.name || 'Uncategorized',
+                    category: categoryName,
                     price: product.price,
                     originalPrice: product.compareAtPrice || null,
                     stock: stockValue,
@@ -50,8 +116,60 @@ const AdminProductManagement = () => {
             
             setProducts(transformedProducts);
         } catch (err) {
-            console.error('Error fetching products:', err);
-            setError('Failed to load products');
+            console.error('❌ Error fetching products:', err);
+            console.error('Error details:', {
+                message: err.message,
+                status: err.status,
+                response: err.response
+            });
+            
+            // Try direct API call as fallback
+            console.log('🔄 Trying direct API call as fallback...');
+            try {
+                const token = localStorage.getItem('token');
+                const directResponse = await fetch('http://localhost:5000/api/admin/products?limit=100', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Direct API response status:', directResponse.status);
+                
+                if (directResponse.ok) {
+                    const directData = await directResponse.json();
+                    console.log('✅ Direct API call successful:', directData);
+                    
+                    const directProducts = directData?.data?.products || directData?.products || directData || [];
+                    if (directProducts.length > 0) {
+                        console.log(`🎉 Found ${directProducts.length} products via direct API`);
+                        
+                        const transformedProducts = directProducts.map(product => ({
+                            id: product._id,
+                            name: product.name,
+                            category: product.category?.name || 'Uncategorized',
+                            price: product.price,
+                            originalPrice: product.compareAtPrice || null,
+                            stock: typeof product.stock === 'object' ? product.stock.quantity : product.stock || 0,
+                            status: product.status === 'active' ? 'Active' : 'Inactive',
+                            sales: product.sales?.totalSold || 0,
+                            image: product.images?.[0]?.url || '/img/placeholder-product.jpg',
+                            featured: product.featured || false,
+                            sku: product.sku || `PRD-${product._id?.slice(-6)?.toUpperCase()}`
+                        }));
+                        
+                        setProducts(transformedProducts);
+                        return; // Success, exit the function
+                    }
+                } else {
+                    const errorText = await directResponse.text();
+                    console.log('Direct API error response:', errorText);
+                }
+            } catch (directErr) {
+                console.error('❌ Direct API call also failed:', directErr);
+            }
+            
+            setError(`Failed to load products: ${err.message}`);
         } finally {
             setLoading(false);
         }
@@ -162,6 +280,18 @@ const AdminProductManagement = () => {
                                     </svg>
                                     Back to Dashboard
                                 </Link>
+                                <button 
+                                    className="btn btn-info me-2"
+                                    onClick={() => {
+                                        console.log('🧪 Manual API test triggered');
+                                        fetchProducts();
+                                    }}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                                        <path fill="currentColor" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" />
+                                    </svg>
+                                    Test API
+                                </button>
                                 <button className="btn btn-success">
                                     <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
                                         <path fill="currentColor" d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />

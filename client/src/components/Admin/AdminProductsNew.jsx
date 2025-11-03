@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { adminDataManager } from '../../utils/AdminDataManager.js';
+import { adminService } from '../../api/services';
 
 const AdminProductsNew = ({ setActiveTab }) => {
     const [products, setProducts] = useState([]);
@@ -10,41 +10,126 @@ const AdminProductsNew = ({ setActiveTab }) => {
         status: '',
         search: ''
     });
-    const [pagination, setPagination] = useState({
-        page: 1,
-        limit: 20,
-        total: 0,
-        totalPages: 0
-    });
 
-    // Load products
+    // Load products directly using adminService (same approach as AdminProductManagement)
     useEffect(() => {
         loadProducts();
-    }, [filters]);
-
-    // Set up data manager listener
-    useEffect(() => {
-        const unsubscribe = adminDataManager.addListener('products', (data) => {
-            console.log('📦 Products data update:', data);
-            setLoading(data.loading);
-            setError(data.error);
-            if (data.data) {
-                setProducts(data.data);
-                console.log('✅ Products set:', data.data.length);
-            }
-            if (data.pagination) {
-                setPagination(data.pagination);
-            }
-        });
-
-        return unsubscribe;
     }, []);
 
     const loadProducts = async () => {
         try {
-            await adminDataManager.loadProducts(filters);
+            setLoading(true);
+            setError(null);
+            
+            console.log('🔍 AdminProductsNew: Fetching products...');
+            console.log('Auth token exists:', !!localStorage.getItem('token'));
+            
+            const response = await adminService.getAdminProducts({ limit: 100 });
+            
+            console.log('📦 AdminProductsNew API Response:', response);
+            console.log('Response type:', typeof response);
+            console.log('Response keys:', Object.keys(response || {}));
+            
+            // Try multiple ways to extract products (same as AdminProductManagement)
+            let backendProducts = [];
+            
+            if (response?.data?.products) {
+                backendProducts = response.data.products;
+                console.log('✅ Found products in response.data.products');
+            } else if (response?.products) {
+                backendProducts = response.products;
+                console.log('✅ Found products in response.products');
+            } else if (response?.data && Array.isArray(response.data)) {
+                backendProducts = response.data;
+                console.log('✅ Found products in response.data (array)');
+            } else if (Array.isArray(response)) {
+                backendProducts = response;
+                console.log('✅ Found products in response (direct array)');
+            } else {
+                console.log('❌ No products found in any expected location');
+                console.log('Full response structure:', JSON.stringify(response, null, 2));
+            }
+            
+            console.log(`📊 AdminProductsNew: Extracted ${backendProducts.length} products`);
+            
+            if (backendProducts.length > 0) {
+                console.log('Sample product:', backendProducts[0]);
+            }
+            
+            // Transform products for display
+            const transformedProducts = backendProducts.map(product => ({
+                _id: product._id,
+                name: product.name,
+                category: product.category?.name || 'Uncategorized',
+                price: product.price,
+                compareAtPrice: product.compareAtPrice,
+                stock: product.stock,
+                status: product.status,
+                featured: product.featured,
+                images: product.images,
+                sku: product.sku,
+                sales: product.sales
+            }));
+            
+            setProducts(transformedProducts);
+            
         } catch (err) {
-            console.error('Failed to load products:', err);
+            console.error('❌ AdminProductsNew: Error fetching products:', err);
+            console.error('Error details:', {
+                message: err.message,
+                status: err.status,
+                response: err.response
+            });
+            
+            // Try direct API call as fallback (same as AdminProductManagement)
+            console.log('🔄 AdminProductsNew: Trying direct API call as fallback...');
+            try {
+                const token = localStorage.getItem('token');
+                const directResponse = await fetch('http://localhost:5000/api/admin/products?limit=100', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Direct API response status:', directResponse.status);
+                
+                if (directResponse.ok) {
+                    const directData = await directResponse.json();
+                    console.log('✅ AdminProductsNew: Direct API call successful:', directData);
+                    
+                    const directProducts = directData?.data?.products || directData?.products || directData || [];
+                    if (directProducts.length > 0) {
+                        console.log(`🎉 AdminProductsNew: Found ${directProducts.length} products via direct API`);
+                        
+                        const transformedProducts = directProducts.map(product => ({
+                            _id: product._id,
+                            name: product.name,
+                            category: product.category?.name || 'Uncategorized',
+                            price: product.price,
+                            compareAtPrice: product.compareAtPrice,
+                            stock: product.stock,
+                            status: product.status,
+                            featured: product.featured,
+                            images: product.images,
+                            sku: product.sku,
+                            sales: product.sales
+                        }));
+                        
+                        setProducts(transformedProducts);
+                        return; // Success, exit the function
+                    }
+                } else {
+                    const errorText = await directResponse.text();
+                    console.log('Direct API error response:', errorText);
+                }
+            } catch (directErr) {
+                console.error('❌ AdminProductsNew: Direct API call also failed:', directErr);
+            }
+            
+            setError(`Failed to load products: ${err.message}`);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -102,10 +187,10 @@ const AdminProductsNew = ({ setActiveTab }) => {
                                 Reset Auth
                             </button>
                             <button 
-                                className="btn btn-outline-primary btn-sm"
+                                className="btn btn-primary btn-sm"
                                 onClick={loadProducts}
                             >
-                                Retry
+                                Try Again
                             </button>
                         </div>
                     </div>
@@ -117,26 +202,26 @@ const AdminProductsNew = ({ setActiveTab }) => {
     return (
         <div className="store-card fill-card">
             {/* Header */}
-            <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
+            <div className="card-header d-flex justify-content-between align-items-center">
                 <div>
-                    <h3 className="tc-6533 bold-text mb-1">Product Management</h3>
-                    <p className="text-muted mb-0">Manage your product catalog and inventory</p>
+                    <h5 className="mb-1">Products</h5>
+                    <small className="text-muted">Manage your product catalog</small>
                 </div>
                 <div className="d-flex gap-2">
-                    <button
-                        className="btn btn-outline-secondary btn-rd"
+                    <button 
+                        className="btn btn-outline-primary btn-sm"
                         onClick={loadProducts}
                     >
-                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-1">
                             <path fill="currentColor" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" />
                         </svg>
                         Refresh
                     </button>
-                    <button
-                        className="btn btn-success btn-rd"
-                        onClick={() => setActiveTab?.('add-product')}
+                    <button 
+                        className="btn btn-success btn-sm"
+                        onClick={() => setActiveTab('add-product')}
                     >
-                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-1">
                             <path fill="currentColor" d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
                         </svg>
                         Add Product
@@ -144,233 +229,194 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 </div>
             </div>
 
-            {/* Filters */}
-            <div className="row mb-4">
-                <div className="col-md-3">
-                    <label className="form-label">Category</label>
-                    <select 
-                        className="form-select"
-                        value={filters.category}
-                        onChange={(e) => setFilters({...filters, category: e.target.value})}
-                    >
-                        <option value="">All Categories</option>
-                        <option value="phones">Phones</option>
-                        <option value="tablets">Tablets</option>
-                        <option value="computers">Computers</option>
-                        <option value="tvs">TVs</option>
-                        <option value="gaming">Gaming</option>
-                        <option value="watches">Watches</option>
-                        <option value="audio">Audio</option>
-                        <option value="cameras">Cameras</option>
-                        <option value="accessories">Accessories</option>
-                        <option value="smart-home">Smart Home</option>
-                        <option value="fitness">Fitness</option>
-                    </select>
+            {/* Stats */}
+            <div className="card-body">
+                <div className="row g-3 mb-4">
+                    <div className="col-md-3">
+                        <div className="d-flex align-items-center">
+                            <div className="flex-shrink-0">
+                                <div className="avatar avatar-sm bg-primary bg-opacity-15 text-primary rounded">
+                                    <svg width="20" height="20" viewBox="0 0 24 24">
+                                        <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div className="flex-grow-1 ms-3">
+                                <h3 className="text-primary mb-1">
+                                    {products.length}
+                                </h3>
+                                <p className="text-muted mb-0 small">Total Products</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-md-3">
+                        <div className="d-flex align-items-center">
+                            <div className="flex-shrink-0">
+                                <div className="avatar avatar-sm bg-success bg-opacity-15 text-success rounded">
+                                    <svg width="20" height="20" viewBox="0 0 24 24">
+                                        <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div className="flex-grow-1 ms-3">
+                                <h3 className="text-success mb-1">
+                                    {products.filter(p => p.status === 'active').length}
+                                </h3>
+                                <p className="text-muted mb-0 small">Active</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-md-3">
+                        <div className="d-flex align-items-center">
+                            <div className="flex-shrink-0">
+                                <div className="avatar avatar-sm bg-warning bg-opacity-15 text-warning rounded">
+                                    <svg width="20" height="20" viewBox="0 0 24 24">
+                                        <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div className="flex-grow-1 ms-3">
+                                <h3 className="text-warning mb-1">
+                                    {products.filter(p => {
+                                        const stock = p.stock?.quantity || p.stockQuantity || 0;
+                                        return stock > 0 && stock < 10;
+                                    }).length}
+                                </h3>
+                                <p className="text-muted mb-0 small">Low Stock</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-md-3">
+                        <div className="d-flex align-items-center">
+                            <div className="flex-shrink-0">
+                                <div className="avatar avatar-sm bg-danger bg-opacity-15 text-danger rounded">
+                                    <svg width="20" height="20" viewBox="0 0 24 24">
+                                        <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div className="flex-grow-1 ms-3">
+                                <h3 className="text-danger mb-1">
+                                    {products.filter(p => {
+                                        const stock = p.stock?.quantity || p.stockQuantity || 0;
+                                        return stock === 0;
+                                    }).length}
+                                </h3>
+                                <p className="text-muted mb-0 small">Out of Stock</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div className="col-md-3">
-                    <label className="form-label">Status</label>
-                    <select 
-                        className="form-select"
-                        value={filters.status}
-                        onChange={(e) => setFilters({...filters, status: e.target.value})}
-                    >
-                        <option value="">All Status</option>
-                        <option value="active">Active</option>
-                        <option value="draft">Draft</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="archived">Archived</option>
-                    </select>
-                </div>
-                <div className="col-md-4">
-                    <label className="form-label">Search</label>
-                    <input 
-                        type="text"
-                        className="form-control"
-                        placeholder="Product name, SKU, or description..."
-                        value={filters.search}
-                        onChange={(e) => setFilters({...filters, search: e.target.value})}
-                    />
-                </div>
-                <div className="col-md-2">
-                    <label className="form-label">&nbsp;</label>
-                    <button 
-                        className="btn btn-outline-secondary w-100"
-                        onClick={() => setFilters({category: '', status: '', search: ''})}
-                    >
-                        Clear
-                    </button>
-                </div>
-            </div>
 
-            {/* Product Stats */}
-            <div className="row g-3 mb-4">
-                <div className="col-lg-3 col-md-6">
-                    <div className="card bg-primary bg-opacity-10 border-primary border-opacity-25">
-                        <div className="card-body text-center">
-                            <h3 className="text-primary mb-1">{products.length}</h3>
-                            <p className="text-muted mb-0">Total Products</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-lg-3 col-md-6">
-                    <div className="card bg-success bg-opacity-10 border-success border-opacity-25">
-                        <div className="card-body text-center">
-                            <h3 className="text-success mb-1">
-                                {products.filter(p => p.status === 'active').length}
-                            </h3>
-                            <p className="text-muted mb-0">Active</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-lg-3 col-md-6">
-                    <div className="card bg-warning bg-opacity-10 border-warning border-opacity-25">
-                        <div className="card-body text-center">
-                            <h3 className="text-warning mb-1">
-                                {products.filter(p => {
-                                    const stock = p.stock?.quantity || p.stockQuantity || 0;
-                                    return stock > 0 && stock < 10;
-                                }).length}
-                            </h3>
-                            <p className="text-muted mb-0">Low Stock</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-lg-3 col-md-6">
-                    <div className="card bg-danger bg-opacity-10 border-danger border-opacity-25">
-                        <div className="card-body text-center">
-                            <h3 className="text-danger mb-1">
-                                {products.filter(p => {
-                                    const stock = p.stock?.quantity || p.stockQuantity || 0;
-                                    return stock === 0;
-                                }).length}
-                            </h3>
-                            <p className="text-muted mb-0">Out of Stock</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Products Table */}
-            <div className="table-responsive">
-                <table className="table table-hover align-middle">
-                    <thead className="table-light">
-                        <tr>
-                            <th className="border-0 fw-semibold">Product</th>
-                            <th className="border-0 fw-semibold">Category</th>
-                            <th className="border-0 fw-semibold">Price</th>
-                            <th className="border-0 fw-semibold">Stock</th>
-                            <th className="border-0 fw-semibold">Status</th>
-                            <th className="border-0 fw-semibold">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {products.map((product) => {
-                            const stockStatus = getStockStatus(product);
-                            return (
-                                <tr key={product._id || product.id}>
-                                    <td>
-                                        <div className="d-flex align-items-center">
-                                            <div className="position-relative me-3">
-                                                <img
-                                                    src={product.images?.[0]?.url || product.image || '/img/placeholder-product.jpg'}
-                                                    alt={product.name}
-                                                    className="rounded-3 shadow-sm"
-                                                    width="60"
-                                                    height="60"
-                                                    style={{ objectFit: 'cover' }}
-                                                />
-                                                {product.featured && (
-                                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning">
-                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
-                                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                                        </svg>
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <h6 className="mb-1 fw-semibold">{product.name}</h6>
-                                                <div className="d-flex flex-column">
-                                                    <small className="text-muted">ID: {product._id?.slice(-8) || product.id}</small>
-                                                    {product.sku && <small className="text-muted">SKU: {product.sku}</small>}
+                {/* Products Table */}
+                <div className="table-responsive">
+                    <table className="table table-hover align-middle">
+                        <thead className="table-light">
+                            <tr>
+                                <th className="border-0 fw-semibold">Product</th>
+                                <th className="border-0 fw-semibold">Category</th>
+                                <th className="border-0 fw-semibold">Price</th>
+                                <th className="border-0 fw-semibold">Stock</th>
+                                <th className="border-0 fw-semibold">Status</th>
+                                <th className="border-0 fw-semibold">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {products.map((product) => {
+                                const stockStatus = getStockStatus(product);
+                                
+                                return (
+                                    <tr key={product._id}>
+                                        <td>
+                                            <div className="d-flex align-items-center">
+                                                {/* <div className="flex-shrink-0">
+                                                    <img 
+                                                        src={product.images?.[0]?.url || '/img/placeholder-product.jpg'} 
+                                                        alt={product.name}
+                                                        className="avatar avatar-sm rounded"
+                                                        style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                                                    />
+                                                </div> */}
+                                                <div className="flex-grow-1 ms-3">
+                                                    <h6 className="mb-0">{product.name}</h6>
+                                                    <small className="text-muted">{product.sku}</small>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className="badge bg-light text-dark border px-3 py-2 rounded-pill">
-                                            {product.category?.name || product.categoryName || 'Uncategorized'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div className="d-flex flex-column">
-                                            <span className="fw-bold tc-6533">{formatCurrency(product.price)}</span>
-                                            {product.comparePrice && product.comparePrice > product.price && (
-                                                <small className="text-muted text-decoration-line-through">
-                                                    {formatCurrency(product.comparePrice)}
+                                        </td>
+                                        <td>
+                                            <span className="badge bg-light text-dark">{product.category}</span>
+                                        </td>
+                                        <td>
+                                            <div className="d-flex flex-column">
+                                                <span className="fw-medium">{formatCurrency(product.price)}</span>
+                                                {product.compareAtPrice && (
+                                                    <small className="text-muted text-decoration-line-through">
+                                                        {formatCurrency(product.compareAtPrice)}
+                                                    </small>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="d-flex flex-column">
+                                                <span className={`fw-medium text-${stockStatus.color}`}>
+                                                    {product.stock?.quantity || product.stockQuantity || 0}
+                                                </span>
+                                                <small className={`text-${stockStatus.color}`}>
+                                                    {stockStatus.text}
                                                 </small>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="d-flex flex-column">
-                                            <span className={`fw-medium text-${stockStatus.color}`}>
-                                                {product.stock?.quantity || product.stockQuantity || 0}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className={`badge bg-${getStatusColor(product.status)}`}>
+                                                {product.status}
                                             </span>
-                                            <small className={`text-${stockStatus.color}`}>
-                                                {stockStatus.text}
-                                            </small>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className={`badge bg-${getStatusColor(product.status)} bg-opacity-15 text-${getStatusColor(product.status)} border border-${getStatusColor(product.status)} border-opacity-25 px-3 py-2 rounded-pill`}>
-                                            {product.status}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div className="btn-group btn-group-sm">
-                                            <button
-                                                className="btn btn-outline-primary btn-sm"
-                                                title="Edit Product"
-                                            >
-                                                <svg width="14" height="14" viewBox="0 0 24 24">
-                                                    <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                className="btn btn-outline-secondary btn-sm"
-                                                title="Duplicate Product"
-                                            >
-                                                <svg width="14" height="14" viewBox="0 0 24 24">
-                                                    <path fill="currentColor" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                className="btn btn-outline-danger btn-sm"
-                                                title="Delete Product"
-                                            >
-                                                <svg width="14" height="14" viewBox="0 0 24 24">
-                                                    <path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
-
-            {/* Empty State */}
-            {products.length === 0 && (
-                <div className="text-center py-5">
-                    <svg width="64" height="64" viewBox="0 0 24 24" className="text-muted mb-3">
-                        <path fill="currentColor" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6Z" />
-                    </svg>
-                    <h5 className="text-muted">No Products Found</h5>
-                    <p className="text-muted mb-0">No products match your current filters.</p>
+                                        </td>
+                                        <td>
+                                            <div className="d-flex gap-1">
+                                                <button 
+                                                    className="btn btn-outline-primary btn-sm"
+                                                    onClick={() => setActiveTab('edit-product', product._id)}
+                                                    title="Edit Product"
+                                                >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24">
+                                                        <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
+                                                    </svg>
+                                                </button>
+                                                <button 
+                                                    className="btn btn-outline-secondary btn-sm"
+                                                    title="View Product"
+                                                >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24">
+                                                        <path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                    
+                    {products.length === 0 && (
+                        <div className="text-center py-5">
+                            <div className="mb-3">
+                                <svg width="48" height="48" viewBox="0 0 24 24" className="text-muted">
+                                    <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                </svg>
+                            </div>
+                            <h6 className="text-muted">No products found</h6>
+                            <p className="text-muted mb-3">Get started by adding your first product</p>
+                            <button 
+                                className="btn btn-primary"
+                                onClick={() => setActiveTab('add-product')}
+                            >
+                                Add Product
+                            </button>
+                        </div>
+                    )}
                 </div>
-            )}
+            </div>
         </div>
     );
 };
