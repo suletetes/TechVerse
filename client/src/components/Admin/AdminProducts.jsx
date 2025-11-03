@@ -288,10 +288,16 @@ const AdminProducts = ({
                                             {Array.isArray(products) ? products.filter(p => p.status === 'active').length : 0} Active
                                         </span>
                                         <span className="badge bg-warning bg-opacity-15 text-warning">
-                                            {Array.isArray(products) ? products.filter(p => p.stock < 10 && p.stock > 0).length : 0} Low Stock
+                                            {Array.isArray(products) ? products.filter(p => {
+                                                const stock = typeof p.stock === 'number' ? p.stock : p.stock?.quantity || 0;
+                                                return stock < 10 && stock > 0;
+                                            }).length : 0} Low Stock
                                         </span>
                                         <span className="badge bg-danger bg-opacity-15 text-danger">
-                                            {Array.isArray(products) ? products.filter(p => p.stock === 0).length : 0} Out of Stock
+                                            {Array.isArray(products) ? products.filter(p => {
+                                                const stock = typeof p.stock === 'number' ? p.stock : p.stock?.quantity || 0;
+                                                return stock === 0;
+                                            }).length : 0} Out of Stock
                                         </span>
                                         <span className="badge bg-info bg-opacity-15 text-info">
                                             {Array.isArray(categories) ? categories.length : 0} Categories

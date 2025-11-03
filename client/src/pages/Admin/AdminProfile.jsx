@@ -150,15 +150,17 @@ const AdminProfile = () => {
 
         switch (activeTab) {
             case 'products':
+                // AdminProductsNew handles its own data loading
+                break;
             case 'add-product':
             case 'edit-product':
-                loadAdminProducts();
+                loadAdminProducts(); // Still needed for edit product
                 break;
             case 'orders':
-                loadAdminOrders();
+                // AdminOrdersNew handles its own data loading
                 break;
             case 'users':
-                loadAdminUsers();
+                // AdminUsersNew handles its own data loading
                 break;
             case 'analytics':
                 loadAnalytics();

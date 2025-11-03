@@ -78,24 +78,81 @@ class EnhancedTokenManager {
   }
 
   /**
-   * Get WebGL fingerprint for enhanced security
+   * Get WebGL fingerprint for enhanced security (cached and optimized)
    */
   getWebGLFingerprint() {
+    // In development mode, use a simple static fingerprint to avoid WebGL context issues
+    if (import.meta.env?.DEV) {
+      return 'dev-webgl-fingerprint';
+    }
+
+    // Cache the result to avoid creating multiple WebGL contexts
+    if (this._webglFingerprint) {
+      return this._webglFingerprint;
+    }
+
+    // Use localStorage cache to persist across sessions
+    const cachedFingerprint = localStorage.getItem('techverse_webgl_fp_cache');
+    if (cachedFingerprint) {
+      try {
+        this._webglFingerprint = JSON.parse(cachedFingerprint);
+        return this._webglFingerprint;
+      } catch (e) {
+        // Invalid cache, continue to generate new one
+      }
+    }
+
     try {
       const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      canvas.width = 1;
+      canvas.height = 1;
       
-      if (!gl) return 'no-webgl';
+      const gl = canvas.getContext('webgl', { 
+        antialias: false,
+        depth: false,
+        stencil: false,
+        alpha: false,
+        preserveDrawingBuffer: false
+      }) || canvas.getContext('experimental-webgl', { 
+        antialias: false,
+        depth: false,
+        stencil: false,
+        alpha: false,
+        preserveDrawingBuffer: false
+      });
+      
+      if (!gl) {
+        this._webglFingerprint = 'no-webgl';
+        localStorage.setItem('techverse_webgl_fp_cache', JSON.stringify(this._webglFingerprint));
+        return this._webglFingerprint;
+      }
       
       const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-      return {
+      this._webglFingerprint = {
         vendor: gl.getParameter(debugInfo?.UNMASKED_VENDOR_WEBGL || gl.VENDOR),
         renderer: gl.getParameter(debugInfo?.UNMASKED_RENDERER_WEBGL || gl.RENDERER),
         version: gl.getParameter(gl.VERSION),
         shadingLanguageVersion: gl.getParameter(gl.SHADING_LANGUAGE_VERSION)
       };
+
+      // Cache the result
+      localStorage.setItem('techverse_webgl_fp_cache', JSON.stringify(this._webglFingerprint));
+
+      // Properly dispose of the WebGL context
+      const loseContext = gl.getExtension('WEBGL_lose_context');
+      if (loseContext) {
+        loseContext.loseContext();
+      }
+      
+      // Clean up canvas
+      canvas.width = 0;
+      canvas.height = 0;
+      
+      return this._webglFingerprint;
     } catch (error) {
-      return 'webgl-error';
+      this._webglFingerprint = 'webgl-error';
+      localStorage.setItem('techverse_webgl_fp_cache', JSON.stringify(this._webglFingerprint));
+      return this._webglFingerprint;
     }
   }
 

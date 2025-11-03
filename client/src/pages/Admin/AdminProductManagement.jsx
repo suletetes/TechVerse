@@ -22,19 +22,31 @@ const AdminProductManagement = () => {
             const backendProducts = response?.data?.products || response?.products || [];
             
             // Transform backend data to component format
-            const transformedProducts = backendProducts.map(product => ({
-                id: product._id,
-                name: product.name,
-                category: product.category?.name || 'Uncategorized',
-                price: product.price,
-                originalPrice: product.compareAtPrice || null,
-                stock: product.stock?.quantity || product.stock || 0,
-                status: getProductStatus(product),
-                sales: product.sales?.totalSold || 0,
-                image: product.images?.[0]?.url || '/img/placeholder-product.jpg',
-                featured: product.featured || false,
-                sku: product.sku || `PRD-${product._id?.slice(-6)?.toUpperCase()}`
-            }));
+            const transformedProducts = backendProducts.map(product => {
+                // Safely extract stock value
+                let stockValue = 0;
+                if (typeof product.stock === 'number') {
+                    stockValue = product.stock;
+                } else if (product.stock && typeof product.stock === 'object') {
+                    stockValue = product.stock.quantity || product.stock.stockQuantity || 0;
+                } else if (product.stockQuantity !== undefined) {
+                    stockValue = product.stockQuantity;
+                }
+                
+                return {
+                    id: product._id,
+                    name: product.name,
+                    category: product.category?.name || 'Uncategorized',
+                    price: product.price,
+                    originalPrice: product.compareAtPrice || null,
+                    stock: stockValue,
+                    status: getProductStatus(product),
+                    sales: product.sales?.totalSold || 0,
+                    image: product.images?.[0]?.url || '/img/placeholder-product.jpg',
+                    featured: product.featured || false,
+                    sku: product.sku || `PRD-${product._id?.slice(-6)?.toUpperCase()}`
+                };
+            });
             
             setProducts(transformedProducts);
         } catch (err) {
@@ -46,8 +58,19 @@ const AdminProductManagement = () => {
     };
 
     const getProductStatus = (product) => {
-        const stock = product.stock?.quantity || product.stock || 0;
-        const lowStockThreshold = product.stock?.lowStockThreshold || 10;
+        // Safely extract stock value
+        let stock = 0;
+        if (typeof product.stock === 'number') {
+            stock = product.stock;
+        } else if (product.stock && typeof product.stock === 'object') {
+            stock = product.stock.quantity || product.stock.stockQuantity || 0;
+        } else if (product.stockQuantity !== undefined) {
+            stock = product.stockQuantity;
+        }
+        
+        const lowStockThreshold = (product.stock && typeof product.stock === 'object') 
+            ? product.stock.lowStockThreshold || 10 
+            : 10;
         
         if (stock === 0) return 'Out of Stock';
         if (stock <= lowStockThreshold) return 'Low Stock';

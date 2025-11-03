@@ -16,6 +16,13 @@ class SessionManager {
    */
   async initialize() {
     try {
+      // Skip Redis if disabled
+      if (process.env.DISABLE_REDIS_SESSIONS === 'true') {
+        logger.info('Redis sessions disabled, using memory store');
+        this.isRedisAvailable = false;
+        return false;
+      }
+      
       // Try to initialize Redis
       await sessionConfig.initializeRedis();
       this.sessionStore = sessionConfig.createRedisStore();
