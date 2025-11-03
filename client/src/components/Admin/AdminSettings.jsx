@@ -353,7 +353,7 @@ const AdminSettings = ({
                 </div>
             </div>
         </div>
-        {/* System Settings */}
+        {/* System Settings 
         <div className="mb-4">
             <h5 className="tc-6533 mb-3 d-flex align-items-center">
                 <svg width="20" height="20" viewBox="0 0 24 24" className="me-2 text-primary">
@@ -384,6 +384,7 @@ const AdminSettings = ({
                 </div>
             </div>
         </div>
+        */}
         <div className="d-flex gap-2">
             <button className="btn btn-c-2101 btn-rd">Save Changes</button>
             <button className="btn btn-outline-secondary btn-rd">Reset</button>
