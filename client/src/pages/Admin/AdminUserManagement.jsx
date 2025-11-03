@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import AdminProductsNew from '../../components/Admin/AdminProductsNew';
+import AdminUsersNew from '../../components/Admin/AdminUsersNew';
 
-const AdminProductManagement = () => {
-    const [activeTab, setActiveTab] = useState('products');
-
+const AdminUserManagement = () => {
     return (
         <div className="min-vh-100 bg-light">
             <div className="container-fluid p-4">
@@ -13,8 +11,8 @@ const AdminProductManagement = () => {
                     <div className="col-12">
                         <div className="d-flex justify-content-between align-items-center">
                             <div>
-                                <h1 className="h3 mb-1">Product Management</h1>
-                                <p className="text-muted mb-0">Manage your product catalog and inventory</p>
+                                <h1 className="h3 mb-1">User Management</h1>
+                                <p className="text-muted mb-0">Manage customer accounts and user information</p>
                             </div>
                             <div className="d-flex gap-2">
                                 <Link to="/admin" className="btn btn-outline-secondary">
@@ -28,11 +26,11 @@ const AdminProductManagement = () => {
                     </div>
                 </div>
 
-                {/* Products Component */}
-                <AdminProductsNew setActiveTab={setActiveTab} />
+                {/* Users Component */}
+                <AdminUsersNew />
             </div>
         </div>
     );
 };
 
-export default AdminProductManagement;
+export default AdminUserManagement;

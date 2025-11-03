@@ -1,48 +1,100 @@
-import React, { useState, useEffect } from 'react';
-import { adminDataManager } from '../../utils/AdminDataManager.js';
+import React, { useState, useEffect, useMemo } from 'react';
+import { adminService } from '../../api/services/index.js';
+import { adminDataStore } from '../../utils/AdminDataStore';
+import { useAuth } from '../../context/AuthContext';
 
 const AdminUsersNew = () => {
-    const [users, setUsers] = useState([]);
+    const { user, isAuthenticated, isAdmin } = useAuth();
+    const [allUsers, setAllUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [filters, setFilters] = useState({
         role: '',
         status: '',
-        search: ''
+        search: '',
+        emailVerified: ''
     });
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 20,
-        total: 0,
-        totalPages: 0
+        limit: 10
     });
+    const [sortBy, setSortBy] = useState('firstName');
+    const [sortOrder, setSortOrder] = useState('asc');
 
-    // Load users
+    // Load users only once on mount or when data is stale
     useEffect(() => {
-        loadUsers();
-    }, [filters]);
+        if (!adminDataStore.isDataFresh('users')) {
+            loadUsers();
+        } else {
+            setAllUsers(adminDataStore.getData('users'));
+            setLoading(false);
+        }
 
-    // Set up data manager listener
-    useEffect(() => {
-        const unsubscribe = adminDataManager.addListener('users', (data) => {
-            setLoading(data.loading);
+        // Listen for data updates
+        const unsubscribe = adminDataStore.addListener('users', (data) => {
+            setAllUsers(data.data || []);
+            setLoading(data.loading || false);
             setError(data.error);
-            if (data.data) {
-                setUsers(data.data);
-            }
-            if (data.pagination) {
-                setPagination(data.pagination);
-            }
         });
 
         return unsubscribe;
     }, []);
+    
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setPagination(prev => ({ ...prev, page: 1 }));
+    }, [filters, sortBy, sortOrder]);
 
     const loadUsers = async () => {
         try {
-            await adminDataManager.loadUsers(filters);
+            adminDataStore.setLoading('users', true);
+            adminDataStore.setError('users', null);
+            
+            console.log('🔍 AdminUsersNew: Fetching users...');
+            
+            const response = await adminService.getAdminUsers({ limit: 1000 }); // Get all users
+            
+            let backendUsers = [];
+            if (response?.data?.users) {
+                backendUsers = response.data.users;
+            } else if (response?.users) {
+                backendUsers = response.users;
+            } else if (Array.isArray(response)) {
+                backendUsers = response;
+            }
+            
+            console.log(`📊 Loaded ${backendUsers.length} users`);
+            
+            adminDataStore.setData('users', backendUsers);
+            
         } catch (err) {
-            console.error('Failed to load users:', err);
+            console.error('❌ Error loading users:', err);
+            adminDataStore.setError('users', err.message);
+            
+            // Try direct API call as fallback
+            try {
+                const token = localStorage.getItem('token');
+                const directResponse = await fetch('http://localhost:5000/api/admin/users?limit=1000', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (directResponse.ok) {
+                    const directData = await directResponse.json();
+                    const directUsers = directData?.data?.users || directData?.users || directData || [];
+                    console.log(`🎉 Found ${directUsers.length} users via direct API`);
+                    adminDataStore.setData('users', directUsers);
+                } else {
+                    throw new Error(`API returned ${directResponse.status}`);
+                }
+            } catch (directErr) {
+                console.error('❌ Direct API call also failed:', directErr);
+                adminDataStore.setError('users', `Failed to load users: ${err.message}`);
+            }
+        } finally {
+            adminDataStore.setLoading('users', false);
         }
     };
 
@@ -76,6 +128,117 @@ const AdminUsersNew = () => {
             month: 'short',
             day: 'numeric'
         });
+    };
+
+    // Computed filtered and paginated users
+    const { filteredUsers, paginatedUsers, totalPages } = useMemo(() => {
+        let filtered = [...allUsers];
+        
+        // Apply search filter
+        if (filters.search.trim()) {
+            const searchTerm = filters.search.toLowerCase().trim();
+            filtered = filtered.filter(user =>
+                user.firstName?.toLowerCase().includes(searchTerm) ||
+                user.lastName?.toLowerCase().includes(searchTerm) ||
+                user.email?.toLowerCase().includes(searchTerm) ||
+                `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        // Apply role filter
+        if (filters.role) {
+            filtered = filtered.filter(user => user.role === filters.role);
+        }
+        
+        // Apply status filter
+        if (filters.status) {
+            filtered = filtered.filter(user => {
+                const userStatus = user.accountStatus || user.status || 'active';
+                return userStatus === filters.status;
+            });
+        }
+        
+        // Apply email verified filter
+        if (filters.emailVerified) {
+            const isVerified = filters.emailVerified === 'verified';
+            filtered = filtered.filter(user => {
+                const verified = user.isEmailVerified || user.emailVerified || false;
+                return verified === isVerified;
+            });
+        }
+        
+        // Apply sorting
+        filtered.sort((a, b) => {
+            let aValue, bValue;
+            
+            switch (sortBy) {
+                case 'firstName':
+                    aValue = (a.firstName || '').toLowerCase();
+                    bValue = (b.firstName || '').toLowerCase();
+                    break;
+                case 'lastName':
+                    aValue = (a.lastName || '').toLowerCase();
+                    bValue = (b.lastName || '').toLowerCase();
+                    break;
+                case 'email':
+                    aValue = (a.email || '').toLowerCase();
+                    bValue = (b.email || '').toLowerCase();
+                    break;
+                case 'role':
+                    aValue = (a.role || 'customer').toLowerCase();
+                    bValue = (b.role || 'customer').toLowerCase();
+                    break;
+                case 'createdAt':
+                    aValue = new Date(a.createdAt || 0);
+                    bValue = new Date(b.createdAt || 0);
+                    break;
+                default:
+                    aValue = (a.firstName || '').toLowerCase();
+                    bValue = (b.firstName || '').toLowerCase();
+            }
+            
+            if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        // Calculate pagination
+        const totalPages = Math.ceil(filtered.length / pagination.limit);
+        const startIndex = (pagination.page - 1) * pagination.limit;
+        const endIndex = startIndex + pagination.limit;
+        const paginated = filtered.slice(startIndex, endIndex);
+        
+        return {
+            filteredUsers: filtered,
+            paginatedUsers: paginated,
+            totalPages
+        };
+    }, [allUsers, filters, sortBy, sortOrder, pagination.page, pagination.limit]);
+
+    const handleFilterChange = (key, value) => {
+        setFilters(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleClearFilters = () => {
+        setFilters({
+            role: '',
+            status: '',
+            search: '',
+            emailVerified: ''
+        });
+    };
+
+    const handlePageChange = (newPage) => {
+        setPagination(prev => ({ ...prev, page: newPage }));
+    };
+
+    const handleSortChange = (field) => {
+        if (sortBy === field) {
+            setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(field);
+            setSortOrder('asc');
+        }
     };
 
     const getStatusColor = (status) => {
@@ -174,7 +337,7 @@ const AdminUsersNew = () => {
                     <select 
                         className="form-select"
                         value={filters.role}
-                        onChange={(e) => setFilters({...filters, role: e.target.value})}
+                        onChange={(e) => handleFilterChange('role', e.target.value)}
                     >
                         <option value="">All Roles</option>
                         <option value="customer">Customer</option>
@@ -188,7 +351,7 @@ const AdminUsersNew = () => {
                     <select 
                         className="form-select"
                         value={filters.status}
-                        onChange={(e) => setFilters({...filters, status: e.target.value})}
+                        onChange={(e) => handleFilterChange('status', e.target.value)}
                     >
                         <option value="">All Status</option>
                         <option value="active">Active</option>
@@ -204,14 +367,14 @@ const AdminUsersNew = () => {
                         className="form-control"
                         placeholder="Name, email, or ID..."
                         value={filters.search}
-                        onChange={(e) => setFilters({...filters, search: e.target.value})}
+                        onChange={(e) => handleFilterChange('search', e.target.value)}
                     />
                 </div>
                 <div className="col-md-2">
                     <label className="form-label">&nbsp;</label>
                     <button 
                         className="btn btn-outline-secondary w-100"
-                        onClick={() => setFilters({role: '', status: '', search: ''})}
+                        onClick={handleClearFilters}
                     >
                         Clear
                     </button>
@@ -223,7 +386,7 @@ const AdminUsersNew = () => {
                 <div className="col-lg-3 col-md-6">
                     <div className="card bg-primary bg-opacity-10 border-primary border-opacity-25">
                         <div className="card-body text-center">
-                            <h3 className="text-primary mb-1">{users.length}</h3>
+                            <h3 className="text-primary mb-1">{allUsers.length}</h3>
                             <p className="text-muted mb-0">Total Users</p>
                         </div>
                     </div>
@@ -232,7 +395,7 @@ const AdminUsersNew = () => {
                     <div className="card bg-success bg-opacity-10 border-success border-opacity-25">
                         <div className="card-body text-center">
                             <h3 className="text-success mb-1">
-                                {users.filter(u => u.status === 'active').length}
+                                {allUsers.filter(u => (u.status || 'active') === 'active').length}
                             </h3>
                             <p className="text-muted mb-0">Active</p>
                         </div>
@@ -242,7 +405,7 @@ const AdminUsersNew = () => {
                     <div className="card bg-info bg-opacity-10 border-info border-opacity-25">
                         <div className="card-body text-center">
                             <h3 className="text-info mb-1">
-                                {users.filter(u => u.role === 'customer').length}
+                                {allUsers.filter(u => (u.role || 'customer') === 'customer').length}
                             </h3>
                             <p className="text-muted mb-0">Customers</p>
                         </div>
@@ -252,7 +415,7 @@ const AdminUsersNew = () => {
                     <div className="card bg-warning bg-opacity-10 border-warning border-opacity-25">
                         <div className="card-body text-center">
                             <h3 className="text-warning mb-1">
-                                {users.filter(u => ['admin', 'super_admin', 'moderator'].includes(u.role)).length}
+                                {allUsers.filter(u => ['admin', 'super_admin', 'moderator'].includes(u.role || 'customer')).length}
                             </h3>
                             <p className="text-muted mb-0">Staff</p>
                         </div>
@@ -265,16 +428,36 @@ const AdminUsersNew = () => {
                 <table className="table table-hover align-middle">
                     <thead className="table-light">
                         <tr>
-                            <th className="border-0 fw-semibold">User</th>
-                            <th className="border-0 fw-semibold">Email</th>
-                            <th className="border-0 fw-semibold">Role</th>
+                            <th 
+                                className="border-0 fw-semibold cursor-pointer" 
+                                onClick={() => handleSortChange('firstName')}
+                            >
+                                User {sortBy === 'firstName' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th 
+                                className="border-0 fw-semibold cursor-pointer"
+                                onClick={() => handleSortChange('email')}
+                            >
+                                Email {sortBy === 'email' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th 
+                                className="border-0 fw-semibold cursor-pointer"
+                                onClick={() => handleSortChange('role')}
+                            >
+                                Role {sortBy === 'role' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
                             <th className="border-0 fw-semibold">Status</th>
-                            <th className="border-0 fw-semibold">Joined</th>
+                            <th 
+                                className="border-0 fw-semibold cursor-pointer"
+                                onClick={() => handleSortChange('createdAt')}
+                            >
+                                Joined {sortBy === 'createdAt' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </th>
                             <th className="border-0 fw-semibold">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {users.map((user) => (
+                        {paginatedUsers.map((user) => (
                             <tr key={user._id || user.id}>
                                 <td>
                                     <div className="d-flex align-items-center">
@@ -376,14 +559,72 @@ const AdminUsersNew = () => {
                 </table>
             </div>
 
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="d-flex justify-content-between align-items-center mt-4">
+                    <div className="text-muted">
+                        Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, filteredUsers.length)} of {filteredUsers.length} users
+                    </div>
+                    <nav>
+                        <ul className="pagination pagination-sm mb-0">
+                            <li className={`page-item ${pagination.page === 1 ? 'disabled' : ''}`}>
+                                <button 
+                                    className="page-link"
+                                    onClick={() => handlePageChange(pagination.page - 1)}
+                                    disabled={pagination.page === 1}
+                                >
+                                    Previous
+                                </button>
+                            </li>
+                            {[...Array(totalPages)].map((_, index) => {
+                                const pageNum = index + 1;
+                                if (
+                                    pageNum === 1 ||
+                                    pageNum === totalPages ||
+                                    (pageNum >= pagination.page - 2 && pageNum <= pagination.page + 2)
+                                ) {
+                                    return (
+                                        <li key={pageNum} className={`page-item ${pagination.page === pageNum ? 'active' : ''}`}>
+                                            <button 
+                                                className="page-link"
+                                                onClick={() => handlePageChange(pageNum)}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        </li>
+                                    );
+                                } else if (
+                                    pageNum === pagination.page - 3 ||
+                                    pageNum === pagination.page + 3
+                                ) {
+                                    return <li key={pageNum} className="page-item disabled"><span className="page-link">...</span></li>;
+                                }
+                                return null;
+                            })}
+                            <li className={`page-item ${pagination.page === totalPages ? 'disabled' : ''}`}>
+                                <button 
+                                    className="page-link"
+                                    onClick={() => handlePageChange(pagination.page + 1)}
+                                    disabled={pagination.page === totalPages}
+                                >
+                                    Next
+                                </button>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            )}
+
             {/* Empty State */}
-            {users.length === 0 && (
+            {paginatedUsers.length === 0 && !loading && (
                 <div className="text-center py-5">
                     <svg width="64" height="64" viewBox="0 0 24 24" className="text-muted mb-3">
                         <path fill="currentColor" d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zM4 18v-4h3v4h2v-7.5c0-1.1.9-2 2-2h2c1.1 0 2 .9 2 2V18h2v-4h3v4h2v2H2v-2h2z" />
                     </svg>
                     <h5 className="text-muted">No Users Found</h5>
-                    <p className="text-muted mb-0">No users match your current filters.</p>
+                    <p className="text-muted mb-0">
+                        {allUsers.length === 0 ? 'No users in database.' : 'No users match your current filters.'}
+                    </p>
                 </div>
             )}
         </div>
