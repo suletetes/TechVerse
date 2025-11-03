@@ -1,55 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 // AdminHeader removed for cleaner interface
-import { OrdersTable } from '../../components/tables';
+import OrdersTable from '../../components/tables/OrdersTable';
+import { adminService } from '../../api/services';
 
 const AdminOrderManagement = () => {
-    const [orders, setOrders] = useState([
-        {
-            id: 'TV-2024-001234',
-            customer: 'John Smith',
-            email: 'john.smith@email.com',
-            date: '2024-01-15',
-            status: 'Processing',
-            total: 2999.00,
-            items: 2,
-            paymentMethod: 'Credit Card',
-            shippingAddress: '123 Main St, London, UK'
-        },
-        {
-            id: 'TV-2024-001233',
-            customer: 'Emma Wilson',
-            email: 'emma.wilson@email.com',
-            date: '2024-01-15',
-            status: 'Shipped',
-            total: 1299.00,
-            items: 1,
-            paymentMethod: 'PayPal',
-            shippingAddress: '456 Oak Ave, Manchester, UK'
-        },
-        {
-            id: 'TV-2024-001232',
-            customer: 'Michael Brown',
-            email: 'michael.brown@email.com',
-            date: '2024-01-14',
-            status: 'Delivered',
-            total: 899.00,
-            items: 3,
-            paymentMethod: 'Credit Card',
-            shippingAddress: '789 Pine Rd, Birmingham, UK'
-        },
-        {
-            id: 'TV-2024-001231',
-            customer: 'Lisa Davis',
-            email: 'lisa.davis@email.com',
-            date: '2024-01-14',
-            status: 'Cancelled',
-            total: 1599.00,
-            items: 1,
-            paymentMethod: 'Credit Card',
-            shippingAddress: '321 Elm St, Liverpool, UK'
-        }
-    ]);
+    const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Fetch orders from database
+    useEffect(() => {
+        const fetchOrders = async () => {
+            try {
+                setLoading(true);
+                const response = await adminService.getAdminOrders({
+                    limit: 50,
+                    page: 1
+                });
+                
+                if (response.success && response.data.orders) {
+                    // Transform database orders to match component format
+                    const transformedOrders = response.data.orders.map(order => ({
+                        id: order.orderNumber || order._id,
+                        customer: `${order.user?.firstName || ''} ${order.user?.lastName || ''}`.trim() || 'Unknown Customer',
+                        email: order.user?.email || 'No email',
+                        date: new Date(order.createdAt).toLocaleDateString(),
+                        status: order.status || 'Unknown',
+                        total: order.total || 0,
+                        items: order.items?.length || 0,
+                        paymentMethod: order.payment?.method || 'Unknown',
+                        shippingAddress: order.shipping?.address ? 
+                            `${order.shipping.address.street || ''}, ${order.shipping.address.city || ''}, ${order.shipping.address.country || ''}`.replace(/^,\s*|,\s*$/g, '') 
+                            : 'No address'
+                    }));
+                    
+                    setOrders(transformedOrders);
+                } else {
+                    throw new Error(response.message || 'Failed to fetch orders');
+                }
+            } catch (err) {
+                console.error('Error fetching orders:', err);
+                setError(err.message);
+                // Fallback to empty array instead of mock data
+                setOrders([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchOrders();
+    }, []);
 
     const [filters, setFilters] = useState({
         status: 'all',
@@ -321,16 +322,52 @@ const AdminOrderManagement = () => {
                         </div>
                     </div>
                     <div className="card-body p-0">
-                        <OrdersTable
-                            orders={filteredOrders}
-                            onView={handleViewOrder}
-                            onEdit={handleEditOrder}
-                            onPrintInvoice={handlePrintInvoice}
-                            onSendEmail={handleSendEmail}
-                            onMarkAsShipped={handleMarkAsShipped}
-                            onPrintLabel={handlePrintLabel}
-                            enableSelection={false}
-                        />
+                        {loading ? (
+                            <div className="text-center py-5">
+                                <div className="spinner-border text-primary" role="status">
+                                    <span className="visually-hidden">Loading orders...</span>
+                                </div>
+                                <p className="mt-2 text-muted">Loading orders from database...</p>
+                            </div>
+                        ) : error ? (
+                            <div className="text-center py-5">
+                                <div className="alert alert-danger mx-4">
+                                    <h5 className="alert-heading">Error Loading Orders</h5>
+                                    <p className="mb-0">{error}</p>
+                                    <hr />
+                                    <button 
+                                        className="btn btn-outline-danger btn-sm"
+                                        onClick={() => window.location.reload()}
+                                    >
+                                        Retry
+                                    </button>
+                                </div>
+                            </div>
+                        ) : filteredOrders.length === 0 ? (
+                            <div className="text-center py-5">
+                                <svg width="64" height="64" viewBox="0 0 24 24" className="text-muted mb-3">
+                                    <path fill="currentColor" d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1z" />
+                                </svg>
+                                <h5 className="text-muted">No Orders Found</h5>
+                                <p className="text-muted mb-0">
+                                    {orders.length === 0 
+                                        ? "No orders have been placed yet." 
+                                        : "No orders match your current filters."
+                                    }
+                                </p>
+                            </div>
+                        ) : (
+                            <OrdersTable
+                                orders={filteredOrders}
+                                onView={handleViewOrder}
+                                onEdit={handleEditOrder}
+                                onPrintInvoice={handlePrintInvoice}
+                                onSendEmail={handleSendEmail}
+                                onMarkAsShipped={handleMarkAsShipped}
+                                onPrintLabel={handlePrintLabel}
+                                enableSelection={true}
+                            />
+                        )}
                     </div>
                 </div>
             </div>

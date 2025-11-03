@@ -129,9 +129,13 @@ const ProductsTable = ({
     {
       accessorKey: 'sales',
       header: 'Sales',
-      cell: ({ getValue }) => (
-        <span className="fw-semibold">{getValue()}</span>
-      ),
+      cell: ({ getValue }) => {
+        const sales = getValue();
+        const salesValue = typeof sales === 'number' 
+          ? sales 
+          : sales?.totalSold || 0;
+        return <span className="fw-semibold">{salesValue}</span>;
+      },
       size: 80,
     },
     {

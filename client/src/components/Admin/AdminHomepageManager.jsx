@@ -437,11 +437,21 @@ const AdminHomepageManager = () => {
                                                         <h6 className="card-title mb-1">{product.name}</h6>
                                                         <div className="d-flex justify-content-between align-items-center mb-2">
                                                             <span className="fw-bold text-primary">£{product.price}</span>
-                                                            <span className="badge bg-light text-dark">{product.category}</span>
+                                                            <span className="badge bg-light text-dark">
+                                                                {typeof product.category === 'string' 
+                                                                    ? product.category 
+                                                                    : product.category?.name || 'Category'
+                                                                }
+                                                            </span>
                                                         </div>
                                                         <div className="d-flex justify-content-between align-items-center">
                                                             <small className="text-muted">★ {product.rating}</small>
-                                                            <small className="text-muted">{product.sales} sales</small>
+                                                            <small className="text-muted">
+                                                                {typeof product.sales === 'number' 
+                                                                    ? product.sales 
+                                                                    : product.sales?.totalSold || product.totalSold || 0
+                                                                } sales
+                                                            </small>
                                                         </div>
                                                         <div className="d-flex gap-1 mt-2">
                                                             <button 
@@ -504,11 +514,21 @@ const AdminHomepageManager = () => {
                                                     <h6 className="card-title mb-1">{product.name}</h6>
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                                         <span className="fw-bold text-primary">£{product.price}</span>
-                                                        <span className="badge bg-light text-dark">{product.category}</span>
+                                                        <span className="badge bg-light text-dark">
+                                                            {typeof product.category === 'string' 
+                                                                ? product.category 
+                                                                : product.category?.name || 'Category'
+                                                            }
+                                                        </span>
                                                     </div>
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                                         <small className="text-muted">★ {product.rating}</small>
-                                                        <small className="text-muted">{product.sales} sales</small>
+                                                        <small className="text-muted">
+                                                            {typeof product.sales === 'number' 
+                                                                ? product.sales 
+                                                                : product.sales?.totalSold || product.totalSold || 0
+                                                            } sales
+                                                        </small>
                                                     </div>
                                                     <button 
                                                         className="btn btn-primary btn-sm w-100"

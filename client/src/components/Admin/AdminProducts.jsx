@@ -23,9 +23,9 @@ const AdminProducts = ({
     // Dynamic categories from catalog management system
     const categoryOptions = [
         { value: '', label: 'All Categories' },
-        ...(Array.isArray(categories) ? categories.map(cat => ({
-            value: cat.slug || cat.name.toLowerCase(),
-            label: cat.name,
+        ...(Array.isArray(categories) ? categories.map((cat, index) => ({
+            value: cat.slug || cat.name?.toLowerCase() || `category-${index}`,
+            label: cat.name || `Category ${index + 1}`,
             count: cat.productCount || 0,
             isActive: cat.isActive
         })) : [])
@@ -216,8 +216,8 @@ const AdminProducts = ({
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
                     >
-                        {categoryOptions.map(cat => (
-                            <option key={cat.value} value={cat.value}>
+                        {categoryOptions.map((cat, index) => (
+                            <option key={cat.value || `category-${index}`} value={cat.value}>
                                 {cat.label} {cat.count > 0 && `(${cat.count})`}
                             </option>
                         ))}
@@ -229,8 +229,8 @@ const AdminProducts = ({
                         value={selectedStatus}
                         onChange={(e) => setSelectedStatus(e.target.value)}
                     >
-                        {statusOptions.map(status => (
-                            <option key={status.value} value={status.value}>{status.label}</option>
+                        {statusOptions.map((status, index) => (
+                            <option key={status.value || `status-${index}`} value={status.value}>{status.label}</option>
                         ))}
                     </select>
                 </div>
@@ -240,8 +240,8 @@ const AdminProducts = ({
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
                     >
-                        {sortOptions.map(sort => (
-                            <option key={sort.value} value={sort.value}>Sort by {sort.label}</option>
+                        {sortOptions.map((sort, index) => (
+                            <option key={sort.value || `sort-${index}`} value={sort.value}>Sort by {sort.label}</option>
                         ))}
                     </select>
                 </div>
@@ -320,10 +320,10 @@ const AdminProducts = ({
                         </tr>
                     </thead>
                     <tbody>
-                        {currentProducts.map((product) => {
+                        {currentProducts.map((product, index) => {
                             const stockStatus = getStockStatus(product.stock);
                             return (
-                                <tr key={product.id} className="border-bottom">
+                                <tr key={product.id || product._id || `product-${index}`} className="border-bottom">
                                     <td>
                                         <input type="checkbox" className="form-check-input" />
                                     </td>
@@ -354,7 +354,10 @@ const AdminProducts = ({
                                                 </div>
                                                 <div className="d-block d-md-none mt-1">
                                                     <small className="badge bg-light text-dark border px-2 py-1 rounded-pill">
-                                                        {product.category}
+                                                        {typeof product.category === 'string' 
+                                                            ? product.category 
+                                                            : product.category?.name || 'Category'
+                                                        }
                                                     </small>
                                                 </div>
                                             </div>
@@ -363,7 +366,10 @@ const AdminProducts = ({
                                     <td className="d-none d-md-table-cell">
                                         <div className="d-flex flex-column">
                                             <span className="badge bg-light text-dark border px-3 py-2 rounded-pill mb-1">
-                                                {product.category}
+                                                {typeof product.category === 'string' 
+                                                    ? product.category 
+                                                    : product.category?.name || 'Category'
+                                                }
                                             </span>
                                             {getCategorySpecs(product.category) > 0 && (
                                                 <small className="text-muted">
@@ -385,7 +391,10 @@ const AdminProducts = ({
                                     <td className="d-none d-lg-table-cell">
                                         <div className="d-flex flex-column">
                                             <span className={`fw-medium text-${stockStatus.color}`}>
-                                                {product.stock}
+                                                {typeof product.stock === 'number' 
+                                                    ? product.stock 
+                                                    : product.stock?.quantity || product.stockQuantity || 0
+                                                }
                                             </span>
                                             <small className={`text-${stockStatus.color}`}>
                                                 {stockStatus.text}
@@ -394,7 +403,12 @@ const AdminProducts = ({
                                     </td>
                                     <td className="d-none d-xl-table-cell">
                                         <div className="d-flex flex-column">
-                                            <span className="fw-medium">{product.sales || 0}</span>
+                                            <span className="fw-medium">
+                                                {typeof product.sales === 'number' 
+                                                    ? product.sales 
+                                                    : product.sales?.totalSold || product.totalSold || 0
+                                                }
+                                            </span>
                                             <small className="text-muted">units sold</small>
                                         </div>
                                     </td>

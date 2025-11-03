@@ -408,6 +408,7 @@ const AdminProfile = () => {
                     <AdminProducts
                         products={adminProducts}
                         categories={categories}
+                        specifications={{}}
                         pagination={productsPagination}
                         setActiveTab={handleTabChange}
                         getStatusColor={getStatusColor}
