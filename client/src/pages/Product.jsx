@@ -422,22 +422,7 @@ const Product = () => {
                         <ProductHighlights />
                     </div>
 
-                    {/* Customer Reviews Section - Full Width Below */}
-                    <div
-                        className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
-                        <ReviewsSection 
-                            showWriteReview={false} 
-                            onSubmitReview={handleSubmitReview}
-                            productInfo={{
-                                id: product?._id || 'product-001',
-                                name: product?.name || 'Product',
-                                variant: `${selectedColor} - ${selectedStorage}`,
-                                image: product?.images?.[0]?.url || '../img/tablet-thumb.jpg'
-                            }}
-                        />
-                    </div>
-
-                    {/* Detailed Specifications Section - Full Width */}
+ {/* Detailed Specifications Section - Full Width */}
                     <div
                         className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
                         <DetailedSpecs 
@@ -463,6 +448,21 @@ const Product = () => {
                                     ]
                                 }
                             }
+                        />
+                    </div>
+
+                    {/* Customer Reviews Section - Full Width Below */}
+                    <div
+                        className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
+                        <ReviewsSection 
+                            showWriteReview={false} 
+                            onSubmitReview={handleSubmitReview}
+                            productInfo={{
+                                id: product?._id || 'product-001',
+                                name: product?.name || 'Product',
+                                variant: `${selectedColor} - ${selectedStorage}`,
+                                image: product?.images?.[0]?.url || '../img/tablet-thumb.jpg'
+                            }}
                         />
                     </div>
 

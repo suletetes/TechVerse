@@ -587,7 +587,7 @@ const AdminProductsNew = ({ setActiveTab }) => {
                         <div className="card-body text-center">
                             <h3 className="text-warning mb-1">
                                 {allProducts.filter(p => {
-                                    const stock = p.stock?.quantity || p.stock || 0;
+                                    const stock = typeof p.stock === 'number' ? p.stock : (p.stock?.quantity || p.stock?.stockQuantity || 0);
                                     return stock > 0 && stock <= 10;
                                 }).length}
                             </h3>
@@ -599,7 +599,10 @@ const AdminProductsNew = ({ setActiveTab }) => {
                     <div className="card bg-danger bg-opacity-10 border-danger border-opacity-25">
                         <div className="card-body text-center">
                             <h3 className="text-danger mb-1">
-                                {allProducts.filter(p => (p.stock?.quantity || p.stock || 0) === 0).length}
+                                {allProducts.filter(p => {
+                                    const stock = typeof p.stock === 'number' ? p.stock : (p.stock?.quantity || p.stock?.stockQuantity || 0);
+                                    return stock === 0;
+                                }).length}
                             </h3>
                             <p className="text-muted mb-0">Out of Stock</p>
                         </div>

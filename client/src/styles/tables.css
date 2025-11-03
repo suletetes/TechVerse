@@ -342,4 +342,29 @@
     color: #f8f9fa;
     border-color: #6c757d;
   }
+}/*
+ Utility Classes */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.cursor-pointer:hover {
+  opacity: 0.8;
+}
+
+/* Sortable Header Styles */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.sortable-header:hover {
+  background-color: #e9ecef !important;
+}
+
+.sort-arrow {
+  margin-left: 0.25rem;
+  font-size: 0.75rem;
+  opacity: 0.7;
 }
