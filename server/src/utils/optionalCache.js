@@ -31,10 +31,11 @@ class OptionalCache {
       if (redisUrl || (redisHost && redisPort)) {
         const redisConfig = {
           retryDelayOnFailover: 100,
-          maxRetriesPerRequest: 3,
+          maxRetriesPerRequest: 2,
           lazyConnect: true,
-          connectTimeout: 5000,
-          commandTimeout: 3000
+          connectTimeout: 2000,
+          commandTimeout: 2000,
+          maxLoadingTimeout: 2000
         };
 
         if (redisUrl) {

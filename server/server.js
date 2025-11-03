@@ -489,8 +489,11 @@ async function startServer() {
           const Redis = (await import('ioredis')).default;
           redisClient = new Redis(process.env.REDIS_URL, {
             retryDelayOnFailover: 100,
-            maxRetriesPerRequest: 3,
-            lazyConnect: true
+            maxRetriesPerRequest: 2,
+            lazyConnect: true,
+            connectTimeout: 2000,
+            commandTimeout: 2000,
+            maxLoadingTimeout: 2000
           });
           
           await redisClient.ping();

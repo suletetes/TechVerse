@@ -462,9 +462,52 @@ class TokenRefreshManager {
     }
     return null;
   }
+
+  /**
+   * Reset security state (development only)
+   */
+  resetSecurityState() {
+    if (import.meta.env?.DEV) {
+      console.log('🔧 Resetting security state (development mode)');
+      this.securityBreach = false;
+      this.securityBreachTime = null;
+      this.isRefreshing = false;
+      this.refreshPromise = null;
+      this.refreshAttempts = 0;
+      this.clearRefreshQueue('Security state reset');
+      
+      // Also reset tokenManager security state
+      if (tokenManager.clearTokens) {
+        tokenManager.clearTokens();
+      }
+      
+      console.log('✅ Security state reset complete');
+      return true;
+    } else {
+      console.warn('⚠️ Security state reset is only available in development mode');
+      return false;
+    }
+  }
 }
 
 // Create and export singleton instance
 export const tokenRefreshManager = new TokenRefreshManager();
+
+// Make reset method available globally in development
+if (import.meta.env?.DEV && typeof window !== 'undefined') {
+  window.resetTechVerseAuth = () => {
+    console.log('🔧 Resetting TechVerse authentication state...');
+    const result = tokenRefreshManager.resetSecurityState();
+    if (result) {
+      console.log('🎉 Authentication reset complete! Please refresh the page.');
+      if (confirm('Authentication state has been reset. Refresh the page now?')) {
+        window.location.reload();
+      }
+    }
+    return result;
+  };
+  
+  console.log('🔧 Development helper available: window.resetTechVerseAuth()');
+}
 
 export default tokenRefreshManager;

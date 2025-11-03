@@ -277,9 +277,9 @@ class EnhancedTokenManager {
         return null; // Don't clear tokens here, let refresh handle it
       }
       
-      // Verify browser fingerprint for theft detection
+      // Verify browser fingerprint for theft detection (relaxed in development)
       const storedFingerprint = localStorage.getItem(STORAGE_KEYS.TOKEN_FINGERPRINT);
-      if (storedFingerprint) {
+      if (storedFingerprint && !import.meta.env?.DEV) {
         const currentFingerprint = this.generateBrowserFingerprint();
         
         if (storedFingerprint !== currentFingerprint) {
@@ -303,6 +303,11 @@ class EnhancedTokenManager {
           // Reset mismatch counter on successful match
           this.fingerprintMismatches = 0;
         }
+      } else if (import.meta.env?.DEV) {
+        // In development mode, skip fingerprint validation but update stored fingerprint
+        const currentFingerprint = this.generateBrowserFingerprint();
+        localStorage.setItem(STORAGE_KEYS.TOKEN_FINGERPRINT, currentFingerprint);
+        this.fingerprintMismatches = 0;
       }
       
       return token;
