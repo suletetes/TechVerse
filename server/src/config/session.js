@@ -251,11 +251,21 @@ class SessionConfig {
 
       return session(this.sessionConfig);
     } catch (error) {
-      logger.error('Failed to initialize session management', {
-        error: error.message,
-        stack: error.stack
+      logger.warn('Redis initialization failed, falling back to memory store', {
+        error: error.message
       });
-      throw error;
+      
+      // Fallback to memory store if Redis fails
+      try {
+        this.createMemorySessionConfig();
+        return session(this.sessionConfig);
+      } catch (fallbackError) {
+        logger.error('Failed to initialize session management with memory store', {
+          error: fallbackError.message,
+          stack: fallbackError.stack
+        });
+        throw fallbackError;
+      }
     }
   }
 
