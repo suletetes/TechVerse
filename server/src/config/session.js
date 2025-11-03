@@ -27,12 +27,14 @@ class SessionConfig {
       this.redis = new Redis({
         ...redisConfig,
         retryDelayOnFailover: 100,
-        maxRetriesPerRequest: 3,
+        maxRetriesPerRequest: 2, // Reduced from 3
         lazyConnect: true,
         keepAlive: 30000,
         family: 4, // Force IPv4
         // Connection pool settings
-        maxLoadingTimeout: 5000,
+        maxLoadingTimeout: 2000, // Reduced from 5000ms to 2000ms
+        connectTimeout: 2000, // Add explicit connect timeout
+        commandTimeout: 2000, // Add command timeout
         // Reconnection settings
         reconnectOnError: (err) => {
           const targetError = 'READONLY';

@@ -23,6 +23,33 @@ export const createDatabaseIndexes = async () => {
 
     // Products collection indexes
     const Product = mongoose.model('Product');
+    
+    // Compound indexes for common query patterns
+    await Product.collection.createIndex({ 
+      status: 1, 
+      visibility: 1, 
+      brand: 1, 
+      price: 1 
+    });
+    await Product.collection.createIndex({ 
+      status: 1, 
+      visibility: 1, 
+      category: 1, 
+      price: 1 
+    });
+    await Product.collection.createIndex({ 
+      status: 1, 
+      visibility: 1, 
+      featured: 1, 
+      createdAt: -1 
+    });
+    await Product.collection.createIndex({ 
+      status: 1, 
+      visibility: 1, 
+      sections: 1 
+    });
+    
+    // Individual field indexes
     await Product.collection.createIndex({ category: 1, status: 1 });
     await Product.collection.createIndex({ sections: 1 });
     await Product.collection.createIndex({ name: "text", description: "text", brand: "text" });
@@ -96,6 +123,11 @@ export const createDatabaseIndexes = async () => {
  * Query performance monitoring middleware
  */
 export const queryPerformanceMonitor = (req, res, next) => {
+  // Skip monitoring for static assets and non-API requests
+  if (req.originalUrl.match(/\.(jpg|jpeg|png|gif|webp|svg|ico|css|js|woff|woff2|ttf|eot)$/i)) {
+    return next();
+  }
+  
   const startTime = Date.now();
   
   // Override mongoose query execution to monitor performance
@@ -108,15 +140,17 @@ export const queryPerformanceMonitor = (req, res, next) => {
     return originalExec.call(this).then(result => {
       const queryDuration = Date.now() - queryStartTime;
       
-      // Log slow queries (over 100ms)
-      if (queryDuration > 100) {
-        enhancedLogger.performance('Slow database query detected', {
+      // Only log very slow queries (over 1000ms) to reduce noise
+      if (queryDuration > 1000) {
+        enhancedLogger.warn('Slow database query detected', {
           collection: query.model.collection.name,
           operation: query.op,
           duration: queryDuration,
           filter: JSON.stringify(query.getFilter()),
           requestId: req.id,
-          endpoint: req.originalUrl
+          endpoint: req.originalUrl,
+          category: 'performance',
+          type: 'performance'
         });
       }
       
@@ -363,14 +397,32 @@ export class CacheManager {
 export const performanceMonitor = {
   // Track API response times
   trackResponseTime: (req, res, next) => {
+    // Skip tracking for static assets
+    if (req.originalUrl.match(/\.(jpg|jpeg|png|gif|webp|svg|ico|css|js|woff|woff2|ttf|eot)$/i)) {
+      return next();
+    }
+    
     const startTime = Date.now();
     
     res.on('finish', () => {
       const duration = Date.now() - startTime;
       
-      // Log slow responses (over 1 second)
-      if (duration > 1000) {
-        enhancedLogger.performance('Slow API response detected', {
+      // Only log very slow responses (over 3 seconds) to reduce noise
+      if (duration > 3000) {
+        enhancedLogger.warn('Very slow API response detected', {
+          method: req.method,
+          url: req.originalUrl,
+          duration,
+          statusCode: res.statusCode,
+          requestId: req.id,
+          category: 'performance',
+          type: 'performance'
+        });
+      }
+      
+      // Only track response time metrics for API endpoints, not every request
+      if (req.originalUrl.startsWith('/api/') && duration > 500) {
+        enhancedLogger.debug('API response time', {
           method: req.method,
           url: req.originalUrl,
           duration,
@@ -378,15 +430,6 @@ export const performanceMonitor = {
           requestId: req.id
         });
       }
-      
-      // Track response time metrics
-      enhancedLogger.performance('API response time', {
-        method: req.method,
-        url: req.originalUrl,
-        duration,
-        statusCode: res.statusCode,
-        requestId: req.id
-      });
     });
     
     next();
