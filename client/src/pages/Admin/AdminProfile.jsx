@@ -22,6 +22,9 @@ import {
     AdminSecurity,
     AdminProfileSettings
 } from "../../components";
+import AdminProductsNew from "../../components/Admin/AdminProductsNew";
+import AdminOrdersNew from "../../components/Admin/AdminOrdersNew";
+import AdminUsersNew from "../../components/Admin/AdminUsersNew";
 import AdminDashboardBright from "../../components/Admin/AdminDashboardBright";
 
 // Import admin-specific CSS
@@ -248,6 +251,24 @@ const AdminProfile = () => {
         setActiveTab('edit-product');
     };
 
+    const handleDuplicateProduct = async (product) => {
+        try {
+            const duplicatedProduct = {
+                ...product,
+                name: `${product.name} (Copy)`,
+                sku: `${product.sku || 'SKU'}-COPY-${Date.now()}`,
+                status: 'draft'
+            };
+            delete duplicatedProduct._id;
+            delete duplicatedProduct.id;
+            
+            await createProduct(duplicatedProduct);
+            console.log('Product duplicated successfully');
+        } catch (error) {
+            console.error('Error duplicating product:', error);
+        }
+    };
+
     const handleSaveCategory = async (categoryData) => {
         try {
             if (categoryData.id) {
@@ -405,19 +426,8 @@ const AdminProfile = () => {
 
             case 'products':
                 return (
-                    <AdminProducts
-                        products={adminProducts}
-                        categories={categories}
-                        specifications={{}}
-                        pagination={productsPagination}
+                    <AdminProductsNew
                         setActiveTab={handleTabChange}
-                        getStatusColor={getStatusColor}
-                        formatCurrency={formatCurrency}
-                        onEditProduct={handleEditProduct}
-                        onDeleteProduct={handleDeleteProduct}
-                        onUpdateProduct={handleUpdateProduct}
-                        isLoading={isProductsLoading}
-                        error={productsError}
                     />
                 );
 
@@ -476,28 +486,12 @@ const AdminProfile = () => {
 
             case 'orders':
                 return (
-                    <AdminOrders
-                        orders={adminOrders}
-                        pagination={ordersPagination}
-                        getStatusColor={getStatusColor}
-                        formatCurrency={formatCurrency}
-                        onUpdateOrderStatus={updateOrderStatus}
-                        isLoading={isOrdersLoading}
-                        error={ordersError}
-                    />
+                    <AdminOrdersNew />
                 );
 
             case 'users':
                 return (
-                    <AdminUsers
-                        users={adminUsers}
-                        pagination={usersPagination}
-                        getStatusColor={getStatusColor}
-                        onUpdateUserStatus={updateUserStatus}
-                        onUpdateUserRole={updateUserRole}
-                        isLoading={isUsersLoading}
-                        error={usersError}
-                    />
+                    <AdminUsersNew />
                 );
 
             case 'notifications':

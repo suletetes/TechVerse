@@ -222,6 +222,8 @@ export const getReviews = async (req, res) => {
 // @route   GET /api/admin/orders
 // @access  Private (Admin only)
 export const getAllOrders = asyncHandler(async (req, res, next) => {
+  console.log('[getAllOrders] Request received:', req.query);
+  
   const {
     page = PAGINATION_DEFAULTS.PAGE,
     limit = PAGINATION_DEFAULTS.LIMIT,
@@ -298,7 +300,12 @@ export const getAllOrders = asyncHandler(async (req, res, next) => {
         as: 'userInfo'
       }
     },
-    { $unwind: '$userInfo' },
+    { 
+      $unwind: { 
+        path: '$userInfo', 
+        preserveNullAndEmptyArrays: true 
+      } 
+    },
     {
       $lookup: {
         from: 'products',
@@ -352,46 +359,55 @@ export const getAllOrders = asyncHandler(async (req, res, next) => {
     }
   );
 
-  const [orders, totalOrders, orderStats] = await Promise.all([
-    Order.aggregate(pipeline),
-    Order.countDocuments(filter),
-    // Get order statistics
-    Order.aggregate([
+  // Execute queries with error handling
+  let orders, totalOrders, orderStats;
+  
+  try {
+    [orders, totalOrders] = await Promise.all([
+      Order.aggregate(pipeline),
+      Order.countDocuments(filter)
+    ]);
+  } catch (aggregationError) {
+    console.error('Orders aggregation error:', aggregationError);
+    // Fallback to simple query if aggregation fails
+    [orders, totalOrders] = await Promise.all([
+      Order.find(filter)
+        .populate('user', 'firstName lastName email')
+        .sort(sort)
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Order.countDocuments(filter)
+    ]);
+  }
+
+  // Get basic order statistics (simplified)
+  try {
+    const statsResult = await Order.aggregate([
       { $match: filter },
       {
         $group: {
           _id: null,
           totalRevenue: { $sum: '$total' },
           avgOrderValue: { $avg: '$total' },
-          statusCounts: {
-            $push: '$status'
-          }
-        }
-      },
-      {
-        $project: {
-          totalRevenue: 1,
-          avgOrderValue: 1,
-          statusBreakdown: {
-            $reduce: {
-              input: '$statusCounts',
-              initialValue: {},
-              in: {
-                $mergeObjects: [
-                  '$value',
-                  {
-                    $arrayToObject: [
-                      [{ k: '$this', v: { $add: [{ $ifNull: [{ $getField: { field: '$this', input: '$value' } }, 0] }, 1] } }]
-                    ]
-                  }
-                ]
-              }
-            }
-          }
+          count: { $sum: 1 }
         }
       }
-    ])
-  ]);
+    ]);
+    
+    orderStats = statsResult[0] || {
+      totalRevenue: 0,
+      avgOrderValue: 0,
+      count: 0
+    };
+  } catch (statsError) {
+    console.error('Order stats error:', statsError);
+    orderStats = {
+      totalRevenue: 0,
+      avgOrderValue: 0,
+      count: totalOrders
+    };
+  }
 
   // Calculate pagination info
   const totalPages = Math.ceil(totalOrders / limitNum);
@@ -409,16 +425,22 @@ export const getAllOrders = asyncHandler(async (req, res, next) => {
         hasPrevPage: page > 1,
         limit: limitNum
       },
-      statistics: orderStats[0] || {
-        totalRevenue: 0,
-        avgOrderValue: 0,
-        statusBreakdown: {}
+      statistics: {
+        totalRevenue: orderStats.totalRevenue || 0,
+        avgOrderValue: orderStats.avgOrderValue || 0,
+        totalOrders: orderStats.count || totalOrders
       },
       filters: {
         status, dateFrom, dateTo, search, minAmount, maxAmount,
         paymentStatus, shippingStatus, userId, sortBy, sortOrder
       }
     }
+  });
+  
+  console.log('[getAllOrders] Success:', {
+    ordersCount: orders.length,
+    totalOrders,
+    totalPages
   });
 });
 

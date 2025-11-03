@@ -8,5 +8,14 @@ import "./assets/css/ecommerce.css";
 import "./assets/css/category-enhancements.css";
 import "./assets/css/variant-colors.css";
 
+// Development utilities
+if (import.meta.env?.DEV) {
+  import('./utils/devAuthReset.js');
+  import('./utils/adminDataLoader.js');
+  import('./utils/AdminDataManager.js');
+  import('./utils/authTest.js');
+  import('./utils/adminLogin.js');
+}
+
 const root = ReactDOM.createRoot(document.getElementById("app"));
 root.render(<App />);

@@ -9,7 +9,9 @@ const AdminProducts = ({
     formatCurrency,
     onUpdateProduct,
     onDeleteProduct,
-    onDuplicateProduct 
+    onDuplicateProduct,
+    isLoading = false,
+    error = null 
 }) => {
     const [filteredProducts, setFilteredProducts] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -304,24 +306,49 @@ const AdminProducts = ({
 
             {/* Products Table */}
             <div className="table-responsive">
-                <table className="table table-hover align-middle">
-                    <thead className="table-light">
-                        <tr>
-                            <th className="border-0 fw-semibold">
-                                <input type="checkbox" className="form-check-input" />
-                            </th>
-                            <th className="border-0 fw-semibold">Product</th>
-                            <th className="border-0 fw-semibold d-none d-md-table-cell">Category</th>
-                            <th className="border-0 fw-semibold">Price</th>
-                            <th className="border-0 fw-semibold d-none d-lg-table-cell">Stock</th>
-                            <th className="border-0 fw-semibold d-none d-xl-table-cell">Sales</th>
-                            <th className="border-0 fw-semibold">Status</th>
-                            <th className="border-0 fw-semibold text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {currentProducts.map((product, index) => {
-                            const stockStatus = getStockStatus(product.stock);
+                {isLoading ? (
+                    <div className="text-center py-5">
+                        <div className="spinner-border text-primary" role="status">
+                            <span className="visually-hidden">Loading products...</span>
+                        </div>
+                        <p className="mt-2 text-muted">Loading products from database...</p>
+                    </div>
+                ) : error ? (
+                    <div className="text-center py-5">
+                        <div className="alert alert-danger mx-4">
+                            <h5 className="alert-heading">Error Loading Products</h5>
+                            <p className="mb-0">{error}</p>
+                            <hr />
+                            <button 
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() => window.location.reload()}
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <table className="table table-hover align-middle">
+                        <thead className="table-light">
+                            <tr>
+                                <th className="border-0 fw-semibold">
+                                    <input type="checkbox" className="form-check-input" />
+                                </th>
+                                <th className="border-0 fw-semibold">Product</th>
+                                <th className="border-0 fw-semibold d-none d-md-table-cell">Category</th>
+                                <th className="border-0 fw-semibold">Price</th>
+                                <th className="border-0 fw-semibold d-none d-lg-table-cell">Stock</th>
+                                <th className="border-0 fw-semibold d-none d-xl-table-cell">Sales</th>
+                                <th className="border-0 fw-semibold">Status</th>
+                                <th className="border-0 fw-semibold text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {currentProducts.map((product, index) => {
+                            const stockQuantity = typeof product.stock === 'number' 
+                                ? product.stock 
+                                : product.stock?.quantity || product.stockQuantity || 0;
+                            const stockStatus = getStockStatus(stockQuantity);
                             return (
                                 <tr key={product.id || product._id || `product-${index}`} className="border-bottom">
                                     <td>
@@ -391,10 +418,7 @@ const AdminProducts = ({
                                     <td className="d-none d-lg-table-cell">
                                         <div className="d-flex flex-column">
                                             <span className={`fw-medium text-${stockStatus.color}`}>
-                                                {typeof product.stock === 'number' 
-                                                    ? product.stock 
-                                                    : product.stock?.quantity || product.stockQuantity || 0
-                                                }
+                                                {stockQuantity}
                                             </span>
                                             <small className={`text-${stockStatus.color}`}>
                                                 {stockStatus.text}
@@ -459,9 +483,10 @@ const AdminProducts = ({
                                     </td>
                                 </tr>
                             );
-                        })}
-                    </tbody>
-                </table>
+                            })}
+                        </tbody>
+                    </table>
+                )}
             </div>
 
             {/* Pagination */}
