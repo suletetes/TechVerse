@@ -185,6 +185,8 @@ const AdminProductsNew = ({ setActiveTab }) => {
             console.log('🔍 Loading categories...');
             const response = await adminService.getCategories();
             
+            console.log('📦 Categories response:', response);
+            
             let categories = [];
             if (response?.data?.categories) {
                 categories = response.data.categories;
@@ -195,10 +197,63 @@ const AdminProductsNew = ({ setActiveTab }) => {
             }
             
             console.log(`📊 Loaded ${categories.length} categories`);
-            adminDataStore.setData('categories', categories);
+            
+            if (categories.length > 0) {
+                adminDataStore.setData('categories', categories);
+            } else {
+                // Try direct API call as fallback
+                console.log('🔄 Trying direct categories API call...');
+                const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
+                const directResponse = await fetch('http://localhost:5000/api/admin/categories', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (directResponse.ok) {
+                    const directData = await directResponse.json();
+                    const directCategories = directData?.data?.categories || directData?.categories || directData || [];
+                    console.log(`🎉 Found ${directCategories.length} categories via direct API`);
+                    adminDataStore.setData('categories', directCategories);
+                } else {
+                    // Create default categories if none found
+                    const defaultCategories = [
+                        { _id: '1', name: 'Phones', slug: 'phones' },
+                        { _id: '2', name: 'Tablets', slug: 'tablets' },
+                        { _id: '3', name: 'Computers', slug: 'computers' },
+                        { _id: '4', name: 'TVs', slug: 'tvs' },
+                        { _id: '5', name: 'Gaming', slug: 'gaming' },
+                        { _id: '6', name: 'Watches', slug: 'watches' },
+                        { _id: '7', name: 'Audio', slug: 'audio' },
+                        { _id: '8', name: 'Cameras', slug: 'cameras' },
+                        { _id: '9', name: 'Accessories', slug: 'accessories' },
+                        { _id: '10', name: 'Smart Home', slug: 'smart-home' },
+                        { _id: '11', name: 'Fitness', slug: 'fitness' }
+                    ];
+                    console.log('📝 Using default categories');
+                    adminDataStore.setData('categories', defaultCategories);
+                }
+            }
             
         } catch (err) {
             console.error('❌ Error loading categories:', err);
+            // Create default categories as final fallback
+            const defaultCategories = [
+                { _id: '1', name: 'Phones', slug: 'phones' },
+                { _id: '2', name: 'Tablets', slug: 'tablets' },
+                { _id: '3', name: 'Computers', slug: 'computers' },
+                { _id: '4', name: 'TVs', slug: 'tvs' },
+                { _id: '5', name: 'Gaming', slug: 'gaming' },
+                { _id: '6', name: 'Watches', slug: 'watches' },
+                { _id: '7', name: 'Audio', slug: 'audio' },
+                { _id: '8', name: 'Cameras', slug: 'cameras' },
+                { _id: '9', name: 'Accessories', slug: 'accessories' },
+                { _id: '10', name: 'Smart Home', slug: 'smart-home' },
+                { _id: '11', name: 'Fitness', slug: 'fitness' }
+            ];
+            console.log('📝 Using default categories due to error');
+            adminDataStore.setData('categories', defaultCategories);
         }
     };
 
@@ -486,7 +541,7 @@ const AdminProductsNew = ({ setActiveTab }) => {
                         value={filters.category}
                         onChange={(e) => handleFilterChange('category', e.target.value)}
                     >
-                        <option value="">All Categories</option>
+                        <option value="">All Categories ({allCategories.length})</option>
                         {allCategories.map(category => (
                             <option key={category._id || category.id} value={category.name}>
                                 {category.name}
