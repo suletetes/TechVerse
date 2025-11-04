@@ -2,9 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { adminService } from '../../api/services/index.js';
 import { adminDataStore } from '../../utils/AdminDataStore';
 import { useAuth } from '../../context/AuthContext';
+import { useAdmin } from '../../context/AdminContext';
 
 const AdminProductsNew = ({ setActiveTab }) => {
     const { user, isAuthenticated, isAdmin } = useAuth();
+    const { categories: adminCategories, loadCategories: adminLoadCategories } = useAdmin();
     const [allProducts, setAllProducts] = useState([]);
     const [allCategories, setAllCategories] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -33,7 +35,12 @@ const AdminProductsNew = ({ setActiveTab }) => {
             setLoading(false);
         }
 
-        if (!adminDataStore.isDataFresh('categories')) {
+        // Try to use categories from AdminContext first
+        if (adminCategories && adminCategories.length > 0) {
+            console.log('📦 Using categories from AdminContext:', adminCategories.length);
+            setAllCategories(adminCategories);
+            adminDataStore.setData('categories', adminCategories);
+        } else if (!adminDataStore.isDataFresh('categories')) {
             loadCategories();
         } else {
             setAllCategories(adminDataStore.getData('categories'));
@@ -55,6 +62,15 @@ const AdminProductsNew = ({ setActiveTab }) => {
             unsubscribeCategories();
         };
     }, []);
+    
+    // Sync categories from AdminContext
+    useEffect(() => {
+        if (adminCategories && adminCategories.length > 0) {
+            console.log('📦 Syncing categories from AdminContext:', adminCategories.length);
+            setAllCategories(adminCategories);
+            adminDataStore.setData('categories', adminCategories);
+        }
+    }, [adminCategories]);
     
     // Reset to page 1 when filters change
     useEffect(() => {
@@ -183,9 +199,63 @@ const AdminProductsNew = ({ setActiveTab }) => {
     const loadCategories = async () => {
         try {
             console.log('🔍 Loading categories...');
-            const response = await adminService.getCategories();
             
-            console.log('📦 Categories response:', response);
+            // Check authentication first
+            const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
+            if (!token) {
+                console.error('❌ No authentication token found');
+                throw new Error('No authentication token');
+            }
+            
+            // Try direct API call first (more reliable)
+            console.log('🔄 Trying direct categories API call...');
+            const directResponse = await fetch('http://localhost:5000/api/admin/categories', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            console.log('📡 Categories API response status:', directResponse.status);
+            console.log('📡 Categories API response headers:', [...directResponse.headers.entries()]);
+            
+            if (directResponse.ok) {
+                const directData = await directResponse.json();
+                console.log('📦 Categories API response:', directData);
+                console.log('📦 Response structure:', {
+                    hasData: !!directData.data,
+                    hasCategories: !!directData.categories,
+                    isArray: Array.isArray(directData),
+                    dataKeys: Object.keys(directData || {})
+                });
+                
+                let categories = [];
+                if (directData?.data?.categories) {
+                    categories = directData.data.categories;
+                } else if (directData?.categories) {
+                    categories = directData.categories;
+                } else if (Array.isArray(directData)) {
+                    categories = directData;
+                } else if (directData?.data && Array.isArray(directData.data)) {
+                    categories = directData.data;
+                }
+                
+                console.log(`📊 Found ${categories.length} categories from API`);
+                
+                if (categories.length > 0) {
+                    setAllCategories(categories);
+                    adminDataStore.setData('categories', categories);
+                    return;
+                }
+            } else {
+                const errorText = await directResponse.text();
+                console.error('❌ Categories API error:', directResponse.status, errorText);
+            }
+            
+            // Fallback: Try adminService
+            console.log('🔄 Trying adminService.getCategories...');
+            const response = await adminService.getCategories();
+            console.log('📦 AdminService categories response:', response);
             
             let categories = [];
             if (response?.data?.categories) {
@@ -196,48 +266,20 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 categories = response;
             }
             
-            console.log(`📊 Loaded ${categories.length} categories`);
-            
             if (categories.length > 0) {
+                console.log(`📊 Found ${categories.length} categories from adminService`);
+                setAllCategories(categories);
                 adminDataStore.setData('categories', categories);
-            } else {
-                // Try direct API call as fallback
-                console.log('🔄 Trying direct categories API call...');
-                const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
-                const directResponse = await fetch('http://localhost:5000/api/admin/categories', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (directResponse.ok) {
-                    const directData = await directResponse.json();
-                    const directCategories = directData?.data?.categories || directData?.categories || directData || [];
-                    console.log(`🎉 Found ${directCategories.length} categories via direct API`);
-                    adminDataStore.setData('categories', directCategories);
-                } else {
-                    // Create default categories if none found
-                    const defaultCategories = [
-                        { _id: '1', name: 'Phones', slug: 'phones' },
-                        { _id: '2', name: 'Tablets', slug: 'tablets' },
-                        { _id: '3', name: 'Computers', slug: 'computers' },
-                        { _id: '4', name: 'TVs', slug: 'tvs' },
-                        { _id: '5', name: 'Gaming', slug: 'gaming' },
-                        { _id: '6', name: 'Watches', slug: 'watches' },
-                        { _id: '7', name: 'Audio', slug: 'audio' },
-                        { _id: '8', name: 'Cameras', slug: 'cameras' },
-                        { _id: '9', name: 'Accessories', slug: 'accessories' },
-                        { _id: '10', name: 'Smart Home', slug: 'smart-home' },
-                        { _id: '11', name: 'Fitness', slug: 'fitness' }
-                    ];
-                    console.log('📝 Using default categories');
-                    adminDataStore.setData('categories', defaultCategories);
-                }
+                return;
             }
+            
+            // Final fallback: Use default categories
+            console.log('📝 No categories found, using defaults');
+            throw new Error('No categories found from API');
             
         } catch (err) {
             console.error('❌ Error loading categories:', err);
+            
             // Create default categories as final fallback
             const defaultCategories = [
                 { _id: '1', name: 'Phones', slug: 'phones' },
@@ -246,13 +288,14 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 { _id: '4', name: 'TVs', slug: 'tvs' },
                 { _id: '5', name: 'Gaming', slug: 'gaming' },
                 { _id: '6', name: 'Watches', slug: 'watches' },
-                { _id: '7', name: 'Audio', slug: 'audio' },
+                { _id: '7', name: 'Audio & Headphones', slug: 'audio' },
                 { _id: '8', name: 'Cameras', slug: 'cameras' },
                 { _id: '9', name: 'Accessories', slug: 'accessories' },
-                { _id: '10', name: 'Smart Home', slug: 'smart-home' },
-                { _id: '11', name: 'Fitness', slug: 'fitness' }
+                { _id: '10', name: 'Smart Home', slug: 'home-smart-devices' },
+                { _id: '11', name: 'Fitness & Health', slug: 'fitness-health' }
             ];
             console.log('📝 Using default categories due to error');
+            setAllCategories(defaultCategories);
             adminDataStore.setData('categories', defaultCategories);
         }
     };
@@ -510,6 +553,8 @@ const AdminProductsNew = ({ setActiveTab }) => {
                                 isAuthenticated,
                                 isAdmin: isAdmin(),
                                 user,
+                                allCategories: allCategories,
+                                categoriesCount: allCategories.length,
                                 localStorage: {
                                     token: localStorage.getItem('token'),
                                     techverse_token: localStorage.getItem('techverse_token_v2'),
@@ -519,6 +564,15 @@ const AdminProductsNew = ({ setActiveTab }) => {
                         }}
                     >
                         Debug
+                    </button>
+                    <button
+                        className="btn btn-outline-warning btn-rd"
+                        onClick={() => {
+                            console.log('🔄 Manual category refresh...');
+                            loadCategories();
+                        }}
+                    >
+                        Reload Categories
                     </button>
                     <button 
                         className="btn btn-success btn-rd"

@@ -6,12 +6,26 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     const [currentStep, setCurrentStep] = useState(1);
     const [selectedCategory, setSelectedCategory] = useState(null);
     
-    // Debug categories
+    // Debug categories and handle invalid data
     useEffect(() => {
         console.log('AdminAddProduct - Categories received:', categories);
-        console.log('Categories count:', Array.isArray(categories) ? categories.length : 'Not an array');
-        if (Array.isArray(categories) && categories.length > 0) {
-            console.log('First category:', categories[0]);
+        console.log('Categories type:', typeof categories);
+        console.log('Categories is array:', Array.isArray(categories));
+        
+        if (Array.isArray(categories)) {
+            console.log('Categories count:', categories.length);
+            if (categories.length > 0) {
+                console.log('First category:', categories[0]);
+                // Check if it's actually a category object
+                if (categories[0] && typeof categories[0] === 'object' && categories[0].name) {
+                    console.log('✅ Valid category data');
+                } else {
+                    console.warn('⚠️ Invalid category data structure');
+                }
+            }
+        } else if (categories && typeof categories === 'object') {
+            console.warn('⚠️ Categories is an object but not an array - might be dashboard data');
+            console.log('Object keys:', Object.keys(categories));
         }
     }, [categories]);
     const [formData, setFormData] = useState({

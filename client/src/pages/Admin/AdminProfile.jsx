@@ -26,6 +26,7 @@ import AdminProductsNew from "../../components/Admin/AdminProductsNew";
 import AdminOrdersNew from "../../components/Admin/AdminOrdersNew";
 import AdminUsersNew from "../../components/Admin/AdminUsersNew";
 import AdminDashboardBright from "../../components/Admin/AdminDashboardBright";
+import { adminDataStore } from "../../utils/AdminDataStore";
 
 // Import admin-specific CSS
 import '../../assets/css/admin-enhancements.css';
@@ -89,10 +90,23 @@ const AdminProfile = () => {
         clearError
     } = useAdmin();
 
+    // Debug categories
+    useEffect(() => {
+        console.log('🔍 AdminProfile categories debug:', {
+            categories: categories,
+            categoriesType: typeof categories,
+            categoriesIsArray: Array.isArray(categories),
+            categoriesLength: Array.isArray(categories) ? categories.length : 'N/A',
+            dashboardStats: dashboardStats,
+            dashboardStatsType: typeof dashboardStats
+        });
+    }, [categories, dashboardStats]);
+
     // Local state
     const [activeTab, setActiveTab] = useState('dashboard');
     const [editProductId, setEditProductId] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [localCategories, setLocalCategories] = useState([]);
     const [dateRange, setDateRange] = useState('7days');
 
     // Additional state for missing variables
@@ -143,6 +157,32 @@ const AdminProfile = () => {
             loadCategories();
         }
     }, [isAuthenticated, isAdmin, dateRange]);
+
+    // Sync categories from AdminDataStore
+    useEffect(() => {
+        const updateCategories = () => {
+            const storedCategories = adminDataStore.getData('categories');
+            if (storedCategories && storedCategories.length > 0) {
+                console.log('📦 AdminProfile: Using categories from AdminDataStore:', storedCategories.length);
+                setLocalCategories(storedCategories);
+            } else if (categories && Array.isArray(categories) && categories.length > 0) {
+                console.log('📦 AdminProfile: Using categories from AdminContext:', categories.length);
+                setLocalCategories(categories);
+            }
+        };
+
+        updateCategories();
+
+        // Listen for category updates from AdminDataStore
+        const unsubscribe = adminDataStore.addListener('categories', (data) => {
+            if (data.data && data.data.length > 0) {
+                console.log('📦 AdminProfile: Categories updated from AdminDataStore:', data.data.length);
+                setLocalCategories(data.data);
+            }
+        });
+
+        return unsubscribe;
+    }, [categories]);
 
     // Load data based on active tab
     useEffect(() => {
@@ -436,7 +476,7 @@ const AdminProfile = () => {
             case 'add-product':
                 return (
                     <AdminAddProduct
-                        categories={categories}
+                        categories={localCategories}
                         onSave={handleAddProduct}
                         onCancel={() => handleTabChange('products')}
                         isLoading={isProductsLoading}
@@ -446,7 +486,7 @@ const AdminProfile = () => {
             case 'edit-product':
                 return (
                     <AdminAddProduct
-                        categories={categories}
+                        categories={localCategories}
                         editProduct={Array.isArray(adminProducts) ? adminProducts.find(p => p._id === editProductId) : null}
                         onSave={handleUpdateProduct}
                         onCancel={() => handleTabChange('products')}
@@ -631,6 +671,35 @@ const AdminProfile = () => {
                             {/* Render Active Tab Content */}
                             {renderActiveTab()}
                         </div>
+                    </div>
+                </div>
+                
+                {/* Debug Panel - Remove in production */}
+                <div className="position-fixed bottom-0 end-0 p-3" style={{ zIndex: 1050 }}>
+                    <div className="btn-group-vertical">
+                        <button
+                            className="btn btn-sm btn-outline-info"
+                            onClick={() => {
+                                console.log('🔄 Manual category reload...');
+                                loadCategories();
+                            }}
+                            title="Reload Categories"
+                        >
+                            📂
+                        </button>
+                        <button
+                            className="btn btn-sm btn-outline-warning"
+                            onClick={() => {
+                                console.log('🔍 Categories Debug:', {
+                                    adminContextCategories: categories,
+                                    localCategories: localCategories,
+                                    adminDataStoreCategories: adminDataStore.getData('categories')
+                                });
+                            }}
+                            title="Debug Categories"
+                        >
+                            🐛
+                        </button>
                     </div>
                 </div>
             </div>
