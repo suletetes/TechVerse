@@ -25,8 +25,17 @@ const validateCSRFToken = (req) => {
                      req.headers['csrf-token'] ||
                      req.body._csrf ||
                      req.query._csrf;
+  
+  // Check session token as well (for backward compatibility)
+  const sessionToken = req.session ? req.session.csrfToken : null;
 
-  return cookieToken && headerToken && cookieToken === headerToken;
+  // Method 1: Double-submit cookie pattern (primary method)
+  const doubleSubmitValid = cookieToken && headerToken && cookieToken === headerToken;
+  
+  // Method 2: Session-based validation (for authenticated endpoints)
+  const sessionValid = sessionToken && headerToken && sessionToken === headerToken;
+  
+  return doubleSubmitValid || sessionValid;
 };
 
 // CSRF protection middleware

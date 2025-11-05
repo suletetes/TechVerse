@@ -44,12 +44,13 @@ router.get('/csrf-token', csrfTokenEndpoint);
 /**
  * GET /api/security/csrf-token-simple
  * Simple CSRF token endpoint without authentication requirement
+ * Uses simple double-submit cookie pattern
  */
 router.get('/csrf-token-simple', (req, res) => {
   try {
     const token = crypto.randomBytes(32).toString('hex');
     
-    // Set cookie
+    // Set cookie for client access (double-submit pattern)
     res.cookie('csrf-token', token, {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
@@ -57,7 +58,7 @@ router.get('/csrf-token-simple', (req, res) => {
       maxAge: 3600000 // 1 hour
     });
     
-    console.log('✅ Simple CSRF token generated');
+    console.log('✅ Simple CSRF token generated (double-submit pattern)');
 
     res.json({
       success: true,
