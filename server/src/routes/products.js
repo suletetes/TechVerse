@@ -58,10 +58,10 @@ const productValidation = [
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('Brand must be between 2 and 100 characters'),
-  body('stock')
+  body('stock.quantity')
     .optional()
     .isInt({ min: 0 })
-    .withMessage('Stock must be a non-negative integer'),
+    .withMessage('Stock quantity must be a non-negative integer'),
   body('sections')
     .optional()
     .isArray({ max: 4 })

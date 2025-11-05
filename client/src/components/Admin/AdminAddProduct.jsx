@@ -531,8 +531,11 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             sku: formData.sku || undefined,
             barcode: formData.barcode || undefined,
 
-            // Stock information - send as simple integer as expected by backend
-            stock: parseInt(formData.stock) || 0,
+            // Stock information - send as object with quantity as expected by backend
+            stock: {
+                quantity: parseInt(formData.stock) || 0,
+                trackQuantity: true
+            },
 
             // Images - transform mediaGallery to backend images structure
             images: formData.mediaGallery
