@@ -158,7 +158,9 @@ export const conditionalCSRF = (req, res, next) => {
     '/api/cart', // Cart API endpoints
     '/api/wishlist', // Wishlist API endpoints
     '/api/reviews', // Review API endpoints
-    '/api/webhook' // Webhook endpoints
+    '/api/webhook', // Webhook endpoints
+    '/api/products', // Temporarily disable CSRF for products
+    '/api/upload' // Temporarily disable CSRF for uploads
   ];
 
   const shouldSkip = skipPaths.some(path => req.originalUrl.startsWith(path));
