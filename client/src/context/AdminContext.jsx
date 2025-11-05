@@ -340,9 +340,18 @@ Orders
     
     // Categories
     case ADMIN_ACTIONS.LOAD_CATEGORIES_SUCCESS:
+      const categoriesData = action.payload.data || action.payload || [];
+      
+      // Ensure we always have an array
+      const validCategories = Array.isArray(categoriesData) ? categoriesData : [];
+      
+      if (validCategories.length > 0) {
+        console.log('✅ Categories loaded successfully:', validCategories.length);
+      }
+      
       return {
         ...state,
-        categories: action.payload.data || action.payload || [],
+        categories: validCategories,
         isCategoriesLoading: false,
         categoriesError: null
       };
@@ -906,6 +915,12 @@ export const AdminProvider = ({ children }) => {
   const clearError = useCallback(() => {
     dispatch({ type: ADMIN_ACTIONS.CLEAR_ERROR });
   }, []);
+
+  // Ensure categories is always an array
+  if (!Array.isArray(state.categories)) {
+    console.warn('⚠️ AdminContext: categories is not an array, fixing...', typeof state.categories);
+    state.categories = [];
+  }
 
   const value = {
     ...state,

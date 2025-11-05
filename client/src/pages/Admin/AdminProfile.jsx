@@ -173,22 +173,25 @@ const AdminProfile = () => {
         const updateCategories = () => {
             const storedCategories = adminDataStore.getData('categories');
             console.log('🔍 AdminProfile Categories Debug:', {
-                storedCategoriesLength: storedCategories?.length || 0,
-                adminContextCategoriesLength: categories?.length || 0,
+                storedCategoriesLength: Array.isArray(storedCategories) ? storedCategories.length : 0,
+                adminContextCategoriesLength: Array.isArray(categories) ? categories.length : 0,
                 isCategoriesLoading,
                 categoriesError,
-                storedCategories: storedCategories?.slice(0, 2), // First 2 for debugging
-                adminContextCategories: categories?.slice(0, 2) // First 2 for debugging
+                categoriesType: typeof categories,
+                categoriesIsArray: Array.isArray(categories),
+                storedCategoriesType: typeof storedCategories,
+                storedCategoriesIsArray: Array.isArray(storedCategories)
             });
             
-            if (storedCategories && storedCategories.length > 0) {
+            if (Array.isArray(storedCategories) && storedCategories.length > 0) {
                 console.log('📦 AdminProfile: Using categories from AdminDataStore:', storedCategories.length);
                 setLocalCategories(storedCategories);
-            } else if (categories && Array.isArray(categories) && categories.length > 0) {
+            } else if (Array.isArray(categories) && categories.length > 0) {
                 console.log('📦 AdminProfile: Using categories from AdminContext:', categories.length);
                 setLocalCategories(categories);
             } else {
                 console.log('⚠️ AdminProfile: No categories available, will show fallback options');
+                setLocalCategories([]); // Ensure it's always an array
             }
         };
 
@@ -196,8 +199,8 @@ const AdminProfile = () => {
 
         // If no categories are available, try to load them
         const storedCats = adminDataStore.getData('categories');
-        if ((!storedCats || storedCats.length === 0) && 
-            (!categories || categories.length === 0) && 
+        if ((!Array.isArray(storedCats) || storedCats.length === 0) && 
+            (!Array.isArray(categories) || categories.length === 0) && 
             !isCategoriesLoading && 
             isAuthenticated && isAdmin()) {
             console.log('🔄 AdminProfile: No categories found, attempting to load...');
