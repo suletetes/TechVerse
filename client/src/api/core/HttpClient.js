@@ -45,6 +45,28 @@ class HttpClient {
       return config;
     });
 
+    // CSRF interceptor - adds CSRF token for state-changing operations
+    this.addRequestInterceptor(async (config) => {
+      // Only add CSRF token for state-changing methods
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(config.method?.toUpperCase())) {
+        // Try to get CSRF token from cookie first
+        let csrfToken = this.getCsrfTokenFromCookie();
+        
+        // If no token in cookie, try to fetch one
+        if (!csrfToken) {
+          csrfToken = await this.fetchCsrfToken();
+        }
+        
+        if (csrfToken) {
+          config.headers = {
+            ...config.headers,
+            'X-CSRF-Token': csrfToken
+          };
+        }
+      }
+      return config;
+    });
+
     // Request ID interceptor - adds unique request ID for tracking
     this.addRequestInterceptor((config) => {
       const requestId = this.generateRequestId();
@@ -82,7 +104,7 @@ class HttpClient {
         }
         return response;
       },
-      (error) => {
+      async (error) => {
         if (process.env.NODE_ENV === 'development') {
           console.error('❌ HTTP Error:', {
             status: error.status,
@@ -91,6 +113,32 @@ class HttpClient {
             requestId: error.config?.requestId
           });
         }
+
+        // Handle CSRF token errors with retry
+        if (error.status === 403 && 
+            error.message?.includes('CSRF token') &&
+            !error.config?._csrfRetried) {
+          
+          console.log('🔄 CSRF token invalid, fetching new token and retrying...');
+          
+          // Fetch new CSRF token
+          const newToken = await this.fetchCsrfToken();
+          
+          if (newToken && error.config) {
+            // Mark as retried to prevent infinite loops
+            error.config._csrfRetried = true;
+            
+            // Update headers with new token
+            error.config.headers = {
+              ...error.config.headers,
+              'X-CSRF-Token': newToken
+            };
+            
+            // Retry the request
+            return this.request(error.config);
+          }
+        }
+
         return Promise.reject(error);
       }
     );
@@ -155,6 +203,46 @@ class HttpClient {
    */
   generateRequestId() {
     return `req_${Date.now()}_${++this.requestCounter}_${Math.random().toString(36).substr(2, 6)}`;
+  }
+
+  /**
+   * Get CSRF token from cookie
+   */
+  getCsrfTokenFromCookie() {
+    if (typeof document !== 'undefined') {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'csrf-token') {
+          return decodeURIComponent(value);
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Fetch CSRF token from server
+   */
+  async fetchCsrfToken() {
+    try {
+      const response = await fetch(`${this.baseURL}/security/csrf-token`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenManager.getToken()}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.csrfToken;
+      }
+    } catch (error) {
+      console.warn('Failed to fetch CSRF token:', error);
+    }
+    return null;
   }
 
   /**
