@@ -96,6 +96,25 @@ const AdminSidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, ad
                         <small className="text-muted">Create New Item</small>
                     </div>
                 </button>
+                {/* Test Product (Pre-filled) */}
+                <button
+                    className={`nav-link d-flex align-items-center px-4 py-3 border-0 text-start position-relative ${activeTab === 'test-product' ? 'active bg-warning bg-opacity-10 text-warning' : 'text-dark'}`}
+                    onClick={() => {
+                        setActiveTab('test-product');
+                        setSidebarOpen(false);
+                    }}
+                >
+                    {activeTab === 'test-product' && <div className="position-absolute start-0 top-0 bottom-0 bg-warning" style={{ width: '3px' }}></div>}
+                    <div className={`rounded-2 p-2 me-3 ${activeTab === 'test-product' ? 'bg-warning' : 'bg-light'}`}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" className={`flex-shrink-0 ${activeTab === 'test-product' ? 'text-white' : 'text-muted'}`}>
+                            <path fill="currentColor" d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0L19.2 12l-4.6-4.6L16 6l6 6-6 6-1.4-1.4z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div className="fw-semibold">Test Product</div>
+                        <small className="text-muted">Pre-filled for Testing</small>
+                    </div>
+                </button>
                 {/* Orders */}
                 <button
                     className={`nav-link d-flex align-items-center px-4 py-3 border-0 text-start position-relative ${activeTab === 'orders' ? 'active bg-primary bg-opacity-10 text-primary' : 'text-dark'}`}

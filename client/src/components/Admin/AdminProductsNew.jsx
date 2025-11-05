@@ -150,7 +150,7 @@ const AdminProductsNew = ({ setActiveTab }) => {
             } else {
                 console.log('⚠️ No products found, setting empty array');
                 adminDataStore.setData('products', []);
-                setProducts([]);
+                setAllProducts([]);
                 setPagination({
                     page: 1,
                     limit: 20,

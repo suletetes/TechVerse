@@ -92,17 +92,7 @@ const AdminProfile = () => {
         clearError
     } = useAdmin();
 
-    // Debug categories
-    useEffect(() => {
-        console.log('🔍 AdminProfile categories debug:', {
-            categories: categories,
-            categoriesType: typeof categories,
-            categoriesIsArray: Array.isArray(categories),
-            categoriesLength: Array.isArray(categories) ? categories.length : 'N/A',
-            dashboardStats: dashboardStats,
-            dashboardStatsType: typeof dashboardStats
-        });
-    }, [categories, dashboardStats]);
+    // Debug categories - REMOVED TO ELIMINATE LOG SPAM
 
     // Local state
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -173,25 +163,13 @@ const AdminProfile = () => {
     useEffect(() => {
         const updateCategories = () => {
             const storedCategories = adminDataStore.getData('categories');
-            console.log('🔍 AdminProfile Categories Debug:', {
-                storedCategoriesLength: Array.isArray(storedCategories) ? storedCategories.length : 0,
-                adminContextCategoriesLength: Array.isArray(categories) ? categories.length : 0,
-                isCategoriesLoading,
-                categoriesError,
-                categoriesType: typeof categories,
-                categoriesIsArray: Array.isArray(categories),
-                storedCategoriesType: typeof storedCategories,
-                storedCategoriesIsArray: Array.isArray(storedCategories)
-            });
+            // Debug logging removed to eliminate spam
             
             if (Array.isArray(storedCategories) && storedCategories.length > 0) {
-                console.log('📦 AdminProfile: Using categories from AdminDataStore:', storedCategories.length);
                 setLocalCategories(storedCategories);
             } else if (Array.isArray(categories) && categories.length > 0) {
-                console.log('📦 AdminProfile: Using categories from AdminContext:', categories.length);
                 setLocalCategories(categories);
             } else {
-                console.log('⚠️ AdminProfile: No categories available, will show fallback options');
                 setLocalCategories([]); // Ensure it's always an array
             }
         };
@@ -204,14 +182,12 @@ const AdminProfile = () => {
             (!Array.isArray(categories) || categories.length === 0) && 
             !isCategoriesLoading && 
             isAuthenticated && isAdmin()) {
-            console.log('🔄 AdminProfile: No categories found, attempting to load...');
             loadCategories();
         }
 
         // Listen for category updates from AdminDataStore
         const unsubscribe = adminDataStore.addListener('categories', (data) => {
             if (data.data && data.data.length > 0) {
-                console.log('📦 AdminProfile: Categories updated from AdminDataStore:', data.data.length);
                 setLocalCategories(data.data);
             }
         });
@@ -720,87 +696,7 @@ const AdminProfile = () => {
                     </div>
                 </div>
                 
-                {/* Debug Panel - Remove in production */}
-                <div className="position-fixed bottom-0 end-0 p-3" style={{ zIndex: 1050 }}>
-                    <div className="btn-group-vertical">
-                        <button
-                            className="btn btn-sm btn-outline-info"
-                            onClick={() => {
-                                console.log('🔄 Manual category reload...');
-                                loadCategories();
-                            }}
-                            title="Reload Categories"
-                        >
-                            📂
-                        </button>
-                        <button
-                            className="btn btn-sm btn-outline-warning"
-                            onClick={() => {
-                                console.log('🔍 Categories Debug:', {
-                                    adminContextCategories: categories,
-                                    localCategories: localCategories,
-                                    adminDataStoreCategories: adminDataStore.getData('categories')
-                                });
-                            }}
-                            title="Debug Categories"
-                        >
-                            🐛
-                        </button>
-                        <button
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={async () => {
-                                console.log('🔐 Fetching CSRF token...');
-                                try {
-                                    const response = await fetch('http://localhost:5000/api/security/csrf-token', {
-                                        method: 'GET',
-                                        credentials: 'include',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'Authorization': `Bearer ${localStorage.getItem('token') || localStorage.getItem('techverse_token_v2')}`
-                                        }
-                                    });
-                                    
-                                    if (response.ok) {
-                                        const data = await response.json();
-                                        console.log('✅ CSRF token received:', data.csrfToken);
-                                        console.log('🍪 Cookies after fetch:', document.cookie);
-                                    } else {
-                                        console.error('❌ CSRF token fetch failed:', response.status, await response.text());
-                                    }
-                                } catch (error) {
-                                    console.error('❌ CSRF token fetch error:', error);
-                                }
-                            }}
-                            title="Fetch CSRF Token"
-                        >
-                            🔐
-                        </button>
-                        <button
-                            className="btn btn-sm btn-outline-success"
-                            onClick={async () => {
-                                console.log('🧪 Testing product creation with CSRF...');
-                                try {
-                                    const testProduct = {
-                                        name: 'Test Product',
-                                        description: 'This is a test product for CSRF validation',
-                                        price: 99.99,
-                                        category: localCategories[0]?._id || '507f1f77bcf86cd799439011',
-                                        brand: 'Test Brand',
-                                        stock: 10
-                                    };
-                                    
-                                    const result = await createProduct(testProduct);
-                                    console.log('✅ Test product created successfully:', result);
-                                } catch (error) {
-                                    console.error('❌ Test product creation failed:', error);
-                                }
-                            }}
-                            title="Test Product Creation"
-                        >
-                            🧪
-                        </button>
-                    </div>
-                </div>
+
             </div>
         </div>
     );
