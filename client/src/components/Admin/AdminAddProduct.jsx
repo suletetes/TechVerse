@@ -684,23 +684,22 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                 {Array.isArray(categories) && categories.length > 0 ? 
                                     categories.filter(cat => cat.isActive !== false).map(cat => (
                                         <option key={cat._id || cat.id} value={cat._id || cat.id}>
-                                            {cat.name} {cat.productCount ? `(${cat.productCount} products)` : ''}
+                                            {cat.name}
                                         </option>
                                     )) : (
                                         <>
-                                            <option disabled>Loading categories from database...</option>
                                             {/* Fallback categories if API fails */}
-                                            <option value="phones">Phones</option>
-                                            <option value="tablets">Tablets</option>
-                                            <option value="computers">Computers</option>
-                                            <option value="tvs">TVs</option>
-                                            <option value="gaming">Gaming</option>
-                                            <option value="watches">Watches</option>
-                                            <option value="audio">Audio</option>
-                                            <option value="cameras">Cameras</option>
-                                            <option value="accessories">Accessories</option>
-                                            <option value="smart-home">Smart Home</option>
-                                            <option value="fitness">Fitness</option>
+                                            <option value="6907c4cd76b828091bdb9704">Smartphones</option>
+                                            <option value="6907c4cd76b828091bdb9705">Tablets</option>
+                                            <option value="6907c4cd76b828091bdb9706">Laptops & Computers</option>
+                                            <option value="6907c4cd76b828091bdb9707">Smart TVs</option>
+                                            <option value="6907c4cd76b828091bdb9708">Gaming Consoles</option>
+                                            <option value="6907c4cd76b828091bdb9709">Smart Watches</option>
+                                            <option value="6907c4cd76b828091bdb970a">Audio & Headphones</option>
+                                            <option value="6907c4cd76b828091bdb970b">Cameras</option>
+                                            <option value="6907c4cd76b828091bdb970c">Accessories</option>
+                                            <option value="6907c4cd76b828091bdb970d">Smart Home</option>
+                                            <option value="6907c4cd76b828091bdb970e">Fitness & Health</option>
                                         </>
                                     )
                                 }
@@ -714,14 +713,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                     </small>
                                 </div>
                             )}
-                            {(!Array.isArray(categories) || categories.length === 0) && (
-                                <div className="alert alert-info mt-2 py-2">
-                                    <small>
-                                        <i className="fas fa-info-circle me-1"></i>
-                                        Loading categories from database...
-                                    </small>
-                                </div>
-                            )}
+
                         </div>
                         <div className="col-md-6 mb-3">
                             <label className="form-label">Brand</label>

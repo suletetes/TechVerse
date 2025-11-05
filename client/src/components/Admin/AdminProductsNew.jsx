@@ -37,13 +37,15 @@ const AdminProductsNew = ({ setActiveTab }) => {
 
         // Try to use categories from AdminContext first
         if (adminCategories && adminCategories.length > 0) {
-            console.log('📦 Using categories from AdminContext:', adminCategories.length);
             setAllCategories(adminCategories);
             adminDataStore.setData('categories', adminCategories);
-        } else if (!adminDataStore.isDataFresh('categories')) {
-            loadCategories();
         } else {
-            setAllCategories(adminDataStore.getData('categories'));
+            const storedCategories = adminDataStore.getData('categories');
+            if (Array.isArray(storedCategories) && storedCategories.length > 0) {
+                setAllCategories(storedCategories);
+            } else {
+                loadCategories();
+            }
         }
 
         // Listen for data updates
@@ -63,14 +65,13 @@ const AdminProductsNew = ({ setActiveTab }) => {
         };
     }, []);
     
-    // Sync categories from AdminContext
+    // Sync categories from AdminContext (only if we don't have any)
     useEffect(() => {
-        if (adminCategories && adminCategories.length > 0) {
-            console.log('📦 Syncing categories from AdminContext:', adminCategories.length);
+        if (adminCategories && adminCategories.length > 0 && allCategories.length === 0) {
             setAllCategories(adminCategories);
             adminDataStore.setData('categories', adminCategories);
         }
-    }, [adminCategories]);
+    }, [adminCategories, allCategories.length]);
     
     // Reset to page 1 when filters change
     useEffect(() => {
@@ -82,15 +83,7 @@ const AdminProductsNew = ({ setActiveTab }) => {
             adminDataStore.setLoading('products', true);
             adminDataStore.setError('products', null);
             
-            console.log('🔍 AdminProductsNew: Fetching products...');
-            
-            // Check authentication
-            console.log('🔐 Auth status:', {
-                isAuthenticated,
-                isAdmin: isAdmin(),
-                user: user?.email,
-                userRole: user?.role
-            });
+            // Fetching products...
             
             if (!isAuthenticated) {
                 throw new Error('User not authenticated');
@@ -101,54 +94,23 @@ const AdminProductsNew = ({ setActiveTab }) => {
             }
             
             const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
-            console.log('🔐 Auth token exists:', !!token);
-            console.log('🔐 Token preview:', token ? `${token.substring(0, 20)}...` : 'none');
             
             const response = await adminService.getAdminProducts({ limit: 1000 }); // Get all products
-            
-            console.log('📦 AdminService response:', response);
-            console.log('📦 Response type:', typeof response);
-            console.log('📦 Response keys:', Object.keys(response || {}));
             
             let backendProducts = [];
             if (response?.data?.products) {
                 backendProducts = response.data.products;
-                console.log('✅ Found products in response.data.products');
             } else if (response?.products) {
                 backendProducts = response.products;
-                console.log('✅ Found products in response.products');
             } else if (response?.data && Array.isArray(response.data)) {
                 backendProducts = response.data;
-                console.log('✅ Found products in response.data (array)');
             } else if (Array.isArray(response)) {
                 backendProducts = response;
-                console.log('✅ Found products in response (direct array)');
-            } else {
-                console.log('❌ No products found in any expected location');
-                console.log('Full response structure:', JSON.stringify(response, null, 2));
             }
             
-            console.log(`📊 Loaded ${backendProducts.length} products`);
-            
             if (backendProducts.length > 0) {
-                console.log('Sample product:', backendProducts[0]);
-                console.log('Sample product stock:', backendProducts[0]?.stock);
-                console.log('Stock type:', typeof backendProducts[0]?.stock);
-                
-                // Check if any products have problematic stock objects
-                const problematicProducts = backendProducts.filter(p => 
-                    p.stock && typeof p.stock === 'object' && 
-                    !p.stock.hasOwnProperty('quantity') && 
-                    !p.stock.hasOwnProperty('stockQuantity')
-                );
-                
-                if (problematicProducts.length > 0) {
-                    console.warn('⚠️ Found products with problematic stock objects:', problematicProducts.slice(0, 3));
-                }
-                
                 adminDataStore.setData('products', backendProducts);
             } else {
-                console.log('⚠️ No products found, setting empty array');
                 adminDataStore.setData('products', []);
                 setAllProducts([]);
                 setPagination({
@@ -206,17 +168,13 @@ const AdminProductsNew = ({ setActiveTab }) => {
 
     const loadCategories = async () => {
         try {
-            console.log('🔍 Loading categories...');
-            
             // Check authentication first
             const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
             if (!token) {
-                console.error('❌ No authentication token found');
                 throw new Error('No authentication token');
             }
             
             // Try direct API call first (more reliable)
-            console.log('🔄 Trying direct categories API call...');
             const directResponse = await fetch('http://localhost:5000/api/admin/categories', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -224,18 +182,8 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 }
             });
             
-            console.log('📡 Categories API response status:', directResponse.status);
-            console.log('📡 Categories API response headers:', [...directResponse.headers.entries()]);
-            
             if (directResponse.ok) {
                 const directData = await directResponse.json();
-                console.log('📦 Categories API response:', directData);
-                console.log('📦 Response structure:', {
-                    hasData: !!directData.data,
-                    hasCategories: !!directData.categories,
-                    isArray: Array.isArray(directData),
-                    dataKeys: Object.keys(directData || {})
-                });
                 
                 let categories = [];
                 if (directData?.data?.categories) {
@@ -248,22 +196,15 @@ const AdminProductsNew = ({ setActiveTab }) => {
                     categories = directData.data;
                 }
                 
-                console.log(`📊 Found ${categories.length} categories from API`);
-                
                 if (categories.length > 0) {
                     setAllCategories(categories);
                     adminDataStore.setData('categories', categories);
                     return;
                 }
-            } else {
-                const errorText = await directResponse.text();
-                console.error('❌ Categories API error:', directResponse.status, errorText);
             }
             
             // Fallback: Try adminService
-            console.log('🔄 Trying adminService.getCategories...');
             const response = await adminService.getCategories();
-            console.log('📦 AdminService categories response:', response);
             
             let categories = [];
             if (response?.data?.categories) {
@@ -275,34 +216,29 @@ const AdminProductsNew = ({ setActiveTab }) => {
             }
             
             if (categories.length > 0) {
-                console.log(`📊 Found ${categories.length} categories from adminService`);
                 setAllCategories(categories);
                 adminDataStore.setData('categories', categories);
                 return;
             }
             
-            // Final fallback: Use default categories
-            console.log('📝 No categories found, using defaults');
             throw new Error('No categories found from API');
             
         } catch (err) {
-            console.error('❌ Error loading categories:', err);
             
-            // Create default categories as final fallback
+            // Create default categories as final fallback (using actual database ObjectIds)
             const defaultCategories = [
-                { _id: '1', name: 'Phones', slug: 'phones' },
-                { _id: '2', name: 'Tablets', slug: 'tablets' },
-                { _id: '3', name: 'Computers', slug: 'computers' },
-                { _id: '4', name: 'TVs', slug: 'tvs' },
-                { _id: '5', name: 'Gaming', slug: 'gaming' },
-                { _id: '6', name: 'Watches', slug: 'watches' },
-                { _id: '7', name: 'Audio & Headphones', slug: 'audio' },
-                { _id: '8', name: 'Cameras', slug: 'cameras' },
-                { _id: '9', name: 'Accessories', slug: 'accessories' },
-                { _id: '10', name: 'Smart Home', slug: 'home-smart-devices' },
-                { _id: '11', name: 'Fitness & Health', slug: 'fitness-health' }
+                { _id: '6907c4cd76b828091bdb9704', name: 'Smartphones', slug: 'phones' },
+                { _id: '6907c4cd76b828091bdb9705', name: 'Tablets', slug: 'tablets' },
+                { _id: '6907c4cd76b828091bdb9706', name: 'Laptops & Computers', slug: 'computers' },
+                { _id: '6907c4cd76b828091bdb9707', name: 'Smart TVs', slug: 'tvs' },
+                { _id: '6907c4cd76b828091bdb9708', name: 'Gaming Consoles', slug: 'gaming' },
+                { _id: '6907c4cd76b828091bdb9709', name: 'Smart Watches', slug: 'watches' },
+                { _id: '6907c4cd76b828091bdb970a', name: 'Audio & Headphones', slug: 'audio' },
+                { _id: '6907c4cd76b828091bdb970b', name: 'Cameras', slug: 'cameras' },
+                { _id: '6907c4cd76b828091bdb970c', name: 'Accessories', slug: 'accessories' },
+                { _id: '6907c4cd76b828091bdb970d', name: 'Smart Home', slug: 'home-smart-devices' },
+                { _id: '6907c4cd76b828091bdb970e', name: 'Fitness & Health', slug: 'fitness-health' }
             ];
-            console.log('📝 Using default categories due to error');
             setAllCategories(defaultCategories);
             adminDataStore.setData('categories', defaultCategories);
         }
