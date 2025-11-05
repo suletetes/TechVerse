@@ -215,7 +215,7 @@ const adminReducer = (state, action) => {
     case ADMIN_ACTIONS.LOAD_MORE_ADMIN_PRODUCTS_SUCCESS:
       return {
         ...state,
-        adminProducts: [...state.adminProducts, ...(action.payload.data || [])],
+        adminProducts: [...(state.adminProducts || []), ...(action.payload.data || [])],
         productsPagination: {
           page: action.payload.page || state.productsPagination.page + 1,
           limit: action.payload.limit || state.productsPagination.limit,
@@ -230,7 +230,7 @@ const adminReducer = (state, action) => {
     case ADMIN_ACTIONS.CREATE_PRODUCT_SUCCESS:
       return {
         ...state,
-        adminProducts: [action.payload, ...state.adminProducts],
+        adminProducts: [action.payload, ...(state.adminProducts || [])],
         isProductsLoading: false,
         productsError: null
       };
@@ -239,7 +239,7 @@ const adminReducer = (state, action) => {
       const updatedProduct = action.payload.data || action.payload;
       return {
         ...state,
-        adminProducts: state.adminProducts.map(product =>
+        adminProducts: (state.adminProducts || []).map(product =>
           product._id === updatedProduct._id ? updatedProduct : product
         ),
         isProductsLoading: false,
@@ -249,7 +249,7 @@ const adminReducer = (state, action) => {
     case ADMIN_ACTIONS.DELETE_PRODUCT_SUCCESS:
       return {
         ...state,
-        adminProducts: state.adminProducts.filter(product => product._id !== action.payload),
+        adminProducts: (state.adminProducts || []).filter(product => product._id !== action.payload),
         isProductsLoading: false,
         productsError: null
       };    // 
@@ -272,7 +272,7 @@ Orders
     case ADMIN_ACTIONS.LOAD_MORE_ADMIN_ORDERS_SUCCESS:
       return {
         ...state,
-        adminOrders: [...state.adminOrders, ...(action.payload.data || [])],
+        adminOrders: [...(state.adminOrders || []), ...(action.payload.data || [])],
         ordersPagination: {
           page: action.payload.page || state.ordersPagination.page + 1,
           limit: action.payload.limit || state.ordersPagination.limit,
@@ -288,7 +288,7 @@ Orders
       const updatedOrder = action.payload.data || action.payload;
       return {
         ...state,
-        adminOrders: state.adminOrders.map(order =>
+        adminOrders: (state.adminOrders || []).map(order =>
           order._id === updatedOrder._id ? updatedOrder : order
         ),
         isOrdersLoading: false,
@@ -314,7 +314,7 @@ Orders
     case ADMIN_ACTIONS.LOAD_MORE_ADMIN_USERS_SUCCESS:
       return {
         ...state,
-        adminUsers: [...state.adminUsers, ...(action.payload.data || [])],
+        adminUsers: [...(state.adminUsers || []), ...(action.payload.data || [])],
         usersPagination: {
           page: action.payload.page || state.usersPagination.page + 1,
           limit: action.payload.limit || state.usersPagination.limit,
@@ -331,7 +331,7 @@ Orders
       const updatedUser = action.payload.data || action.payload;
       return {
         ...state,
-        adminUsers: state.adminUsers.map(user =>
+        adminUsers: (state.adminUsers || []).map(user =>
           user._id === updatedUser._id ? updatedUser : user
         ),
         isUsersLoading: false,
@@ -359,7 +359,7 @@ Orders
     case ADMIN_ACTIONS.CREATE_CATEGORY_SUCCESS:
       return {
         ...state,
-        categories: [action.payload, ...state.categories],
+        categories: [action.payload, ...(state.categories || [])],
         isCategoriesLoading: false,
         categoriesError: null
       };
@@ -368,7 +368,7 @@ Orders
       const updatedCategory = action.payload.data || action.payload;
       return {
         ...state,
-        categories: state.categories.map(category =>
+        categories: (state.categories || []).map(category =>
           category._id === updatedCategory._id ? updatedCategory : category
         ),
         isCategoriesLoading: false,
@@ -378,7 +378,7 @@ Orders
     case ADMIN_ACTIONS.DELETE_CATEGORY_SUCCESS:
       return {
         ...state,
-        categories: state.categories.filter(category => category._id !== action.payload),
+        categories: (state.categories || []).filter(category => category._id !== action.payload),
         isCategoriesLoading: false,
         categoriesError: null
       };
@@ -917,13 +917,18 @@ export const AdminProvider = ({ children }) => {
   }, []);
 
   // Ensure categories is always an array
+  // Debug logging for categories (no direct mutation)
   if (!Array.isArray(state.categories)) {
-    console.warn('⚠️ AdminContext: categories is not an array, fixing...', typeof state.categories);
-    state.categories = [];
+    console.warn('⚠️ AdminContext: categories is not an array, will fix in value object...', typeof state.categories);
   }
 
   const value = {
     ...state,
+    // Ensure all arrays are always arrays
+    adminProducts: Array.isArray(state.adminProducts) ? state.adminProducts : [],
+    adminOrders: Array.isArray(state.adminOrders) ? state.adminOrders : [],
+    adminUsers: Array.isArray(state.adminUsers) ? state.adminUsers : [],
+    categories: Array.isArray(state.categories) ? state.categories : [],
     
     // Dashboard methods
     loadDashboardStats,
