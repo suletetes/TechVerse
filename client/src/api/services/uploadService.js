@@ -11,12 +11,12 @@ class UploadService extends BaseApiService {
     super({
       serviceName: 'UploadService',
       baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-      endpoints: API_ENDPOINTS.UPLOAD || {
-        BASE: '/api/upload',
-        SINGLE: '/api/upload/image',
-        MULTIPLE: '/api/upload/images',
-        DELETE: '/api/upload/image',
-        INFO: '/api/upload/image/info'
+      endpoints: {
+        SINGLE: API_ENDPOINTS.UPLOAD?.IMAGE || '/upload/image',
+        MULTIPLE: API_ENDPOINTS.UPLOAD?.IMAGES || '/upload/images',
+        DELETE: API_ENDPOINTS.UPLOAD?.IMAGE || '/upload/image',
+        INFO: '/upload/image/info',
+        PRODUCT_IMAGES: API_ENDPOINTS.UPLOAD?.PRODUCT_IMAGES || '/upload/product-images'
       },
       defaultOptions: {
         timeout: 30000 // Longer timeout for file uploads

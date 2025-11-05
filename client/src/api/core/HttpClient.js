@@ -225,6 +225,7 @@ class HttpClient {
    * Fetch CSRF token from server
    */
   async fetchCsrfToken() {
+    // Try authenticated endpoint first
     try {
       const response = await fetch(`${this.baseURL}/security/csrf-token`, {
         method: 'GET',
@@ -237,11 +238,37 @@ class HttpClient {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ CSRF token fetched successfully (authenticated)');
         return data.csrfToken;
+      } else {
+        console.warn('❌ Failed to fetch CSRF token:', response.status, response.statusText);
       }
     } catch (error) {
-      console.warn('Failed to fetch CSRF token:', error);
+      console.warn('❌ Failed to fetch CSRF token:', error.message);
     }
+
+    // Fallback to simple endpoint
+    try {
+      console.log('🔄 Trying simple CSRF endpoint...');
+      const response = await fetch(`${this.baseURL}/security/csrf-token-simple`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ CSRF token fetched successfully (simple)');
+        return data.csrfToken;
+      } else {
+        console.error('❌ Failed to fetch CSRF token (simple):', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch CSRF token (simple):', error.message);
+    }
+
     return null;
   }
 
@@ -593,6 +620,14 @@ class HttpClient {
    * Build full URL
    */
   buildUrl(endpoint) {
+    if (!endpoint) {
+      throw new Error('Endpoint is required for buildUrl');
+    }
+    
+    if (typeof endpoint !== 'string') {
+      throw new Error('Endpoint must be a string');
+    }
+    
     if (endpoint.startsWith('http')) {
       return endpoint;
     }
