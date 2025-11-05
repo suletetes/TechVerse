@@ -40,6 +40,7 @@ import {
   apiRateLimit,
   securityHeaders,
   inputSanitization,
+  blobUrlHandler,
   staticAsset404Handler,
   suspiciousActivityDetector,
   trackFailedAuth,
@@ -141,6 +142,9 @@ app.use(cacheStats);
 
 // Image optimization middleware for static files
 app.use(imageOptimizer);
+
+// Handle blob URLs and problematic requests first (eliminates log spam)
+app.use(blobUrlHandler);
 
 // Handle static asset 404s early to reduce noise
 app.use(staticAsset404Handler);

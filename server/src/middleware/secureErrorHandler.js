@@ -144,17 +144,46 @@ export const secureErrorHandler = (err, req, res, next) => {
 };
 
 /**
- * 404 handler that doesn't leak path information
+ * 404 handler that doesn't leak path information - REDUCED LOGGING
  */
 export const secureNotFoundHandler = (req, res, next) => {
-  enhancedLogger.warn('Route not found', {
-    url: req.originalUrl,
-    method: req.method,
-    ip: req.ip,
-    userAgent: req.get('User-Agent'),
-    userId: req.user?._id,
-    requestId: req.id
-  });
+  const url = req.originalUrl;
+  
+  // Skip logging for problematic URLs that spam the logs
+  const shouldSkipLogging = 
+    url.includes('blob:') ||                           // Blob URLs from frontend
+    url.includes('chrome-extension:') ||               // Browser extension requests
+    url.includes('moz-extension:') ||                  // Firefox extension requests
+    /\.(jpg|jpeg|png|gif|webp|svg|ico|css|js|woff|woff2|ttf|eot)$/i.test(url) || // Static assets
+    url.includes('favicon') ||                         // Favicon requests
+    url.includes('apple-touch-icon') ||                // iOS icon requests
+    url.includes('manifest.json') ||                   // PWA manifest
+    url.includes('robots.txt') ||                      // SEO files
+    url.includes('sitemap.xml');                       // SEO files
+
+  // Only log legitimate 404s that might indicate real issues
+  if (!shouldSkipLogging) {
+    // Use a simple cache to avoid logging the same 404 repeatedly
+    if (!secureNotFoundHandler._logged404s) {
+      secureNotFoundHandler._logged404s = new Set();
+    }
+    
+    const cacheKey = `${req.method}:${url}`;
+    if (!secureNotFoundHandler._logged404s.has(cacheKey)) {
+      // Clear cache if it gets too large
+      if (secureNotFoundHandler._logged404s.size > 50) {
+        secureNotFoundHandler._logged404s.clear();
+      }
+      
+      secureNotFoundHandler._logged404s.add(cacheKey);
+      enhancedLogger.warn('Route not found', {
+        url: url,
+        method: req.method,
+        ip: req.ip,
+        requestId: req.id
+      });
+    }
+  }
 
   res.status(404).json({
     success: false,
