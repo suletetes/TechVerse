@@ -159,8 +159,16 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
 
     // Initialize category and dynamic specs
     useEffect(() => {
+        console.log('🔍 AdminAddProduct Categories Debug:', {
+            categoriesLength: categories?.length || 0,
+            categoriesType: typeof categories,
+            isArray: Array.isArray(categories),
+            firstCategory: categories?.[0],
+            formDataCategory: formData.category
+        });
+        
         if (formData.category && categories.length > 0) {
-            const category = Array.isArray(categories) ? categories.find(c => c.slug === formData.category || c.name === formData.category) : null;
+            const category = Array.isArray(categories) ? categories.find(c => c._id === formData.category || c.id === formData.category) : null;
             setSelectedCategory(category);
 
             if (category && !editProduct) {
@@ -517,12 +525,8 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             sku: formData.sku || undefined,
             barcode: formData.barcode || undefined,
 
-            // Stock information - transform to backend structure
-            stock: {
-                quantity: parseInt(formData.stock) || 0,
-                lowStockThreshold: 10, // Default value
-                trackQuantity: true
-            },
+            // Stock information - send as simple integer as expected by backend
+            stock: parseInt(formData.stock) || 0,
 
             // Images - transform mediaGallery to backend images structure
             images: formData.mediaGallery
@@ -670,11 +674,25 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                 <option value="">Choose a category...</option>
                                 {Array.isArray(categories) && categories.length > 0 ? 
                                     categories.filter(cat => cat.isActive !== false).map(cat => (
-                                        <option key={cat._id || cat.id} value={cat.slug}>
+                                        <option key={cat._id || cat.id} value={cat._id || cat.id}>
                                             {cat.name} {cat.productCount ? `(${cat.productCount} products)` : ''}
                                         </option>
                                     )) : (
-                                        <option disabled>Loading categories...</option>
+                                        <>
+                                            <option disabled>Loading categories from database...</option>
+                                            {/* Fallback categories if API fails */}
+                                            <option value="phones">Phones</option>
+                                            <option value="tablets">Tablets</option>
+                                            <option value="computers">Computers</option>
+                                            <option value="tvs">TVs</option>
+                                            <option value="gaming">Gaming</option>
+                                            <option value="watches">Watches</option>
+                                            <option value="audio">Audio</option>
+                                            <option value="cameras">Cameras</option>
+                                            <option value="accessories">Accessories</option>
+                                            <option value="smart-home">Smart Home</option>
+                                            <option value="fitness">Fitness</option>
+                                        </>
                                     )
                                 }
                             </select>

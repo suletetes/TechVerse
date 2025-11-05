@@ -27,6 +27,7 @@ import AdminOrdersNew from "../../components/Admin/AdminOrdersNew";
 import AdminUsersNew from "../../components/Admin/AdminUsersNew";
 import AdminDashboardBright from "../../components/Admin/AdminDashboardBright";
 import { adminDataStore } from "../../utils/AdminDataStore";
+import { ensureCsrfToken } from "../../utils/csrfUtils";
 
 // Import admin-specific CSS
 import '../../assets/css/admin-enhancements.css';
@@ -155,6 +156,15 @@ const AdminProfile = () => {
         if (isAuthenticated && isAdmin()) {
             loadDashboardStats({ period: dateRange });
             loadCategories();
+            
+            // Ensure CSRF token is available for admin operations
+            ensureCsrfToken().then(token => {
+                if (token) {
+                    console.log('✅ CSRF token ready for admin operations');
+                } else {
+                    console.warn('⚠️ Failed to get CSRF token');
+                }
+            });
         }
     }, [isAuthenticated, isAdmin, dateRange]);
 
@@ -162,16 +172,37 @@ const AdminProfile = () => {
     useEffect(() => {
         const updateCategories = () => {
             const storedCategories = adminDataStore.getData('categories');
+            console.log('🔍 AdminProfile Categories Debug:', {
+                storedCategoriesLength: storedCategories?.length || 0,
+                adminContextCategoriesLength: categories?.length || 0,
+                isCategoriesLoading,
+                categoriesError,
+                storedCategories: storedCategories?.slice(0, 2), // First 2 for debugging
+                adminContextCategories: categories?.slice(0, 2) // First 2 for debugging
+            });
+            
             if (storedCategories && storedCategories.length > 0) {
                 console.log('📦 AdminProfile: Using categories from AdminDataStore:', storedCategories.length);
                 setLocalCategories(storedCategories);
             } else if (categories && Array.isArray(categories) && categories.length > 0) {
                 console.log('📦 AdminProfile: Using categories from AdminContext:', categories.length);
                 setLocalCategories(categories);
+            } else {
+                console.log('⚠️ AdminProfile: No categories available, will show fallback options');
             }
         };
 
         updateCategories();
+
+        // If no categories are available, try to load them
+        const storedCats = adminDataStore.getData('categories');
+        if ((!storedCats || storedCats.length === 0) && 
+            (!categories || categories.length === 0) && 
+            !isCategoriesLoading && 
+            isAuthenticated && isAdmin()) {
+            console.log('🔄 AdminProfile: No categories found, attempting to load...');
+            loadCategories();
+        }
 
         // Listen for category updates from AdminDataStore
         const unsubscribe = adminDataStore.addListener('categories', (data) => {
@@ -195,6 +226,7 @@ const AdminProfile = () => {
             case 'add-product':
             case 'edit-product':
                 loadAdminProducts(); // Still needed for edit product
+                loadCategories(); // Load categories for product form
                 break;
             case 'orders':
                 // AdminOrdersNew handles its own data loading
@@ -699,6 +731,59 @@ const AdminProfile = () => {
                             title="Debug Categories"
                         >
                             🐛
+                        </button>
+                        <button
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={async () => {
+                                console.log('🔐 Fetching CSRF token...');
+                                try {
+                                    const response = await fetch('http://localhost:5000/api/security/csrf-token', {
+                                        method: 'GET',
+                                        credentials: 'include',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Authorization': `Bearer ${localStorage.getItem('token') || localStorage.getItem('techverse_token_v2')}`
+                                        }
+                                    });
+                                    
+                                    if (response.ok) {
+                                        const data = await response.json();
+                                        console.log('✅ CSRF token received:', data.csrfToken);
+                                        console.log('🍪 Cookies after fetch:', document.cookie);
+                                    } else {
+                                        console.error('❌ CSRF token fetch failed:', response.status, await response.text());
+                                    }
+                                } catch (error) {
+                                    console.error('❌ CSRF token fetch error:', error);
+                                }
+                            }}
+                            title="Fetch CSRF Token"
+                        >
+                            🔐
+                        </button>
+                        <button
+                            className="btn btn-sm btn-outline-success"
+                            onClick={async () => {
+                                console.log('🧪 Testing product creation with CSRF...');
+                                try {
+                                    const testProduct = {
+                                        name: 'Test Product',
+                                        description: 'This is a test product for CSRF validation',
+                                        price: 99.99,
+                                        category: localCategories[0]?._id || '507f1f77bcf86cd799439011',
+                                        brand: 'Test Brand',
+                                        stock: 10
+                                    };
+                                    
+                                    const result = await createProduct(testProduct);
+                                    console.log('✅ Test product created successfully:', result);
+                                } catch (error) {
+                                    console.error('❌ Test product creation failed:', error);
+                                }
+                            }}
+                            title="Test Product Creation"
+                        >
+                            🧪
                         </button>
                     </div>
                 </div>
