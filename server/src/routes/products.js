@@ -68,8 +68,8 @@ const productValidation = [
     .withMessage('Sections must be an array with maximum 4 items'),
   body('sections.*')
     .optional()
-    .isIn(['latest', 'topSeller', 'quickPick', 'weeklyDeal'])
-    .withMessage('Each section must be latest, topSeller, quickPick, or weeklyDeal'),
+    .isIn(['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'])
+    .withMessage('Each section must be latest, topSeller, quickPick, weeklyDeal, or featured'),
   body('tags')
     .optional()
     .isArray({ max: 10 })
