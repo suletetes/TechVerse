@@ -15,39 +15,30 @@ export const uploadSingleImage = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    // Validate the uploaded file
-    ImageService.validateImage(req.file);
+    // Simple validation
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      return next(new AppError('Invalid file type. Only images are allowed.', 400, 'INVALID_FILE_TYPE'));
+    }
 
-    // Process the image (resize, optimize, create WebP)
-    const processedImages = await ImageService.processImage(req.file.path, {
-      width: 800,
-      height: 600,
-      quality: 85,
-      createWebP: true,
-      createThumbnail: true
-    });
-
-    // Generate URLs for frontend
+    // Generate URLs for frontend (simplified)
     const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const relativePath = req.file.path.replace(process.cwd(), '').replace(/\\/g, '/');
+    const imageUrl = `${baseUrl}${relativePath}`;
+
     const imageData = {
-      original: {
-        url: ImageService.getImageUrl(processedImages.original.replace(process.cwd(), ''), baseUrl),
-        path: processedImages.original
-      },
-      webp: processedImages.webp ? {
-        url: ImageService.getImageUrl(processedImages.webp.replace(process.cwd(), ''), baseUrl),
-        path: processedImages.webp
-      } : null,
-      thumbnail: processedImages.thumbnail ? {
-        url: ImageService.getImageUrl(processedImages.thumbnail.replace(process.cwd(), ''), baseUrl),
-        path: processedImages.thumbnail
-      } : null
+      url: imageUrl,
+      path: req.file.path,
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      size: req.file.size,
+      mimetype: req.file.mimetype
     };
 
     logger.info('Image uploaded successfully', {
       originalName: req.file.originalname,
       size: req.file.size,
-      processedPath: processedImages.original,
+      path: req.file.path,
       userId: req.user?._id
     });
 
