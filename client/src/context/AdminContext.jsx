@@ -215,7 +215,7 @@ const adminReducer = (state, action) => {
     case ADMIN_ACTIONS.LOAD_MORE_ADMIN_PRODUCTS_SUCCESS:
       return {
         ...state,
-        adminProducts: [...(state.adminProducts || []), ...(action.payload.data || [])],
+        adminProducts: [...(Array.isArray(state.adminProducts) ? state.adminProducts : []), ...(action.payload.data || [])],
         productsPagination: {
           page: action.payload.page || state.productsPagination.page + 1,
           limit: action.payload.limit || state.productsPagination.limit,
@@ -230,7 +230,7 @@ const adminReducer = (state, action) => {
     case ADMIN_ACTIONS.CREATE_PRODUCT_SUCCESS:
       return {
         ...state,
-        adminProducts: [action.payload, ...(state.adminProducts || [])],
+        adminProducts: [action.payload, ...(Array.isArray(state.adminProducts) ? state.adminProducts : [])],
         isProductsLoading: false,
         productsError: null
       };
@@ -239,7 +239,7 @@ const adminReducer = (state, action) => {
       const updatedProduct = action.payload.data || action.payload;
       return {
         ...state,
-        adminProducts: (state.adminProducts || []).map(product =>
+        adminProducts: (Array.isArray(state.adminProducts) ? state.adminProducts : []).map(product =>
           product._id === updatedProduct._id ? updatedProduct : product
         ),
         isProductsLoading: false,
@@ -249,7 +249,7 @@ const adminReducer = (state, action) => {
     case ADMIN_ACTIONS.DELETE_PRODUCT_SUCCESS:
       return {
         ...state,
-        adminProducts: (state.adminProducts || []).filter(product => product._id !== action.payload),
+        adminProducts: (Array.isArray(state.adminProducts) ? state.adminProducts : []).filter(product => product._id !== action.payload),
         isProductsLoading: false,
         productsError: null
       };    // 

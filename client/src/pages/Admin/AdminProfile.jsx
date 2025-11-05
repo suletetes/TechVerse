@@ -26,6 +26,7 @@ import AdminProductsNew from "../../components/Admin/AdminProductsNew";
 import AdminOrdersNew from "../../components/Admin/AdminOrdersNew";
 import AdminUsersNew from "../../components/Admin/AdminUsersNew";
 import AdminDashboardBright from "../../components/Admin/AdminDashboardBright";
+import AdminAddProductCopy from "../../components/Admin/AdminAddProductCopy";
 import { adminDataStore } from "../../utils/AdminDataStore";
 import { ensureCsrfToken } from "../../utils/csrfUtils";
 
@@ -511,6 +512,16 @@ const AdminProfile = () => {
             case 'add-product':
                 return (
                     <AdminAddProduct
+                        categories={localCategories}
+                        onSave={handleAddProduct}
+                        onCancel={() => handleTabChange('products')}
+                        isLoading={isProductsLoading}
+                    />
+                );
+
+            case 'test-product':
+                return (
+                    <AdminAddProductCopy
                         categories={localCategories}
                         onSave={handleAddProduct}
                         onCancel={() => handleTabChange('products')}

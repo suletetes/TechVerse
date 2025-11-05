@@ -294,12 +294,29 @@ export const createProduct = asyncHandler(async (req, res, next) => {
     createdBy: req.user._id
   };
 
-  // Validate category exists
+  // Validate category exists and convert to ObjectId if needed
   if (productData.category) {
-    const category = await Category.findById(productData.category);
-    if (!category) {
-      return next(new AppError('Category not found', 400, 'CATEGORY_NOT_FOUND'));
+    let category;
+    
+    // Check if it's a valid MongoDB ObjectId
+    if (/^[0-9a-fA-F]{24}$/.test(productData.category)) {
+      category = await Category.findById(productData.category);
+    } else {
+      // Try to find by name or slug
+      category = await Category.findOne({
+        $or: [
+          { name: { $regex: new RegExp(`^${productData.category}$`, 'i') } },
+          { slug: productData.category.toLowerCase() }
+        ]
+      });
     }
+    
+    if (!category) {
+      return next(new AppError(`Category '${productData.category}' not found`, 400, 'CATEGORY_NOT_FOUND'));
+    }
+    
+    // Update productData to use the category ObjectId
+    productData.category = category._id;
   }
 
   // Handle image uploads if any
