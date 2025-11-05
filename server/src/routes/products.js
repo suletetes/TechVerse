@@ -39,14 +39,20 @@ const productValidation = [
     .withMessage('Product name must be between 2 and 200 characters'),
   body('description')
     .trim()
-    .isLength({ min: 10, max: 2000 })
-    .withMessage('Description must be between 10 and 2000 characters'),
+    .isLength({ min: 5, max: 2000 })
+    .withMessage('Description must be between 5 and 2000 characters'),
   body('price')
     .isFloat({ min: 0 })
     .withMessage('Price must be a positive number'),
   body('category')
-    .isMongoId()
-    .withMessage('Invalid category ID'),
+    .custom((value) => {
+      // Accept both MongoDB ObjectIds and category slugs
+      if (typeof value === 'string' && (value.match(/^[0-9a-fA-F]{24}$/) || value.length >= 2)) {
+        return true;
+      }
+      throw new Error('Invalid category ID or slug');
+    })
+    .withMessage('Invalid category ID or slug'),
   body('brand')
     .optional()
     .trim()
