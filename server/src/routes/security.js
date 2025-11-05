@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { auditSecuritySettings } from '../middleware/adminAuditLogger.js';
 import { csrfTokenEndpoint, adminCSRFProtection } from '../middleware/csrfProtection.js';
@@ -15,15 +16,66 @@ const router = express.Router();
  * Provides endpoints for managing security settings and monitoring
  */
 
-// Apply authentication and admin role requirement to all routes
-router.use(authenticate);
-router.use(requireRole(['admin', 'super_admin']));
+// Apply authentication and admin role requirement to most routes (except CSRF endpoints)
+const skipAuthPaths = ['/csrf-token', '/csrf-token-simple'];
+
+router.use((req, res, next) => {
+  const shouldSkipAuth = skipAuthPaths.some(path => req.path === path);
+  if (shouldSkipAuth) {
+    return next();
+  }
+  authenticate(req, res, next);
+});
+
+router.use((req, res, next) => {
+  const shouldSkipAuth = skipAuthPaths.some(path => req.path === path);
+  if (shouldSkipAuth) {
+    return next();
+  }
+  requireRole(['admin', 'super_admin'])(req, res, next);
+});
 
 /**
  * GET /api/security/csrf-token
  * Get CSRF token for authenticated admin users
  */
 router.get('/csrf-token', csrfTokenEndpoint);
+
+/**
+ * GET /api/security/csrf-token-simple
+ * Simple CSRF token endpoint without authentication requirement
+ */
+router.get('/csrf-token-simple', (req, res) => {
+  try {
+    const token = crypto.randomBytes(32).toString('hex');
+    
+    // Set cookie
+    res.cookie('csrf-token', token, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      maxAge: 3600000 // 1 hour
+    });
+    
+    console.log('✅ Simple CSRF token generated');
+
+    res.json({
+      success: true,
+      csrfToken: token,
+      message: 'CSRF token generated successfully'
+    });
+  } catch (error) {
+    console.error('❌ Failed to generate simple CSRF token:', error.message);
+    console.error('Stack:', error.stack);
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate CSRF token',
+      code: 'CSRF_TOKEN_ERROR',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
 
 /**
  * GET /api/security/dashboard

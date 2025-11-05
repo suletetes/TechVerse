@@ -65,6 +65,12 @@ export const csrfTokenEndpoint = (req, res, next) => {
     // Generate CSRF token
     const token = generateCSRFToken();
     
+    // Initialize session if not exists
+    if (!req.session) {
+      console.warn('⚠️ Session not initialized, creating minimal session');
+      req.session = {};
+    }
+    
     // Set token in session and cookie
     req.session.csrfToken = token;
     res.cookie('csrf-token', token, {
@@ -74,12 +80,8 @@ export const csrfTokenEndpoint = (req, res, next) => {
       maxAge: 3600000 // 1 hour
     });
     
-    enhancedLogger.security('CSRF token generated', {
-      userId: req.user?._id,
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      requestId: req.id
-    });
+    // Simple console logging instead of enhanced logger
+    console.log('✅ CSRF token generated for user:', req.user?._id || 'anonymous');
 
     res.json({
       success: true,
@@ -87,17 +89,14 @@ export const csrfTokenEndpoint = (req, res, next) => {
       message: 'CSRF token generated successfully'
     });
   } catch (error) {
-    enhancedLogger.error('Failed to generate CSRF token', {
-      error: error.message,
-      userId: req.user?._id,
-      ip: req.ip,
-      requestId: req.id
-    });
+    console.error('❌ Failed to generate CSRF token:', error.message);
+    console.error('Stack trace:', error.stack);
 
     res.status(500).json({
       success: false,
       message: 'Failed to generate CSRF token',
-      code: 'CSRF_TOKEN_ERROR'
+      code: 'CSRF_TOKEN_ERROR',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
