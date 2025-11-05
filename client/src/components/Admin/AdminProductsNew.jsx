@@ -148,8 +148,16 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 
                 adminDataStore.setData('products', backendProducts);
             } else {
-                console.log('⚠️ No products found, trying fallback...');
-                throw new Error('No products returned from admin service');
+                console.log('⚠️ No products found, setting empty array');
+                adminDataStore.setData('products', []);
+                setProducts([]);
+                setPagination({
+                    page: 1,
+                    limit: 20,
+                    total: 0,
+                    totalPages: 0,
+                    hasMore: false
+                });
             }
             
         } catch (err) {

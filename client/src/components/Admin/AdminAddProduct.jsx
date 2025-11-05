@@ -301,6 +301,12 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     const handleImageUpload = async (e, type = 'main') => {
         const file = e.target.files[0];
         if (!file) return;
+        
+        // Prevent multiple simultaneous uploads
+        if (isUploading) {
+            console.log('Upload already in progress, skipping...');
+            return;
+        }
 
         // Validate file
         const validation = uploadService.validateFile(file);
@@ -511,7 +517,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         const productData = {
             // Basic required fields
             name: formData.name.trim(),
-            description: formData.longDescription || formData.shortDescription || '',
+            description: formData.longDescription || formData.shortDescription || formData.name || 'Product description',
             shortDescription: formData.shortDescription || '',
             price: parseFloat(formData.price) || 0,
             brand: formData.brand.trim(),
