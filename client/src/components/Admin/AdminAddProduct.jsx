@@ -8,7 +8,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     const [categoryConfig, setCategoryConfig] = useState(null);
     
     const [formData, setFormData] = useState({
-        // Basic Information
         name: editProduct?.name || '',
         slug: editProduct?.slug || '',
         category: editProduct?.category?._id || editProduct?.category || '',
@@ -16,8 +15,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         sku: editProduct?.sku || '',
         description: editProduct?.description || '',
         shortDescription: editProduct?.shortDescription || '',
-
-        // Pricing & Inventory
         price: editProduct?.price || '',
         comparePrice: editProduct?.comparePrice || '',
         cost: editProduct?.cost || '',
@@ -26,22 +23,10 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             trackQuantity: editProduct?.stock?.trackQuantity !== false,
             lowStockThreshold: editProduct?.stock?.lowStockThreshold || 10
         },
-
-        // Dynamic Product Options based on category
         variants: editProduct?.variants || [],
-        selectedColor: '',
-        selectedSecondaryOption: '',
-
-        // Media Gallery
         images: editProduct?.images || [],
-
-        // Dynamic Technical Specifications based on category
         specifications: editProduct?.specifications || [],
-
-        // Key Features
         features: editProduct?.features || [],
-
-        // Physical Properties
         weight: {
             value: editProduct?.weight?.value || '',
             unit: editProduct?.weight?.unit || 'kg'
@@ -52,8 +37,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             height: editProduct?.dimensions?.height || '',
             unit: editProduct?.dimensions?.unit || 'cm'
         },
-
-        // SEO & Marketing
         seo: {
             title: editProduct?.seo?.title || '',
             description: editProduct?.seo?.description || '',
@@ -62,8 +45,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         tags: editProduct?.tags || [],
         featured: editProduct?.featured || false,
         sections: editProduct?.sections || [],
-
-        // Status & Shipping
         status: editProduct?.status || 'draft',
         visibility: editProduct?.visibility || 'public',
         shipping: {
@@ -83,7 +64,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    // Generate slug from product name
     const generateSlug = (name) => {
         return name
             .toLowerCase()
@@ -91,7 +71,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             .replace(/(^-|-$)/g, '');
     };
 
-    // Auto-generate slug when name changes
     useEffect(() => {
         if (formData.name && !editProduct) {
             const newSlug = generateSlug(formData.name);
@@ -102,19 +81,16 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }
     }, [formData.name, editProduct]);
 
-    // Initialize category configuration when category changes
     useEffect(() => {
         if (formData.category && categories.length > 0) {
             const category = Array.isArray(categories) ? 
                 categories.find(c => c._id === formData.category || c.id === formData.category) : null;
             setSelectedCategory(category);
 
-            // Get category configuration
             const config = getCategoryConfig(category?.name || category?.slug);
             setCategoryConfig(config);
 
             if (config && !editProduct) {
-                // Initialize specifications based on category
                 const initialSpecs = [];
                 Object.entries(config.specificationCategories || {}).forEach(([categoryName, specs]) => {
                     specs.forEach(spec => {
@@ -126,7 +102,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                     });
                 });
 
-                // Initialize variants if category has options
                 const initialVariants = [];
                 if (config.colorOptions) {
                     initialVariants.push({
@@ -159,11 +134,9 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }
     }, [formData.category, categories, editProduct]);
 
-    // Validation function matching backend requirements
     const validateForm = () => {
         const newErrors = {};
 
-        // Required fields validation
         if (!formData.name || formData.name.trim().length === 0) {
             newErrors.name = 'Product name is required';
         } else if (formData.name.trim().length > 200) {
@@ -174,10 +147,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             newErrors.description = 'Product description is required';
         } else if (formData.description.length > 2000) {
             newErrors.description = 'Description cannot exceed 2000 characters';
-        }
-
-        if (formData.shortDescription && formData.shortDescription.length > 500) {
-            newErrors.shortDescription = 'Short description cannot exceed 500 characters';
         }
 
         if (!formData.price || parseFloat(formData.price) <= 0) {
@@ -192,52 +161,20 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             newErrors.category = 'Product category is required';
         }
 
-        // Slug validation
         if (!formData.slug || formData.slug.trim().length === 0) {
             newErrors.slug = 'Product slug is required';
         }
 
-        // Optional field validations
-        if (formData.comparePrice && parseFloat(formData.comparePrice) < 0) {
-            newErrors.comparePrice = 'Compare price cannot be negative';
-        }
-
-        if (formData.cost && parseFloat(formData.cost) < 0) {
-            newErrors.cost = 'Cost price cannot be negative';
-        }
-
-        if (formData.stock.quantity && parseInt(formData.stock.quantity) < 0) {
-            newErrors.stockQuantity = 'Stock quantity cannot be negative';
-        }
-
-        // Weight validation
-        if (formData.weight.value && parseFloat(formData.weight.value) < 0) {
-            newErrors.weight = 'Weight cannot be negative';
-        }
-
-        // Dimensions validation
-        if (formData.dimensions.length && parseFloat(formData.dimensions.length) < 0) {
-            newErrors.dimensionsLength = 'Length cannot be negative';
-        }
-        if (formData.dimensions.width && parseFloat(formData.dimensions.width) < 0) {
-            newErrors.dimensionsWidth = 'Width cannot be negative';
-        }
-        if (formData.dimensions.height && parseFloat(formData.dimensions.height) < 0) {
-            newErrors.dimensionsHeight = 'Height cannot be negative';
-        }
-
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
-    };    
-    
-    // Handle form field changes
+    };
+
     const handleInputChange = (field, value) => {
         setFormData(prev => ({
             ...prev,
             [field]: value
         }));
         
-        // Clear error when user starts typing
         if (errors[field]) {
             setErrors(prev => ({
                 ...prev,
@@ -246,7 +183,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }
     };
 
-    // Handle nested field changes (like stock.quantity)
     const handleNestedInputChange = (parentField, childField, value) => {
         setFormData(prev => ({
             ...prev,
@@ -257,7 +193,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }));
     };
 
-    // Handle specification changes
     const handleSpecificationChange = (index, field, value) => {
         setFormData(prev => ({
             ...prev,
@@ -267,7 +202,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }));
     };
 
-    // Handle variant changes
     const handleVariantChange = (variantIndex, optionIndex, field, value) => {
         setFormData(prev => ({
             ...prev,
@@ -282,7 +216,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }));
     };
 
-    // Handle feature changes
     const handleFeatureChange = (index, value) => {
         setFormData(prev => ({
             ...prev,
@@ -292,7 +225,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }));
     };
 
-    // Add new feature
     const addFeature = () => {
         if (newFeature.trim()) {
             setFormData(prev => ({
@@ -303,7 +235,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }
     };
 
-    // Remove feature
     const removeFeature = (index) => {
         setFormData(prev => ({
             ...prev,
@@ -311,7 +242,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }));
     };
 
-    // Handle tag changes
     const addTag = () => {
         if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
             setFormData(prev => ({
@@ -322,7 +252,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }
     };
 
-    // Remove tag
     const removeTag = (index) => {
         setFormData(prev => ({
             ...prev,
@@ -330,7 +259,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }));
     };
 
-    // Handle image upload
     const handleImageUpload = async (files) => {
         if (!files || files.length === 0) return;
 
@@ -370,7 +298,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }
     };
 
-    // Remove image
     const removeImage = (index) => {
         setFormData(prev => ({
             ...prev,
@@ -378,7 +305,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }));
     };
 
-    // Set primary image
     const setPrimaryImage = (index) => {
         setFormData(prev => ({
             ...prev,
@@ -389,7 +315,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }));
     };
 
-    // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -399,22 +324,17 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }
 
         try {
-            // Prepare data for backend
             const productData = {
                 ...formData,
-                // Ensure category is ObjectId string
                 category: formData.category,
-                // Convert price fields to numbers
                 price: parseFloat(formData.price),
                 comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : undefined,
                 cost: formData.cost ? parseFloat(formData.cost) : undefined,
-                // Ensure stock is properly formatted
                 stock: {
                     quantity: parseInt(formData.stock.quantity) || 0,
                     trackQuantity: formData.stock.trackQuantity,
                     lowStockThreshold: parseInt(formData.stock.lowStockThreshold) || 10
                 },
-                // Convert weight and dimensions to numbers
                 weight: {
                     value: formData.weight.value ? parseFloat(formData.weight.value) : undefined,
                     unit: formData.weight.unit
@@ -432,9 +352,8 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             console.error('Failed to save product:', error);
             alert('Failed to save product. Please try again.');
         }
-    };
-
-    return (
+    };    
+return (
         <div className="admin-add-product">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
@@ -459,7 +378,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                 </div>
             </div>
 
-            {/* Upload Progress */}
             {isUploading && (
                 <div className="alert alert-info">
                     <div className="d-flex align-items-center">
@@ -477,9 +395,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
 
             <form onSubmit={handleSubmit}>
                 <div className="row">
-                    {/* Left Column - Basic Information */}
                     <div className="col-lg-8">
-                        {/* Basic Information Card */}
                         <div className="card mb-4">
                             <div className="card-header">
                                 <h5 className="mb-0">Basic Information</h5>
@@ -525,7 +441,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                                     {category.name}
                                                 </option>
                                             ))}
-                            </select>
+                                        </select>
                                         {errors.category && <div className="invalid-feedback">{errors.category}</div>}
                                     </div>
                                     <div className="col-md-6 mb-3">
@@ -565,8 +481,8 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                     {errors.shortDescription && <div className="invalid-feedback">{errors.shortDescription}</div>}
                                 </div>
                             </div>
-                        </div>        
-                {/* Pricing & Inventory Card */}
+                        </div>
+
                         <div className="card mb-4">
                             <div className="card-header">
                                 <h5 className="mb-0">Pricing & Inventory</h5>
@@ -595,13 +511,12 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                             <input
                                                 type="number"
                                                 step="0.01"
-                                                className={`form-control ${errors.comparePrice ? 'is-invalid' : ''}`}
+                                                className="form-control"
                                                 value={formData.comparePrice}
                                                 onChange={(e) => handleInputChange('comparePrice', e.target.value)}
                                                 placeholder="0.00"
                                             />
                                         </div>
-                                        {errors.comparePrice && <div className="invalid-feedback">{errors.comparePrice}</div>}
                                         <div className="form-text">Original price for discount display</div>
                                     </div>
                                     <div className="col-md-4 mb-3">
@@ -611,13 +526,13 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                             <input
                                                 type="number"
                                                 step="0.01"
-                                                className={`form-control ${errors.cost ? 'is-invalid' : ''}`}
+                                                className="form-control"
                                                 value={formData.cost}
                                                 onChange={(e) => handleInputChange('cost', e.target.value)}
                                                 placeholder="0.00"
                                             />
-                                        </div>n</div>
-                     
+                                        </div>
+                                        <div className="form-text">Cost per item for profit calculation</div>
                                     </div>
                                 </div>
 
@@ -626,12 +541,11 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                         <label className="form-label">Stock Quantity</label>
                                         <input
                                             type="number"
-                                            className={`form-control ${errors.stockQuantity ? 'is-invalid' : ''}`}
+                                            className="form-control"
                                             value={formData.stock.quantity}
                                             onChange={(e) => handleNestedInputChange('stock', 'quantity', e.target.value)}
                                             placeholder="0"
                                         />
-                                        {errors.stockQuantity && <div className="invalid-feedback">{errors.stockQuantity}</div>}
                                     </div>
                                     <div className="col-md-4 mb-3">
                                         <label className="form-label">Low Stock Threshold</label>
@@ -676,34 +590,23 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                             </div>
                         </div>
 
-                        {/* Dynamic Product Options */}
                         {categoryConfig && (
                             <div className="card mb-4">
                                 <div className="card-header">
                                     <h5 className="mb-0">Product Options</h5>
                                 </div>
                                 <div className="card-body">
-                                    {/* Color Options */}
                                     {categoryConfig.colorOptions && (
                                         <div className="mb-4">
                                             <label className="form-label">Available Colors</label>
                                             <div className="row">
-                                                {categoryConfig.colorOptions.map((color, index) => (
+                                                {categoryConfig.colorOptions.map((color) => (
                                                     <div key={color.id} className="col-md-3 mb-2">
                                                         <div className="form-check">
                                                             <input
                                                                 className="form-check-input"
                                                                 type="checkbox"
                                                                 id={`color-${color.id}`}
-                                                                onChange={(e) => {
-                                                                    const colorVariant = formData.variants.find(v => v.name === 'Color');
-                                                                    if (colorVariant) {
-                                                                        const optionIndex = colorVariant.options.findIndex(o => o.value === color.name);
-                                                                        if (optionIndex >= 0) {
-                                                                            handleVariantChange(0, optionIndex, 'stock', e.target.checked ? 10 : 0);
-                                                                        }
-                                                                    }
-                                                                }}
                                                             />
                                                             <label className="form-check-label" htmlFor={`color-${color.id}`}>
                                                                 <span className={`color-dot ${color.class} me-2`}></span>
@@ -716,12 +619,11 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                         </div>
                                     )}
 
-                                    {/* Secondary Options (Storage, Configuration, etc.) */}
                                     {categoryConfig.secondaryOptions && (
                                         <div className="mb-4">
                                             <label className="form-label">{categoryConfig.secondaryOptions.name} Options</label>
                                             <div className="row">
-                                                {categoryConfig.secondaryOptions.options.map((option, index) => (
+                                                {categoryConfig.secondaryOptions.options.map((option) => (
                                                     <div key={option.id} className="col-md-6 mb-3">
                                                         <div className="card">
                                                             <div className="card-body p-3">
@@ -745,12 +647,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                                                         type="number"
                                                                         className="form-control form-control-sm"
                                                                         placeholder="Stock quantity"
-                                                                        onChange={(e) => {
-                                                                            const variantIndex = formData.variants.findIndex(v => v.name === categoryConfig.secondaryOptions.name);
-                                                                            if (variantIndex >= 0) {
-                                                                                handleVariantChange(variantIndex, index, 'stock', parseInt(e.target.value) || 0);
-                                                                            }
-                                                                        }}
                                                                     />
                                                                 </div>
                                                             </div>
@@ -764,7 +660,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                             </div>
                         )}
 
-                        {/* Dynamic Technical Specifications */}
                         {categoryConfig && categoryConfig.specificationCategories && (
                             <div className="card mb-4">
                                 <div className="card-header">
@@ -775,7 +670,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                                         <div key={categoryName} className="mb-4">
                                             <h6 className="text-primary mb-3">{categoryName}</h6>
                                             <div className="row">
-                                                {specs.map((spec, specIndex) => {
+                                                {specs.map((spec) => {
                                                     const globalIndex = formData.specifications.findIndex(s => s.name === spec.name);
                                                     return (
                                                         <div key={spec.key} className="col-md-6 mb-3">
@@ -804,7 +699,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                             </div>
                         )}
 
-                        {/* Features */}
                         <div className="card mb-4">
                             <div className="card-header">
                                 <h5 className="mb-0">Key Features</h5>
@@ -852,9 +746,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                         </div>
                     </div>
 
-                    {/* Right Column - Media & Settings */}
                     <div className="col-lg-4">
-                        {/* Product Images */}
                         <div className="card mb-4">
                             <div className="card-header">
                                 <h5 className="mb-0">Product Images</h5>
@@ -913,7 +805,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                             </div>
                         </div>
 
-                        {/* Product Settings */}
                         <div className="card mb-4">
                             <div className="card-header">
                                 <h5 className="mb-0">Product Settings</h5>
@@ -959,32 +850,29 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
 
                                 <div className="mb-3">
                                     <label className="form-label">Sections</label>
-                                    <div className="form-check">
-                                        {['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'].map(section => (
-                                            <div key={section} className="form-check">
-                                                <input
-                                                    className="form-check-input"
-                                                    type="checkbox"
-                                                    checked={formData.sections.includes(section)}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) {
-                                                            handleInputChange('sections', [...formData.sections, section]);
-                                                        } else {
-                                                            handleInputChange('sections', formData.sections.filter(s => s !== section));
-                                                        }
-                                                    }}
-                                                />
-                                                <label className="form-check-label">
-                                                    {section.charAt(0).toUpperCase() + section.slice(1)}
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    {['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'].map(section => (
+                                        <div key={section} className="form-check">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                checked={formData.sections.includes(section)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        handleInputChange('sections', [...formData.sections, section]);
+                                                    } else {
+                                                        handleInputChange('sections', formData.sections.filter(s => s !== section));
+                                                    }
+                                                }}
+                                            />
+                                            <label className="form-check-label">
+                                                {section.charAt(0).toUpperCase() + section.slice(1)}
+                                            </label>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Tags */}
                         <div className="card mb-4">
                             <div className="card-header">
                                 <h5 className="mb-0">Tags</h5>
@@ -1025,7 +913,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                             </div>
                         </div>
 
-                        {/* SEO */}
                         <div className="card mb-4">
                             <div className="card-header">
                                 <h5 className="mb-0">SEO Settings</h5>
