@@ -157,11 +157,11 @@ const Product = () => {
         handleMediaSelect(mediaGallery[nextIndex].id);
     }, [mediaGallery, selectedMedia, handleMediaSelect]);
 
-    // Load product on mount
+    // Load product on mount (supports both ID and slug)
     useEffect(() => {
-        console.log('Product component mounted with id:', id);
+        console.log('Product component mounted with identifier:', id);
         if (id) {
-            console.log('Loading product with id:', id);
+            console.log('Loading product with identifier:', id);
             loadProduct(id).then(result => {
                 console.log('Product loaded successfully:', result);
             }).catch(error => {

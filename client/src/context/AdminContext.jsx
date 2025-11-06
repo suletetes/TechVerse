@@ -200,13 +200,13 @@ const adminReducer = (state, action) => {
     case ADMIN_ACTIONS.LOAD_ADMIN_PRODUCTS_SUCCESS:
       return {
         ...state,
-        adminProducts: action.payload.data || [],
+        adminProducts: action.payload.data?.products || [],
         productsPagination: {
-          page: action.payload.page || 1,
-          limit: action.payload.limit || 20,
-          total: action.payload.total || 0,
-          totalPages: action.payload.totalPages || 0,
-          hasMore: action.payload.hasMore || false
+          page: action.payload.data?.pagination?.currentPage || 1,
+          limit: action.payload.data?.pagination?.limit || 20,
+          total: action.payload.data?.pagination?.totalProducts || 0,
+          totalPages: action.payload.data?.pagination?.totalPages || 0,
+          hasMore: action.payload.data?.pagination?.hasNext || false
         },
         isProductsLoading: false,
         productsError: null
@@ -215,13 +215,13 @@ const adminReducer = (state, action) => {
     case ADMIN_ACTIONS.LOAD_MORE_ADMIN_PRODUCTS_SUCCESS:
       return {
         ...state,
-        adminProducts: [...(Array.isArray(state.adminProducts) ? state.adminProducts : []), ...(action.payload.data || [])],
+        adminProducts: [...(Array.isArray(state.adminProducts) ? state.adminProducts : []), ...(action.payload.data?.products || [])],
         productsPagination: {
-          page: action.payload.page || state.productsPagination.page + 1,
-          limit: action.payload.limit || state.productsPagination.limit,
-          total: action.payload.total || state.productsPagination.total,
-          totalPages: action.payload.totalPages || state.productsPagination.totalPages,
-          hasMore: action.payload.hasMore || false
+          page: action.payload.data?.pagination?.currentPage || state.productsPagination.page + 1,
+          limit: action.payload.data?.pagination?.limit || state.productsPagination.limit,
+          total: action.payload.data?.pagination?.totalProducts || state.productsPagination.total,
+          totalPages: action.payload.data?.pagination?.totalPages || state.productsPagination.totalPages,
+          hasMore: action.payload.data?.pagination?.hasNext || false
         },
         isProductsLoading: false,
         productsError: null
