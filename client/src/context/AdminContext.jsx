@@ -518,20 +518,43 @@ export const AdminProvider = ({ children }) => {
   }, [isAuthenticated, isAdmin, state.productFilters, state.productsPagination.page, showNotification]);
 
   const createProduct = useCallback(async (productData) => {
+    console.log('🚀 AdminContext.createProduct called with:', productData);
+    
     if (!isAuthenticated || !isAdmin()) {
+      console.error('❌ Admin access required - isAuthenticated:', isAuthenticated, 'isAdmin:', isAdmin());
       dispatch({ type: ADMIN_ACTIONS.SET_PRODUCTS_ERROR, payload: 'Admin access required' });
       return;
     }
 
     try {
+      console.log('📡 Calling productService.createProduct...');
       dispatch({ type: ADMIN_ACTIONS.SET_PRODUCTS_LOADING, payload: true });
       const response = await productService.createProduct(productData);
+      console.log('✅ Product created successfully:', response);
       dispatch({ type: ADMIN_ACTIONS.CREATE_PRODUCT_SUCCESS, payload: response.data || response });
       showNotification('Product created successfully!', 'success');
       return response;
     } catch (error) {
-      dispatch({ type: ADMIN_ACTIONS.SET_PRODUCTS_ERROR, payload: error.message });
-      showNotification(error.message, 'error');
+      console.error('❌ Error creating product:', error);
+      console.error('❌ Full error object:', JSON.stringify(error, null, 2));
+      
+      // Try to get detailed error information
+      const errorData = error.data || error.response?.data || {};
+      const errorMessage = errorData.message || error.message || 'Unknown error';
+      const validationErrors = errorData.errors || [];
+      
+      console.error('❌ Error data:', errorData);
+      console.error('❌ Validation errors:', validationErrors);
+      
+      // Create detailed error message
+      let detailedMessage = errorMessage;
+      if (validationErrors.length > 0) {
+        const errorList = validationErrors.map(err => `${err.field}: ${err.message}`).join(', ');
+        detailedMessage = `${errorMessage}\nValidation errors: ${errorList}`;
+      }
+      
+      dispatch({ type: ADMIN_ACTIONS.SET_PRODUCTS_ERROR, payload: detailedMessage });
+      showNotification(detailedMessage, 'error');
       throw error;
     }
   }, [isAuthenticated, isAdmin, showNotification]);

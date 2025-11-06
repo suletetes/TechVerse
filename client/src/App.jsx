@@ -25,6 +25,7 @@ import {
     AdminOrderManagement,
     AdminProductManagement
 } from "./pages"
+
 import { CategoryManagement } from "./pages/admin"
 import EditProfile from "./pages/EditProfile"
 import "./utils/uiUpdateSummary" // UI update summary and verification
@@ -155,6 +156,7 @@ const router = createBrowserRouter([
                     </AdminGuard>
                 ),
             },
+
 
             // User routes - protected with UserGuard
             {
