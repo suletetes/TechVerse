@@ -159,6 +159,197 @@ export const CATEGORY_CONFIGS = {
         { key: 'power_adapter', name: 'Power Adapter', type: 'text', required: false, placeholder: '67W USB-C Power Adapter' }
       ]
     }
+  },
+
+  // TVs Configuration
+  'tvs': {
+    slug: 'tvs',
+    colorOptions: [
+      { id: 'black', name: 'Black', class: 'black-dot' },
+      { id: 'silver', name: 'Silver', class: 'silver-dot' },
+      { id: 'white', name: 'White', class: 'white-dot' }
+    ],
+    secondaryOptions: {
+      name: 'Screen Size',
+      key: 'screen_size',
+      options: [
+        { id: '43inch', name: '43"', basePriceModifier: -200 },
+        { id: '55inch', name: '55"', basePriceModifier: 0 },
+        { id: '65inch', name: '65"', basePriceModifier: 500 },
+        { id: '75inch', name: '75"', basePriceModifier: 1000 },
+        { id: '85inch', name: '85"', basePriceModifier: 2000 }
+      ]
+    },
+    specificationCategories: {
+      'Display': [
+        { key: 'resolution', name: 'Resolution', type: 'select', required: true, options: ['4K UHD', '8K', 'Full HD'] },
+        { key: 'hdr_support', name: 'HDR Support', type: 'text', required: false, placeholder: 'HDR10, Dolby Vision' },
+        { key: 'refresh_rate', name: 'Refresh Rate', type: 'text', required: false, placeholder: '120Hz' },
+        { key: 'panel_type', name: 'Panel Type', type: 'select', required: false, options: ['OLED', 'QLED', 'LED', 'Mini-LED'] }
+      ],
+      'Smart Features': [
+        { key: 'operating_system', name: 'Operating System', type: 'text', required: false, placeholder: 'webOS, Tizen, Android TV' },
+        { key: 'voice_assistant', name: 'Voice Assistant', type: 'text', required: false, placeholder: 'Google Assistant, Alexa' },
+        { key: 'streaming_apps', name: 'Streaming Apps', type: 'text', required: false, placeholder: 'Netflix, Prime Video, Disney+' }
+      ]
+    }
+  },
+
+  // Gaming Configuration
+  'gaming': {
+    slug: 'gaming',
+    colorOptions: [
+      { id: 'black', name: 'Black', class: 'black-dot' },
+      { id: 'white', name: 'White', class: 'white-dot' },
+      { id: 'blue', name: 'Blue', class: 'blue-dot' },
+      { id: 'red', name: 'Red', class: 'red-dot' }
+    ],
+    secondaryOptions: {
+      name: 'Storage',
+      key: 'storage',
+      options: [
+        { id: '512GB', name: '512GB SSD', basePriceModifier: 0 },
+        { id: '1TB', name: '1TB SSD', basePriceModifier: 100 },
+        { id: '2TB', name: '2TB SSD', basePriceModifier: 300 }
+      ]
+    },
+    specificationCategories: {
+      'Performance': [
+        { key: 'processor', name: 'Processor', type: 'text', required: true, placeholder: 'Custom AMD Zen 2' },
+        { key: 'gpu', name: 'Graphics', type: 'text', required: true, placeholder: 'Custom RDNA 2' },
+        { key: 'memory', name: 'Memory', type: 'text', required: true, placeholder: '16GB GDDR6' },
+        { key: 'max_resolution', name: 'Max Resolution', type: 'text', required: false, placeholder: '4K at 120fps' }
+      ],
+      'Features': [
+        { key: 'backwards_compatibility', name: 'Backwards Compatibility', type: 'boolean', required: false },
+        { key: 'vr_support', name: 'VR Support', type: 'boolean', required: false },
+        { key: 'online_service', name: 'Online Service', type: 'text', required: false, placeholder: 'PlayStation Plus, Xbox Live' }
+      ]
+    }
+  },
+
+  // Watches Configuration
+  'watches': {
+    slug: 'watches',
+    colorOptions: [
+      { id: 'midnight', name: 'Midnight', class: 'midnight-dot' },
+      { id: 'starlight', name: 'Starlight', class: 'starlight-dot' },
+      { id: 'silver', name: 'Silver', class: 'silver-dot' },
+      { id: 'gold', name: 'Gold', class: 'gold-dot' },
+      { id: 'red', name: 'Red', class: 'red-dot' }
+    ],
+    secondaryOptions: {
+      name: 'Size',
+      key: 'size',
+      options: [
+        { id: '41mm', name: '41mm', basePriceModifier: 0 },
+        { id: '45mm', name: '45mm', basePriceModifier: 30 }
+      ]
+    },
+    specificationCategories: {
+      'Display & Design': [
+        { key: 'display_size', name: 'Display Size', type: 'text', required: true, placeholder: '1.9" Retina' },
+        { key: 'case_material', name: 'Case Material', type: 'text', required: false, placeholder: 'Aluminum, Steel, Titanium' },
+        { key: 'water_resistance', name: 'Water Resistance', type: 'text', required: false, placeholder: '50m' }
+      ],
+      'Health & Fitness': [
+        { key: 'heart_rate', name: 'Heart Rate Monitor', type: 'boolean', required: false },
+        { key: 'gps', name: 'GPS', type: 'boolean', required: false },
+        { key: 'fitness_tracking', name: 'Fitness Tracking', type: 'text', required: false, placeholder: 'Steps, Calories, Workouts' }
+      ]
+    }
+  },
+
+  // Audio Configuration
+  'audio': {
+    slug: 'audio',
+    colorOptions: [
+      { id: 'black', name: 'Black', class: 'black-dot' },
+      { id: 'white', name: 'White', class: 'white-dot' },
+      { id: 'silver', name: 'Silver', class: 'silver-dot' },
+      { id: 'blue', name: 'Blue', class: 'blue-dot' },
+      { id: 'red', name: 'Red', class: 'red-dot' }
+    ],
+    secondaryOptions: {
+      name: 'Type',
+      key: 'type',
+      options: [
+        { id: 'wireless', name: 'Wireless', basePriceModifier: 0 },
+        { id: 'wired', name: 'Wired', basePriceModifier: -50 },
+        { id: 'noise-cancelling', name: 'Noise Cancelling', basePriceModifier: 100 }
+      ]
+    },
+    specificationCategories: {
+      'Audio Quality': [
+        { key: 'driver_size', name: 'Driver Size', type: 'text', required: false, placeholder: '40mm' },
+        { key: 'frequency_response', name: 'Frequency Response', type: 'text', required: false, placeholder: '20Hz - 20kHz' },
+        { key: 'impedance', name: 'Impedance', type: 'text', required: false, placeholder: '32 ohms' }
+      ],
+      'Features': [
+        { key: 'noise_cancellation', name: 'Noise Cancellation', type: 'boolean', required: false },
+        { key: 'wireless_connectivity', name: 'Wireless Connectivity', type: 'text', required: false, placeholder: 'Bluetooth 5.0' },
+        { key: 'battery_life', name: 'Battery Life', type: 'text', required: false, placeholder: '30 hours' }
+      ]
+    }
+  },
+
+  // Cameras Configuration
+  'cameras': {
+    slug: 'cameras',
+    colorOptions: [
+      { id: 'black', name: 'Black', class: 'black-dot' },
+      { id: 'silver', name: 'Silver', class: 'silver-dot' },
+      { id: 'white', name: 'White', class: 'white-dot' }
+    ],
+    secondaryOptions: {
+      name: 'Lens Kit',
+      key: 'lens_kit',
+      options: [
+        { id: 'body-only', name: 'Body Only', basePriceModifier: 0 },
+        { id: 'kit-lens', name: 'With Kit Lens', basePriceModifier: 200 },
+        { id: 'pro-kit', name: 'Pro Lens Kit', basePriceModifier: 800 }
+      ]
+    },
+    specificationCategories: {
+      'Image Quality': [
+        { key: 'sensor_type', name: 'Sensor Type', type: 'text', required: true, placeholder: 'Full Frame CMOS' },
+        { key: 'megapixels', name: 'Megapixels', type: 'text', required: true, placeholder: '24.2MP' },
+        { key: 'iso_range', name: 'ISO Range', type: 'text', required: false, placeholder: '100-51200' }
+      ],
+      'Video': [
+        { key: 'video_resolution', name: 'Video Resolution', type: 'text', required: false, placeholder: '4K at 60fps' },
+        { key: 'video_formats', name: 'Video Formats', type: 'text', required: false, placeholder: 'MP4, MOV' }
+      ]
+    }
+  },
+
+  // Accessories Configuration
+  'accessories': {
+    slug: 'accessories',
+    colorOptions: [
+      { id: 'black', name: 'Black', class: 'black-dot' },
+      { id: 'white', name: 'White', class: 'white-dot' },
+      { id: 'clear', name: 'Clear', class: 'clear-dot' },
+      { id: 'blue', name: 'Blue', class: 'blue-dot' },
+      { id: 'red', name: 'Red', class: 'red-dot' }
+    ],
+    secondaryOptions: {
+      name: 'Compatibility',
+      key: 'compatibility',
+      options: [
+        { id: 'universal', name: 'Universal', basePriceModifier: 0 },
+        { id: 'iphone', name: 'iPhone', basePriceModifier: 5 },
+        { id: 'android', name: 'Android', basePriceModifier: 5 },
+        { id: 'laptop', name: 'Laptop', basePriceModifier: 10 }
+      ]
+    },
+    specificationCategories: {
+      'Specifications': [
+        { key: 'material', name: 'Material', type: 'text', required: false, placeholder: 'Silicone, Leather, Metal' },
+        { key: 'dimensions', name: 'Dimensions', type: 'text', required: false, placeholder: 'Length x Width x Height' },
+        { key: 'weight', name: 'Weight', type: 'text', required: false, placeholder: 'Weight in grams' }
+      ]
+    }
   }
 };
 
@@ -209,8 +400,66 @@ export const mapCategoryToConfig = (category) => {
   const categoryName = typeof category === 'object' ? category.name : category;
   const categorySlug = typeof category === 'object' ? category.slug : category;
   
-  // Try to match by name first, then slug
-  return getCategoryConfig(categoryName) || getCategoryConfig(categorySlug);
+  console.log('Mapping category to config:', { categoryName, categorySlug, category });
+  
+  // Create mapping for common category names to config keys
+  const nameMapping = {
+    'smartphones': 'phones',
+    'smart phones': 'phones',
+    'mobile phones': 'phones',
+    'phones': 'phones',
+    'tablets': 'tablets',
+    'ipad': 'tablets',
+    'laptops & computers': 'computers',
+    'laptops': 'computers',
+    'computers': 'computers',
+    'desktop': 'computers',
+    'laptop': 'computers',
+    'smart tvs': 'tvs',
+    'televisions': 'tvs',
+    'tv': 'tvs',
+    'tvs': 'tvs',
+    'gaming consoles': 'gaming',
+    'gaming': 'gaming',
+    'console': 'gaming',
+    'smart watches': 'watches',
+    'watches': 'watches',
+    'smartwatch': 'watches',
+    'audio & headphones': 'audio',
+    'headphones': 'audio',
+    'audio': 'audio',
+    'speakers': 'audio',
+    'cameras': 'cameras',
+    'camera': 'cameras',
+    'photography': 'cameras',
+    'accessories': 'accessories',
+    'smart home': 'home-smart-devices',
+    'home automation': 'home-smart-devices',
+    'fitness & health': 'fitness-health',
+    'fitness': 'fitness-health',
+    'health': 'fitness-health'
+  };
+  
+  // Try direct config lookup first
+  let config = getCategoryConfig(categoryName) || getCategoryConfig(categorySlug);
+  
+  // If not found, try mapped names
+  if (!config && categoryName) {
+    const mappedKey = nameMapping[categoryName.toLowerCase()];
+    if (mappedKey) {
+      config = getCategoryConfig(mappedKey);
+    }
+  }
+  
+  if (!config && categorySlug) {
+    const mappedKey = nameMapping[categorySlug.toLowerCase()];
+    if (mappedKey) {
+      config = getCategoryConfig(mappedKey);
+    }
+  }
+  
+  console.log('Config found:', config ? 'Yes' : 'No', config);
+  return config;
 };
 
 /**
