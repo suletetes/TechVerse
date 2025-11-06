@@ -312,20 +312,28 @@ class ProductService extends BaseApiService {
 
   // Admin: Create product
   async createProduct(productData) {
+    console.log('🛠️ ProductService.createProduct called with:', productData);
+    console.log('📍 Endpoint:', this.endpoints.BASE);
+    
     // Validate required fields
     const requiredFields = ['name', 'description', 'price', 'category'];
     for (const field of requiredFields) {
       if (!productData[field]) {
+        console.error(`❌ Missing required field: ${field}`);
         throw new Error(`${field} is required`);
       }
     }
 
     // Validate price
     if (productData.price <= 0) {
+      console.error('❌ Invalid price:', productData.price);
       throw new Error('Price must be greater than 0');
     }
 
-    return this.create(this.endpoints.BASE, productData);
+    console.log('✅ Validation passed, making API call...');
+    const result = await this.create(this.endpoints.BASE, productData);
+    console.log('📡 API Response:', result);
+    return result;
   }
 
   // Admin: Update product
