@@ -1,6 +1,7 @@
 /**
  * Dynamic Category Configuration System
  * Maps category names to their specific options and specifications
+ * Based on product-categories-data-structure.md and product-options-structure.json
  */
 
 export const CATEGORY_CONFIGS = {
@@ -45,6 +46,22 @@ export const CATEGORY_CONFIGS = {
         { key: 'neural_engine', name: 'Neural Engine', type: 'text', required: false, placeholder: '16-core Neural Engine' },
         { key: 'ram', name: 'RAM', type: 'text', required: true, placeholder: '8GB' },
         { key: 'storage_type', name: 'Storage Type', type: 'text', required: false, placeholder: 'NVMe' }
+      ],
+      'Camera System': [
+        { key: 'main_camera', name: 'Main Camera', type: 'text', required: false, placeholder: '48MP f/1.78' },
+        { key: 'ultra_wide', name: 'Ultra Wide Camera', type: 'text', required: false, placeholder: '12MP f/2.2' },
+        { key: 'telephoto', name: 'Telephoto Camera', type: 'text', required: false, placeholder: '12MP f/2.8' },
+        { key: 'front_camera', name: 'Front Camera', type: 'text', required: false, placeholder: '12MP f/1.9' },
+        { key: 'video_recording', name: 'Video Recording', type: 'text', required: false, placeholder: '4K at 60fps' },
+        { key: 'camera_features', name: 'Camera Features', type: 'text', required: false, placeholder: 'Night mode, Portrait, etc.' }
+      ],
+      'Battery & Connectivity': [
+        { key: 'battery_life', name: 'Battery Life', type: 'text', required: false, placeholder: 'Up to 20 hours' },
+        { key: 'charging', name: 'Charging', type: 'text', required: false, placeholder: 'Lightning, MagSafe, Qi' },
+        { key: '5g_support', name: '5G Support', type: 'text', required: false, placeholder: '5G (sub‑6 GHz and mmWave)' },
+        { key: 'wifi_standards', name: 'Wi-Fi Standards', type: 'text', required: false, placeholder: 'Wi-Fi 6E' },
+        { key: 'bluetooth_version', name: 'Bluetooth Version', type: 'text', required: false, placeholder: 'Bluetooth 5.3' },
+        { key: 'nfc_support', name: 'NFC Support', type: 'boolean', required: false, placeholder: 'Yes/No' }
       ]
     }
   },
@@ -129,6 +146,17 @@ export const CATEGORY_CONFIGS = {
         { key: 'memory', name: 'Memory', type: 'text', required: true, placeholder: '8GB unified memory' },
         { key: 'storage_type', name: 'Storage Type', type: 'text', required: false, placeholder: 'SSD' },
         { key: 'thermal_design', name: 'Thermal Design', type: 'text', required: false, placeholder: 'Fanless design' }
+      ],
+      'Ports & Connectivity': [
+        { key: 'thunderbolt_ports', name: 'Thunderbolt/USB-C Ports', type: 'text', required: false, placeholder: '2x Thunderbolt 4' },
+        { key: 'usb_ports', name: 'USB-A Ports', type: 'text', required: false, placeholder: '2x USB 3.0' },
+        { key: 'hdmi_output', name: 'HDMI Output', type: 'text', required: false, placeholder: 'HDMI 2.1' },
+        { key: 'audio_jack', name: 'Audio Jack', type: 'text', required: false, placeholder: '3.5mm headphone jack' },
+        { key: 'wifi_bluetooth', name: 'Wi-Fi & Bluetooth', type: 'text', required: false, placeholder: 'Wi-Fi 6E, Bluetooth 5.3' }
+      ],
+      'Battery & Power': [
+        { key: 'battery_life', name: 'Battery Life', type: 'text', required: false, placeholder: 'Up to 18 hours' },
+        { key: 'power_adapter', name: 'Power Adapter', type: 'text', required: false, placeholder: '67W USB-C Power Adapter' }
       ]
     }
   }
@@ -151,7 +179,8 @@ export const getCategoryConfig = (categoryIdentifier) => {
   for (const [key, config] of Object.entries(CATEGORY_CONFIGS)) {
     if (config.slug === identifier || 
         key.includes(identifier) || 
-        identifier.includes(key)) {
+        identifier.includes(key) ||
+        identifier.includes(config.slug)) {
       return config;
     }
   }
@@ -168,4 +197,44 @@ export const getAllCategoryConfigs = () => {
     name: key.charAt(0).toUpperCase() + key.slice(1),
     ...config
   }));
+};
+
+/**
+ * Map database category to config
+ */
+export const mapCategoryToConfig = (category) => {
+  if (!category) return null;
+  
+  // Handle both string and object categories
+  const categoryName = typeof category === 'object' ? category.name : category;
+  const categorySlug = typeof category === 'object' ? category.slug : category;
+  
+  // Try to match by name first, then slug
+  return getCategoryConfig(categoryName) || getCategoryConfig(categorySlug);
+};
+
+/**
+ * Generate slug from product name
+ */
+export const generateProductSlug = (name) => {
+  if (!name) return '';
+  
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+};
+
+/**
+ * Validate product slug
+ */
+export const validateProductSlug = (slug) => {
+  if (!slug) return false;
+  
+  // Check if slug matches pattern: lowercase letters, numbers, hyphens only
+  const slugPattern = /^[a-z0-9-]+$/;
+  return slugPattern.test(slug) && slug.length >= 2 && slug.length <= 100;
 };

@@ -62,6 +62,41 @@ class AdminService extends BaseApiService {
     });
   }
 
+  // Validate product slug availability
+  async validateProductSlug(slug) {
+    if (!slug) {
+      throw new Error('Slug is required');
+    }
+
+    return this.read(`/products/validate-slug/${slug}`);
+  }
+
+  // Create product
+  async createProduct(productData) {
+    if (!productData.name || !productData.name.trim()) {
+      throw new Error('Product name is required');
+    }
+
+    if (!productData.category) {
+      throw new Error('Product category is required');
+    }
+
+    if (!productData.price || parseFloat(productData.price) <= 0) {
+      throw new Error('Product price is required and must be greater than 0');
+    }
+
+    return this.create('/products', productData);
+  }
+
+  // Update product
+  async updateProduct(productId, productData) {
+    if (!productId) {
+      throw new Error('Product ID is required');
+    }
+
+    return this.update(`/products/${productId}`, productData);
+  }
+
   // Order Management
   async getAdminOrders(params = {}) {
     const {

@@ -183,6 +183,35 @@ const sectionValidation = [
 router.get('/', apiRateLimit, cacheProductList, searchValidation, validate, optionalAuth, getAllProducts);
 router.get('/search', apiRateLimit, cacheSearchResults, searchValidation, validate, optionalAuth, searchProducts);
 router.get('/categories', apiRateLimit, cacheCategoryList, getCategories);
+
+// Slug validation route for admin
+router.get('/validate-slug/:slug', 
+  [
+    param('slug')
+      .isLength({ min: 2, max: 100 })
+      .matches(/^[a-z0-9-]+$/)
+      .withMessage('Slug must be lowercase letters, numbers, and hyphens only')
+  ],
+  validate,
+  authenticate,
+  requireAdmin,
+  async (req, res, next) => {
+    try {
+      const { slug } = req.params;
+      const existingProduct = await Product.findOne({ slug });
+      
+      res.json({
+        success: true,
+        data: {
+          available: !existingProduct,
+          slug: slug
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 router.get('/featured', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getFeaturedProducts);
 router.get('/top-sellers', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getTopSellingProducts);
 router.get('/latest', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getLatestProducts);
