@@ -135,6 +135,210 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     const [uploadProgress, setUploadProgress] = useState(0);
     const [showPreview, setShowPreview] = useState(false);
 
+    // Sample laptop product data for testing
+    const sampleLaptopData = {
+        name: 'MacBook Pro 16-inch M3 Max',
+        slug: 'macbook-pro-16-m3-max',
+        category: '6907c4cd76b828091bdb9706', // Laptops & Computers
+        brand: 'Apple',
+        model: 'MacBook Pro 16" 2024',
+        sku: 'MBP16-M3MAX-2024',
+        shortDescription: 'The most powerful MacBook Pro ever with M3 Max chip, stunning 16-inch Liquid Retina XDR display, and all-day battery life.',
+        description: 'MacBook Pro with M3 Max delivers exceptional performance for the most demanding workflows. With up to 40-core GPU, 128GB unified memory, and advanced thermal design, it handles everything from 3D rendering to machine learning with ease. The 16-inch Liquid Retina XDR display supports 1 billion colors and 1600 nits peak brightness.',
+        
+        // Pricing
+        price: 3999,
+        comparePrice: 4299,
+        cost: 2800,
+        
+        // Stock
+        stock: {
+            quantity: 25,
+            trackQuantity: true,
+            lowStockThreshold: 5
+        },
+        
+        // Media - using the laptop image from root
+        mainImage: '/laptop-product.jpg',
+        mediaGallery: [
+            {
+                id: 'laptop-main',
+                type: 'image',
+                src: '/laptop-product.jpg',
+                thumbnail: '/laptop-product.jpg',
+                alt: 'MacBook Pro 16-inch M3 Max',
+                title: 'Main Product Image',
+                isPrimary: true
+            }
+        ],
+        
+        // Features
+        features: [
+            'M3 Max chip with 16-core CPU and up to 40-core GPU',
+            '16-inch Liquid Retina XDR display with 1600 nits peak brightness',
+            'Up to 128GB unified memory',
+            'Up to 8TB SSD storage',
+            '22-hour battery life',
+            'Three Thunderbolt 4 ports, HDMI port, SDXC card slot',
+            'MagSafe 3 charging',
+            '1080p FaceTime HD camera',
+            'Six-speaker sound system with force-cancelling woofers',
+            'Studio-quality three-microphone array'
+        ],
+        
+        // Technical specifications
+        dynamicSpecs: {
+            display_size: '16.2"',
+            resolution: '3456 x 2234 pixels',
+            display_technology: 'Liquid Retina XDR',
+            color_accuracy: 'P3 wide color, True Tone',
+            refresh_rate: '120Hz ProMotion',
+            dimensions: '355.7 × 248.1 × 16.8 mm',
+            weight: '2.16 kg',
+            processor: 'Apple M3 Max',
+            cpu_cores: '16-core CPU',
+            gpu_cores: '40-core GPU',
+            memory: '128GB unified memory',
+            storage_type: 'SSD',
+            thermal_design: 'Advanced thermal system',
+            thunderbolt_ports: '3x Thunderbolt 4 (USB-C)',
+            usb_ports: 'None',
+            hdmi_output: 'HDMI 2.1',
+            audio_jack: '3.5mm headphone jack',
+            wifi_bluetooth: 'Wi-Fi 6E, Bluetooth 5.3',
+            battery_life: 'Up to 22 hours',
+            power_adapter: '140W USB-C Power Adapter'
+        },
+        
+        // Physical properties
+        weight: {
+            value: 2.16,
+            unit: 'kg'
+        },
+        dimensions: {
+            length: 35.57,
+            width: 24.81,
+            height: 1.68,
+            unit: 'cm'
+        },
+        
+        // SEO
+        seo: {
+            title: 'MacBook Pro 16" M3 Max - Ultimate Performance Laptop',
+            description: 'Experience unmatched performance with MacBook Pro 16-inch M3 Max. 40-core GPU, 128GB memory, stunning XDR display. Perfect for professionals.',
+            keywords: ['macbook pro', 'apple laptop', 'm3 max', 'professional laptop', '16 inch']
+        },
+        
+        // Tags
+        tags: ['laptop', 'apple', 'macbook', 'professional', 'm3-max', 'high-performance', 'creative'],
+        
+        // Status
+        featured: true,
+        status: 'active',
+        visibility: 'public',
+        
+        // Shipping
+        shipping: {
+            free: true,
+            weight: 2.16
+        }
+    };
+
+    const loadSampleData = () => {
+        console.log('🔄 Loading sample data...');
+        console.log('📋 Available categories:', validCategories);
+        
+        // Check if we have categories
+        if (!validCategories || validCategories.length === 0) {
+            alert('❌ No categories available. Please create categories first or wait for them to load.');
+            return;
+        }
+        
+        // Find the computers/laptops category from available categories
+        let categoryId = null;
+        let selectedCategoryName = '';
+        
+        // Try to find laptops/computers category
+        const computersCategory = validCategories.find(cat => 
+            cat.name?.toLowerCase().includes('laptop') || 
+            cat.name?.toLowerCase().includes('computer') ||
+            cat.slug?.includes('computer')
+        );
+        
+        if (computersCategory) {
+            categoryId = computersCategory._id || computersCategory.id;
+            selectedCategoryName = computersCategory.name;
+            console.log('✅ Found computers category:', computersCategory);
+        } else {
+            // Use the first available category as fallback
+            const firstCategory = validCategories[0];
+            categoryId = firstCategory._id || firstCategory.id;
+            selectedCategoryName = firstCategory.name;
+            console.log('⚠️ Using first available category:', firstCategory);
+        }
+        
+        if (!categoryId) {
+            alert('❌ Could not find a valid category ID. Please check categories.');
+            return;
+        }
+
+        setFormData({
+            // Basic Information
+            name: sampleLaptopData.name,
+            slug: sampleLaptopData.slug,
+            category: categoryId,
+            brand: sampleLaptopData.brand,
+            model: sampleLaptopData.model,
+            sku: sampleLaptopData.sku,
+            shortDescription: sampleLaptopData.shortDescription,
+            description: sampleLaptopData.description,
+
+            // Pricing & Inventory
+            price: sampleLaptopData.price,
+            comparePrice: sampleLaptopData.comparePrice,
+            cost: sampleLaptopData.cost,
+            stock: sampleLaptopData.stock,
+
+            // Dynamic Product Options based on category
+            productOptions: {},
+            selectedColors: [],
+            selectedSecondaryOptions: [],
+
+            // Media Gallery
+            mediaGallery: sampleLaptopData.mediaGallery,
+            mainImage: sampleLaptopData.mainImage,
+            videos: [],
+
+            // Dynamic Technical Specifications based on category
+            specifications: [],
+            dynamicSpecs: sampleLaptopData.dynamicSpecs,
+
+            // Key Features
+            features: sampleLaptopData.features,
+
+            // Physical Properties
+            weight: sampleLaptopData.weight,
+            dimensions: sampleLaptopData.dimensions,
+
+            // SEO & Marketing
+            seo: sampleLaptopData.seo,
+            tags: sampleLaptopData.tags,
+            featured: sampleLaptopData.featured,
+
+            // Status & Shipping
+            status: sampleLaptopData.status,
+            visibility: sampleLaptopData.visibility,
+            sections: [],
+            shipping: sampleLaptopData.shipping
+        });
+        
+        // Reset initialization to allow category options to be set up
+        setIsInitialized(false);
+        
+        console.log('✅ Sample data loaded successfully');
+        alert(`✅ Sample MacBook Pro data loaded!\nCategory: ${selectedCategoryName}\nID: ${categoryId}`);
+    };
+
     // Auto-generate slug from product name
     useEffect(() => {
         if (formData.name && !editProduct) {
@@ -526,8 +730,12 @@ const validateStep = (step) => {
     };
 
     const handleSave = (isDraft = false) => {
+        console.log('🔄 handleSave called with isDraft:', isDraft);
+        console.log('📋 Current formData:', formData);
+        
         // Validate form before saving (skip validation for drafts)
         if (!isDraft && !validateForm()) {
+            console.log('❌ Form validation failed');
             return;
         }
 
@@ -536,10 +744,10 @@ const validateStep = (step) => {
             // Basic required fields
             name: formData.name.trim(),
             slug: formData.slug.trim(),
-            description: formData.description || formData.shortDescription || formData.name || 'Product description',
+            description: formData.description || formData.shortDescription || 'Product description',
             shortDescription: formData.shortDescription || '',
             price: parseFloat(formData.price) || 0,
-            brand: formData.brand.trim(),
+            brand: formData.brand?.trim() || 'Unknown Brand',
             category: formData.category,
 
             // Optional pricing fields
@@ -639,6 +847,35 @@ const validateStep = (step) => {
             }
         });
 
+        // Validate critical fields before sending
+        const validationErrors = [];
+        
+        if (!productData.name || productData.name.trim().length < 2) {
+            validationErrors.push('Product name must be at least 2 characters');
+        }
+        
+        if (!productData.description || productData.description.length < 5) {
+            validationErrors.push('Description must be at least 5 characters');
+        }
+        
+        if (!productData.price || productData.price <= 0) {
+            validationErrors.push('Price must be greater than 0');
+        }
+        
+        if (!productData.category) {
+            validationErrors.push('Category is required');
+        }
+        
+        if (!productData.brand || productData.brand.trim().length < 2) {
+            validationErrors.push('Brand must be at least 2 characters');
+        }
+        
+        if (validationErrors.length > 0) {
+            alert(`❌ Validation Errors:\n${validationErrors.join('\n')}`);
+            return;
+        }
+
+        console.log('📤 Final productData being sent:', JSON.stringify(productData, null, 2));
         onSave(productData);
     };
 
@@ -1607,6 +1844,16 @@ const validateStep = (step) => {
                     </p>
                 </div>
                 <div className="d-flex gap-2">
+                    {!editProduct && (
+                        <button 
+                            className="btn btn-outline-success"
+                            onClick={loadSampleData}
+                            title="Load sample MacBook Pro data for testing"
+                        >
+                            <i className="fas fa-laptop me-1"></i>
+                            Load Sample Data
+                        </button>
+                    )}
                     {formData.name && (
                         <button 
                             className="btn btn-outline-info"
