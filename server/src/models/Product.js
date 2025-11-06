@@ -235,13 +235,24 @@ productSchema.virtual('primaryImage').get(function () {
   return primary || this.images[0] || null;
 });
 
-// Pre-save middleware to generate slug
-productSchema.pre('save', function (next) {
+// Pre-save middleware to generate unique slug
+productSchema.pre('save', async function (next) {
   if (this.isModified('name') || this.isNew) {
-    this.slug = this.name
+    let baseSlug = this.name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
+    
+    let slug = baseSlug;
+    let counter = 1;
+    
+    // Check for existing slugs and make unique
+    while (await this.constructor.findOne({ slug, _id: { $ne: this._id } })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    
+    this.slug = slug;
   }
   next();
 });

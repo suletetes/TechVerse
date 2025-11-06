@@ -305,7 +305,7 @@ export const createProduct = asyncHandler(async (req, res, next) => {
       // Try to find by name or slug
       category = await Category.findOne({
         $or: [
-          { name: { $regex: new RegExp(`^${productData.category}$`, 'i') } },
+          { name: { $regex: new RegExp(`^${productData.category}`, 'i') } },
           { slug: productData.category.toLowerCase() }
         ]
       });
@@ -317,6 +317,28 @@ export const createProduct = asyncHandler(async (req, res, next) => {
     
     // Update productData to use the category ObjectId
     productData.category = category._id;
+  }
+
+  // Validate slug uniqueness if provided
+  if (productData.slug) {
+    const existingProduct = await Product.findOne({ slug: productData.slug });
+    if (existingProduct) {
+      return next(new AppError('A product with this slug already exists', 400, 'SLUG_EXISTS'));
+    }
+  }
+
+  // Ensure specifications array is properly formatted
+  if (productData.specifications && Array.isArray(productData.specifications)) {
+    productData.specifications = productData.specifications.filter(spec => 
+      spec.name && spec.value && spec.category
+    );
+  }
+
+  // Ensure variants array is properly formatted
+  if (productData.variants && Array.isArray(productData.variants)) {
+    productData.variants = productData.variants.filter(variant => 
+      variant.name && variant.options && variant.options.length > 0
+    );
   }
 
   // Handle image uploads if any
@@ -338,6 +360,7 @@ export const createProduct = asyncHandler(async (req, res, next) => {
   logger.info('Product created successfully', {
     productId: product._id,
     name: product.name,
+    slug: product.slug,
     createdBy: req.user._id,
     ip: req.ip
   });
