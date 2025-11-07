@@ -18,6 +18,13 @@ const ProductOptions = ({
     // Handle backend variant structure
     const variants = product?.variants || [];
     
+    console.log('🔍 ProductOptions Debug:', {
+        hasProduct: !!product,
+        variantsCount: variants.length,
+        variants: variants,
+        productName: product?.name
+    });
+    
     // Find color and storage variants from backend data
     const colorVariant = variants.find(v => v.name.toLowerCase().includes('color') || v.name.toLowerCase().includes('colour'));
     const storageVariant = variants.find(v => v.name.toLowerCase().includes('storage') || v.name.toLowerCase().includes('memory'));
@@ -25,6 +32,9 @@ const ProductOptions = ({
     // Use backend variants if available, otherwise fall back to props
     const colors = colorVariant?.options || colorOptions || [];
     const storages = storageVariant?.options || storageOptions || [];
+    
+    console.log('🎨 Color options:', colors.length, colors);
+    console.log('💾 Storage options:', storages.length, storages);
 
     // Helper function to calculate price with modifier
     // Helper function to calculate price with modifier
