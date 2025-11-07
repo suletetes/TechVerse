@@ -23,6 +23,7 @@ const AdminCatalogManager = ({
 
     const loadCatalogData = async () => {
         try {
+            console.log('📥 Loading catalog data...');
             setIsLoading(true);
             setError(null);
 
@@ -32,8 +33,12 @@ const AdminCatalogManager = ({
                 productService.getProducts({ limit: 1000 }) // Get all products for accurate counts
             ]);
 
+            console.log('📦 Categories response:', categoriesResponse);
+            console.log('📦 Products response:', productsResponse);
+
             // Process categories
             const backendCategories = categoriesResponse.data || categoriesResponse || [];
+            console.log('📋 Backend categories count:', backendCategories.length);
             const processedCategories = backendCategories.map(category => ({
                 id: category._id,
                 name: category.name,
@@ -78,12 +83,15 @@ const AdminCatalogManager = ({
                 ).length
             }));
 
+            console.log('✅ Processed categories:', categoriesWithCounts.length);
+            console.log('✅ Processed products:', processedProducts.length);
+            
             setCategories(categoriesWithCounts);
             setProducts(processedProducts);
             setLastUpdated(new Date());
 
         } catch (err) {
-            console.error('Failed to load catalog data:', err);
+            console.error('❌ Failed to load catalog data:', err);
             setError('Failed to load catalog data. Please try again.');
         } finally {
             setIsLoading(false);
@@ -106,14 +114,18 @@ const AdminCatalogManager = ({
     // Wrapper functions to handle real-time updates
     const handleSaveCategoryWrapper = async (categoryData) => {
         try {
+            console.log('💾 Saving category:', categoryData);
             if (onSaveCategory) {
-                await onSaveCategory(categoryData);
+                const result = await onSaveCategory(categoryData);
+                console.log('✅ Category saved:', result);
             }
             // Refresh data to reflect changes
+            console.log('🔄 Refreshing category list...');
             await loadCatalogData();
+            console.log('✅ Category list refreshed');
         } catch (error) {
-            console.error('Failed to save category:', error);
-            alert('Failed to save category. Please try again.');
+            console.error('❌ Failed to save category:', error);
+            alert(`Failed to save category: ${error.message}`);
         }
     };
 
