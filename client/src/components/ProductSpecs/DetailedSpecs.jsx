@@ -159,7 +159,7 @@ const DetailedSpecs = ({
                                                     }`}>
                                                         <div className="spec-label">
                                                             <span className={`${spec.highlight ? 'fw-semibold text-dark' : 'text-muted'}`}>
-                                                                {spec.label}
+                                                                {spec.label.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                                                             </span>
                                                         </div>
                                                         <div className="spec-value text-end">

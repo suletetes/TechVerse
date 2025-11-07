@@ -58,7 +58,9 @@ const TechnicalSpecs = ({ product, specifications }) => {
                                 key={`${spec.label}-${index}`}
                                 className={`spec-item d-flex justify-content-between align-items-center py-2 ${index < keySpecs.length - 1 ? 'border-bottom' : ''}`}
                             >
-                                <span className="text-muted">{spec.label}</span>
+                                <span className="text-muted">
+                                    {spec.label.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                </span>
                                 <span className="fw-medium text-end" style={{ maxWidth: '60%' }}>
                                     {spec.value}
                                 </span>
