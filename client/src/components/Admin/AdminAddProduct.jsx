@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getCategoryConfig, generateProductSlug, validateProductSlug, mapCategoryToConfig } from '../../config/categoryConfig';
 import './AdminAddProduct.css';
 
@@ -134,6 +134,9 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [showPreview, setShowPreview] = useState(false);
+    const [currentCategoryId, setCurrentCategoryId] = useState(editProduct?.category?._id || editProduct?.category || null);
+    const initializedCategoriesRef = useRef(new Set());
+    const slugGeneratedRef = useRef(false);
 
     // Sample laptop product data for testing
     const sampleLaptopData = {
@@ -334,32 +337,45 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         
         // Reset initialization to allow category options to be set up
         setIsInitialized(false);
+        slugGeneratedRef.current = false;
+        setCurrentCategoryId(categoryId);
         
         console.log('✅ Sample data loaded successfully');
         alert(`✅ Sample MacBook Pro data loaded!\nCategory: ${selectedCategoryName}\nID: ${categoryId}`);
     };
 
+    // Initialize currentCategoryId when formData.category changes
+    useEffect(() => {
+        if (formData.category && formData.category !== currentCategoryId) {
+            setCurrentCategoryId(formData.category);
+        }
+    }, [formData.category]);
+
     // Auto-generate slug from product name
     useEffect(() => {
-        if (formData.name && !editProduct) {
+        if (formData.name && !editProduct && !slugGeneratedRef.current) {
             const newSlug = generateProductSlug(formData.name);
             setFormData(prev => ({
                 ...prev,
                 slug: newSlug
             }));
+            slugGeneratedRef.current = true;
         }
     }, [formData.name, editProduct]);    
     // Initialize category and dynamic specs
     useEffect(() => {
-        if (formData.category && validCategories.length > 0) {
+        const categoryId = currentCategoryId || formData.category;
+        
+        if (categoryId && validCategories.length > 0) {
             const category = Array.isArray(validCategories) ? 
-                validCategories.find(c => c._id === formData.category || c.id === formData.category) : null;
+                validCategories.find(c => c._id === categoryId || c.id === categoryId) : null;
+            
+            // Always update selected category and config
             setSelectedCategory(category);
-
             const config = mapCategoryToConfig(category);
             setCategoryConfig(config);
 
-            // Only initialize if not already initialized and not editing
+            // Only initialize product options if not already initialized and not editing
             if (config && !editProduct && !isInitialized) {
                 // Initialize dynamic specs based on category template
                 const initialSpecs = [];
@@ -406,7 +422,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                 setIsInitialized(true);
             }
         }
-    }, [formData.category, validCategories, editProduct, isInitialized]);
+    }, [currentCategoryId, validCategories.length, editProduct, isInitialized]);
 
     const steps = [
         { id: 1, title: 'Basic Info', icon: '📝' },
@@ -488,6 +504,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         // Reset initialization when category changes
         if (field === 'category') {
             setIsInitialized(false);
+            setCurrentCategoryId(value);
         }
     };
 
