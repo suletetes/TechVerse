@@ -76,7 +76,8 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             lowStockThreshold: editProduct?.stock?.lowStockThreshold || 10
         },
 
-        // Dynamic Product Options based on category
+        // Dynamic Product Variants
+        variants: editProduct?.variants || [],
         productOptions: editProduct?.productOptions || {},
         selectedColors: editProduct?.selectedColors || [],
         selectedSecondaryOptions: editProduct?.selectedSecondaryOptions || [],
@@ -790,15 +791,19 @@ const validateStep = (step) => {
                     publicId: media.publicId || null
                 })),
 
-            // Variants
-            variants: Object.entries(formData.productOptions || {}).map(([key, option]) => ({
-                name: option.name || key,
-                options: option.options?.filter(opt => opt.selected).map(opt => ({
-                    value: opt.name || opt.value,
-                    priceModifier: opt.basePriceModifier || opt.priceModifier || 0,
-                    stock: opt.stock || 0
-                })) || []
-            })).filter(variant => variant.options.length > 0),
+            // Variants - use dynamic variants from DynamicVariantBuilder
+            variants: (formData.variants || [])
+                .filter(v => v.name && v.options && v.options.length > 0)
+                .map(v => ({
+                    name: v.name,
+                    options: v.options
+                        .filter(opt => opt.value)
+                        .map(opt => ({
+                            value: opt.value,
+                            priceModifier: parseFloat(opt.priceModifier) || 0,
+                            stock: parseInt(opt.stock) || 0
+                        }))
+                })),
 
             // Specifications
             specifications: [
@@ -1162,150 +1167,12 @@ const validateStep = (step) => {
      case 3:
                 return (
                     <div className="row">
-                        {selectedCategory && categoryConfig && categoryConfig.colorOptions ? (
-                            <>
-                                <div className="col-12 mb-3">
-                                    <h5>Product Options</h5>
-                                    <p className="text-muted">Configure available options for {selectedCategory.name}</p>
-                                </div>
-
-                                {/* Color Options */}
-                                <div className="col-12 mb-4">
-                                    <div className="card">
-                                        <div className="card-header">
-                                            <h6 className="mb-0">
-                                                Available Colors
-                                                <span className="text-danger ms-1">*</span>
-                                            </h6>
-                                            <small className="text-muted">Select which colors are available for this product</small>
-                                        </div>
-                                        <div className="card-body">
-                                            <div className="row">
-                                                {categoryConfig.colorOptions.map((color) => (
-                                                    <div key={color.id} className="col-md-3 mb-3">
-                                                        <div className="card border">
-                                                            <div className="card-body p-3">
-                                                                <div className="d-flex align-items-center justify-content-between">
-                                                                    <div className="d-flex align-items-center">
-                                                                        <div
-                                                                            className={`me-2 border rounded-circle ${color.class}`}
-                                                                            style={{
-                                                                                width: '24px',
-                                                                                height: '24px'
-                                                                            }}
-                                                                        ></div>
-                                                                        <div>
-                                                                            <div className="fw-medium">{color.name}</div>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="form-check">
-                                                                        <input
-                                                                            className="form-check-input"
-                                                                            type="checkbox"
-                                                                            checked={formData.productOptions.colors?.options?.find(opt => opt.id === color.id)?.selected || false}
-                                                                            onChange={(e) => {
-                                                                                handleProductOptionChange('colors', color.id, 'selected', e.target.checked);
-                                                                            }}
-                                                                        />
-                                                                        <label className="form-check-label">
-                                                                            <small>Available</small>
-                                                                        </label>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="mt-2">
-                                                                    <input
-                                                                        type="number"
-                                                                        className="form-control form-control-sm"
-                                                                        placeholder="Stock quantity"
-                                                                        value={formData.productOptions.colors?.options?.find(opt => opt.id === color.id)?.stock || ''}
-                                                                        onChange={(e) => {
-                                                                            handleProductOptionChange('colors', color.id, 'stock', parseInt(e.target.value) || 0);
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Secondary Options */}
-                                {categoryConfig.secondaryOptions && (
-                                    <div className="col-12 mb-4">
-                                        <div className="card">
-                                            <div className="card-header">
-                                                <h6 className="mb-0">
-                                                    {categoryConfig.secondaryOptions.name} Options
-                                                    <span className="text-danger ms-1">*</span>
-                                                </h6>
-                                                <small className="text-muted">Configure {categoryConfig.secondaryOptions.name.toLowerCase()} options for this product</small>
-                                            </div>
-                                            <div className="card-body">
-                                                <div className="row">
-                                                    {categoryConfig.secondaryOptions.options.map((option) => (
-                                                        <div key={option.id} className="col-md-6 mb-3">
-                                                            <div className="card">
-                                                                <div className="card-body p-3">
-                                                                    <div className="d-flex align-items-center justify-content-between">
-                                                                        <div>
-                                                                            <div className="fw-medium">{option.name}</div>
-                                                                            {option.basePriceModifier !== 0 && (
-                                                                                <span className="badge bg-primary">
-                                                                                    {option.basePriceModifier > 0 ? '+' : ''}${option.basePriceModifier}
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="form-check">
-                                                                            <input
-                                                                                className="form-check-input"
-                                                                                type="checkbox"
-                                                                                checked={formData.productOptions[categoryConfig.secondaryOptions.key]?.options?.find(opt => opt.id === option.id)?.selected || false}
-                                                                                onChange={(e) => {
-                                                                                    handleProductOptionChange(categoryConfig.secondaryOptions.key, option.id, 'selected', e.target.checked);
-                                                                                }}
-                                                                            />
-                                                                            <label className="form-check-label">
-                                                                                <small>Available</small>
-                                                                            </label>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="mt-2">
-                                                                        <input
-                                                                            type="number"
-                                                                            className="form-control form-control-sm"
-                                                                            placeholder="Stock quantity"
-                                                                            value={formData.productOptions[categoryConfig.secondaryOptions.key]?.options?.find(opt => opt.id === option.id)?.stock || ''}
-                                                                            onChange={(e) => {
-                                                                                handleProductOptionChange(categoryConfig.secondaryOptions.key, option.id, 'stock', parseInt(e.target.value) || 0);
-                                                                            }}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </>
-                        ) : (
-                            <div className="col-12">
-                                <div className="alert alert-info">
-                                    <h6>No Product Options</h6>
-                                    <p className="mb-0">
-                                        {selectedCategory
-                                            ? `The ${selectedCategory.name} category doesn't have any product options configured.`
-                                            : 'Please select a category in step 1 to see available product options.'
-                                        }
-                                    </p>
-                                </div>
-                            </div>
-                        )}
+                        <div className="col-12">
+                            <DynamicVariantBuilder
+                                variants={formData.variants || []}
+                                onChange={(newVariants) => handleInputChange('variants', newVariants)}
+                            />
+                        </div>
                     </div>
                 );      
       case 4:

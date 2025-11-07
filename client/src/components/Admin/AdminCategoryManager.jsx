@@ -40,10 +40,15 @@ const AdminCategoryManager = ({
     const handleSaveCategory = () => {
         const categoryData = {
             ...categoryForm,
-            id: editingCategory?.id || Date.now(),
             slug: categoryForm.slug || categoryForm.name.toLowerCase().replace(/\s+/g, '-'),
             updatedAt: new Date().toISOString()
         };
+
+        // Only include ID if editing existing category
+        if (editingCategory && (editingCategory._id || editingCategory.id)) {
+            categoryData._id = editingCategory._id || editingCategory.id;
+        }
+        // For new categories, don't set ID - let backend generate MongoDB ObjectId
 
         onSaveCategory(categoryData);
         resetForm();
