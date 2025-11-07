@@ -304,7 +304,47 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             cost: sampleLaptopData.cost,
             stock: sampleLaptopData.stock,
 
-            // Dynamic Product Options based on category
+            // Dynamic Variants (NEW - replaces hardcoded productOptions)
+            variants: [
+                {
+                    id: 'variant-ram-' + Date.now(),
+                    name: 'RAM',
+                    options: [
+                        { id: 'opt-1', value: '8GB', priceModifier: 0, stock: 10 },
+                        { id: 'opt-2', value: '16GB', priceModifier: 200, stock: 8 },
+                        { id: 'opt-3', value: '32GB', priceModifier: 500, stock: 5 },
+                        { id: 'opt-4', value: '64GB', priceModifier: 1000, stock: 2 }
+                    ]
+                },
+                {
+                    id: 'variant-storage-' + Date.now(),
+                    name: 'Storage',
+                    options: [
+                        { id: 'opt-5', value: '256GB SSD', priceModifier: 0, stock: 15 },
+                        { id: 'opt-6', value: '512GB SSD', priceModifier: 150, stock: 10 },
+                        { id: 'opt-7', value: '1TB SSD', priceModifier: 350, stock: 8 },
+                        { id: 'opt-8', value: '2TB SSD', priceModifier: 700, stock: 3 }
+                    ]
+                },
+                {
+                    id: 'variant-processor-' + Date.now(),
+                    name: 'Processor',
+                    options: [
+                        { id: 'opt-9', value: 'Intel Core i5', priceModifier: 0, stock: 12 },
+                        { id: 'opt-10', value: 'Intel Core i7', priceModifier: 300, stock: 10 },
+                        { id: 'opt-11', value: 'Intel Core i9', priceModifier: 700, stock: 5 }
+                    ]
+                },
+                {
+                    id: 'variant-color-' + Date.now(),
+                    name: 'Color',
+                    options: [
+                        { id: 'opt-12', value: 'Silver', priceModifier: 0, stock: 15 },
+                        { id: 'opt-13', value: 'Space Gray', priceModifier: 0, stock: 12 },
+                        { id: 'opt-14', value: 'Gold', priceModifier: 50, stock: 8 }
+                    ]
+                }
+            ],
             productOptions: {},
             selectedColors: [],
             selectedSecondaryOptions: [],

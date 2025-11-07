@@ -311,7 +311,7 @@ const AdminCatalogManager = ({
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h3 className="tc-6533 fw-bold mb-0">Catalog Management</h3>
                 <div className="d-flex gap-2">
-                    <span className="badge bg-primary">{(categories.length || sampleCategories.length)} Categories</span>
+                    <span className="badge bg-primary">{categories.length} Categories</span>
                     <span className="badge bg-info">{Object.keys(specifications).length || Object.keys(sampleSpecifications).length} Spec Templates</span>
                 </div>
             </div>
@@ -327,7 +327,7 @@ const AdminCatalogManager = ({
                             <path fill="currentColor" d="M10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6H12L10,4Z"/>
                         </svg>
                         Categories
-                        <span className="badge bg-primary ms-2">{categories.length || sampleCategories.length}</span>
+                        <span className="badge bg-primary ms-2">{categories.length}</span>
                     </button>
                 </li>
                 <li className="nav-item">
@@ -348,11 +348,23 @@ const AdminCatalogManager = ({
             <div className="tab-content">
                 {activeTab === 'categories' && (
                     <div className="tab-pane active">
-                        <AdminCategoryManager
-                            categories={categories.length > 0 ? categories : sampleCategories}
-                            onSaveCategory={handleSaveCategoryWrapper}
-                            onDeleteCategory={handleDeleteCategoryWrapper}
-                        />
+                        {categories.length > 0 ? (
+                            <AdminCategoryManager
+                                categories={categories}
+                                onSaveCategory={handleSaveCategoryWrapper}
+                                onDeleteCategory={handleDeleteCategoryWrapper}
+                            />
+                        ) : (
+                            <div className="alert alert-info">
+                                <h5><i className="fas fa-info-circle me-2"></i>No Categories Yet</h5>
+                                <p className="mb-3">You haven't created any categories yet. Categories help organize your products.</p>
+                                <AdminCategoryManager
+                                    categories={[]}
+                                    onSaveCategory={handleSaveCategoryWrapper}
+                                    onDeleteCategory={handleDeleteCategoryWrapper}
+                                />
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -372,7 +384,7 @@ const AdminCatalogManager = ({
                 <div className="col-md-3">
                     <div className="card text-center">
                         <div className="card-body">
-                            <h5 className="card-title text-primary">{categories.length || sampleCategories.length}</h5>
+                            <h5 className="card-title text-primary">{categories.length}</h5>
                             <p className="card-text">Total Categories</p>
                         </div>
                     </div>
@@ -381,7 +393,7 @@ const AdminCatalogManager = ({
                     <div className="card text-center">
                         <div className="card-body">
                             <h5 className="card-title text-success">
-                                {(categories.length > 0 ? categories : sampleCategories).filter(cat => cat.isActive).length}
+                                {categories.filter(cat => cat.isActive).length}
                             </h5>
                             <p className="card-text">Active Categories</p>
                         </div>
