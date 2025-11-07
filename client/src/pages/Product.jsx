@@ -115,6 +115,46 @@ const Product = () => {
         return storage ? storage.price : (currentProduct?.price || 1999);
     }, [selectedStorage, storageOptions, currentProduct?.price]);
 
+    // Helper function to format specification categories
+    const formatSpecificationCategories = useMemo(() => {
+        if (!currentProduct?.specifications || currentProduct.specifications.length === 0) return {};
+        
+        return currentProduct.specifications.reduce((acc, spec) => {
+            // Get category name - it might already be formatted or need formatting
+            let categoryName = spec.category || 'General';
+            
+            // If category is already formatted (contains spaces or &), use it as is
+            // Otherwise, map common lowercase categories to formatted versions
+            if (!categoryName.includes(' ') && !categoryName.includes('&')) {
+                const categoryMap = {
+                    'display': 'Display & Design',
+                    'performance': 'Performance',
+                    'camera': 'Camera & Audio',
+                    'audio': 'Camera & Audio',
+                    'connectivity': 'Connectivity & Accessories',
+                    'battery': 'Battery & Power',
+                    'power': 'Battery & Power',
+                    'general': 'General',
+                    'processor': 'Performance',
+                    'memory': 'Performance',
+                    'storage': 'Performance'
+                };
+                
+                categoryName = categoryMap[categoryName.toLowerCase()] || 
+                              categoryName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            }
+            
+            if (!acc[categoryName]) acc[categoryName] = [];
+            acc[categoryName].push({
+                label: spec.name,
+                value: spec.value,
+                highlight: spec.category?.toLowerCase().includes('performance') || 
+                          spec.category?.toLowerCase().includes('display')
+            });
+            return acc;
+        }, {});
+    }, [currentProduct?.specifications]);
+
     const handleAddToCart = useCallback(() => {
         if (!currentProduct) return;
         
@@ -437,23 +477,13 @@ const Product = () => {
                         className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
                         <DetailedSpecs 
                             productName={product?.name || 'Product'}
-                            specifications={product?.specifications ? 
-                                // Convert database specifications to component format
-                                product.specifications.reduce((acc, spec) => {
-                                    const category = spec.category || 'General';
-                                    if (!acc[category]) acc[category] = [];
-                                    acc[category].push({
-                                        label: spec.name,
-                                        value: spec.value,
-                                        highlight: spec.category === 'performance' || spec.category === 'display'
-                                    });
-                                    return acc;
-                                }, {}) :
+                            specifications={Object.keys(formatSpecificationCategories).length > 0 ? 
+                                formatSpecificationCategories :
                                 // Fallback specifications
                                 {
                                     "General": [
                                         { label: 'Brand', value: product?.brand || 'Unknown', highlight: true },
-                                        { label: 'Price', value: `$${product?.price || 0}` },
+                                        { label: 'Price', value: `£${product?.price || 0}` },
                                         { label: 'Category', value: typeof product?.category === 'object' ? product.category.name : product?.category || 'Product' }
                                     ]
                                 }

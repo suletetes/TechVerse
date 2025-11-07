@@ -806,11 +806,24 @@ const validateStep = (step) => {
                     value: spec.value.toString(),
                     category: spec.category || 'general'
                 })),
-                ...Object.entries(formData.dynamicSpecs || {}).map(([key, value]) => ({
-                    name: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
-                    value: value.toString(),
-                    category: selectedCategory?.name?.toLowerCase() || 'general'
-                }))
+                ...Object.entries(formData.dynamicSpecs || {}).map(([key, value]) => {
+                    // Find the category for this spec key from categoryConfig
+                    let specCategory = 'General';
+                    if (categoryConfig?.specificationCategories) {
+                        for (const [catName, specs] of Object.entries(categoryConfig.specificationCategories)) {
+                            if (specs.some(s => s.key === key)) {
+                                specCategory = catName;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    return {
+                        name: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+                        value: value.toString(),
+                        category: specCategory
+                    };
+                })
             ].filter(spec => spec.value && spec.value.trim()),
 
             // Features
