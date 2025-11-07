@@ -116,17 +116,27 @@ const Product = () => {
     }, [selectedStorage, storageOptions, currentProduct?.price]);
 
     const handleAddToCart = useCallback(() => {
+        if (!currentProduct) return;
+        
+        // Check if product is in stock
+        if (currentProduct.stock?.quantity === 0) {
+            alert('Sorry, this product is currently out of stock.');
+            return;
+        }
+
         // Add to cart logic here
         console.log('Added to cart:', {
             product: currentProduct?.name || 'Product',
+            productId: currentProduct?._id,
             color: selectedColor,
             storage: selectedStorage,
             quantity: quantity,
             price: getCurrentPrice
         });
+        
         // You can add toast notification here
         alert('Product added to cart!');
-    }, [currentProduct?.name, selectedColor, selectedStorage, quantity, getCurrentPrice]);
+    }, [currentProduct, selectedColor, selectedStorage, quantity, getCurrentPrice]);
 
     const handleBuyNow = useCallback(() => {
         // Buy now logic - could add to cart and redirect to checkout
