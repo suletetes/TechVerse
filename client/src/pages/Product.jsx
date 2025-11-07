@@ -41,6 +41,8 @@ const Product = () => {
     const [quantity, setQuantity] = useState(1);
     const [selectedMedia, setSelectedMedia] = useState('main-image');
     const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+    const [reviews, setReviews] = useState([]);
+    const [reviewsLoading, setReviewsLoading] = useState(false);
 
     // Memoized options based on product data from database
     const colorOptions = useMemo(() => {
@@ -223,6 +225,56 @@ const Product = () => {
             clearCurrentProduct();
         };
     }, [id, loadProduct, clearCurrentProduct]);
+
+    // Load product reviews
+    useEffect(() => {
+        const fetchReviews = async () => {
+            if (!currentProduct?._id) return;
+            
+            setReviewsLoading(true);
+            try {
+                // Direct fetch to bypass caching issues
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+                const url = `${apiUrl}/products/${currentProduct._id}/reviews?page=1&limit=10&sort=newest`;
+                
+                console.log('📝 Fetching reviews from:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('📝 Reviews API Response:', data);
+                
+                if (data?.data?.reviews) {
+                    console.log('✅ Found reviews:', data.data.reviews.length);
+                    setReviews(data.data.reviews);
+                } else if (Array.isArray(data?.data)) {
+                    console.log('✅ Found reviews (array):', data.data.length);
+                    setReviews(data.data);
+                } else {
+                    console.log('⚠️ No reviews found in response');
+                    setReviews([]);
+                }
+            } catch (error) {
+                console.error('❌ Error loading reviews:', error);
+                setReviews([]);
+            } finally {
+                setReviewsLoading(false);
+            }
+        };
+
+        fetchReviews();
+    }, [currentProduct?._id]);
 
     // Initialize variants from product data
     useEffect(() => {
@@ -495,6 +547,11 @@ const Product = () => {
                     <div
                         className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
                         <ReviewsSection 
+                            productId={product?._id}
+                            reviews={reviews}
+                            averageRating={product?.rating?.average || 0}
+                            totalReviews={product?.rating?.count || 0}
+                            isLoading={reviewsLoading}
                             showWriteReview={false} 
                             onSubmitReview={handleSubmitReview}
                             productInfo={{
