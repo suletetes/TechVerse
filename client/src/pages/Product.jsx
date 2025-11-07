@@ -491,6 +491,7 @@ const Product = () => {
                                 <div className="divider-h"></div>
 
                                 <ProductOptions
+                                    product={product}
                                     colorOptions={colorOptions}
                                     storageOptions={storageOptions}
                                     selectedColor={selectedColor}
