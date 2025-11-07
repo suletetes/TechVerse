@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getCategoryConfig, generateProductSlug, validateProductSlug, mapCategoryToConfig } from '../../config/categoryConfig';
+import { generateProductSlug, validateProductSlug, mapCategoryToConfig } from '../../config/categoryConfig';
+import DynamicVariantBuilder from './DynamicVariantBuilder';
 import './AdminAddProduct.css';
 
 const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = [] }) => {
