@@ -213,10 +213,7 @@ const Product = () => {
     useEffect(() => {
         console.log('Product component mounted with identifier:', id);
         if (id) {
-            console.log('Loading product with identifier:', id);
-            loadProduct(id).then(result => {
-                console.log('Product loaded successfully:', result);
-            }).catch(error => {
+            loadProduct(id).catch(error => {
                 console.error('Error loading product:', error);
             });
         }
@@ -505,13 +502,17 @@ const Product = () => {
                                 <div className="divider-h"></div>
 
                                 <ProductQuantity
+                                    product={product}
                                     quantity={quantity}
                                     onQuantityChange={setQuantity}
+                                    inStock={product?.stock?.quantity > 0}
+                                    maxQuantity={product?.stock?.quantity}
                                 />
 
                                 <ProductActions
+                                    product={product}
                                     totalPrice={getCurrentPrice * quantity}
-                                    isOutOfStock={product?.stock?.quantity === 0}
+                                    inStock={product?.stock?.quantity > 0}
                                     onBuyNow={handleBuyNow}
                                     onAddToCart={handleAddToCart}
                                 />

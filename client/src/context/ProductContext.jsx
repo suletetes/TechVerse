@@ -188,6 +188,11 @@ const productReducer = (state, action) => {
 
     case PRODUCT_ACTIONS.LOAD_PRODUCT_SUCCESS:
       const productData = action.payload.data?.product || action.payload.data || action.payload;
+      console.log('📦 Product loaded into context:', {
+        name: productData?.name,
+        stock: productData?.stock,
+        stockQuantity: productData?.stock?.quantity
+      });
       return {
         ...state,
         currentProduct: productData,
