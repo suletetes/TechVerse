@@ -17,6 +17,11 @@ const wishlistItemSchema = new mongoose.Schema({
   notes: {
     type: String,
     maxlength: 500
+  },
+  options: {
+    type: Map,
+    of: String,
+    default: {}
   }
 });
 

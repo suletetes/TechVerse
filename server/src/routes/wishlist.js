@@ -91,7 +91,7 @@ router.get('/', authenticate, async (req, res) => {
 router.post('/add/:productId', authenticate, validateProductId, validateWishlistAdd, async (req, res) => {
     try {
         const { productId } = req.params;
-        const { notes = '' } = req.body;
+        const { notes = '', options = {} } = req.body;
 
         // Validate product exists and is active
         const product = await Product.findById(productId);
@@ -114,11 +114,14 @@ router.post('/add/:productId', authenticate, validateProductId, validateWishlist
         );
 
         if (existingItemIndex > -1) {
-            // Update existing item notes if provided
+            // Update existing item notes and options if provided
             if (notes) {
                 wishlist.items[existingItemIndex].notes = notes;
-                await wishlist.save();
             }
+            if (options && Object.keys(options).length > 0) {
+                wishlist.items[existingItemIndex].options = options;
+            }
+            await wishlist.save();
             
             return res.status(409).json({
                 success: false,
@@ -130,7 +133,8 @@ router.post('/add/:productId', authenticate, validateProductId, validateWishlist
         wishlist.items.unshift({
             product: productId,
             priceWhenAdded: product.price,
-            notes
+            notes,
+            options
         });
 
         await wishlist.save();
