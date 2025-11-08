@@ -284,7 +284,7 @@ const Cart = () => {
                             {/* Shipping Notice */}
                             {shipping === 0 && (
                                 <div className="alert alert-success mb-4" style={{ backgroundColor: '#d4edda', border: '1px solid #c3e6cb' }}>
-                                    <small className="tc-6533">🚚 Free shipping on orders over £50!</small>
+                                    <small className="tc-6533"> Free shipping on orders over £50!</small>
                                 </div>
                             )}
 

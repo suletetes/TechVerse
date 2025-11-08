@@ -173,6 +173,11 @@ const Wishlist = () => {
             const options = item.options || {};
             await addToCart(item.productId, 1, options);
             
+            // Remove from wishlist after successfully adding to cart
+            await wishlistService.removeFromWishlist(item.productId);
+            setWishlistItems(items => items.filter(i => i.id !== item.id));
+            setSelectedItems(selected => selected.filter(itemId => itemId !== item.id));
+            
             // Build options display string
             const optionsText = Object.keys(options).length > 0 
                 ? ` (${Object.entries(options).map(([key, value]) => `${key}: ${value}`).join(', ')})`
@@ -213,6 +218,7 @@ const Wishlist = () => {
         try {
             setIsUpdating(true);
             let successCount = 0;
+            const successfullyAddedIds = [];
             
             for (const item of itemsToMove) {
                 try {
@@ -220,9 +226,28 @@ const Wishlist = () => {
                     const options = item.options || {};
                     await addToCart(item.productId, 1, options);
                     successCount++;
+                    successfullyAddedIds.push(item.id);
                 } catch (error) {
                     console.error(`Failed to add ${item.name}:`, error);
                 }
+            }
+            
+            // Remove successfully added items from wishlist
+            if (successfullyAddedIds.length > 0) {
+                for (const itemId of successfullyAddedIds) {
+                    const item = wishlistItems.find(i => i.id === itemId);
+                    if (item) {
+                        try {
+                            await wishlistService.removeFromWishlist(item.productId);
+                        } catch (error) {
+                            console.error(`Failed to remove ${item.name} from wishlist:`, error);
+                        }
+                    }
+                }
+                
+                // Update local state
+                setWishlistItems(items => items.filter(item => !successfullyAddedIds.includes(item.id)));
+                setSelectedItems([]);
             }
             
             if (successCount > 0) {

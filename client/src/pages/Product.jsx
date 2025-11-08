@@ -288,8 +288,12 @@ const Product = () => {
                     type: 'info'
                 });
             } else {
-                // Add to wishlist
-                await wishlistService.addToWishlist(currentProduct._id);
+                // Add to wishlist with selected options
+                const selectedOptions = {
+                    color: selectedColor,
+                    storage: selectedStorage
+                };
+                await wishlistService.addToWishlist(currentProduct._id, '', selectedOptions);
                 setIsInWishlist(true);
                 setToast({
                     message: `${currentProduct.name} added to wishlist!`,
