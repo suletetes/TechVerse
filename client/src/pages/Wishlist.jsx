@@ -1,21 +1,173 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth, useCart } from '../context';
+import wishlistService from '../api/services/wishlistService';
+import { LoadingSpinner } from '../components/Common';
 
 const Wishlist = () => {
+    const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
+    const { addToCart } = useCart();
+    
+    const [wishlistItems, setWishlistItems] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [activeCategory, setActiveCategory] = useState('all');
-    const [viewMode, setViewMode] = useState('grid'); // grid or list
+    const [viewMode, setViewMode] = useState('grid');
     const [sortBy, setSortBy] = useState('dateAdded');
     const [showPriceAlerts, setShowPriceAlerts] = useState(false);
     const [selectedItems, setSelectedItems] = useState([]);
-    
-    const [wishlistCategories] = useState([
-        { id: 'all', name: 'All Items', count: 3 },
-        { id: 'default', name: 'My Wishlist', count: 2 },
-        { id: 'gifts', name: 'Gift Ideas', count: 1 },
-        { id: 'price-watch', name: 'Price Watch', count: 2 }
-    ]);
+    const [isUpdating, setIsUpdating] = useState(false);
 
-    const [wishlistItems, setWishlistItems] = useState([
+    // Redirect to login if not authenticated
+    useEffect(() => {
+        if (!isAuthenticated) {
+            navigate('/login', { 
+                state: { 
+                    from: { pathname: '/wishlist' },
+                    message: 'Please login to view your wishlist'
+                }
+            });
+        }
+    }, [isAuthenticated, navigate]);
+
+    // Load wishlist from API
+    const loadWishlist = useCallback(async () => {
+        if (!isAuthenticated) return;
+
+        try {
+            setIsLoading(true);
+            setError(null);
+            const response = await wishlistService.getWishlist();
+            const items = response.data?.items || [];
+            
+            // Transform API data to match UI format
+            const transformedItems = items.map(item => ({
+                id: item._id,
+                _id: item._id,
+                productId: item.product?._id,
+                name: item.product?.name || 'Unknown Product',
+                price: item.product?.finalPrice || item.product?.price || 0,
+                originalPrice: item.product?.compareAtPrice,
+                discount: item.product?.discountPercentage || 0,
+                image: item.product?.primaryImage?.url || item.product?.images?.[0]?.url || 'img/placeholder.jpg',
+                imageWebp: item.product?.primaryImage?.url || item.product?.images?.[0]?.url || 'img/placeholder.jpg',
+                inStock: item.product?.stockStatus !== 'out_of_stock',
+                rating: item.product?.rating?.average || 0,
+                reviews: item.product?.rating?.count || 0,
+                dateAdded: item.addedAt,
+                priceWhenAdded: item.priceWhenAdded,
+                notes: item.notes,
+                product: item.product
+            }));
+
+            setWishlistItems(transformedItems);
+        } catch (err) {
+            console.error('Error loading wishlist:', err);
+            setError('Failed to load wishlist. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [isAuthenticated]);
+
+    // Load wishlist on mount
+    useEffect(() => {
+        loadWishlist();
+    }, [loadWishlist]);
+
+    // Filter and sort items
+    const getFilteredItems = () => {
+        let filtered = wishlistItems;
+        
+        if (activeCategory !== 'all') {
+            filtered = filtered.filter(item => item.category === activeCategory);
+        }
+        
+        // Sort items
+        switch (sortBy) {
+            case 'dateAdded':
+                filtered.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
+                break;
+            case 'priceHigh':
+                filtered.sort((a, b) => b.price - a.price);
+                break;
+            case 'priceLow':
+                filtered.sort((a, b) => a.price - b.price);
+                break;
+            case 'name':
+                filtered.sort((a, b) => a.name.localeCompare(b.name));
+                break;
+            default:
+                break;
+        }
+        
+        return filtered;
+    };
+
+    const toggleItemSelection = (id) => {
+        setSelectedItems(prev => 
+            prev.includes(id) 
+                ? prev.filter(itemId => itemId !== id)
+                : [...prev, id]
+        );
+    };
+
+    const selectAllItems = () => {
+        const filteredItems = getFilteredItems();
+        setSelectedItems(filteredItems.map(item => item.id));
+    };
+
+    const clearSelection = () => {
+        setSelectedItems([]);
+    };
+
+    const togglePriceAlert = (id) => {
+        setWishlistItems(items => 
+            items.map(item => 
+                item.id === id 
+                    ? { 
+                        ...item, 
+                        priceAlert: { 
+                            ...item.priceAlert, 
+                            enabled: !item.priceAlert?.enabled 
+                        } 
+                    }
+                    : item
+            )
+        );
+    };
+
+    const setPriceAlertTarget = (id, targetPrice) => {
+        setWishlistItems(items => 
+            items.map(item => 
+                item.id === id 
+                    ? { 
+                        ...item, 
+                        priceAlert: { 
+                            ...item.priceAlert, 
+                            targetPrice: parseFloat(targetPrice),
+                            enabled: true
+                        } 
+                    }
+                    : item
+            )
+        );
+    };
+
+    const moveToCategory = (itemId, newCategory) => {
+        setWishlistItems(items => 
+            items.map(item => 
+                item.id === itemId ? { ...item, category: newCategory } : item
+            )
+        );
+    };
+
+    // Simplified categories - just show all items for now
+    const wishlistCategories = [
+        { id: 'all', name: 'All Items', count: wishlistItems.length }
+    ];
+
+    const [oldWishlistCategories] = useState([
         {
             id: 1,
             name: 'Ultra HD QLED TV',
@@ -67,118 +219,123 @@ const Wishlist = () => {
         }
     ]);
 
-    // Filter and sort items
-    const getFilteredItems = () => {
-        let filtered = wishlistItems;
-        
-        if (activeCategory !== 'all') {
-            filtered = filtered.filter(item => item.category === activeCategory);
+    const removeFromWishlist = useCallback(async (id) => {
+        try {
+            setIsUpdating(true);
+            const item = wishlistItems.find(i => i.id === id);
+            await wishlistService.removeFromWishlist(item.productId);
+            setWishlistItems(items => items.filter(item => item.id !== id));
+            setSelectedItems(selected => selected.filter(itemId => itemId !== id));
+        } catch (error) {
+            console.error('Error removing from wishlist:', error);
+            alert('Failed to remove item. Please try again.');
+        } finally {
+            setIsUpdating(false);
         }
-        
-        // Sort items
-        switch (sortBy) {
-            case 'dateAdded':
-                filtered.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
-                break;
-            case 'priceHigh':
-                filtered.sort((a, b) => b.price - a.price);
-                break;
-            case 'priceLow':
-                filtered.sort((a, b) => a.price - b.price);
-                break;
-            case 'name':
-                filtered.sort((a, b) => a.name.localeCompare(b.name));
-                break;
-            default:
-                break;
+    }, [wishlistItems]);
+
+    const handleAddToCart = useCallback(async (item) => {
+        if (!item.inStock) {
+            alert('This product is currently out of stock.');
+            return;
         }
-        
-        return filtered;
-    };
 
-    const removeFromWishlist = (id) => {
-        setWishlistItems(items => items.filter(item => item.id !== id));
-        setSelectedItems(selected => selected.filter(itemId => itemId !== id));
-    };
+        try {
+            setIsUpdating(true);
+            await addToCart(item.productId, 1, {});
+            alert(`${item.name} added to cart!`);
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            alert('Failed to add to cart. Please try again.');
+        } finally {
+            setIsUpdating(false);
+        }
+    }, [addToCart]);
 
-    const addToCart = (item) => {
-        console.log('Adding to cart:', item);
-        alert(`${item.name} added to cart!`);
-    };
-
-    const moveAllToCart = () => {
+    const moveAllToCart = useCallback(async () => {
         const itemsToMove = selectedItems.length > 0 
             ? wishlistItems.filter(item => selectedItems.includes(item.id) && item.inStock)
             : wishlistItems.filter(item => item.inStock);
         
-        console.log('Moving to cart:', itemsToMove);
-        alert(`${itemsToMove.length} items added to cart!`);
-    };
+        if (itemsToMove.length === 0) {
+            alert('No items available to add to cart.');
+            return;
+        }
 
-    const toggleItemSelection = (id) => {
-        setSelectedItems(prev => 
-            prev.includes(id) 
-                ? prev.filter(itemId => itemId !== id)
-                : [...prev, id]
-        );
-    };
-
-    const selectAllItems = () => {
-        const filteredItems = getFilteredItems();
-        setSelectedItems(filteredItems.map(item => item.id));
-    };
-
-    const clearSelection = () => {
-        setSelectedItems([]);
-    };
-
-    const togglePriceAlert = (id) => {
-        setWishlistItems(items => 
-            items.map(item => 
-                item.id === id 
-                    ? { 
-                        ...item, 
-                        priceAlert: { 
-                            ...item.priceAlert, 
-                            enabled: !item.priceAlert.enabled 
-                        } 
-                    }
-                    : item
-            )
-        );
-    };
-
-    const setPriceAlertTarget = (id, targetPrice) => {
-        setWishlistItems(items => 
-            items.map(item => 
-                item.id === id 
-                    ? { 
-                        ...item, 
-                        priceAlert: { 
-                            ...item.priceAlert, 
-                            targetPrice: parseFloat(targetPrice),
-                            enabled: true
-                        } 
-                    }
-                    : item
-            )
-        );
-    };
-
-    const moveToCategory = (itemId, newCategory) => {
-        setWishlistItems(items => 
-            items.map(item => 
-                item.id === itemId ? { ...item, category: newCategory } : item
-            )
-        );
-    };
+        try {
+            setIsUpdating(true);
+            let successCount = 0;
+            
+            for (const item of itemsToMove) {
+                try {
+                    await addToCart(item.productId, 1, {});
+                    successCount++;
+                } catch (error) {
+                    console.error(`Failed to add ${item.name}:`, error);
+                }
+            }
+            
+            alert(`${successCount} of ${itemsToMove.length} items added to cart!`);
+            
+            if (successCount > 0) {
+                // Optionally navigate to cart
+                const goToCart = window.confirm('Would you like to view your cart?');
+                if (goToCart) {
+                    navigate('/cart');
+                }
+            }
+        } catch (error) {
+            console.error('Error moving items to cart:', error);
+            alert('Failed to add items to cart. Please try again.');
+        } finally {
+            setIsUpdating(false);
+        }
+    }, [wishlistItems, selectedItems, addToCart, navigate]);
 
     const filteredItems = getFilteredItems();
+
+    // Loading state
+    if (isLoading) {
+        return (
+            <div className="bloc bgc-5700 full-width-bloc l-bloc" id="wishlist-loading">
+                <div className="container bloc-md bloc-lg-md">
+                    <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                        <LoadingSpinner size="lg" />
+                        <div className="ms-3">
+                            <p className="tc-6533">Loading your wishlist...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="bloc bgc-5700 full-width-bloc l-bloc" id="wishlist-error">
+                <div className="container bloc-md bloc-lg-md">
+                    <div className="alert alert-danger mt-5">
+                        <h4>Error Loading Wishlist</h4>
+                        <p>{error}</p>
+                        <button className="btn btn-primary" onClick={loadWishlist}>
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bloc bgc-5700 full-width-bloc l-bloc" id="wishlist-bloc">
             <div className="container bloc-md bloc-lg-md">
-                <div className="row">
+                <div className="row position-relative">
+                    {isUpdating && (
+                        <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75" style={{ zIndex: 1000 }}>
+                            <LoadingSpinner size="lg" />
+                        </div>
+                    )}
                     {/* Page Header */}
                     <div className="col-12 mb-4">
                         <div className="d-flex justify-content-between align-items-center flex-wrap">
@@ -497,9 +654,10 @@ const Wishlist = () => {
                                                                 {item.inStock ? (
                                                                     <button
                                                                         className="btn btn-c-2101 btn-rd flex-fill"
-                                                                        onClick={() => addToCart(item)}
+                                                                        onClick={() => handleAddToCart(item)}
+                                                                        disabled={isUpdating}
                                                                     >
-                                                                        Add to Cart
+                                                                        {isUpdating ? 'Adding...' : 'Add to Cart'}
                                                                     </button>
                                                                 ) : (
                                                                     <button className="btn btn-outline-secondary btn-rd flex-fill" disabled>
@@ -616,9 +774,10 @@ const Wishlist = () => {
                                                             {item.inStock ? (
                                                                 <button
                                                                     className="btn btn-sm btn-c-2101 btn-rd"
-                                                                    onClick={() => addToCart(item)}
+                                                                    onClick={() => handleAddToCart(item)}
+                                                                    disabled={isUpdating}
                                                                 >
-                                                                    Add to Cart
+                                                                    {isUpdating ? 'Adding...' : 'Add to Cart'}
                                                                 </button>
                                                             ) : (
                                                                 <button className="btn btn-sm btn-outline-secondary btn-rd" disabled>
