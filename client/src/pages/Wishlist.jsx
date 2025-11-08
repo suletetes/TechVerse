@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, useCart } from '../context';
 import wishlistService from '../api/services/wishlistService';
-import { LoadingSpinner } from '../components/Common';
+import { LoadingSpinner, Toast } from '../components/Common';
+import { RelatedProducts } from '../components';
 
 const Wishlist = () => {
     const navigate = useNavigate();
@@ -15,9 +16,9 @@ const Wishlist = () => {
     const [activeCategory, setActiveCategory] = useState('all');
     const [viewMode, setViewMode] = useState('grid');
     const [sortBy, setSortBy] = useState('dateAdded');
-    const [showPriceAlerts, setShowPriceAlerts] = useState(false);
     const [selectedItems, setSelectedItems] = useState([]);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [toast, setToast] = useState(null);
 
     // Redirect to login if not authenticated
     useEffect(() => {
@@ -58,6 +59,7 @@ const Wishlist = () => {
                 dateAdded: item.addedAt,
                 priceWhenAdded: item.priceWhenAdded,
                 notes: item.notes,
+                options: item.options || {},
                 product: item.product
             }));
 
@@ -121,39 +123,6 @@ const Wishlist = () => {
         setSelectedItems([]);
     };
 
-    const togglePriceAlert = (id) => {
-        setWishlistItems(items => 
-            items.map(item => 
-                item.id === id 
-                    ? { 
-                        ...item, 
-                        priceAlert: { 
-                            ...item.priceAlert, 
-                            enabled: !item.priceAlert?.enabled 
-                        } 
-                    }
-                    : item
-            )
-        );
-    };
-
-    const setPriceAlertTarget = (id, targetPrice) => {
-        setWishlistItems(items => 
-            items.map(item => 
-                item.id === id 
-                    ? { 
-                        ...item, 
-                        priceAlert: { 
-                            ...item.priceAlert, 
-                            targetPrice: parseFloat(targetPrice),
-                            enabled: true
-                        } 
-                    }
-                    : item
-            )
-        );
-    };
-
     const moveToCategory = (itemId, newCategory) => {
         setWishlistItems(items => 
             items.map(item => 
@@ -167,58 +136,6 @@ const Wishlist = () => {
         { id: 'all', name: 'All Items', count: wishlistItems.length }
     ];
 
-    const [oldWishlistCategories] = useState([
-        {
-            id: 1,
-            name: 'Ultra HD QLED TV',
-            price: 2999,
-            originalPrice: 3499,
-            discount: 15,
-            image: 'img/tv-product.jpg',
-            imageWebp: 'img/tv-product.webp',
-            inStock: true,
-            rating: 4.8,
-            reviews: 124,
-            category: 'default',
-            dateAdded: '2024-01-15',
-            priceAlert: { enabled: true, targetPrice: 2500, currentPrice: 2999 },
-            lastPriceChange: { date: '2024-01-10', oldPrice: 3200, newPrice: 2999 }
-        },
-        {
-            id: 2,
-            name: 'Phone Ultra',
-            price: 999,
-            originalPrice: 1099,
-            discount: 9,
-            image: 'img/phone-product.jpg',
-            imageWebp: 'img/phone-product.webp',
-            inStock: true,
-            rating: 4.9,
-            reviews: 89,
-            category: 'gifts',
-            dateAdded: '2024-01-12',
-            priceAlert: { enabled: false, targetPrice: null, currentPrice: 999 },
-            lastPriceChange: null
-        },
-        {
-            id: 3,
-            name: 'Laptop Pro',
-            price: 2599,
-            originalPrice: null,
-            discount: 0,
-            image: 'img/laptop-product.jpg',
-            imageWebp: 'img/laptop-product.webp',
-            inStock: false,
-            rating: 4.7,
-            reviews: 156,
-            category: 'price-watch',
-            dateAdded: '2024-01-08',
-            priceAlert: { enabled: true, targetPrice: 2400, currentPrice: 2599 },
-            lastPriceChange: null,
-            stockAlert: true
-        }
-    ]);
-
     const removeFromWishlist = useCallback(async (id) => {
         try {
             setIsUpdating(true);
@@ -226,9 +143,16 @@ const Wishlist = () => {
             await wishlistService.removeFromWishlist(item.productId);
             setWishlistItems(items => items.filter(item => item.id !== id));
             setSelectedItems(selected => selected.filter(itemId => itemId !== id));
+            setToast({
+                message: 'Item removed from wishlist',
+                type: 'success'
+            });
         } catch (error) {
             console.error('Error removing from wishlist:', error);
-            alert('Failed to remove item. Please try again.');
+            setToast({
+                message: 'Failed to remove item. Please try again.',
+                type: 'error'
+            });
         } finally {
             setIsUpdating(false);
         }
@@ -236,17 +160,38 @@ const Wishlist = () => {
 
     const handleAddToCart = useCallback(async (item) => {
         if (!item.inStock) {
-            alert('This product is currently out of stock.');
+            setToast({
+                message: 'This product is currently out of stock.',
+                type: 'warning'
+            });
             return;
         }
 
         try {
             setIsUpdating(true);
-            await addToCart(item.productId, 1, {});
-            alert(`${item.name} added to cart!`);
+            // Use stored options from wishlist item
+            const options = item.options || {};
+            await addToCart(item.productId, 1, options);
+            
+            // Build options display string
+            const optionsText = Object.keys(options).length > 0 
+                ? ` (${Object.entries(options).map(([key, value]) => `${key}: ${value}`).join(', ')})`
+                : '';
+            
+            setToast({
+                message: `${item.name}${optionsText} added to cart!`,
+                type: 'success',
+                action: {
+                    label: 'View Cart',
+                    path: '/cart'
+                }
+            });
         } catch (error) {
             console.error('Error adding to cart:', error);
-            alert('Failed to add to cart. Please try again.');
+            setToast({
+                message: error.response?.data?.message || 'Failed to add to cart. Please try again.',
+                type: 'error'
+            });
         } finally {
             setIsUpdating(false);
         }
@@ -258,7 +203,10 @@ const Wishlist = () => {
             : wishlistItems.filter(item => item.inStock);
         
         if (itemsToMove.length === 0) {
-            alert('No items available to add to cart.');
+            setToast({
+                message: 'No items available to add to cart.',
+                type: 'warning'
+            });
             return;
         }
 
@@ -268,29 +216,40 @@ const Wishlist = () => {
             
             for (const item of itemsToMove) {
                 try {
-                    await addToCart(item.productId, 1, {});
+                    // Use stored options from wishlist item
+                    const options = item.options || {};
+                    await addToCart(item.productId, 1, options);
                     successCount++;
                 } catch (error) {
                     console.error(`Failed to add ${item.name}:`, error);
                 }
             }
             
-            alert(`${successCount} of ${itemsToMove.length} items added to cart!`);
-            
             if (successCount > 0) {
-                // Optionally navigate to cart
-                const goToCart = window.confirm('Would you like to view your cart?');
-                if (goToCart) {
-                    navigate('/cart');
-                }
+                setToast({
+                    message: `${successCount} of ${itemsToMove.length} items added to cart!`,
+                    type: 'success',
+                    action: {
+                        label: 'View Cart',
+                        path: '/cart'
+                    }
+                });
+            } else {
+                setToast({
+                    message: 'Failed to add items to cart. Please try again.',
+                    type: 'error'
+                });
             }
         } catch (error) {
             console.error('Error moving items to cart:', error);
-            alert('Failed to add items to cart. Please try again.');
+            setToast({
+                message: 'Failed to add items to cart. Please try again.',
+                type: 'error'
+            });
         } finally {
             setIsUpdating(false);
         }
-    }, [wishlistItems, selectedItems, addToCart, navigate]);
+    }, [wishlistItems, selectedItems, addToCart]);
 
     const filteredItems = getFilteredItems();
 
@@ -329,6 +288,14 @@ const Wishlist = () => {
 
     return (
         <div className="bloc bgc-5700 full-width-bloc l-bloc" id="wishlist-bloc">
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    action={toast.action}
+                    onClose={() => setToast(null)}
+                />
+            )}
             <div className="container bloc-md bloc-lg-md">
                 <div className="row position-relative">
                     {isUpdating && (
@@ -439,68 +406,6 @@ const Wishlist = () => {
                                 </div>
                             </div>
 
-                            {/* Price Alerts Summary */}
-                            <div className="col-12 mb-4">
-                                <div className="store-card fill-card">
-                                    <div className="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 className="tc-6533 mb-1">Price Alerts</h6>
-                                            <small className="text-muted">
-                                                {wishlistItems.filter(item => item.priceAlert?.enabled).length} active alerts • 
-                                                {wishlistItems.filter(item => item.lastPriceChange).length} recent price changes
-                                            </small>
-                                        </div>
-                                        <button
-                                            className="btn btn-sm btn-outline-info"
-                                            onClick={() => setShowPriceAlerts(!showPriceAlerts)}
-                                        >
-                                            {showPriceAlerts ? 'Hide' : 'Show'} Alerts
-                                        </button>
-                                    </div>
-                                    
-                                    {showPriceAlerts && (
-                                        <div className="mt-3 pt-3 border-top">
-                                            {wishlistItems.filter(item => item.priceAlert?.enabled || item.lastPriceChange).map(item => (
-                                                <div key={item.id} className="d-flex justify-content-between align-items-center mb-2">
-                                                    <div className="d-flex align-items-center">
-                                                        <img src={item.image} alt={item.name} width="40" height="40" className="rounded me-3"/>
-                                                        <div>
-                                                            <h6 className="mb-0">{item.name}</h6>
-                                                            {item.priceAlert?.enabled && (
-                                                                <small className="text-info">
-                                                                    Alert at £{item.priceAlert.targetPrice} (Current: £{item.price})
-                                                                </small>
-                                                            )}
-                                                            {item.lastPriceChange && (
-                                                                <small className="text-success d-block">
-                                                                    Price dropped from £{item.lastPriceChange.oldPrice} to £{item.lastPriceChange.newPrice}
-                                                                </small>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="d-flex gap-1">
-                                                        <button 
-                                                            className="btn btn-sm btn-outline-primary"
-                                                            onClick={() => {
-                                                                const newTarget = prompt('Set price alert target:', item.priceAlert?.targetPrice || item.price * 0.9);
-                                                                if (newTarget) setPriceAlertTarget(item.id, newTarget);
-                                                            }}
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                        <button 
-                                                            className={`btn btn-sm ${item.priceAlert?.enabled ? 'btn-warning' : 'btn-success'}`}
-                                                            onClick={() => togglePriceAlert(item.id)}
-                                                        >
-                                                            {item.priceAlert?.enabled ? 'Disable' : 'Enable'}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
                         </>
                     )}
 
@@ -582,19 +487,6 @@ const Wishlist = () => {
                                                                     -{item.discount}%
                                                                 </span>
                                                             )}
-                                                            {item.priceAlert?.enabled && (
-                                                                <span className="badge bg-info mb-1 d-block">
-                                                                    <svg width="12" height="12" viewBox="0 0 24 24" className="me-1">
-                                                                        <path fill="white" d="M16,6L18.29,8.29L13.41,13.17L9.41,9.17L2,16.59L3.41,18L9.41,12L13.41,16L19.71,9.71L22,12V6H16Z"/>
-                                                                    </svg>
-                                                                    Alert
-                                                                </span>
-                                                            )}
-                                                            {item.lastPriceChange && (
-                                                                <span className="badge bg-success mb-1 d-block">
-                                                                    Price Drop!
-                                                                </span>
-                                                            )}
                                                         </div>
 
                                                         {/* Stock Status */}
@@ -631,14 +523,18 @@ const Wishlist = () => {
                                                                     £{item.originalPrice}
                                                                 </span>
                                                             )}
-                                                            {item.priceAlert?.enabled && (
-                                                                <div className="mt-1">
-                                                                    <small className="text-info">
-                                                                        Target: £{item.priceAlert.targetPrice}
-                                                                    </small>
-                                                                </div>
-                                                            )}
                                                         </div>
+
+                                                        {/* Variant Options */}
+                                                        {item.options && Object.keys(item.options).length > 0 && (
+                                                            <div className="mb-3">
+                                                                {Object.entries(item.options).map(([key, value]) => (
+                                                                    <small key={key} className="d-block text-muted">
+                                                                        <strong>{key}:</strong> {value}
+                                                                    </small>
+                                                                ))}
+                                                            </div>
+                                                        )}
 
                                                         {/* Category & Date */}
                                                         <div className="mb-3">
@@ -665,41 +561,13 @@ const Wishlist = () => {
                                                                     </button>
                                                                 )}
                                                                 
-                                                                <div className="dropdown">
-                                                                    <button className="btn btn-outline-secondary btn-rd" data-bs-toggle="dropdown">
-                                                                        ⋮
-                                                                    </button>
-                                                                    <ul className="dropdown-menu">
-                                                                        <li><h6 className="dropdown-header">Move to Category</h6></li>
-                                                                        {wishlistCategories.filter(cat => cat.id !== 'all' && cat.id !== item.category).map(cat => (
-                                                                            <li key={cat.id}>
-                                                                                <button 
-                                                                                    className="dropdown-item"
-                                                                                    onClick={() => moveToCategory(item.id, cat.id)}
-                                                                                >
-                                                                                    {cat.name}
-                                                                                </button>
-                                                                            </li>
-                                                                        ))}
-                                                                        <li><hr className="dropdown-divider" /></li>
-                                                                        <li>
-                                                                            <button 
-                                                                                className="dropdown-item"
-                                                                                onClick={() => togglePriceAlert(item.id)}
-                                                                            >
-                                                                                {item.priceAlert?.enabled ? 'Disable' : 'Enable'} Price Alert
-                                                                            </button>
-                                                                        </li>
-                                                                        <li>
-                                                                            <button 
-                                                                                className="dropdown-item text-danger"
-                                                                                onClick={() => removeFromWishlist(item.id)}
-                                                                            >
-                                                                                Remove from Wishlist
-                                                                            </button>
-                                                                        </li>
-                                                                    </ul>
-                                                                </div>
+                                                                <button 
+                                                                    className="btn btn-outline-danger btn-rd"
+                                                                    onClick={() => removeFromWishlist(item.id)}
+                                                                    disabled={isUpdating}
+                                                                >
+                                                                    Remove
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -753,9 +621,13 @@ const Wishlist = () => {
                                                                 </small>
                                                             </div>
                                                         )}
-                                                        {item.priceAlert?.enabled && (
-                                                            <div>
-                                                                <small className="text-info">Alert: £{item.priceAlert.targetPrice}</small>
+                                                        {item.options && Object.keys(item.options).length > 0 && (
+                                                            <div className="mt-1">
+                                                                {Object.entries(item.options).map(([key, value]) => (
+                                                                    <small key={key} className="d-block text-muted">
+                                                                        {key}: {value}
+                                                                    </small>
+                                                                ))}
                                                             </div>
                                                         )}
                                                     </div>
@@ -764,9 +636,6 @@ const Wishlist = () => {
                                                             <span className="badge bg-danger">Out of Stock</span>
                                                         ) : (
                                                             <span className="badge bg-success">In Stock</span>
-                                                        )}
-                                                        {item.priceAlert?.enabled && (
-                                                            <span className="badge bg-info d-block mt-1">Price Alert</span>
                                                         )}
                                                     </div>
                                                     <div className="col-md-2 col-12 mt-2 mt-md-0">
@@ -784,29 +653,13 @@ const Wishlist = () => {
                                                                     Notify
                                                                 </button>
                                                             )}
-                                                            <div className="dropdown">
-                                                                <button className="btn btn-sm btn-outline-secondary btn-rd" data-bs-toggle="dropdown">
-                                                                    ⋮
-                                                                </button>
-                                                                <ul className="dropdown-menu">
-                                                                    <li>
-                                                                        <button 
-                                                                            className="dropdown-item"
-                                                                            onClick={() => togglePriceAlert(item.id)}
-                                                                        >
-                                                                            {item.priceAlert?.enabled ? 'Disable' : 'Enable'} Alert
-                                                                        </button>
-                                                                    </li>
-                                                                    <li>
-                                                                        <button 
-                                                                            className="dropdown-item text-danger"
-                                                                            onClick={() => removeFromWishlist(item.id)}
-                                                                        >
-                                                                            Remove
-                                                                        </button>
-                                                                    </li>
-                                                                </ul>
-                                                            </div>
+                                                            <button 
+                                                                className="btn btn-sm btn-outline-danger btn-rd"
+                                                                onClick={() => removeFromWishlist(item.id)}
+                                                                disabled={isUpdating}
+                                                            >
+                                                                Remove
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -816,42 +669,10 @@ const Wishlist = () => {
                                 ))}
                             </div>
 
-                            {/* Recommendations */}
+                            {/* Related Products */}
                             <div className="row mt-5">
                                 <div className="col-12">
-                                    <div className="store-card fill-card">
-                                        <h4 className="tc-6533 mb-4 bold-text">You might also like</h4>
-                                        <div className="row">
-                                            <div className="col-md-3 col-6 mb-3">
-                                                <div className="text-center">
-                                                    <img src="img/tablet-product.jpg" className="img-fluid rounded mb-2" alt="Tablet" />
-                                                    <h6 className="tc-6533">Tablet Air</h6>
-                                                    <p className="tc-2101 bold-text">£899</p>
-                                                </div>
-                                            </div>
-                                            <div className="col-md-3 col-6 mb-3">
-                                                <div className="text-center">
-                                                    <img src="img/phone-product.jpg" className="img-fluid rounded mb-2" alt="Phone" />
-                                                    <h6 className="tc-6533">Phone Pro</h6>
-                                                    <p className="tc-2101 bold-text">£999</p>
-                                                </div>
-                                            </div>
-                                            <div className="col-md-3 col-6 mb-3">
-                                                <div className="text-center">
-                                                    <img src="img/laptop-product.jpg" className="img-fluid rounded mb-2" alt="Laptop" />
-                                                    <h6 className="tc-6533">Laptop Air</h6>
-                                                    <p className="tc-2101 bold-text">£1299</p>
-                                                </div>
-                                            </div>
-                                            <div className="col-md-3 col-6 mb-3">
-                                                <div className="text-center">
-                                                    <img src="img/tv-product.jpg" className="img-fluid rounded mb-2" alt="TV" />
-                                                    <h6 className="tc-6533">HD TV</h6>
-                                                    <p className="tc-2101 bold-text">£1999</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <RelatedProducts />
                                 </div>
                             </div>
                         </div>
