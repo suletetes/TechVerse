@@ -45,11 +45,17 @@ const cartReducer = (state, action) => {
       return { ...state, isLoading: true, error: null };
     
     case CART_ACTIONS.LOAD_CART_SUCCESS:
+      console.log('🔄 LOAD_CART_SUCCESS reducer:', {
+        payload: action.payload,
+        items: action.payload.items || action.payload.cart || [],
+        total: action.payload.totalAmount || action.payload.summary?.subtotal || 0,
+        itemCount: action.payload.totalItems || action.payload.summary?.totalQuantity || 0
+      });
       return {
         ...state,
-        items: action.payload.cart || [],
-        total: action.payload.summary?.subtotal || 0,
-        itemCount: action.payload.summary?.totalQuantity || 0,
+        items: action.payload.items || action.payload.cart || [],
+        total: action.payload.totalAmount || action.payload.summary?.subtotal || 0,
+        itemCount: action.payload.totalItems || action.payload.summary?.totalQuantity || 0,
         isLoading: false,
         error: null
       };
@@ -150,6 +156,10 @@ export const CartProvider = ({ children }) => {
       loadingRef.current = true;
       dispatch({ type: CART_ACTIONS.LOAD_CART_START });
       const response = await cartService.getCart();
+      console.log('📦 Cart loaded from API:', response.data);
+      console.log('📦 Items:', response.data?.items);
+      console.log('📦 Total:', response.data?.totalAmount);
+      console.log('📦 Count:', response.data?.totalItems);
       dispatch({ type: CART_ACTIONS.LOAD_CART_SUCCESS, payload: response.data });
     } catch (error) {
       console.error('Error loading cart:', error);
@@ -181,7 +191,7 @@ export const CartProvider = ({ children }) => {
         { items: [...state.items, optimisticItem] },
         // Server operation
         async () => {
-          const response = await cartService.addToCart(productId, quantity);
+          const response = await cartService.addToCart(productId, quantity, variants);
           return response.data;
         },
         // Rollback function
