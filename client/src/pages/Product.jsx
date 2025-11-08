@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
-import { useProduct } from '../context';
+import { useProduct, useCart, useAuth } from '../context';
 import { LoadingSpinner } from '../components/Common';
+import Toast from '../components/Common/Toast';
+import wishlistService from '../api/services/wishlistService';
 import {
     ProductMediaGallery,
     ProductThumbnails,
@@ -27,6 +29,8 @@ const Product = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     
+    const { isAuthenticated } = useAuth();
+    const { addToCart, isLoading: cartLoading } = useCart();
     const {
         currentProduct,
         isLoading,
@@ -38,11 +42,13 @@ const Product = () => {
     const [selectedColor, setSelectedColor] = useState('silver');
     const [selectedStorage, setSelectedStorage] = useState('128GB');
     const [isInWishlist, setIsInWishlist] = useState(false);
+    const [wishlistLoading, setWishlistLoading] = useState(false);
     const [quantity, setQuantity] = useState(1);
     const [selectedMedia, setSelectedMedia] = useState('main-image');
     const [isVideoPlaying, setIsVideoPlaying] = useState(false);
     const [reviews, setReviews] = useState([]);
     const [reviewsLoading, setReviewsLoading] = useState(false);
+    const [toast, setToast] = useState(null);
 
     // Memoized options based on product data from database
     const colorOptions = useMemo(() => {
@@ -157,8 +163,19 @@ const Product = () => {
         }, {});
     }, [currentProduct?.specifications]);
 
-    const handleAddToCart = useCallback(() => {
+    const handleAddToCart = useCallback(async () => {
         if (!currentProduct) return;
+        
+        // Check authentication
+        if (!isAuthenticated) {
+            navigate('/login', { 
+                state: { 
+                    from: { pathname: `/product/${id}` },
+                    message: 'Please login to add items to your cart'
+                }
+            });
+            return;
+        }
         
         // Check if product is in stock
         if (currentProduct.stock?.quantity === 0) {
@@ -166,31 +183,142 @@ const Product = () => {
             return;
         }
 
-        // Add to cart logic here
-        console.log('Added to cart:', {
-            product: currentProduct?.name || 'Product',
-            productId: currentProduct?._id,
-            color: selectedColor,
-            storage: selectedStorage,
-            quantity: quantity,
-            price: getCurrentPrice
-        });
+        try {
+            // CartContext.addToCart expects (productId, quantity, variants)
+            // where variants is an array or options object
+            const options = {
+                color: selectedColor,
+                storage: selectedStorage
+            };
+
+            console.log('Adding to cart:', {
+                productId: currentProduct._id,
+                quantity,
+                options
+            });
+            
+            const result = await addToCart(currentProduct._id, quantity, options);
+            console.log('Cart add result:', result);
+            
+            // Show success toast with action
+            const toastMessage = `${currentProduct.name} added to cart!`;
+            console.log('Setting toast:', toastMessage);
+            setToast({
+                message: toastMessage,
+                type: 'success',
+                action: {
+                    label: 'View Cart',
+                    path: '/cart'
+                }
+            });
+            
+            // Optional: Show browser notification as backup
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('Added to Cart', {
+                    body: `${currentProduct.name} has been added to your cart`,
+                    icon: currentProduct.images?.[0]?.url
+                });
+            }
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            alert('Failed to add product to cart. Please try again.');
+        }
+    }, [currentProduct, selectedColor, selectedStorage, quantity, isAuthenticated, addToCart, navigate, id]);
+
+    const handleBuyNow = useCallback(async () => {
+        if (!currentProduct) return;
         
-        // You can add toast notification here
-        alert('Product added to cart!');
-    }, [currentProduct, selectedColor, selectedStorage, quantity, getCurrentPrice]);
+        // Check authentication
+        if (!isAuthenticated) {
+            navigate('/login', { 
+                state: { 
+                    from: { pathname: `/product/${id}` },
+                    message: 'Please login to purchase'
+                }
+            });
+            return;
+        }
+        
+        // Check if product is in stock
+        if (currentProduct.stock?.quantity === 0) {
+            alert('Sorry, this product is currently out of stock.');
+            return;
+        }
 
-    const handleBuyNow = useCallback(() => {
-        // Buy now logic - could add to cart and redirect to checkout
-        handleAddToCart();
-        // Redirect to payment page
-    }, [handleAddToCart]);
+        try {
+            // Add to cart first
+            const options = {
+                color: selectedColor,
+                storage: selectedStorage
+            };
 
-    const toggleWishlist = useCallback(() => {
-        setIsInWishlist(!isInWishlist);
-        // Add wishlist logic here
-        console.log(isInWishlist ? 'Removed from wishlist' : 'Added to wishlist');
-    }, [isInWishlist]);
+            await addToCart(currentProduct._id, quantity, options);
+            
+            // Redirect to checkout
+            navigate('/payment');
+        } catch (error) {
+            console.error('Error processing buy now:', error);
+            alert('Failed to process your request. Please try again.');
+        }
+    }, [currentProduct, selectedColor, selectedStorage, quantity, isAuthenticated, addToCart, navigate, id]);
+
+    const toggleWishlist = useCallback(async () => {
+        if (!currentProduct) return;
+        
+        // Check authentication
+        if (!isAuthenticated) {
+            navigate('/login', { 
+                state: { 
+                    from: { pathname: `/product/${id}` },
+                    message: 'Please login to add items to your wishlist'
+                }
+            });
+            return;
+        }
+
+        try {
+            setWishlistLoading(true);
+            
+            if (isInWishlist) {
+                // Remove from wishlist
+                await wishlistService.removeFromWishlist(currentProduct._id);
+                setIsInWishlist(false);
+                setToast({
+                    message: `${currentProduct.name} removed from wishlist`,
+                    type: 'info'
+                });
+            } else {
+                // Add to wishlist
+                await wishlistService.addToWishlist(currentProduct._id);
+                setIsInWishlist(true);
+                setToast({
+                    message: `${currentProduct.name} added to wishlist!`,
+                    type: 'success',
+                    action: {
+                        label: 'View Wishlist',
+                        path: '/wishlist'
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error toggling wishlist:', error);
+            // Handle 409 conflict (already in wishlist)
+            if (error.response?.status === 409) {
+                setIsInWishlist(true);
+                setToast({
+                    message: 'Product is already in your wishlist',
+                    type: 'info'
+                });
+            } else {
+                setToast({
+                    message: 'Failed to update wishlist. Please try again.',
+                    type: 'error'
+                });
+            }
+        } finally {
+            setWishlistLoading(false);
+        }
+    }, [currentProduct, isInWishlist, isAuthenticated, navigate, id]);
 
     const handleMediaSelect = useCallback((mediaId) => {
         setSelectedMedia(mediaId);
@@ -288,6 +416,26 @@ const Product = () => {
             }
         }
     }, [currentProduct]);
+
+    // Check if product is in wishlist
+    useEffect(() => {
+        const checkWishlistStatus = async () => {
+            if (!currentProduct?._id || !isAuthenticated) {
+                setIsInWishlist(false);
+                return;
+            }
+
+            try {
+                const response = await wishlistService.checkWishlistStatus(currentProduct._id);
+                setIsInWishlist(response.data?.isInWishlist || false);
+            } catch (error) {
+                console.error('Error checking wishlist status:', error);
+                setIsInWishlist(false);
+            }
+        };
+
+        checkWishlistStatus();
+    }, [currentProduct?._id, isAuthenticated]);
 
     // Debug logging
     console.log('Product component state:', { 
@@ -398,8 +546,17 @@ const Product = () => {
     };
 
     return (
-        <section className="bloc l-bloc full-width-bloc" id="bloc-7">
-            <div className="container bloc-md bloc-lg-md">
+        <>
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    action={toast.action}
+                    onClose={() => setToast(null)}
+                />
+            )}
+            <section className="bloc l-bloc full-width-bloc" id="bloc-7">
+                <div className="container bloc-md bloc-lg-md">
                 <div className="row">
                     {/* Category Navigation Pane - Full Width
                     <div className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mb-4">
@@ -483,6 +640,7 @@ const Product = () => {
                                     stockCount={product?.stock?.quantity}
                                     isInWishlist={isInWishlist}
                                     onToggleWishlist={toggleWishlist}
+                                    wishlistLoading={wishlistLoading}
                                 />
                                 <p>
                                     {product?.description || product?.shortDescription || 'Product description goes here...'}
@@ -516,6 +674,7 @@ const Product = () => {
                                     inStock={product?.stock?.quantity > 0}
                                     onBuyNow={handleBuyNow}
                                     onAddToCart={handleAddToCart}
+                                    isLoading={cartLoading}
                                 />
 
                                 <ProductIncludes />
@@ -580,6 +739,7 @@ const Product = () => {
                 </div>
             </div>
         </section>
+        </>
     );
 };
 
