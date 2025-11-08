@@ -20,8 +20,8 @@ class WishlistService extends BaseApiService {
         return this.read('/wishlist');
     }
 
-    async addToWishlist(productId, notes = '') {
-        return this.create(`/wishlist/add/${productId}`, { notes });
+    async addToWishlist(productId, notes = '', options = {}) {
+        return this.create(`/wishlist/add/${productId}`, { notes, options });
     }
 
     async removeFromWishlist(productId) {

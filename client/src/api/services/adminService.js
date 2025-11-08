@@ -374,6 +374,33 @@ class AdminService extends BaseApiService {
     });
   }
 
+  // Activity Log
+  async getActivityLog(params = {}) {
+    const {
+      page = 1,
+      limit = 50,
+      type,
+      user,
+      startDate,
+      endDate,
+      ...otherParams
+    } = params;
+
+    const queryParams = {
+      page,
+      limit,
+      ...otherParams
+    };
+
+    // Add optional filters
+    if (type) queryParams.type = type;
+    if (user) queryParams.user = user;
+    if (startDate) queryParams.startDate = startDate;
+    if (endDate) queryParams.endDate = endDate;
+
+    return this.read('/admin/activity-log', queryParams);
+  }
+
   async clearSystemCache(cacheType = 'all') {
     return this.create(`${this.endpoints.DASHBOARD}/cache/clear`, {
       type: cacheType
