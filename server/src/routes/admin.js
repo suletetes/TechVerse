@@ -58,7 +58,8 @@ import {
   moderateReview,
   bulkModerateReviews,
   getReviewAnalytics,
-  deleteReview
+  deleteReview,
+  getActivityLog
 } from '../controllers/adminController.js';
 import {
   getSecurityDashboard,
@@ -303,5 +304,8 @@ router.get('/users/:id/activities', authenticate, requireAdmin, [
 router.get('/analytics/activities', authenticate, requireAdmin, getActivityAnalytics);
 router.get('/analytics/comprehensive', authenticate, requireAdmin, getComprehensiveAnalytics);
 router.get('/analytics/realtime', authenticate, requireAdmin, getRealtimeMetrics);
+
+// Activity log route
+router.get('/activity-log', authenticate, requireAdmin, getActivityLog);
 
 export default router;

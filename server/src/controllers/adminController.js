@@ -1171,3 +1171,101 @@ export const getReviewAnalytics = asyncHandler(async (req, res, next) => {
 export const deleteReview = asyncHandler(async (req, res, next) => {
   res.status(501).json({ success: false, message: 'Function not implemented yet' });
 });
+
+// @desc    Get activity log
+// @route   GET /api/admin/activity-log
+// @access  Private/Admin
+export const getActivityLog = asyncHandler(async (req, res) => {
+  const { 
+    page = 1, 
+    limit = 50, 
+    type, 
+    user, 
+    startDate, 
+    endDate 
+  } = req.query;
+
+  // Build query
+  const query = {};
+  
+  // Filter by type if provided
+  if (type && type !== 'all') {
+    query.type = type;
+  }
+  
+  // Filter by user if provided
+  if (user && user !== 'all') {
+    query.user = user;
+  }
+  
+  // Filter by date range
+  if (startDate || endDate) {
+    query.timestamp = {};
+    if (startDate) query.timestamp.$gte = new Date(startDate);
+    if (endDate) query.timestamp.$lte = new Date(endDate);
+  }
+
+  // Calculate pagination
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+  
+  console.log('🔍 Activity Log Query:', JSON.stringify(query, null, 2));
+  
+  // Get total count
+  const totalItems = await Activity.countDocuments(query);
+  
+  console.log('📊 Total Items Found:', totalItems);
+  
+  // Get activities
+  const activities = await Activity.find(query)
+    .sort({ timestamp: -1 })
+    .limit(parseInt(limit))
+    .skip(skip)
+    .populate('user', 'firstName lastName email')
+    .lean();
+
+  console.log('📋 Raw Activities Found:', activities.length);
+  
+  // Format activities for frontend
+  const formattedActivities = activities.map(activity => ({
+    _id: activity._id,
+    type: activity.type,
+    action: activity.description,
+    details: activity.description,
+    user: activity.user ? {
+      name: `${activity.user.firstName || ''} ${activity.user.lastName || ''}`.trim() || activity.user.email,
+      email: activity.user.email
+    } : null,
+    performedBy: activity.user ? {
+      name: `${activity.user.firstName || ''} ${activity.user.lastName || ''}`.trim() || activity.user.email,
+      email: activity.user.email
+    } : null,
+    metadata: activity.metadata || {},
+    ipAddress: activity.ipAddress,
+    timestamp: activity.timestamp,
+    createdAt: activity.createdAt
+  }));
+
+  // Calculate pagination info
+  const totalPages = Math.ceil(totalItems / parseInt(limit));
+  const hasMore = parseInt(page) < totalPages;
+
+  const responseData = {
+    success: true,
+    activities: formattedActivities,
+    pagination: {
+      currentPage: parseInt(page),
+      totalPages,
+      totalItems,
+      hasMore,
+      limit: parseInt(limit)
+    }
+  };
+  
+  console.log('📤 Sending Response:', {
+    activitiesCount: formattedActivities.length,
+    totalItems,
+    currentPage: parseInt(page)
+  });
+
+  res.status(200).json(responseData);
+});
