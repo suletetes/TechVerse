@@ -14,7 +14,7 @@ const AdminSecurity = ({
                 <p className="text-muted">Manage your security settings and active sessions</p>
             </div>
             
-            {/* Active Sessions */}
+            {/* Active Sessions
             <div className="col-12 mb-4">
                 <div className="card">
                     <div className="card-header d-flex justify-content-between align-items-center">
@@ -85,7 +85,7 @@ const AdminSecurity = ({
                     </div>
                 </div>
             </div>
-
+ */}
             {/* Security Settings */}
             <div className="col-md-6 mb-4">
                 <div className="card">
