@@ -263,24 +263,16 @@ router.get('/payment-methods', authenticate, asyncHandler(async (req, res, next)
 // @route   POST /api/users/payment-methods
 // @access  Private
 router.post('/payment-methods', authenticate, [
-  body('type').isIn(['credit_card', 'debit_card', 'paypal', 'apple_pay', 'google_pay']).withMessage('Invalid payment method type'),
-  body('cardNumber').if(body('type').isIn(['credit_card', 'debit_card'])).notEmpty().withMessage('Card number is required for card payments'),
-  body('expiryMonth').if(body('type').isIn(['credit_card', 'debit_card'])).isInt({ min: 1, max: 12 }).withMessage('Valid expiry month is required'),
-  body('expiryYear').if(body('type').isIn(['credit_card', 'debit_card'])).isInt({ min: new Date().getFullYear() }).withMessage('Valid expiry year is required'),
-  body('cardholderName').if(body('type').isIn(['credit_card', 'debit_card'])).trim().isLength({ min: 2, max: 100 }).withMessage('Cardholder name is required'),
+  body('type').isIn(['card', 'paypal', 'apple_pay', 'google_pay']).withMessage('Invalid payment method type'),
+  body('cardLast4').if(body('type').equals('card')).isLength({ min: 4, max: 4 }).withMessage('Card last 4 digits must be 4 characters'),
+  body('cardBrand').if(body('type').equals('card')).isIn(['visa', 'mastercard', 'amex', 'discover', 'diners', 'jcb']).withMessage('Invalid card brand'),
+  body('expiryMonth').if(body('type').equals('card')).isInt({ min: 1, max: 12 }).withMessage('Valid expiry month is required'),
+  body('expiryYear').if(body('type').equals('card')).isInt({ min: new Date().getFullYear() }).withMessage('Valid expiry year is required'),
+  body('cardholderName').if(body('type').equals('card')).trim().isLength({ min: 2, max: 100 }).withMessage('Cardholder name is required'),
   body('isDefault').optional().isBoolean().withMessage('isDefault must be boolean'),
-  body('billingAddress').optional().isObject().withMessage('Billing address must be an object'),
   body('email').if(body('type').equals('paypal')).isEmail().withMessage('Valid email is required for PayPal'),
   body('accountId').if(body('type').isIn(['apple_pay', 'google_pay'])).optional().isString().withMessage('Account ID must be string')
-], validate, asyncHandler(async (req, res, next) => {
-  const paymentMethod = await paymentService.addPaymentMethod(req.user._id, req.body);
-
-  res.status(201).json({
-    success: true,
-    message: 'Payment method added successfully',
-    data: { paymentMethod }
-  });
-}));
+], validate, addPaymentMethod);
 
 // @desc    Update payment method
 // @route   PUT /api/users/payment-methods/:id

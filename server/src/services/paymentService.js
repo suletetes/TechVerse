@@ -69,13 +69,13 @@ class PaymentService {
     } = paymentData;
 
     // Validate payment method type
-    const validTypes = ['credit_card', 'debit_card', 'paypal', 'apple_pay', 'google_pay'];
+    const validTypes = ['card', 'paypal', 'apple_pay', 'google_pay'];
     if (!validTypes.includes(type)) {
       throw new AppError('Invalid payment method type', 400, 'INVALID_PAYMENT_TYPE');
     }
 
     // Validate card data for card types
-    if (['credit_card', 'debit_card'].includes(type)) {
+    if (type === 'card') {
       this.validateCardData({ cardNumber, expiryMonth, expiryYear, cardholderName });
     }
 
