@@ -154,11 +154,14 @@ export const conditionalCSRF = (req, res, next) => {
     '/api/auth/refresh',
     '/api/auth/profile',
     '/api/users/profile',
+    '/api/users/addresses', // User addresses management
+    '/api/users/payment-methods', // User payment methods management
     '/api/admin/profile',
     '/api/admin/categories', // Admin category management
     '/api/cart', // Cart API endpoints
     '/api/wishlist', // Wishlist API endpoints
     '/api/reviews', // Review API endpoints
+    '/api/orders', // Order API endpoints
     '/api/webhook', // Webhook endpoints
     '/api/products', // Temporarily disable CSRF for products
     '/api/upload' // Temporarily disable CSRF for uploads
