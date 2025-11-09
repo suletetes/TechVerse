@@ -1,12 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth, useCart } from '../context';
+import userService from '../api/services/userService';
+import orderService from '../api/services/orderService';
+import { LoadingSpinner, Toast } from '../components/Common';
 
 const PaymentPage = () => {
+    const navigate = useNavigate();
+    const { isAuthenticated, user } = useAuth();
+    const { items: cartItems, total: cartTotal, itemCount, clearCart } = useCart();
+    
     const [paymentMethod, setPaymentMethod] = useState('card');
     const [showImportOptions, setShowImportOptions] = useState(false);
     const [selectedAddress, setSelectedAddress] = useState('');
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
-    const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+    const [toast, setToast] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isProcessing, setIsProcessing] = useState(false);
+    
+    // User data from database
+    const [userData, setUserData] = useState({
+        profile: null,
+        addresses: [],
+        paymentMethods: []
+    });
+    
     const [formData, setFormData] = useState({
         // Billing Info
         firstName: '',
@@ -32,136 +50,186 @@ const PaymentPage = () => {
         newsletter: false
     });
 
-    // Mock user data (in real app, this would come from user context/API)
-    const userData = {
-        profile: {
-            firstName: 'John',
-            lastName: 'Smith',
-            email: 'john.smith@email.com',
-            phone: '+44 7700 900123'
-        },
-        addresses: [
-            {
-                id: 1,
-                type: 'Home',
-                name: 'John Smith',
-                address: '123 Tech Street',
-                city: 'London',
-                postcode: 'SW1A 1AA',
-                country: 'United Kingdom',
-                isDefault: true
-            },
-            {
-                id: 2,
-                type: 'Work',
-                name: 'John Smith',
-                address: '456 Business Ave',
-                city: 'Manchester',
-                postcode: 'M1 1AA',
-                country: 'United Kingdom',
-                isDefault: false
+    // Load user data from database
+    useEffect(() => {
+        const loadUserData = async () => {
+            if (!isAuthenticated) {
+                navigate('/login', {
+                    state: {
+                        from: { pathname: '/payment' },
+                        message: 'Please login to proceed with checkout'
+                    }
+                });
+                return;
             }
-        ],
-        paymentMethods: [
-            {
-                id: 1,
-                type: 'card',
-                brand: 'visa',
-                last4: '4242',
-                expiryMonth: 12,
-                expiryYear: 2025,
-                isDefault: true,
-                holderName: 'John Smith'
-            },
-            {
-                id: 2,
-                type: 'card',
-                brand: 'mastercard',
-                last4: '8888',
-                expiryMonth: 8,
-                expiryYear: 2026,
-                isDefault: false,
-                holderName: 'John Smith'
+
+            // Check if cart is empty
+            if (!cartItems || cartItems.length === 0) {
+                setToast({
+                    message: 'Your cart is empty',
+                    type: 'warning'
+                });
+                setTimeout(() => navigate('/cart'), 2000);
+                return;
             }
-        ]
-    };
 
-    // Mock cart data
-    const cartItems = [
-        {
-            id: 1,
-            name: 'Tablet Air',
-            color: 'Silver',
-            storage: '128GB',
-            price: 1999,
-            quantity: 1,
-            image: 'img/tablet-product.jpg'
-        },
-        {
-            id: 2,
-            name: 'Phone Pro',
-            color: 'Black',
-            storage: '256GB',
-            price: 999,
-            quantity: 1,
-            image: 'img/phone-product.jpg'
-        }
-    ];
+            try {
+                setIsLoading(true);
+                
+                // Load user profile, addresses, and payment methods
+                const [profileResponse, addressesResponse, paymentMethodsResponse] = await Promise.all([
+                    userService.getProfile(),
+                    userService.getAddresses(),
+                    userService.getPaymentMethods()
+                ]);
 
-    const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                console.log('Profile response:', profileResponse);
+                console.log('Addresses response:', addressesResponse);
+                console.log('Payment methods response:', paymentMethodsResponse);
+
+                // Extract data from responses (handle nested data structure)
+                // Response structure: {success: true, data: {addresses: [...], paymentMethods: [...]}}
+                const profile = profileResponse?.data?.data || profileResponse?.data || profileResponse;
+                const addresses = addressesResponse?.data?.addresses || addressesResponse?.data?.data || addressesResponse?.data || [];
+                const paymentMethods = paymentMethodsResponse?.data?.paymentMethods || paymentMethodsResponse?.data?.data || paymentMethodsResponse?.data || [];
+
+                console.log('Extracted addresses:', addresses);
+                console.log('Extracted payment methods:', paymentMethods);
+
+                setUserData({
+                    profile: profile,
+                    addresses: Array.isArray(addresses) ? addresses : [],
+                    paymentMethods: Array.isArray(paymentMethods) ? paymentMethods : []
+                });
+
+                // Show import options if user has saved data
+                if ((Array.isArray(addresses) && addresses.length > 0) || 
+                    (Array.isArray(paymentMethods) && paymentMethods.length > 0)) {
+                    setShowImportOptions(true);
+                }
+
+                // Pre-fill form with user data
+                if (profile) {
+                    console.log('Profile data for form:', {
+                        firstName: profile.firstName,
+                        lastName: profile.lastName,
+                        email: profile.email,
+                        phone: profile.phone
+                    });
+                    
+                    setFormData(prev => ({
+                        ...prev,
+                        firstName: profile.firstName || '',
+                        lastName: profile.lastName || '',
+                        email: profile.email || '',
+                        phone: profile.phone || ''
+                    }));
+                    
+                    console.log('Form data after profile import:', formData);
+                }
+
+                // Auto-import default address after state is set
+                setTimeout(() => {
+                    const addressArray = Array.isArray(addresses) ? addresses : [];
+                    const defaultAddress = addressArray.find(addr => addr.isDefault);
+                    if (defaultAddress) {
+                        console.log('Auto-importing default address:', defaultAddress);
+                        setFormData(prev => ({
+                            ...prev,
+                            address: defaultAddress.address || '',
+                            city: defaultAddress.city || '',
+                            postcode: defaultAddress.postcode || '',
+                            country: defaultAddress.country || 'United Kingdom'
+                        }));
+                    }
+                    
+                    // Auto-import default payment method
+                    const paymentArray = Array.isArray(paymentMethods) ? paymentMethods : [];
+                    const defaultPayment = paymentArray.find(pm => pm.isDefault);
+                    if (defaultPayment) {
+                        console.log('Auto-importing default payment method:', defaultPayment);
+                        setFormData(prev => ({
+                            ...prev,
+                            cardNumber: `•••• •••• •••• ${defaultPayment.cardLast4}`,
+                            expiryDate: `${defaultPayment.expiryMonth.toString().padStart(2, '0')}/${defaultPayment.expiryYear.toString().slice(-2)}`,
+                            cardName: defaultPayment.cardholderName || '',
+                            cvv: ''
+                        }));
+                    }
+                }, 100);
+
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                setToast({
+                    message: 'Failed to load user data. Please try again.',
+                    type: 'error'
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadUserData();
+    }, [isAuthenticated, navigate, cartItems]);
+
+    // Calculate totals from cart
+    const subtotal = cartTotal || 0;
     const shipping = 0; // Free shipping
     const tax = subtotal * 0.2; // 20% VAT
     const total = subtotal + shipping + tax;
 
-    // Show notification
-    const showNotification = (message, type = 'success') => {
-        setNotification({ show: true, message, type });
-        setTimeout(() => {
-            setNotification({ show: false, message: '', type: '' });
-        }, 3000);
-    };
-
     // Import user profile data
     const importProfileData = () => {
-        setFormData(prev => ({
-            ...prev,
-            firstName: userData.profile.firstName,
-            lastName: userData.profile.lastName,
-            email: userData.profile.email,
-            phone: userData.profile.phone
-        }));
-        showNotification('Profile information imported successfully!');
-        setShowImportOptions(false);
+        if (userData.profile) {
+            setFormData(prev => ({
+                ...prev,
+                firstName: userData.profile.firstName || '',
+                lastName: userData.profile.lastName || '',
+                email: userData.profile.email || '',
+                phone: userData.profile.phone || ''
+            }));
+            setToast({
+                message: 'Profile information imported successfully!',
+                type: 'success'
+            });
+            setShowImportOptions(false);
+        }
     };
 
     // Import selected address
     const importAddress = (addressId) => {
-        const address = userData.addresses.find(addr => addr.id === parseInt(addressId));
+        const address = userData.addresses.find(addr => addr._id === addressId);
         if (address) {
             setFormData(prev => ({
                 ...prev,
-                address: address.address,
-                city: address.city,
-                postcode: address.postcode,
-                country: address.country
+                address: address.address || '',
+                city: address.city || '',
+                postcode: address.postcode || '',
+                country: address.country || 'United Kingdom'
             }));
-            showNotification(`${address.type} address imported successfully!`);
+            setToast({
+                message: `${address.type} address imported successfully!`,
+                type: 'success'
+            });
         }
         setSelectedAddress('');
     };
 
     // Import selected payment method
     const importPaymentMethod = (methodId) => {
-        const method = userData.paymentMethods.find(pm => pm.id === parseInt(methodId));
+        const method = userData.paymentMethods.find(pm => pm._id === methodId);
         if (method) {
             setFormData(prev => ({
                 ...prev,
-                cardNumber: `•••• •••• •••• ${method.last4}`,
+                cardNumber: `•••• •••• •••• ${method.cardLast4}`,
                 expiryDate: `${method.expiryMonth.toString().padStart(2, '0')}/${method.expiryYear.toString().slice(-2)}`,
-                cardName: method.holderName,
+                cardName: method.cardholderName || '',
                 cvv: '' // CVV should always be re-entered for security
             }));
-            showNotification(`${method.brand.toUpperCase()} card imported successfully! Please re-enter CVV for security.`, 'info');
+            setToast({
+                message: `${method.cardBrand.toUpperCase()} card imported successfully! Please re-enter CVV for security.`,
+                type: 'info'
+            });
         }
         setSelectedPaymentMethod('');
     };
@@ -185,7 +253,10 @@ const PaymentPage = () => {
             savePayment: false,
             newsletter: false
         });
-        showNotification('All form data cleared!', 'info');
+        setToast({
+            message: 'All form data cleared!',
+            type: 'info'
+        });
     };
 
     const handleInputChange = (e) => {
@@ -196,10 +267,106 @@ const PaymentPage = () => {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Processing payment:', { paymentMethod, formData });
-        // Handle payment processing
+        
+        // Validate form
+        if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone) {
+            setToast({
+                message: 'Please fill in all contact information',
+                type: 'error'
+            });
+            return;
+        }
+
+        if (!formData.address || !formData.city || !formData.postcode || !formData.country) {
+            setToast({
+                message: 'Please fill in all shipping address fields',
+                type: 'error'
+            });
+            return;
+        }
+
+        if (paymentMethod === 'card') {
+            if (!formData.cardNumber || !formData.expiryDate || !formData.cvv || !formData.cardName) {
+                setToast({
+                    message: 'Please fill in all payment details',
+                    type: 'error'
+                });
+                return;
+            }
+        }
+
+        try {
+            setIsProcessing(true);
+
+            // Prepare order data
+            const orderData = {
+                items: cartItems.map(item => ({
+                    productId: item.product?._id || item._id,
+                    name: item.product?.name || item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                    variants: item.options ? Object.entries(item.options).map(([name, value]) => ({ name, value })) : [],
+                    image: item.product?.primaryImage?.url || item.product?.images?.[0]?.url || item.image
+                })),
+                shippingAddress: {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    address: formData.address,
+                    city: formData.city,
+                    postcode: formData.postcode,
+                    country: formData.country,
+                    phone: formData.phone
+                },
+                billingAddress: formData.sameAsBilling ? {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    address: formData.address,
+                    city: formData.city,
+                    postcode: formData.postcode,
+                    country: formData.country,
+                    phone: formData.phone
+                } : null,
+                paymentMethod: {
+                    method: paymentMethod,
+                    amount: total
+                },
+                subtotal,
+                tax,
+                shipping: {
+                    cost: shipping,
+                    method: 'Standard Delivery'
+                },
+                total
+            };
+
+            // Create order
+            const response = await orderService.createOrder(orderData);
+
+            if (response.success) {
+                // Clear cart
+                await clearCart();
+
+                setToast({
+                    message: 'Order placed successfully!',
+                    type: 'success'
+                });
+
+                // Redirect to order confirmation
+                setTimeout(() => {
+                    navigate(`/order-confirmation/${response.data.orderNumber}`);
+                }, 1500);
+            }
+        } catch (error) {
+            console.error('Error processing order:', error);
+            setToast({
+                message: error.message || 'Failed to process order. Please try again.',
+                type: 'error'
+            });
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     const formatCardNumber = (value) => {
@@ -217,69 +384,46 @@ const PaymentPage = () => {
         }
     };
 
+    // Loading state
+    if (isLoading) {
+        return (
+            <div className="bloc bgc-5700 full-width-bloc l-bloc" id="payment-loading">
+                <div className="container bloc-md bloc-lg-md">
+                    <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                        <LoadingSpinner size="lg" />
+                        <div className="ms-3">
+                            <p className="tc-6533">Loading checkout...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="bloc bgc-5700 full-width-bloc l-bloc" id="payment-bloc">
-            {/* Notification Toast */}
-            {notification.show && (
-                <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 1050 }}>
-                    <div className={`alert alert-${notification.type === 'success' ? 'success' : notification.type === 'info' ? 'info' : 'warning'} alert-dismissible fade show`} role="alert">
-                        <div className="d-flex align-items-center">
-                            <svg width="16" height="16" viewBox="0 0 24 24" className="me-2" fill="currentColor">
-                                {notification.type === 'success' ? (
-                                    <path d="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" />
-                                ) : (
-                                    <path d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
-                                )}
-                            </svg>
-                            {notification.message}
-                        </div>
-                        <button
-                            type="button"
-                            className="btn-close"
-                            onClick={() => setNotification({ show: false, message: '', type: '' })}
-                        ></button>
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    action={toast.action}
+                    onClose={() => setToast(null)}
+                />
+            )}
+
+            {/* Processing Overlay */}
+            {isProcessing && (
+                <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50" style={{ zIndex: 2000 }}>
+                    <div className="bg-white rounded p-4 text-center">
+                        <LoadingSpinner size="lg" />
+                        <p className="tc-6533 mt-3 mb-0">Processing your order...</p>
                     </div>
                 </div>
             )}
 
             <div className="container bloc-md bloc-lg-md">
                 <div className="row">
-                    {/* Page Header */}
-                    <div className="col-12 mb-4">
-                        <nav aria-label="breadcrumb">
-                            <ol className="breadcrumb">
-                                <li className="breadcrumb-item"><Link to="/cart">Cart</Link></li>
-                                <li className="breadcrumb-item active" aria-current="page">Checkout</li>
-                            </ol>
-                        </nav>
-                        <div className="d-flex justify-content-between align-items-center">
-                            <h1 className="tc-6533 bold-text mb-0">Secure Checkout</h1>
-                            <div className="d-flex gap-2">
-                                <button
-                                    type="button"
-                                    className="btn btn-outline-primary btn-sm"
-                                    onClick={() => setShowImportOptions(!showImportOptions)}
-                                >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    Import Data
-                                </button>
-                                <button
-                                    type="button"
-                                    className="btn btn-outline-secondary btn-sm"
-                                    onClick={clearFormData}
-                                >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <polyline points="3 6 5 6 21 6" />
-                                        <path d="m19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                    </svg>
-                                    Clear All
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
                     {/* Import Options Panel */}
                     {showImportOptions && (
                         <div className="col-12 mb-4">
@@ -331,7 +475,7 @@ const PaymentPage = () => {
                                             >
                                                 <option value="">Select an address...</option>
                                                 {userData.addresses.map((address) => (
-                                                    <option key={address.id} value={address.id}>
+                                                    <option key={address._id} value={address._id}>
                                                         {address.type} - {address.city}
                                                     </option>
                                                 ))}
@@ -361,8 +505,8 @@ const PaymentPage = () => {
                                             >
                                                 <option value="">Select a payment method...</option>
                                                 {userData.paymentMethods.map((method) => (
-                                                    <option key={method.id} value={method.id}>
-                                                        {method.brand.toUpperCase()} •••• {method.last4}
+                                                    <option key={method._id} value={method._id}>
+                                                        {method.cardBrand.toUpperCase()} •••• {method.cardLast4}
                                                     </option>
                                                 ))}
                                             </select>
@@ -394,6 +538,25 @@ const PaymentPage = () => {
                     <div className="row">
                         {/* Checkout Form */}
                         <div className="col-lg-8 mb-4 mb-lg-0">
+                            {/* Quick Import Button */}
+                            {(userData.addresses.length > 0 || userData.paymentMethods.length > 0) && (
+                                <div className="mb-4">
+                                    <button
+                                        type="button"
+                                        className={`btn ${showImportOptions ? 'btn-outline-primary' : 'btn-primary'} btn-rd w-100`}
+                                        onClick={() => setShowImportOptions(!showImportOptions)}
+                                    >
+                                        <svg width="20" height="20" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                                        </svg>
+                                        {showImportOptions ? 'Hide' : 'Use'} Saved Information
+                                        {userData.addresses.length > 0 && ` (${userData.addresses.length} address${userData.addresses.length > 1 ? 'es' : ''})`}
+                                        {userData.paymentMethods.length > 0 && ` (${userData.paymentMethods.length} payment method${userData.paymentMethods.length > 1 ? 's' : ''})`}
+                                    </button>
+                                </div>
+                            )}
+                            
                             <form onSubmit={handleSubmit}>
                                 {/* Contact Information */}
                                 <div className="store-card fill-card mb-4">
@@ -475,7 +638,7 @@ const PaymentPage = () => {
                                             >
                                                 <option value="">Use saved address...</option>
                                                 {userData.addresses.map((address) => (
-                                                    <option key={address.id} value={address.id}>
+                                                    <option key={address._id} value={address._id}>
                                                         {address.type} - {address.city}
                                                     </option>
                                                 ))}
@@ -626,8 +789,8 @@ const PaymentPage = () => {
                                                 >
                                                     <option value="">Select saved payment method...</option>
                                                     {userData.paymentMethods.map((method) => (
-                                                        <option key={method.id} value={method.id}>
-                                                            {method.brand.toUpperCase()} •••• {method.last4} - {method.holderName}
+                                                        <option key={method._id} value={method._id}>
+                                                            {method.cardBrand.toUpperCase()} •••• {method.cardLast4} - {method.cardholderName}
                                                         </option>
                                                     ))}
                                                 </select>
@@ -710,7 +873,7 @@ const PaymentPage = () => {
                                     )}
                                 </div>
 
-                                {/* Order Options */}
+                                {/* Order Options 
                                 <div className="store-card fill-card mb-4">
                                     <div className="form-check mb-3">
                                         <input
@@ -739,6 +902,7 @@ const PaymentPage = () => {
                                         </label>
                                     </div>
                                 </div>
+                                */}
                             </form>
                         </div>
 
@@ -749,22 +913,29 @@ const PaymentPage = () => {
                                 
                                 {/* Order Items */}
                                 <div className="mb-4">
-                                    {cartItems.map((item) => (
-                                        <div key={item.id} className="d-flex align-items-center mb-3">
-                                            <img
-                                                src={item.image}
-                                                className="rounded me-3"
-                                                alt={item.name}
-                                                width="50"
-                                                height="50"
-                                            />
-                                            <div className="flex-grow-1">
-                                                <h6 className="tc-6533 mb-1">{item.name}</h6>
-                                                <small className="tc-6533">{item.color}, {item.storage}</small>
+                                    {cartItems.map((item) => {
+                                        const product = item.product || {};
+                                        const options = item.options || {};
+                                        const optionsText = Object.entries(options).map(([key, value]) => value).join(', ');
+                                        
+                                        return (
+                                            <div key={item._id} className="d-flex align-items-center mb-3">
+                                                <img
+                                                    src={product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder.jpg'}
+                                                    className="rounded me-3"
+                                                    alt={product.name || 'Product'}
+                                                    width="50"
+                                                    height="50"
+                                                />
+                                                <div className="flex-grow-1">
+                                                    <h6 className="tc-6533 mb-1">{product.name}</h6>
+                                                    {optionsText && <small className="tc-6533">{optionsText}</small>}
+                                                    <small className="tc-6533 d-block">Qty: {item.quantity}</small>
+                                                </div>
+                                                <span className="tc-6533 bold-text">£{(item.price * item.quantity).toFixed(2)}</span>
                                             </div>
-                                            <span className="tc-6533 bold-text">£{item.price}</span>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
 
                                 {/* Pricing */}
@@ -793,8 +964,9 @@ const PaymentPage = () => {
                                     type="submit"
                                     className="btn btn-c-2101 btn-rd btn-lg w-100 mb-3"
                                     onClick={handleSubmit}
+                                    disabled={isProcessing || cartItems.length === 0}
                                 >
-                                    Complete Order
+                                    {isProcessing ? 'Processing...' : `Complete Order - £${total.toFixed(2)}`}
                                 </button>
 
                                 {/* Security Notice */}
