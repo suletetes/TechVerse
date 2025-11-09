@@ -202,12 +202,13 @@ router.get('/payment-methods', authenticate, async (req, res) => {
         const sanitizedMethods = user?.paymentMethods?.map(method => ({
             _id: method._id,
             type: method.type,
-            brand: method.brand,
-            last4: method.last4,
+            cardBrand: method.cardBrand,
+            cardLast4: method.cardLast4,
             expiryMonth: method.expiryMonth,
             expiryYear: method.expiryYear,
-            holderName: method.holderName,
+            cardholderName: method.cardholderName,
             isDefault: method.isDefault,
+            isActive: method.isActive,
             createdAt: method.createdAt
         })) || [];
         
@@ -264,8 +265,8 @@ router.get('/payment-methods', authenticate, asyncHandler(async (req, res, next)
 // @access  Private
 router.post('/payment-methods', authenticate, [
   body('type').isIn(['card', 'paypal', 'apple_pay', 'google_pay']).withMessage('Invalid payment method type'),
-  body('cardLast4').if(body('type').equals('card')).isLength({ min: 4, max: 4 }).withMessage('Card last 4 digits must be 4 characters'),
-  body('cardBrand').if(body('type').equals('card')).isIn(['visa', 'mastercard', 'amex', 'discover', 'diners', 'jcb']).withMessage('Invalid card brand'),
+  body('cardLast4').if(body('type').equals('card')).optional().isLength({ min: 4, max: 4 }).withMessage('Card last 4 digits must be 4 characters'),
+  body('cardBrand').if(body('type').equals('card')).optional().isIn(['visa', 'mastercard', 'amex', 'discover', 'diners', 'jcb']).withMessage('Invalid card brand'),
   body('expiryMonth').if(body('type').equals('card')).isInt({ min: 1, max: 12 }).withMessage('Valid expiry month is required'),
   body('expiryYear').if(body('type').equals('card')).isInt({ min: new Date().getFullYear() }).withMessage('Valid expiry year is required'),
   body('cardholderName').if(body('type').equals('card')).trim().isLength({ min: 2, max: 100 }).withMessage('Cardholder name is required'),

@@ -396,14 +396,37 @@ const EditProfile = () => {
                             continue;
                         }
 
+                        // Parse expiry date (MM/YY format)
+                        const expiryParts = paymentData.expiryDate.split('/').map(v => v.trim());
+                        const expiryMonth = parseInt(expiryParts[0]) || 12;
+                        const expiryYearShort = expiryParts[1] || new Date().getFullYear().toString().slice(-2);
+                        const fullYear = expiryYearShort.length === 2 ? parseInt(`20${expiryYearShort}`) : parseInt(expiryYearShort);
+                        
+                        // Validate month (1-12)
+                        const validMonth = Math.min(Math.max(expiryMonth, 1), 12);
+                        
+                        // Extract last 4 digits from card number (remove spaces and mask characters)
+                        const cleanCardNumber = paymentData.cardNumber.replace(/[^\d]/g, '');
+                        const cardLast4 = cleanCardNumber.slice(-4);
+                        
+                        // Detect card brand (simple detection)
+                        let cardBrand = 'visa'; // default
+                        if (cleanCardNumber.startsWith('5')) cardBrand = 'mastercard';
+                        else if (cleanCardNumber.startsWith('3')) cardBrand = 'amex';
+                        else if (cleanCardNumber.startsWith('6')) cardBrand = 'discover';
+                        
                         // Only store safe payment method data (no actual card numbers)
                         const safePaymentData = {
                             type: 'card',
                             cardholderName: paymentData.cardholderName,
-                            lastFourDigits: paymentData.cardNumber.slice(-4),
-                            expiryDate: paymentData.expiryDate,
+                            cardLast4: cardLast4,
+                            cardBrand: cardBrand,
+                            expiryMonth: validMonth,
+                            expiryYear: fullYear,
                             isDefault: paymentData.isDefault || false
                         };
+                        
+                        console.log('Sending payment data:', safePaymentData);
                         
                         try {
                             await userProfileService.addPaymentMethod(safePaymentData);
