@@ -135,10 +135,21 @@ const EditProfile = () => {
                 try {
                     const paymentResponse = await userProfileService.getPaymentMethods();
                     if (paymentResponse.success && paymentResponse.data.paymentMethods && paymentResponse.data.paymentMethods.length > 0) {
-                        setPaymentMethods(paymentResponse.data.paymentMethods);
+                        // Format payment methods from backend to component format
+                        const formattedPaymentMethods = paymentResponse.data.paymentMethods.map((pm, index) => ({
+                            id: pm._id || index + 1,
+                            type: pm.type || 'card',
+                            cardNumber: pm.cardLast4 ? `•••• •••• •••• ${pm.cardLast4}` : '',
+                            expiryDate: pm.expiryMonth && pm.expiryYear ? `${pm.expiryMonth.toString().padStart(2, '0')}/${pm.expiryYear.toString().slice(-2)}` : '',
+                            cardholderName: pm.cardholderName || '',
+                            isDefault: pm.isDefault || false,
+                            _id: pm._id // Keep original ID for updates
+                        }));
+                        
+                        setPaymentMethods(formattedPaymentMethods);
                         // Save to localStorage as backup
-                        localStorage.setItem(`paymentMethods_${userId}`, JSON.stringify(paymentResponse.data.paymentMethods));
-                        debugLog('PAYMENT_METHODS_LOADED_FROM_BACKEND', paymentResponse.data.paymentMethods);
+                        localStorage.setItem(`paymentMethods_${userId}`, JSON.stringify(formattedPaymentMethods));
+                        debugLog('PAYMENT_METHODS_LOADED_FROM_BACKEND', formattedPaymentMethods);
                     } else {
                         // Fallback to localStorage
                         const savedPaymentMethods = localStorage.getItem(`paymentMethods_${userId}`);
@@ -406,7 +417,17 @@ const EditProfile = () => {
                     try {
                         const paymentResponse = await userProfileService.getPaymentMethods();
                         if (paymentResponse.success && paymentResponse.data.paymentMethods) {
-                            setPaymentMethods(paymentResponse.data.paymentMethods);
+                            // Format payment methods from backend
+                            const formattedPaymentMethods = paymentResponse.data.paymentMethods.map((pm, index) => ({
+                                id: pm._id || index + 1,
+                                type: pm.type || 'card',
+                                cardNumber: pm.cardLast4 ? `•••• •••• •••• ${pm.cardLast4}` : '',
+                                expiryDate: pm.expiryMonth && pm.expiryYear ? `${pm.expiryMonth.toString().padStart(2, '0')}/${pm.expiryYear.toString().slice(-2)}` : '',
+                                cardholderName: pm.cardholderName || '',
+                                isDefault: pm.isDefault || false,
+                                _id: pm._id
+                            }));
+                            setPaymentMethods(formattedPaymentMethods);
                         }
                     } catch (loadError) {
                         console.warn('Failed to reload payment methods:', loadError);
@@ -813,24 +834,6 @@ const EditProfile = () => {
                                             placeholder="123"
                                             maxLength="4"
                                         />
-                                    </div>
-                                    
-                                    <div className="col-md-8 mb-3">
-                                        <label className="form-label tc-6533">
-                                            <i className="fas fa-map-marker-alt me-2"></i>Billing Address
-                                        </label>
-                                        <select
-                                            className="form-select"
-                                            value={payment.billingAddress || ''}
-                                            onChange={(e) => handlePaymentChange(index, 'billingAddress', e.target.value)}
-                                        >
-                                            <option value="">Same as shipping address</option>
-                                            {addresses.map((addr, addrIndex) => (
-                                                <option key={addrIndex} value={addrIndex}>
-                                                    {addr.type === 'home' ? 'Home' : addr.type === 'work' ? 'Work' : 'Other'} - {addr.street}, {addr.city}
-                                                </option>
-                                            ))}
-                                        </select>
                                     </div>
                                     
                                     <div className="col-12">

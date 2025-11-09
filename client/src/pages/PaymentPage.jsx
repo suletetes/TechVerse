@@ -88,11 +88,14 @@ const PaymentPage = () => {
                 console.log('Payment methods response:', paymentMethodsResponse);
 
                 // Extract data from responses (handle nested data structure)
-                // Response structure: {success: true, data: {addresses: [...], paymentMethods: [...]}}
-                const profile = profileResponse?.data?.data || profileResponse?.data || profileResponse;
-                const addresses = addressesResponse?.data?.addresses || addressesResponse?.data?.data || addressesResponse?.data || [];
-                const paymentMethods = paymentMethodsResponse?.data?.paymentMethods || paymentMethodsResponse?.data?.data || paymentMethodsResponse?.data || [];
+                // Profile: {success: true, data: {user: {...}}}
+                // Addresses: {success: true, data: {addresses: [...]}}
+                // Payment Methods: {success: true, data: {paymentMethods: [...]}}
+                const profile = profileResponse?.data?.user || profileResponse?.data;
+                const addresses = addressesResponse?.data?.addresses || [];
+                const paymentMethods = paymentMethodsResponse?.data?.paymentMethods || [];
 
+                console.log('Extracted profile:', profile);
                 console.log('Extracted addresses:', addresses);
                 console.log('Extracted payment methods:', paymentMethods);
 
@@ -108,55 +111,8 @@ const PaymentPage = () => {
                     setShowImportOptions(true);
                 }
 
-                // Pre-fill form with user data
-                if (profile) {
-                    console.log('Profile data for form:', {
-                        firstName: profile.firstName,
-                        lastName: profile.lastName,
-                        email: profile.email,
-                        phone: profile.phone
-                    });
-                    
-                    setFormData(prev => ({
-                        ...prev,
-                        firstName: profile.firstName || '',
-                        lastName: profile.lastName || '',
-                        email: profile.email || '',
-                        phone: profile.phone || ''
-                    }));
-                    
-                    console.log('Form data after profile import:', formData);
-                }
-
-                // Auto-import default address after state is set
-                setTimeout(() => {
-                    const addressArray = Array.isArray(addresses) ? addresses : [];
-                    const defaultAddress = addressArray.find(addr => addr.isDefault);
-                    if (defaultAddress) {
-                        console.log('Auto-importing default address:', defaultAddress);
-                        setFormData(prev => ({
-                            ...prev,
-                            address: defaultAddress.address || '',
-                            city: defaultAddress.city || '',
-                            postcode: defaultAddress.postcode || '',
-                            country: defaultAddress.country || 'United Kingdom'
-                        }));
-                    }
-                    
-                    // Auto-import default payment method
-                    const paymentArray = Array.isArray(paymentMethods) ? paymentMethods : [];
-                    const defaultPayment = paymentArray.find(pm => pm.isDefault);
-                    if (defaultPayment) {
-                        console.log('Auto-importing default payment method:', defaultPayment);
-                        setFormData(prev => ({
-                            ...prev,
-                            cardNumber: `•••• •••• •••• ${defaultPayment.cardLast4}`,
-                            expiryDate: `${defaultPayment.expiryMonth.toString().padStart(2, '0')}/${defaultPayment.expiryYear.toString().slice(-2)}`,
-                            cardName: defaultPayment.cardholderName || '',
-                            cvv: ''
-                        }));
-                    }
-                }, 100);
+                // Don't auto-fill - let user click import button
+                console.log('User data loaded. Click import to fill fields.');
 
             } catch (error) {
                 console.error('Error loading user data:', error);
@@ -227,7 +183,7 @@ const PaymentPage = () => {
                 cvv: '' // CVV should always be re-entered for security
             }));
             setToast({
-                message: `${method.cardBrand.toUpperCase()} card imported successfully! Please re-enter CVV for security.`,
+                message: `${method.cardBrand?.toUpperCase() || 'Card'} imported successfully! Please re-enter CVV for security.`,
                 type: 'info'
             });
         }
@@ -506,7 +462,7 @@ const PaymentPage = () => {
                                                 <option value="">Select a payment method...</option>
                                                 {userData.paymentMethods.map((method) => (
                                                     <option key={method._id} value={method._id}>
-                                                        {method.cardBrand.toUpperCase()} •••• {method.cardLast4}
+                                                        {method.cardBrand?.toUpperCase() || 'Card'} •••• {method.cardLast4}
                                                     </option>
                                                 ))}
                                             </select>
@@ -790,7 +746,7 @@ const PaymentPage = () => {
                                                     <option value="">Select saved payment method...</option>
                                                     {userData.paymentMethods.map((method) => (
                                                         <option key={method._id} value={method._id}>
-                                                            {method.cardBrand.toUpperCase()} •••• {method.cardLast4} - {method.cardholderName}
+                                                            {method.cardBrand?.toUpperCase() || 'Card'} •••• {method.cardLast4} - {method.cardholderName}
                                                         </option>
                                                     ))}
                                                 </select>
