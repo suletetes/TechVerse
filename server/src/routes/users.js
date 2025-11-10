@@ -243,7 +243,7 @@ router.post('/payment-methods', authenticate, [
 // @route   PUT /api/users/payment-methods/:id
 // @access  Private
 router.put('/payment-methods/:id', authenticate, [
-  param('id').isString().withMessage('Payment method ID is required'),
+  param('id').isMongoId().withMessage('Invalid payment method ID format'),
   body('isDefault').optional().isBoolean().withMessage('isDefault must be boolean'),
   body('cardholderName').optional().trim().isLength({ min: 2, max: 100 }).withMessage('Cardholder name must be 2-100 characters'),
   body('billingAddress').optional().isObject().withMessage('Billing address must be an object')
@@ -261,7 +261,7 @@ router.put('/payment-methods/:id', authenticate, [
 // @route   DELETE /api/users/payment-methods/:id
 // @access  Private
 router.delete('/payment-methods/:id', authenticate, [
-  param('id').isString().withMessage('Payment method ID is required')
+  param('id').isMongoId().withMessage('Invalid payment method ID format')
 ], validate, asyncHandler(async (req, res, next) => {
   const result = await paymentService.deletePaymentMethod(req.user._id, req.params.id);
 
@@ -276,7 +276,7 @@ router.delete('/payment-methods/:id', authenticate, [
 // @route   PUT /api/users/payment-methods/:id/default
 // @access  Private
 router.put('/payment-methods/:id/default', authenticate, [
-  param('id').isString().withMessage('Payment method ID is required')
+  param('id').isMongoId().withMessage('Invalid payment method ID format')
 ], validate, asyncHandler(async (req, res, next) => {
   const paymentMethod = await paymentService.setDefaultPaymentMethod(req.user._id, req.params.id);
 

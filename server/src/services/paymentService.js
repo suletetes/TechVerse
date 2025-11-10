@@ -311,14 +311,27 @@ class PaymentService {
 
     await user.save();
 
-    // Log activity
-    await Activity.create({
-      user: userId,
-      action: 'payment_method_deleted',
-      resource: 'PaymentMethod',
-      resourceId: paymentMethodId,
-      details: paymentMethodInfo
-    });
+    // Log activity (optional - don't fail if activity logging fails)
+    try {
+      await Activity.create({
+        user: userId,
+        type: 'payment',
+        action: 'payment_method_deleted',
+        description: `Deleted payment method ${paymentMethod.type} ending in ${paymentMethod.cardLast4 || 'N/A'}`,
+        resource: 'PaymentMethod',
+        resourceId: paymentMethodId,
+        details: paymentMethodInfo,
+        ipAddress: '0.0.0.0', // Default for service calls
+        userAgent: 'PaymentService' // Default for service calls
+      });
+    } catch (activityError) {
+      // Log but don't fail the deletion
+      logger.warn('Failed to log activity for payment method deletion', {
+        userId,
+        paymentMethodId,
+        error: activityError.message
+      });
+    }
 
     logger.info('Payment method deleted', {
       userId,
