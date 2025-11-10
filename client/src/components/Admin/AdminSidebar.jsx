@@ -172,7 +172,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, ad
                         <small className="text-muted">Manage Sections</small>
                     </div>
                 </button>
-                {/* Activity Log */}
+                {/* Activity Log
                 <button
                     className={`nav-link d-flex align-items-center px-4 py-3 border-0 text-start position-relative ${activeTab === 'activity' ? 'active bg-info bg-opacity-10 text-info' : 'text-dark'}`}
                     onClick={() => {
@@ -191,6 +191,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, ad
                         <small className="text-muted">System Activities</small>
                     </div>
                 </button>
+                 */}
                 {/* Security */}
                 <button
                     className={`nav-link d-flex align-items-center px-4 py-3 border-0 text-start position-relative ${activeTab === 'security' ? 'active bg-warning bg-opacity-10 text-warning' : 'text-dark'}`}

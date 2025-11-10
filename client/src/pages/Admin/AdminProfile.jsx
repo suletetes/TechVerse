@@ -18,7 +18,7 @@ import {
     AdminSettings,
     AdminNotifications,
     AdminAnalytics,
-    AdminActivityLog,
+    // AdminActivityLog,
     AdminSecurity,
     AdminProfileSettings
 } from "../../components";
@@ -576,12 +576,12 @@ const AdminProfile = () => {
                     />
                 );
 
-            case 'activity':
-                return (
-                    <AdminActivityLog
-                        activityLog={activityLog}
-                    />
-                );
+            // case 'activity':
+            //     return (
+            //         <AdminActivityLog
+            //             activityLog={activityLog}
+            //         />
+            //     );
 
             case 'security':
                 return (
