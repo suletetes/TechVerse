@@ -134,23 +134,28 @@ const EditProfile = () => {
                 // Try to load payment methods from backend
                 try {
                     const paymentResponse = await userProfileService.getPaymentMethods();
+                    console.log('📥 Payment methods response:', paymentResponse);
+                    
                     if (paymentResponse.success && paymentResponse.data.paymentMethods && paymentResponse.data.paymentMethods.length > 0) {
                         // Format payment methods from backend to component format
-                        const formattedPaymentMethods = paymentResponse.data.paymentMethods.map((pm, index) => ({
-                            id: pm._id || index + 1,
+                        const formattedPaymentMethods = paymentResponse.data.paymentMethods.map((pm) => ({
+                            id: pm._id, // Use _id as the unique key
+                            _id: pm._id, // Keep original ID for updates/deletes
                             type: pm.type || 'card',
                             cardNumber: pm.cardLast4 ? `•••• •••• •••• ${pm.cardLast4}` : '',
                             expiryDate: pm.expiryMonth && pm.expiryYear ? `${pm.expiryMonth.toString().padStart(2, '0')}/${pm.expiryYear.toString().slice(-2)}` : '',
                             cardholderName: pm.cardholderName || '',
-                            isDefault: pm.isDefault || false,
-                            _id: pm._id // Keep original ID for updates
+                            cardBrand: pm.cardBrand || 'visa',
+                            isDefault: pm.isDefault || false
                         }));
                         
+                        console.log('✅ Formatted payment methods:', formattedPaymentMethods);
                         setPaymentMethods(formattedPaymentMethods);
                         // Save to localStorage as backup
                         localStorage.setItem(`paymentMethods_${userId}`, JSON.stringify(formattedPaymentMethods));
                         debugLog('PAYMENT_METHODS_LOADED_FROM_BACKEND', formattedPaymentMethods);
                     } else {
+                        console.log('⚠️ No payment methods from backend, checking localStorage');
                         // Fallback to localStorage
                         const savedPaymentMethods = localStorage.getItem(`paymentMethods_${userId}`);
                         if (savedPaymentMethods) {
@@ -160,7 +165,7 @@ const EditProfile = () => {
                         }
                     }
                 } catch (paymentError) {
-                    console.warn('Payment methods not available:', paymentError);
+                    console.error('❌ Payment methods error:', paymentError);
                     // Try localStorage fallback
                     const savedPaymentMethods = localStorage.getItem(`paymentMethods_${userId}`);
                     if (savedPaymentMethods) {
@@ -253,8 +258,39 @@ const EditProfile = () => {
         }]);
     };
     
-    const removePaymentMethod = (index) => {
-        if (paymentMethods.length > 1) {
+    const removePaymentMethod = async (index) => {
+        if (paymentMethods.length <= 1) {
+            alert('You must have at least one payment method');
+            return;
+        }
+        
+        const paymentMethod = paymentMethods[index];
+        
+        // If it has an _id, delete from backend
+        if (paymentMethod._id) {
+            try {
+                const response = await userProfileService.deletePaymentMethod(paymentMethod._id);
+                console.log('✅ Payment method deleted from backend:', response);
+                
+                // Remove from local state after successful deletion
+                setPaymentMethods(prev => prev.filter((_, i) => i !== index));
+                
+                // Also remove from localStorage
+                const userId = user?._id || profile?._id;
+                if (userId) {
+                    const updatedMethods = paymentMethods.filter((_, i) => i !== index);
+                    localStorage.setItem(`paymentMethods_${userId}`, JSON.stringify(updatedMethods));
+                }
+                
+                setSuccessMessage('Payment method deleted successfully');
+                setTimeout(() => setSuccessMessage(''), 3000);
+            } catch (error) {
+                console.error('❌ Failed to delete payment method:', error);
+                alert('Failed to delete payment method. Please try again.');
+                return;
+            }
+        } else {
+            // Just remove from local state if it's a new unsaved payment method
             setPaymentMethods(prev => prev.filter((_, i) => i !== index));
         }
     };
@@ -291,6 +327,12 @@ const EditProfile = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Prevent multiple submissions
+        if (isSubmitting) {
+            console.log('Already submitting, ignoring duplicate submission');
+            return;
+        }
         
         if (!validateForm()) {
             debugLog('VALIDATION_FAILED', validationErrors, new Error('Form validation failed'));
@@ -389,13 +431,25 @@ const EditProfile = () => {
                 debugLog('PAYMENT_UPDATE_START', paymentMethods);
                 
                 try {
-                    // For security reasons, we'll just store basic payment method info
-                    // In a real implementation, this would integrate with Stripe/PayPal etc.
-                    for (const paymentData of paymentMethods) {
-                        if (!paymentData.cardholderName || !paymentData.cardNumber) {
+                    // Only add NEW payment methods (those without _id)
+                    const newPaymentMethods = paymentMethods.filter(pm => !pm._id && pm.cardholderName && pm.cardNumber);
+                    
+                    console.log('📝 New payment methods to add:', newPaymentMethods.length);
+                    
+                    if (newPaymentMethods.length === 0) {
+                        console.log('✅ No new payment methods to add');
+                        setSuccessMessage('Payment settings saved successfully!');
+                        return;
+                    }
+                    
+                    // Process each new payment method ONE AT A TIME
+                    for (const paymentData of newPaymentMethods) {
+                        // Validate required fields
+                        if (!paymentData.cardholderName || !paymentData.cardNumber || !paymentData.expiryDate) {
+                            console.warn('⚠️ Skipping incomplete payment method');
                             continue;
                         }
-
+                        
                         // Parse expiry date (MM/YY format)
                         const expiryParts = paymentData.expiryDate.split('/').map(v => v.trim());
                         const expiryMonth = parseInt(expiryParts[0]) || 12;
@@ -426,40 +480,45 @@ const EditProfile = () => {
                             isDefault: paymentData.isDefault || false
                         };
                         
-                        console.log('Sending payment data:', safePaymentData);
+                        console.log('📤 Sending NEW payment data:', safePaymentData);
                         
                         try {
-                            await userProfileService.addPaymentMethod(safePaymentData);
+                            const response = await userProfileService.addPaymentMethod(safePaymentData);
+                            console.log('✅ Payment method added:', response);
                             debugLog('PAYMENT_ADD_SUCCESS', safePaymentData);
                         } catch (paymentError) {
-                            console.warn('Payment method save failed:', paymentError);
+                            console.error('❌ Payment method save failed:', paymentError);
+                            throw paymentError; // Re-throw to stop processing
                         }
                     }
                     
-                    // Reload payment methods from backend
-                    try {
-                        const paymentResponse = await userProfileService.getPaymentMethods();
-                        if (paymentResponse.success && paymentResponse.data.paymentMethods) {
-                            // Format payment methods from backend
-                            const formattedPaymentMethods = paymentResponse.data.paymentMethods.map((pm, index) => ({
-                                id: pm._id || index + 1,
-                                type: pm.type || 'card',
-                                cardNumber: pm.cardLast4 ? `•••• •••• •••• ${pm.cardLast4}` : '',
-                                expiryDate: pm.expiryMonth && pm.expiryYear ? `${pm.expiryMonth.toString().padStart(2, '0')}/${pm.expiryYear.toString().slice(-2)}` : '',
-                                cardholderName: pm.cardholderName || '',
-                                isDefault: pm.isDefault || false,
-                                _id: pm._id
-                            }));
-                            setPaymentMethods(formattedPaymentMethods);
+                    // Reload payment methods from backend to get fresh data
+                    console.log('🔄 Reloading payment methods from backend...');
+                    const paymentResponse = await userProfileService.getPaymentMethods();
+                    if (paymentResponse.success && paymentResponse.data.paymentMethods) {
+                        // Format payment methods from backend
+                        const formattedPaymentMethods = paymentResponse.data.paymentMethods.map((pm, index) => ({
+                            id: pm._id || index + 1,
+                            type: pm.type || 'card',
+                            cardNumber: pm.cardLast4 ? `•••• •••• •••• ${pm.cardLast4}` : '',
+                            expiryDate: pm.expiryMonth && pm.expiryYear ? `${pm.expiryMonth.toString().padStart(2, '0')}/${pm.expiryYear.toString().slice(-2)}` : '',
+                            cardholderName: pm.cardholderName || '',
+                            isDefault: pm.isDefault || false,
+                            _id: pm._id
+                        }));
+                        setPaymentMethods(formattedPaymentMethods);
+                        console.log('✅ Payment methods reloaded:', formattedPaymentMethods.length);
+                        
+                        // Update localStorage
+                        const userId = user?._id || profile?._id;
+                        if (userId) {
+                            localStorage.setItem(`paymentMethods_${userId}`, JSON.stringify(formattedPaymentMethods));
                         }
-                    } catch (loadError) {
-                        console.warn('Failed to reload payment methods:', loadError);
                     }
                     
                 } catch (paymentError) {
-                    console.error('Payment method save failed:', paymentError);
-                    // Don't throw error for payment methods - show success anyway
-                    debugLog('PAYMENT_SAVE_ERROR', paymentMethods, paymentError);
+                    console.error('❌ Payment method save failed:', paymentError);
+                    throw paymentError; // Re-throw to show error to user
                 }
             }
             
@@ -760,7 +819,7 @@ const EditProfile = () => {
         <div className="payment-section">
             <div className="row">
                 {paymentMethods.map((payment, index) => (
-                    <div key={payment.id} className="col-12 mb-4">
+                    <div key={payment.id || payment._id || `payment-${index}`} className="col-12 mb-4">
                         <div className="card border-0 shadow-sm">
                             <div className="card-body">
                                 <div className="d-flex justify-content-between align-items-center mb-3">
@@ -777,7 +836,11 @@ const EditProfile = () => {
                                         <button
                                             type="button"
                                             className="btn btn-outline-danger btn-sm"
-                                            onClick={() => removePaymentMethod(index)}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                removePaymentMethod(index);
+                                            }}
                                         >
                                             <i className="fas fa-trash me-1"></i>Remove
                                         </button>
@@ -792,9 +855,11 @@ const EditProfile = () => {
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={payment.cardholderName}
+                                            value={payment.cardholderName || ''}
                                             onChange={(e) => handlePaymentChange(index, 'cardholderName', e.target.value)}
                                             placeholder="John Doe"
+                                            disabled={!!payment._id}
+                                            title={payment._id ? 'Cannot edit existing payment method' : ''}
                                         />
                                     </div>
                                     
@@ -805,7 +870,7 @@ const EditProfile = () => {
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={payment.cardNumber}
+                                            value={payment.cardNumber || ''}
                                             onChange={(e) => {
                                                 // Format card number with spaces
                                                 let value = e.target.value.replace(/\s/g, '').replace(/\D/g, '');
@@ -816,6 +881,8 @@ const EditProfile = () => {
                                             }}
                                             placeholder="1234 5678 9012 3456"
                                             maxLength="19"
+                                            disabled={!!payment._id}
+                                            title={payment._id ? 'Cannot edit existing payment method' : ''}
                                         />
                                     </div>
                                     
@@ -826,7 +893,7 @@ const EditProfile = () => {
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={payment.expiryDate}
+                                            value={payment.expiryDate || ''}
                                             onChange={(e) => {
                                                 // Format expiry date MM/YY
                                                 let value = e.target.value.replace(/\D/g, '');
@@ -837,6 +904,8 @@ const EditProfile = () => {
                                             }}
                                             placeholder="MM/YY"
                                             maxLength="5"
+                                            disabled={!!payment._id}
+                                            title={payment._id ? 'Cannot edit existing payment method' : ''}
                                         />
                                     </div>
                                     
