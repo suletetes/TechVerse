@@ -32,8 +32,6 @@ import {
   updateProductStock,
   bulkUpdateStock,
   getInventoryAnalytics,
-  getUserActivities,
-  getActivityAnalytics,
   getComprehensiveAnalytics,
   getRealtimeMetrics,
   getAllProducts,
@@ -59,7 +57,6 @@ import {
   bulkModerateReviews,
   getReviewAnalytics,
   deleteReview,
-  getActivityLog
 } from '../controllers/adminController.js';
 import {
   getSecurityDashboard,
@@ -297,15 +294,12 @@ router.put('/inventory/bulk-update', authenticate, requireAdmin, [
 ], validate, bulkUpdateStock);
 router.get('/inventory/analytics', authenticate, requireAdmin, getInventoryAnalytics);
 
-// Activity tracking routes
-router.get('/users/:id/activities', authenticate, requireAdmin, [
-  commonValidations.mongoId('id')
-], validate, getUserActivities);
-router.get('/analytics/activities', authenticate, requireAdmin, getActivityAnalytics);
+// Activity tracking routes removed - feature deprecated
+// router.get('/users/:id/activities', authenticate, requireAdmin, getUserActivities);
+// router.get('/analytics/activities', authenticate, requireAdmin, getActivityAnalytics);
 router.get('/analytics/comprehensive', authenticate, requireAdmin, getComprehensiveAnalytics);
 router.get('/analytics/realtime', authenticate, requireAdmin, getRealtimeMetrics);
 
-// Activity log route
-router.get('/activity-log', authenticate, requireAdmin, getActivityLog);
+// Activity log route removed - feature deprecated
 
 export default router;

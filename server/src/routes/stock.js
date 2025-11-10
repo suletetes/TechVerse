@@ -287,18 +287,8 @@ router.get('/analytics', authenticate, requireAdmin, asyncHandler(async (req, re
       }
     ]),
 
-    // Recent stock movements (from Activity model)
-    (async () => {
-      const { Activity } = await import('../models/index.js');
-      return Activity.find({
-        action: { $in: ['stock_updated', 'stock_bulk_updated'] },
-        createdAt: { $gte: startDate }
-      })
-      .populate('user', 'firstName lastName')
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .lean();
-    })()
+    // Recent stock movements - Activity model removed, returning empty array
+    Promise.resolve([])
   ]);
 
   res.status(200).json({
