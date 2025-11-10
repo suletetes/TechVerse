@@ -731,80 +731,109 @@ const PaymentPage = () => {
                                     {paymentMethod === 'card' && (
                                         <>
                                             {/* Quick Import for Payment Methods */}
-                                            <div className="mb-3">
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <small className="tc-6533 bold-text">Use Saved Payment Method:</small>
+                                            {userData.paymentMethods.length > 0 && (
+                                                <div className="mb-3">
+                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                        <small className="tc-6533 bold-text">Use Saved Payment Method:</small>
+                                                    </div>
+                                                    <select
+                                                        className="form-select form-select-sm"
+                                                        value={selectedPaymentMethod}
+                                                        onChange={(e) => {
+                                                            setSelectedPaymentMethod(e.target.value);
+                                                            if (e.target.value) importPaymentMethod(e.target.value);
+                                                        }}
+                                                    >
+                                                        <option value="">Select saved payment method...</option>
+                                                        {userData.paymentMethods.map((method) => (
+                                                            <option key={method._id} value={method._id}>
+                                                                {method.cardBrand?.toUpperCase() || 'Card'} •••• {method.cardLast4} - {method.cardholderName}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    <hr className="my-3" />
                                                 </div>
-                                                <select
-                                                    className="form-select form-select-sm"
-                                                    value={selectedPaymentMethod}
-                                                    onChange={(e) => {
-                                                        setSelectedPaymentMethod(e.target.value);
-                                                        if (e.target.value) importPaymentMethod(e.target.value);
-                                                    }}
-                                                >
-                                                    <option value="">Select saved payment method...</option>
-                                                    {userData.paymentMethods.map((method) => (
-                                                        <option key={method._id} value={method._id}>
-                                                            {method.cardBrand?.toUpperCase() || 'Card'} •••• {method.cardLast4} - {method.cardholderName}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <hr className="my-3" />
-                                            </div>
+                                            )}
 
                                             <div className="row">
                                                 <div className="col-12 mb-3">
-                                                    <label className="form-label tc-6533 bold-text">Card Number</label>
-                                                <input
-                                                    type="text"
-                                                    name="cardNumber"
-                                                    className="form-control"
-                                                    placeholder="1234 5678 9012 3456"
-                                                    value={formatCardNumber(formData.cardNumber)}
-                                                    onChange={(e) => setFormData(prev => ({...prev, cardNumber: e.target.value}))}
-                                                    maxLength="19"
-                                                    required
-                                                />
+                                                    <label className="form-label tc-6533 bold-text">
+                                                        Card Number
+                                                        {selectedPaymentMethod && (
+                                                            <span className="badge bg-success ms-2">Using Saved Card</span>
+                                                        )}
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        name="cardNumber"
+                                                        className="form-control"
+                                                        placeholder="1234 5678 9012 3456"
+                                                        value={formatCardNumber(formData.cardNumber)}
+                                                        onChange={(e) => setFormData(prev => ({...prev, cardNumber: e.target.value}))}
+                                                        maxLength="19"
+                                                        required
+                                                        disabled={!!selectedPaymentMethod}
+                                                    />
+                                                </div>
+                                                <div className="col-md-6 mb-3">
+                                                    <label className="form-label tc-6533 bold-text">Expiry Date</label>
+                                                    <input
+                                                        type="text"
+                                                        name="expiryDate"
+                                                        className="form-control"
+                                                        placeholder="MM/YY"
+                                                        value={formData.expiryDate}
+                                                        onChange={handleInputChange}
+                                                        maxLength="5"
+                                                        required
+                                                        disabled={!!selectedPaymentMethod}
+                                                    />
+                                                </div>
+                                                <div className="col-md-6 mb-3">
+                                                    <label className="form-label tc-6533 bold-text">
+                                                        CVV
+                                                        <span className="text-danger">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="password"
+                                                        name="cvv"
+                                                        className="form-control"
+                                                        placeholder="123"
+                                                        value={formData.cvv}
+                                                        onChange={handleInputChange}
+                                                        maxLength="4"
+                                                        required
+                                                        autoComplete="off"
+                                                    />
+                                                    <small className="text-muted">
+                                                        <i className="fas fa-shield-alt me-1"></i>
+                                                        CVV is required for security and is never stored
+                                                    </small>
+                                                </div>
+                                                <div className="col-12 mb-3">
+                                                    <label className="form-label tc-6533 bold-text">Name on Card</label>
+                                                    <input
+                                                        type="text"
+                                                        name="cardName"
+                                                        className="form-control"
+                                                        value={formData.cardName}
+                                                        onChange={handleInputChange}
+                                                        required
+                                                        disabled={!!selectedPaymentMethod}
+                                                    />
+                                                </div>
                                             </div>
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label tc-6533 bold-text">Expiry Date</label>
-                                                <input
-                                                    type="text"
-                                                    name="expiryDate"
-                                                    className="form-control"
-                                                    placeholder="MM/YY"
-                                                    value={formData.expiryDate}
-                                                    onChange={handleInputChange}
-                                                    maxLength="5"
-                                                    required
-                                                />
+                                            
+                                            {/* Security Notice */}
+                                            <div className="alert alert-info border-0 d-flex align-items-start">
+                                                <i className="fas fa-lock me-2 mt-1"></i>
+                                                <div>
+                                                    <strong>Secure Payment</strong>
+                                                    <p className="mb-0 small">
+                                                        Your payment information is encrypted and secure. CVV is required for every transaction and is never stored on our servers.
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label tc-6533 bold-text">CVV</label>
-                                                <input
-                                                    type="text"
-                                                    name="cvv"
-                                                    className="form-control"
-                                                    placeholder="123"
-                                                    value={formData.cvv}
-                                                    onChange={handleInputChange}
-                                                    maxLength="4"
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="col-12 mb-3">
-                                                <label className="form-label tc-6533 bold-text">Name on Card</label>
-                                                <input
-                                                    type="text"
-                                                    name="cardName"
-                                                    className="form-control"
-                                                    value={formData.cardName}
-                                                    onChange={handleInputChange}
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
                                         </>
                                     )}
 
