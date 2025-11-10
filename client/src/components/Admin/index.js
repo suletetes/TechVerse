@@ -13,7 +13,7 @@ export { default as AdminCatalogManager } from './AdminCatalogManager';
 export { default as AdminLayout } from './AdminLayout';
 export { default as AdminNotifications } from './AdminNotifications';
 export { default as AdminAnalytics } from './AdminAnalytics';
-export { default as AdminActivityLog } from './AdminActivityLog';
+// export { default as AdminActivityLog } from './AdminActivityLog';
 export { default as AdminSecurity } from './AdminSecurity';
 export { default as AdminProfileSettings } from './AdminProfileSettings';
 // AdminCatalogPane doesn't exist - removed invalid export
