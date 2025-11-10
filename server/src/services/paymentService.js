@@ -162,6 +162,43 @@ class PaymentService {
   }
 
   /**
+   * Sanitize payment method for client response
+   * @param {Object} paymentMethod - Payment method object
+   * @returns {Object} Sanitized payment method
+   */
+  sanitizePaymentMethod(paymentMethod) {
+    // Convert to plain object if it's a Mongoose document
+    const pm = paymentMethod.toObject ? paymentMethod.toObject() : paymentMethod;
+    
+    const sanitized = {
+      _id: pm._id,
+      id: pm._id.toString(),
+      type: pm.type,
+      isDefault: pm.isDefault !== undefined ? pm.isDefault : false,
+      isActive: pm.isActive !== undefined ? pm.isActive : true,
+      createdAt: pm.createdAt,
+      lastUsed: pm.lastUsed,
+      billingAddress: pm.billingAddress || {}
+    };
+
+    // Add card-specific fields if it's a card
+    if (pm.type === 'card') {
+      sanitized.cardLast4 = pm.cardLast4;
+      sanitized.cardBrand = pm.cardBrand;
+      sanitized.expiryMonth = pm.expiryMonth;
+      sanitized.expiryYear = pm.expiryYear;
+      sanitized.cardholderName = pm.cardholderName;
+    }
+
+    // Add PayPal-specific fields if it's PayPal
+    if (pm.type === 'paypal') {
+      sanitized.paypalEmail = pm.paypalEmail;
+    }
+    
+    return sanitized;
+  }
+
+  /**
    * Get user's payment methods
    * @param {string} userId - User ID
    * @returns {Array} User's payment methods
@@ -436,44 +473,7 @@ class PaymentService {
     return masked.replace(/(.{4})/g, '$1 ').trim();
   }
 
-  /**
-   * Sanitize payment method for client response
-   * @param {Object} paymentMethod - Payment method to sanitize
-   * @returns {Object} Sanitized payment method
-   */
-  sanitizePaymentMethod(paymentMethod) {
-    const sanitized = {
-      id: paymentMethod.id,
-      type: paymentMethod.type,
-      isDefault: paymentMethod.isDefault,
-      createdAt: paymentMethod.createdAt,
-      lastUsed: paymentMethod.lastUsed,
-      billingAddress: paymentMethod.billingAddress
-    };
-
-    // Add card-specific data (without encrypted info)
-    if (paymentMethod.card) {
-      sanitized.card = {
-        last4: paymentMethod.card.last4,
-        maskedNumber: paymentMethod.card.maskedNumber,
-        expiryMonth: paymentMethod.card.expiryMonth,
-        expiryYear: paymentMethod.card.expiryYear,
-        cardholderName: paymentMethod.card.cardholderName,
-        brand: paymentMethod.card.brand
-      };
-    }
-
-    // Add wallet-specific data
-    if (paymentMethod.wallet) {
-      sanitized.wallet = {
-        provider: paymentMethod.wallet.provider,
-        email: paymentMethod.wallet.email
-        // Exclude sensitive accountId
-      };
-    }
-
-    return sanitized;
-  }
+  // Duplicate sanitizePaymentMethod removed - using the one defined earlier
 
   /**
    * Process payment (placeholder for payment gateway integration)

@@ -193,43 +193,7 @@ router.patch('/addresses/:id/default', commonValidations.mongoId('id'), validate
     }
 });
 
-// Payment method routes
-router.get('/payment-methods', authenticate, async (req, res) => {
-    try {
-        const user = await User.findById(req.user._id).select('paymentMethods');
-        
-        // Don't expose sensitive payment data
-        const sanitizedMethods = user?.paymentMethods?.map(method => ({
-            _id: method._id,
-            type: method.type,
-            cardBrand: method.cardBrand,
-            cardLast4: method.cardLast4,
-            expiryMonth: method.expiryMonth,
-            expiryYear: method.expiryYear,
-            cardholderName: method.cardholderName,
-            isDefault: method.isDefault,
-            isActive: method.isActive,
-            createdAt: method.createdAt
-        })) || [];
-        
-        res.json({
-            success: true,
-            data: { paymentMethods: sanitizedMethods }
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch payment methods'
-        });
-    }
-});
-router.post('/payment-methods', paymentMethodValidation, validate, addPaymentMethod);
-router.put('/payment-methods/:id', 
-  [commonValidations.mongoId('id'), ...paymentMethodValidation], 
-  validate, 
-  updatePaymentMethod
-);
-router.delete('/payment-methods/:id', commonValidations.mongoId('id'), validate, deletePaymentMethod);
+// Payment method routes - removed duplicate definitions, using the ones below
 
 // Wishlist routes
 router.get('/wishlist', getWishlist);

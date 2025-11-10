@@ -28,6 +28,7 @@ export const validate = (req, res, next) => {
       success: false,
       message: 'Validation failed. Please check your input.',
       code: 'VALIDATION_ERROR',
+      errors: errorMessages, // Include detailed errors
       errors: errorMessages
     });
   }
