@@ -30,10 +30,6 @@ const OrderDetails = () => {
             postcode: 'SW1A 1AA',
             country: 'United Kingdom'
         },
-        paymentMethod: {
-            type: 'Visa',
-            last4: '4242'
-        },
         items: [
             {
                 id: 1,
@@ -166,14 +162,6 @@ const OrderDetails = () => {
                                 <div className="d-flex justify-content-between mb-4">
                                     <span className="tc-6533 bold-text h5">Total:</span>
                                     <span className="tc-2101 bold-text h5">£{order.total.toFixed(2)}</span>
-                                </div>
-
-                                <h5 className="tc-6533 bold-text mb-3">Payment Method</h5>
-                                <div className="d-flex align-items-center mb-4">
-                                    <div className="bg-primary text-white px-2 py-1 rounded small fw-bold me-3">
-                                        {order.paymentMethod.type.toUpperCase()}
-                                    </div>
-                                    <span className="tc-6533">•••• •••• •••• {order.paymentMethod.last4}</span>
                                 </div>
 
                                 {order.trackingNumber && (

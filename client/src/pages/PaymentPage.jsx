@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import StripeProvider from '../components/Payment/StripeProvider';
+import StripeCheckout from '../components/Payment/StripeCheckout';
+import stripePaymentService from '../api/services/stripePaymentService';
 
 const PaymentPage = () => {
-    const [paymentMethod, setPaymentMethod] = useState('card');
+    const navigate = useNavigate();
+    const [paymentMethod, setPaymentMethod] = useState('stripe');
     const [showImportOptions, setShowImportOptions] = useState(false);
     const [selectedAddress, setSelectedAddress] = useState('');
-    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
     const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+    const [clientSecret, setClientSecret] = useState('');
+    const [isCreatingIntent, setIsCreatingIntent] = useState(false);
+    const [paymentIntentId, setPaymentIntentId] = useState('');
+    const [showStripeForm, setShowStripeForm] = useState(false);
     const [formData, setFormData] = useState({
         // Billing Info
         firstName: '',
@@ -196,10 +203,96 @@ const PaymentPage = () => {
         }));
     };
 
+    // Create payment intent when ready to pay
+    const createPaymentIntent = async () => {
+        setIsCreatingIntent(true);
+        try {
+            const response = await stripePaymentService.createPaymentIntent({
+                amount: total,
+                currency: 'gbp',
+                metadata: {
+                    orderType: 'product_purchase',
+                    itemCount: cartItems.length
+                }
+            });
+            
+            setClientSecret(response.data.clientSecret);
+            setPaymentIntentId(response.data.paymentIntentId);
+            setShowStripeForm(true);
+            console.log('✅ Payment intent created:', response.data.paymentIntentId);
+            showNotification('Payment form ready!', 'success');
+        } catch (error) {
+            console.error('❌ Failed to create payment intent:', error);
+            showNotification('Failed to initialize payment. Please try again.', 'error');
+        } finally {
+            setIsCreatingIntent(false);
+        }
+    };
+
+    const handlePaymentSuccess = async (paymentIntent) => {
+        console.log('✅ Payment succeeded:', paymentIntent);
+        
+        try {
+            // Create order after successful payment
+            const orderData = {
+                paymentIntentId: paymentIntent.id,
+                items: cartItems,
+                shippingAddress: {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    address: formData.address,
+                    city: formData.city,
+                    postcode: formData.postcode,
+                    country: formData.country
+                },
+                contactInfo: {
+                    email: formData.email,
+                    phone: formData.phone
+                },
+                totals: {
+                    subtotal,
+                    shipping,
+                    tax,
+                    total
+                }
+            };
+            
+            const orderResponse = await stripePaymentService.processOrder(orderData);
+            console.log('✅ Order created:', orderResponse);
+            
+            showNotification('Order placed successfully!', 'success');
+            
+            // Redirect to success page
+            setTimeout(() => {
+                navigate(`/order-confirmation/${orderResponse.data.orderId || 'success'}`);
+            }, 1500);
+        } catch (error) {
+            console.error('❌ Failed to create order:', error);
+            showNotification('Payment succeeded but failed to create order. Please contact support.', 'error');
+        }
+    };
+
+    const handlePaymentError = (error) => {
+        console.error('❌ Payment failed:', error);
+        showNotification(`Payment failed: ${error.message}`, 'error');
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log('Processing payment:', { paymentMethod, formData });
-        // Handle payment processing
+        
+        // Validate form data
+        if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone) {
+            showNotification('Please fill in all contact information', 'error');
+            return;
+        }
+        
+        if (!formData.address || !formData.city || !formData.postcode) {
+            showNotification('Please fill in all shipping address fields', 'error');
+            return;
+        }
+        
+        // Create payment intent and show Stripe form
+        createPaymentIntent();
     };
 
     const formatCardNumber = (value) => {
@@ -536,195 +629,41 @@ const PaymentPage = () => {
                                     </div>
                                 </div>
 
-                                {/* Payment Method */}
+                                {/* Payment Method - Stripe Integration */}
                                 <div className="store-card fill-card mb-4">
                                     <h3 className="tc-6533 bold-text mb-4">Payment Method</h3>
                                     
-                                    {/* Payment Options */}
-                                    <div className="row mb-4">
-                                        <div className="col-md-4 mb-3">
-                                            <div className={`payment-option ${paymentMethod === 'card' ? 'selected' : ''}`}>
-                                                <input
-                                                    type="radio"
-                                                    id="card"
-                                                    name="paymentMethod"
-                                                    value="card"
-                                                    checked={paymentMethod === 'card'}
-                                                    onChange={(e) => setPaymentMethod(e.target.value)}
-                                                    className="form-check-input"
-                                                />
-                                                <label htmlFor="card" className="form-check-label w-100">
-                                                    <div className="d-flex align-items-center">
-                                                        <svg width="24" height="24" viewBox="0 0 24 24" className="me-2">
-                                                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" fill="#007bff"/>
-                                                            <line x1="1" y1="10" x2="23" y2="10" stroke="white" strokeWidth="2"/>
-                                                        </svg>
-                                                        Credit/Debit Card
-                                                    </div>
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div className="col-md-4 mb-3">
-                                            <div className={`payment-option ${paymentMethod === 'paypal' ? 'selected' : ''}`}>
-                                                <input
-                                                    type="radio"
-                                                    id="paypal"
-                                                    name="paymentMethod"
-                                                    value="paypal"
-                                                    checked={paymentMethod === 'paypal'}
-                                                    onChange={(e) => setPaymentMethod(e.target.value)}
-                                                    className="form-check-input"
-                                                />
-                                                <label htmlFor="paypal" className="form-check-label w-100">
-                                                    <div className="d-flex align-items-center">
-                                                        <svg width="24" height="24" viewBox="0 0 24 24" className="me-2">
-                                                            <path fill="#0070ba" d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106z"/>
-                                                        </svg>
-                                                        PayPal
-                                                    </div>
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div className="col-md-4 mb-3">
-                                            <div className={`payment-option ${paymentMethod === 'apple' ? 'selected' : ''}`}>
-                                                <input
-                                                    type="radio"
-                                                    id="apple"
-                                                    name="paymentMethod"
-                                                    value="apple"
-                                                    checked={paymentMethod === 'apple'}
-                                                    onChange={(e) => setPaymentMethod(e.target.value)}
-                                                    className="form-check-input"
-                                                />
-                                                <label htmlFor="apple" className="form-check-label w-100">
-                                                    <div className="d-flex align-items-center">
-                                                        <svg width="24" height="24" viewBox="0 0 24 24" className="me-2">
-                                                            <path fill="#000" d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                                                        </svg>
-                                                        Apple Pay
-                                                    </div>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Card Details */}
-                                    {paymentMethod === 'card' && (
-                                        <>
-                                            {/* Quick Import for Payment Methods */}
-                                            <div className="mb-3">
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <small className="tc-6533 bold-text">Use Saved Payment Method:</small>
-                                                </div>
-                                                <select
-                                                    className="form-select form-select-sm"
-                                                    value={selectedPaymentMethod}
-                                                    onChange={(e) => {
-                                                        setSelectedPaymentMethod(e.target.value);
-                                                        if (e.target.value) importPaymentMethod(e.target.value);
-                                                    }}
-                                                >
-                                                    <option value="">Select saved payment method...</option>
-                                                    {userData.paymentMethods.map((method) => (
-                                                        <option key={method.id} value={method.id}>
-                                                            {method.brand.toUpperCase()} •••• {method.last4} - {method.holderName}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <hr className="my-3" />
-                                            </div>
-
-                                            <div className="row">
-                                                <div className="col-12 mb-3">
-                                                    <label className="form-label tc-6533 bold-text">Card Number</label>
-                                                <input
-                                                    type="text"
-                                                    name="cardNumber"
-                                                    className="form-control"
-                                                    placeholder="1234 5678 9012 3456"
-                                                    value={formatCardNumber(formData.cardNumber)}
-                                                    onChange={(e) => setFormData(prev => ({...prev, cardNumber: e.target.value}))}
-                                                    maxLength="19"
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label tc-6533 bold-text">Expiry Date</label>
-                                                <input
-                                                    type="text"
-                                                    name="expiryDate"
-                                                    className="form-control"
-                                                    placeholder="MM/YY"
-                                                    value={formData.expiryDate}
-                                                    onChange={handleInputChange}
-                                                    maxLength="5"
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label tc-6533 bold-text">CVV</label>
-                                                <input
-                                                    type="text"
-                                                    name="cvv"
-                                                    className="form-control"
-                                                    placeholder="123"
-                                                    value={formData.cvv}
-                                                    onChange={handleInputChange}
-                                                    maxLength="4"
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="col-12 mb-3">
-                                                <label className="form-label tc-6533 bold-text">Name on Card</label>
-                                                <input
-                                                    type="text"
-                                                    name="cardName"
-                                                    className="form-control"
-                                                    value={formData.cardName}
-                                                    onChange={handleInputChange}
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-                                        </>
-                                    )}
-
-                                    {/* PayPal */}
-                                    {paymentMethod === 'paypal' && (
+                                    {!showStripeForm ? (
                                         <div className="text-center py-4">
-                                            <p className="tc-6533 mb-3">You will be redirected to PayPal to complete your payment.</p>
-                                            <button type="button" className="btn btn-warning btn-lg">
-                                                Continue with PayPal
-                                            </button>
+                                            <p className="tc-6533 mb-3">
+                                                Complete your shipping information above, then proceed to payment.
+                                            </p>
+                                            <div className="d-flex align-items-center justify-content-center mb-3">
+                                                <svg width="24" height="24" viewBox="0 0 24 24" className="me-2" fill="currentColor">
+                                                    <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
+                                                </svg>
+                                                <span className="tc-6533">Secured by Stripe</span>
+                                            </div>
+                                            <small className="text-muted">
+                                                We accept all major credit and debit cards
+                                            </small>
                                         </div>
-                                    )}
-
-                                    {/* Apple Pay */}
-                                    {paymentMethod === 'apple' && (
-                                        <div className="text-center py-4">
-                                            <p className="tc-6533 mb-3">Use Touch ID or Face ID to pay with Apple Pay.</p>
-                                            <button type="button" className="btn btn-dark btn-lg">
-                                                Pay with Apple Pay
-                                            </button>
-                                        </div>
+                                    ) : (
+                                        <StripeProvider>
+                                            <StripeCheckout
+                                                clientSecret={clientSecret}
+                                                onSuccess={handlePaymentSuccess}
+                                                onError={handlePaymentError}
+                                                amount={total}
+                                                currency="gbp"
+                                                returnUrl={`${window.location.origin}/order-confirmation`}
+                                            />
+                                        </StripeProvider>
                                     )}
                                 </div>
 
                                 {/* Order Options */}
                                 <div className="store-card fill-card mb-4">
-                                    <div className="form-check mb-3">
-                                        <input
-                                            className="form-check-input"
-                                            type="checkbox"
-                                            name="savePayment"
-                                            id="savePayment"
-                                            checked={formData.savePayment}
-                                            onChange={handleInputChange}
-                                        />
-                                        <label className="form-check-label tc-6533" htmlFor="savePayment">
-                                            Save payment information for faster checkout
-                                        </label>
-                                    </div>
                                     <div className="form-check">
                                         <input
                                             className="form-check-input"
@@ -789,13 +728,29 @@ const PaymentPage = () => {
                                 </div>
 
                                 {/* Complete Order Button */}
-                                <button
-                                    type="submit"
-                                    className="btn btn-c-2101 btn-rd btn-lg w-100 mb-3"
-                                    onClick={handleSubmit}
-                                >
-                                    Complete Order
-                                </button>
+                                {!showStripeForm ? (
+                                    <button
+                                        type="submit"
+                                        className="btn btn-c-2101 btn-rd btn-lg w-100 mb-3"
+                                        onClick={handleSubmit}
+                                        disabled={isCreatingIntent}
+                                    >
+                                        {isCreatingIntent ? (
+                                            <div className="d-flex align-items-center justify-content-center">
+                                                <div className="spinner-border spinner-border-sm me-2" role="status">
+                                                    <span className="visually-hidden">Loading...</span>
+                                                </div>
+                                                Preparing Payment...
+                                            </div>
+                                        ) : (
+                                            'Proceed to Payment'
+                                        )}
+                                    </button>
+                                ) : (
+                                    <div className="alert alert-info">
+                                        <small>Complete payment using the form above</small>
+                                    </div>
+                                )}
 
                                 {/* Security Notice */}
                                 <div className="text-center">
