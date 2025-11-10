@@ -67,54 +67,8 @@ const addressSchema = new mongoose.Schema({
   timestamps: true
 });
 
-const paymentMethodSchema = new mongoose.Schema({
-  type: {
-    type: String,
-    enum: ['card', 'paypal', 'apple_pay', 'google_pay'],
-    required: true
-  },
-  // Card details (encrypted/tokenized)
-  cardLast4: {
-    type: String,
-    match: [/^\d{4}$/, 'Invalid card last 4 digits']
-  },
-  cardBrand: {
-    type: String,
-    enum: ['visa', 'mastercard', 'amex', 'discover', 'diners', 'jcb']
-  },
-  expiryMonth: {
-    type: Number,
-    min: 1,
-    max: 12
-  },
-  expiryYear: {
-    type: Number,
-    min: new Date().getFullYear()
-  },
-  cardholderName: {
-    type: String,
-    trim: true,
-    maxlength: [100, 'Cardholder name cannot exceed 100 characters']
-  },
-  // Billing address
-  billingAddress: {
-    address: String,
-    city: String,
-    postcode: String,
-    country: { type: String, default: 'United Kingdom' }
-  },
-  // Payment processor details
-  stripePaymentMethodId: String,
-  paypalEmail: String,
-  // Status and settings
-  isDefault: { type: Boolean, default: false },
-  isActive: { type: Boolean, default: true },
-  // Security
-  fingerprint: String, // For duplicate detection
-  lastUsed: Date
-}, {
-  timestamps: true
-});
+// Payment method schema removed - using Stripe for payment processing
+// Stripe handles all payment method storage securely
 
 const userSchema = new mongoose.Schema({
   firstName: {
@@ -164,7 +118,12 @@ const userSchema = new mongoose.Schema({
   passwordResetToken: String,
   passwordResetExpires: Date,
   addresses: [addressSchema],
-  paymentMethods: [paymentMethodSchema],
+  // Stripe integration - store only customer ID
+  stripeCustomerId: {
+    type: String,
+    sparse: true, // Allow null values, but ensure uniqueness when present
+    index: true
+  },
   wishlist: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
@@ -528,51 +487,7 @@ userSchema.methods.updateOrderStats = function(orderTotal) {
   return this.save();
 };
 
-// Method to add payment method
-userSchema.methods.addPaymentMethod = function(paymentMethodData) {
-  // If this is the first payment method or marked as default, make it default
-  if (this.paymentMethods.length === 0 || paymentMethodData.isDefault) {
-    this.paymentMethods.forEach(method => method.isDefault = false);
-    paymentMethodData.isDefault = true;
-  }
-  
-  this.paymentMethods.push(paymentMethodData);
-  return this.save();
-};
-
-// Method to update payment method
-userSchema.methods.updatePaymentMethod = function(methodId, updateData) {
-  const method = this.paymentMethods.id(methodId);
-  if (!method) {
-    throw new Error('Payment method not found');
-  }
-  
-  // If setting as default, unset others
-  if (updateData.isDefault) {
-    this.paymentMethods.forEach(method => method.isDefault = false);
-  }
-  
-  Object.assign(method, updateData);
-  return this.save();
-};
-
-// Method to remove payment method
-userSchema.methods.removePaymentMethod = function(methodId) {
-  const method = this.paymentMethods.id(methodId);
-  if (!method) {
-    throw new Error('Payment method not found');
-  }
-  
-  const wasDefault = method.isDefault;
-  method.remove();
-  
-  // If removed method was default, make first remaining method default
-  if (wasDefault && this.paymentMethods.length > 0) {
-    this.paymentMethods[0].isDefault = true;
-  }
-  
-  return this.save();
-};
+// Payment method methods removed - using Stripe for payment processing
 
 // Method to add active session
 userSchema.methods.addSession = function(sessionId, ipAddress, userAgent) {

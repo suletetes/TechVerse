@@ -55,6 +55,7 @@ import adminRoutes from './src/routes/admin.js';
 import uploadRoutes from './src/routes/upload.js';
 import notificationRoutes from './src/routes/notifications.js';
 import userProfileRoutes from './src/routes/userProfile.js';
+import paymentRoutes from './src/routes/payments.js';
 // Initialize Passport strategies
 initializePassport();
 // Connect to MongoDB
@@ -166,6 +167,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/profile', userProfileRoutes);
+app.use('/api/payments', paymentRoutes);
 // Health check endpoints
 import healthCheck from './src/utils/healthCheck.js';
 import healthMonitor from './src/utils/healthMonitor.js';
