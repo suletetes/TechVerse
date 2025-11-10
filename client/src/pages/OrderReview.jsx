@@ -87,7 +87,7 @@ const OrderReview = () => {
                                                 <p className="tc-6533 mb-0 small">{item.color}, {item.storage}</p>
                                             </div>
                                             <div className="text-end">
-                                                <p className="tc-6533 bold-text mb-0">£{item.price.toFixed(2)}</p>
+                                                <p className="tc-6533 bold-text mb-0">${item.price.toFixed(2)}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -123,7 +123,7 @@ const OrderReview = () => {
                                 </div>
                                 <div className="mb-3">
                                     <small className="text-muted d-block">Total Amount:</small>
-                                    <span className="tc-6533 bold-text">£{order.total.toFixed(2)}</span>
+                                    <span className="tc-6533 bold-text">${order.total.toFixed(2)}</span>
                                 </div>
                                 <div className="mb-3">
                                     <small className="text-muted d-block">Status:</small>

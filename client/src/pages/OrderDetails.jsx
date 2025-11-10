@@ -115,7 +115,7 @@ const OrderDetails = () => {
                                             <p className="tc-6533 mb-0">Quantity: {item.quantity}</p>
                                         </div>
                                         <div className="text-end">
-                                            <p className="tc-6533 bold-text h5 mb-0">£{item.price.toFixed(2)}</p>
+                                            <p className="tc-6533 bold-text h5 mb-0">${item.price.toFixed(2)}</p>
                                         </div>
                                     </div>
                                 )) : []}
@@ -152,7 +152,7 @@ const OrderDetails = () => {
                                 <h3 className="tc-6533 bold-text mb-4">Order Summary</h3>
                                 <div className="d-flex justify-content-between mb-2">
                                     <span className="tc-6533">Subtotal:</span>
-                                    <span className="tc-6533">£{order.subtotal.toFixed(2)}</span>
+                                    <span className="tc-6533">${order.subtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="d-flex justify-content-between mb-2">
                                     <span className="tc-6533">Shipping:</span>
@@ -160,21 +160,15 @@ const OrderDetails = () => {
                                 </div>
                                 <div className="d-flex justify-content-between mb-3">
                                     <span className="tc-6533">Tax (VAT):</span>
-                                    <span className="tc-6533">£{order.tax.toFixed(2)}</span>
+                                    <span className="tc-6533">${order.tax.toFixed(2)}</span>
                                 </div>
                                 <hr />
                                 <div className="d-flex justify-content-between mb-4">
                                     <span className="tc-6533 bold-text h5">Total:</span>
-                                    <span className="tc-2101 bold-text h5">£{order.total.toFixed(2)}</span>
+                                    <span className="tc-2101 bold-text h5">${order.total.toFixed(2)}</span>
                                 </div>
 
-                                <h5 className="tc-6533 bold-text mb-3">Payment Method</h5>
-                                <div className="d-flex align-items-center mb-4">
-                                    <div className="bg-primary text-white px-2 py-1 rounded small fw-bold me-3">
-                                        {order.paymentMethod.type.toUpperCase()}
-                                    </div>
-                                    <span className="tc-6533">•••• •••• •••• {order.paymentMethod.last4}</span>
-                                </div>
+
 
                                 {order.trackingNumber && (
                                     <>
