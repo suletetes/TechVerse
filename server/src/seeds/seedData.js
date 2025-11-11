@@ -796,10 +796,10 @@ export const seedDatabase = async () => {
                         phone: '+44 7700 900123'
                     },
                     payment: {
-                        method: 'card',
+                        method: 'stripe',
                         status: 'completed',
                         amount: (sampleProducts[0].price * 2) * 1.2,
-                        currency: 'GBP'
+                        currency: 'USD'
                     },
                     createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago
                 },
@@ -830,10 +830,10 @@ export const seedDatabase = async () => {
                         phone: '+44 7700 900123'
                     },
                     payment: {
-                        method: 'card',
+                        method: 'stripe',
                         status: 'completed',
                         amount: sampleProducts[1].price * 1.2,
-                        currency: 'GBP'
+                        currency: 'USD'
                     },
                     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) // 2 days ago
                 }

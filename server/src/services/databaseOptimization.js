@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { Product, User, Order, Category, Cart, Wishlist, Activity } from '../models/index.js';
+import { Product, User, Order, Category, Cart, Wishlist } from '../models/index.js';
 import logger from '../utils/logger.js';
 
 class DatabaseOptimizationService {
@@ -61,14 +61,7 @@ class DatabaseOptimizationService {
       await Cart.collection.createIndex({ 'items.product': 1 });
       await Wishlist.collection.createIndex({ 'items.product': 1 });
 
-      // Activity indexes (with TTL)
-      await Activity.collection.createIndex({ user: 1, timestamp: -1 });
-      await Activity.collection.createIndex({ type: 1, timestamp: -1 });
-      await Activity.collection.createIndex({ 
-        timestamp: 1 
-      }, { 
-        expireAfterSeconds: 90 * 24 * 60 * 60 // 90 days
-      });
+      // Activity indexes removed - feature deprecated
 
       logger.info('Database indexes created successfully');
     } catch (error) {
