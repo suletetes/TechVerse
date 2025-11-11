@@ -2,7 +2,7 @@
 // Handles secure payment method storage, validation, and processing
 
 import crypto from 'crypto';
-import { User, Activity } from '../models/index.js';
+import { User } from '../models/index.js';
 import logger from '../utils/logger.js';
 import { AppError } from '../middleware/errorHandler.js';
 
@@ -136,19 +136,7 @@ class PaymentService {
     user.paymentMethods.push(paymentMethod);
     await user.save();
 
-    // Log activity
-    await Activity.create({
-      user: userId,
-      action: 'payment_method_added',
-      resource: 'PaymentMethod',
-      resourceId: paymentMethodId,
-      details: {
-        type,
-        isDefault,
-        last4: paymentMethod.card?.last4 || null,
-        brand: paymentMethod.card?.brand || type
-      }
-    });
+    // Activity logging removed - feature deprecated
 
     logger.info('Payment method added', {
       userId,
@@ -256,17 +244,7 @@ class PaymentService {
 
     await user.save();
 
-    // Log activity
-    await Activity.create({
-      user: userId,
-      action: 'payment_method_updated',
-      resource: 'PaymentMethod',
-      resourceId: paymentMethodId,
-      details: {
-        updatedFields: Object.keys(updateData),
-        isDefault: paymentMethod.isDefault
-      }
-    });
+    // Activity logging removed - feature deprecated
 
     logger.info('Payment method updated', {
       userId,
@@ -311,27 +289,7 @@ class PaymentService {
 
     await user.save();
 
-    // Log activity (optional - don't fail if activity logging fails)
-    try {
-      await Activity.create({
-        user: userId,
-        type: 'payment',
-        action: 'payment_method_deleted',
-        description: `Deleted payment method ${paymentMethod.type} ending in ${paymentMethod.cardLast4 || 'N/A'}`,
-        resource: 'PaymentMethod',
-        resourceId: paymentMethodId,
-        details: paymentMethodInfo,
-        ipAddress: '0.0.0.0', // Default for service calls
-        userAgent: 'PaymentService' // Default for service calls
-      });
-    } catch (activityError) {
-      // Log but don't fail the deletion
-      logger.warn('Failed to log activity for payment method deletion', {
-        userId,
-        paymentMethodId,
-        error: activityError.message
-      });
-    }
+    // Activity logging removed - feature deprecated
 
     logger.info('Payment method deleted', {
       userId,
@@ -370,17 +328,7 @@ class PaymentService {
 
     await user.save();
 
-    // Log activity
-    await Activity.create({
-      user: userId,
-      action: 'payment_method_default_changed',
-      resource: 'PaymentMethod',
-      resourceId: paymentMethodId,
-      details: {
-        type: paymentMethod.type,
-        last4: paymentMethod.card?.last4 || null
-      }
-    });
+    // Activity logging removed - feature deprecated
 
     logger.info('Default payment method changed', {
       userId,
@@ -528,20 +476,7 @@ class PaymentService {
     // Update last used timestamp for payment method
     await this.updateLastUsed(userId, paymentMethodId);
 
-    // Log activity
-    await Activity.create({
-      user: userId,
-      action: 'payment_processed',
-      resource: 'Payment',
-      resourceId: paymentResult.transactionId,
-      details: {
-        amount,
-        currency,
-        orderId,
-        paymentMethodId,
-        status: paymentResult.status
-      }
-    });
+    // Activity logging removed - feature deprecated
 
     return paymentResult;
   }
