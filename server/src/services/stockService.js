@@ -1,7 +1,7 @@
 // Real-time Stock Management Service
 // Handles stock reservations, updates, and tracking with concurrency control
 
-import { Product, Order, Activity } from '../models/index.js';
+import { Product, Order } from '../models/index.js';
 import logger from '../utils/logger.js';
 import { AppError } from '../middleware/errorHandler.js';
 
@@ -468,21 +468,7 @@ class StockService {
       }
     }));
 
-    // Create activity entries for stock changes
-    for (const entry of historyEntries) {
-      await Activity.create({
-        user: userId,
-        action: 'stock_updated',
-        resource: 'Product',
-        resourceId: entry.product,
-        details: {
-          action: entry.action,
-          quantity: entry.quantity,
-          orderId: entry.orderId,
-          variantId: entry.variant
-        }
-      });
-    }
+    // Activity logging removed - feature deprecated
   }
 
   /**
@@ -586,18 +572,7 @@ class StockService {
           continue;
         }
 
-        // Create activity log
-        await Activity.create({
-          user: userId,
-          action: 'stock_bulk_updated',
-          resource: 'Product',
-          resourceId: productId,
-          details: {
-            newQuantity: quantity,
-            reason,
-            productName: product.name
-          }
-        });
+        // Activity logging removed - feature deprecated
 
         results.successful.push({
           productId,

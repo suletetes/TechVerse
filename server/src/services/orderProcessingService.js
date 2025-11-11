@@ -1,7 +1,7 @@
 // Advanced Order Processing Service
 // Handles order lifecycle, inventory management, notifications, and status tracking
 
-import { Order, Product, User, Activity } from '../models/index.js';
+import { Order, Product, User } from '../models/index.js';
 import stockService from './stockService.js';
 import paymentService from './paymentService.js';
 import logger from '../utils/logger.js';
@@ -121,19 +121,7 @@ class OrderProcessingService {
         });
       }
 
-      // Log order creation activity
-      await Activity.create({
-        user: userId,
-        action: 'order_created',
-        resource: 'Order',
-        resourceId: order._id,
-        details: {
-          orderNumber: order.orderNumber,
-          total: order.total,
-          itemCount: items.length,
-          paymentStatus: paymentResult?.status || 'failed'
-        }
-      });
+      // Activity logging removed - feature deprecated
 
       logger.info('Order created and processed', {
         orderId: order._id,
@@ -330,21 +318,7 @@ class OrderProcessingService {
 
     await order.save();
 
-    // Log status change activity
-    if (userId) {
-      await Activity.create({
-        user: userId,
-        action: 'order_status_updated',
-        resource: 'Order',
-        resourceId: orderId,
-        details: {
-          orderNumber: order.orderNumber,
-          previousStatus,
-          newStatus: status,
-          notes
-        }
-      });
-    }
+    // Activity logging removed - feature deprecated
 
     // Send notifications based on status
     await this.sendStatusNotification(order, status, previousStatus);
@@ -454,18 +428,7 @@ class OrderProcessingService {
       await order.save();
     }
 
-    // Log cancellation activity
-    await Activity.create({
-      user: userId,
-      action: 'order_cancelled',
-      resource: 'Order',
-      resourceId: orderId,
-      details: {
-        orderNumber: order.orderNumber,
-        reason,
-        refundAmount: order.payment.status === 'refunded' ? order.total : 0
-      }
-    });
+    // Activity logging removed - feature deprecated
 
     logger.info('Order cancelled', {
       orderId,
