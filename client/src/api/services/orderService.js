@@ -71,6 +71,15 @@ class OrderService extends BaseApiService {
     return this.read(`/orders/${id}`);
   }
 
+  // Get order by order number
+  async getOrderByNumber(orderNumber) {
+    if (!orderNumber) {
+      throw new Error('Order number is required');
+    }
+
+    return this.read(`/orders/number/${orderNumber}`);
+  }
+
   // Cancel order
   async cancelOrder(id, reason = '') {
     if (!id) {
