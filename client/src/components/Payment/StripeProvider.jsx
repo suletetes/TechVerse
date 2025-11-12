@@ -1,10 +1,27 @@
+import { useState, useEffect } from 'react';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 
-// Initialize Stripe with publishable key
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
-
 const StripeProvider = ({ children, clientSecret }) => {
+  const [stripePromise, setStripePromise] = useState(null);
+
+  useEffect(() => {
+    // Load Stripe dynamically to ensure env vars are loaded
+    const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY 
+           
+    console.log('🔑 Stripe Key Loading:', {
+      fromEnv: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? 'YES' : 'NO',
+      keyPreview: stripeKey.substring(0, 25) + '...',
+      fullKey: stripeKey
+    });
+
+    if (!stripeKey || stripeKey === 'pk_test_your-development-key') {
+      console.error('❌ Invalid Stripe key detected!');
+    }
+
+    setStripePromise(loadStripe(stripeKey));
+  }, []);
+
   const options = {
     clientSecret,
     appearance: {
@@ -20,6 +37,10 @@ const StripeProvider = ({ children, clientSecret }) => {
       },
     },
   };
+
+  if (!stripePromise) {
+    return <div>Loading payment form...</div>;
+  }
 
   return (
     <Elements stripe={stripePromise} options={options}>

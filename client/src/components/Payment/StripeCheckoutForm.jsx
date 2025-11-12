@@ -11,28 +11,45 @@ const StripeCheckoutForm = ({ amount, currency = 'usd', onSuccess, onError }) =>
     e.preventDefault();
 
     if (!stripe || !elements) {
+      console.log('⚠️ Stripe or Elements not ready');
       return;
     }
 
     setIsProcessing(true);
     setMessage(null);
 
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/order-confirmation`,
-      },
-      redirect: 'if_required',
-    });
+    try {
+      // Submit the form to validate all fields
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        setMessage(submitError.message);
+        setIsProcessing(false);
+        if (onError) onError(submitError);
+        return;
+      }
 
-    if (error) {
-      setMessage(error.message);
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/order-confirmation`,
+        },
+        redirect: 'if_required',
+      });
+
+      if (error) {
+        setMessage(error.message);
+        setIsProcessing(false);
+        if (onError) onError(error);
+      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+        setMessage('Payment successful!');
+        setIsProcessing(false);
+        if (onSuccess) onSuccess(paymentIntent);
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+      setMessage(err.message || 'An error occurred during payment');
       setIsProcessing(false);
-      if (onError) onError(error);
-    } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-      setMessage('Payment successful!');
-      setIsProcessing(false);
-      if (onSuccess) onSuccess(paymentIntent);
+      if (onError) onError(err);
     }
   };
 
