@@ -7,5 +7,6 @@ console.log('🚀 Starting comprehensive seed test...');
 const seeder = new ComprehensiveSeed();
 seeder.seed().catch(error => {
   console.error('❌ Error:', error);
+  console.error('Stack:', error.stack);
   process.exit(1);
 });

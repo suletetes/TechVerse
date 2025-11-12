@@ -36,7 +36,7 @@ const shippingAddressSchema = new mongoose.Schema({
 const paymentSchema = new mongoose.Schema({
   method: {
     type: String,
-    enum: ['card', 'paypal', 'bank_transfer', 'cash_on_delivery'],
+    enum: ['stripe', 'card', 'paypal', 'bank_transfer', 'cash_on_delivery'],
     required: true
   },
   status: {
@@ -47,7 +47,7 @@ const paymentSchema = new mongoose.Schema({
   transactionId: String,
   paymentIntentId: String, // Stripe payment intent ID
   amount: { type: Number, required: true },
-  currency: { type: String, default: 'GBP' },
+  currency: { type: String, default: 'USD' },
   paidAt: Date,
   refundedAmount: { type: Number, default: 0 },
   refunds: [{

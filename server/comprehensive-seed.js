@@ -13,7 +13,7 @@
 import mongoose from 'mongoose';
 import { faker } from '@faker-js/faker';
 import connectDB from './src/config/database.js';
-import { User, Product, Category, Order, Review, Activity } from './src/models/index.js';
+import { User, Product, Category, Order, Review } from './src/models/index.js';
 import { generateSpecificationsForProduct } from './src/utils/specificationGenerator.js';
 import { generateStockLevel, generatePricing } from './src/utils/stockPricingGenerator.js';
 import { generateProductSEO, generateProductImages } from './src/utils/seoGenerator.js';
@@ -26,8 +26,7 @@ const SEED_CONFIG = {
   categories: 11,
   productsPerCategory: 15,
   ordersPerUser: { min: 0, max: 8 },
-  reviewsPerProduct: { min: 0, max: 15 },
-  activitiesPerUser: { min: 10, max: 50 }
+  reviewsPerProduct: { min: 0, max: 15 }
 };
 
 class ComprehensiveSeed {
@@ -37,7 +36,6 @@ class ComprehensiveSeed {
     this.products = [];
     this.orders = [];
     this.reviews = [];
-    this.activities = [];
   }
 
   /**
@@ -59,7 +57,6 @@ class ComprehensiveSeed {
       await this.seedProducts();
       await this.seedOrders();
       await this.seedReviews();
-      await this.seedActivities();
       
       // Generate summary
       await this.generateSummary();
@@ -84,8 +81,7 @@ class ComprehensiveSeed {
       Product.deleteMany({}),
       Category.deleteMany({}),
       Order.deleteMany({}),
-      Review.deleteMany({}),
-      Activity.deleteMany({})
+      Review.deleteMany({})
     ]);
     
     console.log('✅ Database cleared\n');
@@ -228,7 +224,6 @@ class ComprehensiveSeed {
         gender: 'prefer-not-to-say'
       },
       addresses: [this.generateAddress()],
-      paymentMethods: [this.generatePaymentMethod()],
       preferences: {
         newsletter: true,
         notifications: true,
@@ -257,7 +252,6 @@ class ComprehensiveSeed {
         isActive: faker.datatype.boolean(0.95),
         isEmailVerified: faker.datatype.boolean(0.8),
         addresses: Array.from({ length: faker.number.int({ min: 1, max: 2 }) }, () => this.generateAddress()),
-        paymentMethods: Array.from({ length: faker.number.int({ min: 0, max: 1 }) }, () => this.generatePaymentMethod()),
         preferences: {
           newsletter: faker.datatype.boolean(0.6),
           notifications: faker.datatype.boolean(0.8),
@@ -286,37 +280,6 @@ class ComprehensiveSeed {
       postcode: faker.helpers.arrayElement(['SW1A 1AA', 'M1 1AA', 'B33 8TH', 'W1A 0AX', 'EC1A 1BB']),
       country: 'United Kingdom',
       phone: faker.helpers.arrayElement(['+447700900123', '+447700900456', '+447700900789']),
-      isDefault: true
-    };
-  }
-
-  /**
-   * Generate realistic payment method
-   */
-  generatePaymentMethod() {
-    const type = faker.helpers.arrayElement(['card', 'paypal']);
-    
-    if (type === 'paypal') {
-      return {
-        type,
-        paypalEmail: faker.internet.email(),
-        isDefault: true
-      };
-    }
-
-    return {
-      type,
-      cardLast4: faker.finance.creditCardNumber().slice(-4),
-      cardBrand: faker.helpers.arrayElement(['visa', 'mastercard', 'amex']),
-      expiryMonth: faker.number.int({ min: 1, max: 12 }),
-      expiryYear: faker.number.int({ min: 2025, max: 2030 }),
-      cardholderName: faker.person.fullName(),
-      billingAddress: {
-        address: faker.location.streetAddress(),
-        city: faker.location.city(),
-        postcode: faker.helpers.arrayElement(['SW1A 1AA', 'M1 1AA', 'B33 8TH']),
-        country: 'United Kingdom'
-      },
       isDefault: true
     };
   }
@@ -605,9 +568,10 @@ class ComprehensiveSeed {
         { weight: 5, value: 'cancelled' }
       ]),
       payment: {
-        method: user.paymentMethods[0]?.type || 'card',
+        method: 'stripe',
         status: 'completed',
-        amount: total
+        amount: total,
+        currency: 'USD'
       },
       shipping: {
         method: faker.helpers.arrayElement(['standard', 'express', 'overnight']),
@@ -733,114 +697,6 @@ class ComprehensiveSeed {
   }
 
   /**
-   * Seed user activities
-   */
-  async seedActivities() {
-    console.log('📊 Seeding user activities...');
-    
-    const activities = [];
-    
-    for (const user of this.users.slice(1)) { // Skip admin
-      const activityCount = faker.number.int(SEED_CONFIG.activitiesPerUser);
-      
-      for (let i = 0; i < activityCount; i++) {
-        const activity = this.generateActivity(user);
-        activities.push(activity);
-      }
-    }
-
-    this.activities = await Activity.insertMany(activities);
-    console.log(`✅ Created ${this.activities.length} activities\n`);
-  }
-
-  /**
-   * Generate realistic user activity
-   */
-  generateActivity(user) {
-    const activityTypes = [
-      'product_view', 'product_search', 'cart_add', 'cart_remove',
-      'wishlist_add', 'wishlist_remove', 'login', 'profile_update'
-    ];
-
-    const type = faker.helpers.arrayElement(activityTypes);
-    const product = faker.helpers.arrayElement(this.products);
-
-    return {
-      user: user._id,
-      type,
-      description: this.generateActivityDescription(type, product, user),
-      metadata: this.generateActivityDetails(type, product),
-      ipAddress: faker.internet.ip(),
-      userAgent: faker.internet.userAgent(),
-      sessionId: faker.string.uuid(),
-      timestamp: faker.date.between({ 
-        from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 
-        to: new Date() 
-      })
-    };
-  }
-
-  /**
-   * Generate activity description
-   */
-  generateActivityDescription(type, product, user) {
-    const descriptions = {
-      product_view: `Viewed product: ${product.name}`,
-      product_search: `Searched for: ${faker.commerce.productName()}`,
-      cart_add: `Added ${product.name} to cart`,
-      cart_remove: `Removed ${product.name} from cart`,
-      wishlist_add: `Added ${product.name} to wishlist`,
-      wishlist_remove: `Removed ${product.name} from wishlist`,
-      login: `User logged in`,
-      profile_update: `Updated profile information`
-    };
-
-    return descriptions[type] || `Performed ${type} action`;
-  }
-
-  /**
-   * Generate activity details
-   */
-  generateActivityDetails(type, product) {
-    const detailsMap = {
-      product_view: {
-        productId: product._id,
-        productName: product.name,
-        source: faker.helpers.arrayElement(['search', 'category', 'recommendation'])
-      },
-      product_search: {
-        query: faker.commerce.productName(),
-        resultsCount: faker.number.int({ min: 0, max: 50 })
-      },
-      cart_add: {
-        productId: product._id,
-        productName: product.name,
-        quantity: faker.number.int({ min: 1, max: 3 })
-      },
-      cart_remove: {
-        productId: product._id,
-        productName: product.name
-      },
-      wishlist_add: {
-        productId: product._id,
-        productName: product.name
-      },
-      wishlist_remove: {
-        productId: product._id,
-        productName: product.name
-      },
-      login: {
-        method: faker.helpers.arrayElement(['email', 'google', 'github'])
-      },
-      profile_update: {
-        fields: faker.helpers.arrayElements(['firstName', 'lastName', 'phone', 'preferences'], { min: 1, max: 3 })
-      }
-    };
-
-    return detailsMap[type] || {};
-  }
-
-  /**
    * Generate seeding summary
    */
   async generateSummary() {
@@ -851,7 +707,6 @@ class ComprehensiveSeed {
     console.log(`📱 Products: ${this.products.length}`);
     console.log(`🛒 Orders: ${this.orders.length}`);
     console.log(`⭐ Reviews: ${this.reviews.length}`);
-    console.log(`📊 Activities: ${this.activities.length}`);
     
     // Calculate some statistics
     const totalRevenue = this.orders.reduce((sum, order) => sum + order.total, 0);
