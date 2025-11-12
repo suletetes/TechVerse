@@ -202,45 +202,6 @@ const ActivityTab = ({
                     </div>
                 )}
             </div>
-
-            {/* Notification Settings */}
-            <div className="border-top pt-4">
-                <h5 className="tc-6533 mb-3">Notification Preferences</h5>
-                <div className="row">
-                    <div className="col-md-6">
-                        <div className="form-check mb-3">
-                            <input className="form-check-input" type="checkbox" id="priceDropNotifications" defaultChecked />
-                            <label className="form-check-label tc-6533" htmlFor="priceDropNotifications">
-                                <strong>Price Drop Alerts</strong><br />
-                                <small className="text-muted">Get notified when wishlist items go on sale</small>
-                            </label>
-                        </div>
-                        <div className="form-check mb-3">
-                            <input className="form-check-input" type="checkbox" id="stockNotifications" defaultChecked />
-                            <label className="form-check-label tc-6533" htmlFor="stockNotifications">
-                                <strong>Stock Alerts</strong><br />
-                                <small className="text-muted">Know when out-of-stock items are available</small>
-                            </label>
-                        </div>
-                    </div>
-                    <div className="col-md-6">
-                        <div className="form-check mb-3">
-                            <input className="form-check-input" type="checkbox" id="newProductNotifications" />
-                            <label className="form-check-label tc-6533" htmlFor="newProductNotifications">
-                                <strong>New Product Alerts</strong><br />
-                                <small className="text-muted">Discover new products in your favorite categories</small>
-                            </label>
-                        </div>
-                        <div className="form-check mb-3">
-                            <input className="form-check-input" type="checkbox" id="reviewNotifications" />
-                            <label className="form-check-label tc-6533" htmlFor="reviewNotifications">
-                                <strong>Review Reminders</strong><br />
-                                <small className="text-muted">Remind me to review purchased products</small>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 };
