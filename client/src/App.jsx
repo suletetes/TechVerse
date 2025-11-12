@@ -13,6 +13,7 @@ import {
     Product,
     OrderConfirmation,
     PaymentPage,
+    PaymentFailed,
     Wishlist,
     Cart,
     UserProfile,
@@ -210,10 +211,18 @@ const router = createBrowserRouter([
 
             // Authenticated routes - require login but any role
             {
-                path: 'order-confirmation',
+                path: 'order-confirmation/:orderNumber?',
                 element: (
                     <AuthGuard>
                         <OrderConfirmation />
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'payment-failed',
+                element: (
+                    <AuthGuard>
+                        <PaymentFailed />
                     </AuthGuard>
                 ),
             },

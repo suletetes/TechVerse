@@ -20,6 +20,7 @@ const PaymentPage = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [clientSecret, setClientSecret] = useState(null);
     const [showStripeForm, setShowStripeForm] = useState(false);
+    const [orderCompleted, setOrderCompleted] = useState(false);
     
     // User data from database
     const [userData, setUserData] = useState({
@@ -67,13 +68,22 @@ const PaymentPage = () => {
                 return;
             }
 
-            // Check if cart is empty
+            // Check if cart is empty (but not if order was just completed)
             if (!cartItems || cartItems.length === 0) {
+                if (orderCompleted) {
+                    console.log('✅ Order completed, skipping cart empty check');
+                    return;
+                }
+                console.log('⚠️ Cart is empty, redirecting to /cart');
+                console.log('Cart items:', cartItems);
                 setToast({
                     message: 'Your cart is empty',
                     type: 'warning'
                 });
-                setTimeout(() => navigate('/cart'), 2000);
+                setTimeout(() => {
+                    console.log('🔄 Executing redirect to /cart');
+                    navigate('/cart');
+                }, 2000);
                 return;
             }
 
@@ -259,13 +269,17 @@ const PaymentPage = () => {
     };
 
     const handlePaymentSuccess = async (paymentIntent) => {
+        console.log('🎉 ===== PAYMENT SUCCESS HANDLER STARTED =====');
+        console.log('💳 Payment Intent:', paymentIntent);
+        
         try {
             setIsProcessing(true);
+            console.log('⏳ Processing set to true');
 
             // Prepare order data
             const orderData = {
                 items: cartItems.map(item => ({
-                    product: item.product?._id || item._id, // Backend expects 'product' not 'productId'
+                    product: item.product?._id || item._id,
                     name: item.product?.name || item.name,
                     price: item.price,
                     quantity: item.quantity,
@@ -275,9 +289,9 @@ const PaymentPage = () => {
                 shippingAddress: {
                     firstName: formData.firstName,
                     lastName: formData.lastName,
-                    address: formData.address, // Backend validation expects 'address'
+                    address: formData.address,
                     city: formData.city,
-                    postcode: formData.postcode, // Backend validation expects 'postcode'
+                    postcode: formData.postcode,
                     country: formData.country,
                     phone: formData.phone
                 },
@@ -290,7 +304,7 @@ const PaymentPage = () => {
                     country: formData.country,
                     phone: formData.phone
                 } : null,
-                paymentMethod: 'stripe', // Backend validation expects a string, not an object
+                paymentMethod: 'stripe',
                 paymentDetails: {
                     paymentIntentId: paymentIntent.id,
                     amount: total,
@@ -305,39 +319,91 @@ const PaymentPage = () => {
                 total
             };
 
+            console.log('📦 Order Data Prepared:', orderData);
+            console.log('🚀 Calling orderService.createOrder...');
+
             // Create order
             const response = await orderService.createOrder(orderData);
+            console.log('✅ Order Service Response:', response);
+            console.log('📊 Response Structure:', {
+                success: response.success,
+                hasData: !!response.data,
+                hasOrder: !!response.data?.order,
+                orderNumber: response.data?.order?.orderNumber
+            });
 
-            if (response.success) {
-                // Clear cart
+            if (response.success && response.data?.order) {
+                const orderNumber = response.data.order.orderNumber;
+                console.log('🎫 Order Number Extracted:', orderNumber);
+
+                if (!orderNumber) {
+                    console.error('❌ No order number in response:', response);
+                    throw new Error('Order created but no order number received');
+                }
+
+                console.log('🧹 Clearing cart...');
+                
+                // Mark order as completed BEFORE clearing cart to prevent redirect
+                setOrderCompleted(true);
+                console.log('✅ Order marked as completed');
+                
                 await clearCart();
+                console.log('✅ Cart cleared successfully');
 
                 setToast({
                     message: 'Order placed successfully!',
                     type: 'success'
                 });
+                console.log('📢 Success toast displayed');
 
+                console.log(`🔄 Redirecting to: /order-confirmation/${orderNumber}`);
+                console.log('⏱️ Redirect will happen in 1.5 seconds...');
+                
                 // Redirect to order confirmation
                 setTimeout(() => {
-                    navigate(`/order-confirmation/${response.data.orderNumber}`);
+                    console.log('🚀 EXECUTING NAVIGATION NOW');
+                    console.log('Target URL:', `/order-confirmation/${orderNumber}`);
+                    navigate(`/order-confirmation/${orderNumber}`);
+                    console.log('✅ Navigate function called');
                 }, 1500);
+            } else {
+                console.error('❌ Order creation failed - Invalid response structure');
+                console.error('Response:', response);
+                throw new Error('Order creation failed');
             }
         } catch (error) {
-            console.error('Error creating order:', error);
+            console.error('💥 ===== ERROR IN PAYMENT SUCCESS HANDLER =====');
+            console.error('Error object:', error);
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+            
             setToast({
                 message: error.message || 'Payment successful but order creation failed. Please contact support.',
                 type: 'error'
             });
         } finally {
+            console.log('🏁 Payment success handler finished, setting processing to false');
             setIsProcessing(false);
         }
     };
 
     const handlePaymentError = (error) => {
-        setToast({
-            message: error.message || 'Payment failed. Please try again.',
-            type: 'error'
-        });
+        console.error('Payment error:', error);
+        
+        // Redirect to payment failed page with error details
+        setTimeout(() => {
+            navigate('/payment-failed', {
+                state: {
+                    error: error.message || 'Payment could not be processed',
+                    orderData: {
+                        total,
+                        subtotal,
+                        tax,
+                        shipping
+                    }
+                }
+            });
+        }, 1000);
     };
 
 
