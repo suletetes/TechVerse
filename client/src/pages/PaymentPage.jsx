@@ -265,7 +265,7 @@ const PaymentPage = () => {
             // Prepare order data
             const orderData = {
                 items: cartItems.map(item => ({
-                    productId: item.product?._id || item._id,
+                    product: item.product?._id || item._id, // Backend expects 'product' not 'productId'
                     name: item.product?.name || item.name,
                     price: item.price,
                     quantity: item.quantity,
@@ -275,9 +275,9 @@ const PaymentPage = () => {
                 shippingAddress: {
                     firstName: formData.firstName,
                     lastName: formData.lastName,
-                    address: formData.address,
+                    address: formData.address, // Backend validation expects 'address'
                     city: formData.city,
-                    postcode: formData.postcode,
+                    postcode: formData.postcode, // Backend validation expects 'postcode'
                     country: formData.country,
                     phone: formData.phone
                 },
@@ -290,10 +290,11 @@ const PaymentPage = () => {
                     country: formData.country,
                     phone: formData.phone
                 } : null,
-                paymentMethod: {
-                    method: 'stripe',
+                paymentMethod: 'stripe', // Backend validation expects a string, not an object
+                paymentDetails: {
+                    paymentIntentId: paymentIntent.id,
                     amount: total,
-                    paymentIntentId: paymentIntent.id
+                    status: 'completed'
                 },
                 subtotal,
                 tax,
@@ -485,7 +486,7 @@ const PaymentPage = () => {
                                 </div>
                             )}
                             
-                            <form onSubmit={handleSubmit}>
+                            <div>
                                 {/* Contact Information */}
                                 <div className="store-card fill-card mb-4">
                                     <div className="d-flex justify-content-between align-items-center mb-4">
@@ -689,7 +690,7 @@ const PaymentPage = () => {
                                     </div>
                                 </div>
                                 */}
-                            </form>
+                            </div>
                         </div>
 
                         {/* Order Summary */}
@@ -779,3 +780,4 @@ const PaymentPage = () => {
 };
 
 export default PaymentPage;
+
