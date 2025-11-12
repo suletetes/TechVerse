@@ -162,6 +162,7 @@ export const conditionalCSRF = (req, res, next) => {
     '/api/wishlist', // Wishlist API endpoints
     '/api/reviews', // Review API endpoints
     '/api/orders', // Order API endpoints
+    '/api/payments', // Payment API endpoints (Stripe)
     '/api/webhook', // Webhook endpoints
     '/api/products', // Temporarily disable CSRF for products
     '/api/upload' // Temporarily disable CSRF for uploads

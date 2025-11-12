@@ -1,7 +1,7 @@
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { useAuthStore } from '../stores/authStore.js';
-import { useNotifications } from '../stores/uiStore.js';
+import { useUIStore } from '../stores/uiStore.js';
 
 /**
  * Enhanced Axios API Client
@@ -140,7 +140,7 @@ apiClient.interceptors.response.use(
           authStore.logout();
           
           // Show notification
-          const { showError } = useNotifications.getState();
+          const { showError } = useUIStore.getState();
           showError('Session expired. Please login again.');
           
           // Redirect to login if not already there
@@ -159,7 +159,7 @@ apiClient.interceptors.response.use(
       }
     } else if (response?.status === 403) {
       // Forbidden
-      const { showError } = useNotifications.getState();
+      const { showError } = useUIStore.getState();
       showError('Access denied. You don\'t have permission for this action.');
     } else if (response?.status === 404) {
       // Not found - don't show notification for all 404s
@@ -168,15 +168,15 @@ apiClient.interceptors.response.use(
       }
     } else if (response?.status >= 500) {
       // Server error
-      const { showError } = useNotifications.getState();
+      const { showError } = useUIStore.getState();
       showError('Server error. Please try again later.');
     } else if (error.code === 'ECONNABORTED') {
       // Timeout
-      const { showError } = useNotifications.getState();
+      const { showError } = useUIStore.getState();
       showError('Request timeout. Please check your connection.');
     } else if (error.code === 'ERR_NETWORK') {
       // Network error
-      const { showError } = useNotifications.getState();
+      const { showError } = useUIStore.getState();
       showError('Network error. Please check your connection.');
     }
     

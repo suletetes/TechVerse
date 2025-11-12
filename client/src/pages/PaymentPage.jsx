@@ -48,7 +48,16 @@ const PaymentPage = () => {
     // Load user data from database
     useEffect(() => {
         const loadUserData = async () => {
+            console.log('🔐 PaymentPage Auth Check:', {
+                isAuthenticated,
+                user,
+                hasUser: !!user,
+                userId: user?._id
+            });
+            
             if (!isAuthenticated) {
+                console.error('❌ Not authenticated - REDIRECT DISABLED FOR DEBUGGING');
+                console.error('Auth state:', { isAuthenticated, user });
                 navigate('/login', {
                     state: {
                         from: { pathname: '/payment' },
@@ -103,7 +112,13 @@ const PaymentPage = () => {
                 console.log('User data loaded. Click import to fill fields.');
 
             } catch (error) {
-                console.error('Error loading user data:', error);
+                console.error('❌ Error loading user data:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    response: error.response,
+                    status: error.response?.status,
+                    data: error.response?.data
+                });
                 setToast({
                     message: 'Failed to load user data. Please try again.',
                     type: 'error'
