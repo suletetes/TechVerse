@@ -43,8 +43,9 @@ const orderValidation = [
     .isLength({ min: 2, max: 100 })
     .withMessage('City is required'),
   body('shippingAddress.postcode')
-    .matches(/^[A-Z]{1,2}[0-9]{1,2}[A-Z]?\s?[0-9][A-Z]{2}$/i)
-    .withMessage('Please provide a valid UK postcode'),
+    .trim()
+    .isLength({ min: 2, max: 20 })
+    .withMessage('Postcode is required'),
   body('paymentMethod')
     .isIn(['card', 'paypal', 'stripe'])
     .withMessage('Invalid payment method')
