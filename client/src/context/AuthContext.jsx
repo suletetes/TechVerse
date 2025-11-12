@@ -214,6 +214,7 @@ export const AuthProvider = ({ children }) => {
   const sessionCheckInterval = useRef(null);
   const activityTimeout = useRef(null);
   const syncUnsubscribe = useRef(null);
+  const lastActivityUpdate = useRef(0);
 
   // Constants
   const MAX_LOGIN_ATTEMPTS = 5;
@@ -278,6 +279,30 @@ export const AuthProvider = ({ children }) => {
   // Setup session management when authenticated
   useEffect(() => {
     if (state.isAuthenticated) {
+      // Sync existing session to Zustand store on mount
+      const syncToZustand = async () => {
+        try {
+          const { useAuthStore } = await import('../stores/authStore.js');
+          const authStore = useAuthStore.getState();
+          
+          // Only sync if Zustand store is empty but AuthContext has data
+          if (!authStore.token && state.user && state.token) {
+            console.log('🔄 Syncing existing session to Zustand store');
+            authStore.setUser(state.user);
+            authStore.setTokens({
+              accessToken: state.token,
+              refreshToken: state.refreshToken,
+              sessionId: state.sessionId,
+              authMethod: 'jwt'
+            });
+          }
+        } catch (error) {
+          console.error('Failed to sync to Zustand:', error);
+        }
+      };
+      
+      syncToZustand();
+      
       // Setup session check interval
       sessionCheckInterval.current = setInterval(() => {
         // Get fresh state from ref to avoid stale closures
@@ -292,10 +317,15 @@ export const AuthProvider = ({ children }) => {
         }
       }, 60000); // Check every minute
 
-      // Setup activity tracking
+      // Setup activity tracking with throttling
+      const ACTIVITY_THROTTLE = 5000; // Only update every 5 seconds
       const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
       const handleActivity = () => {
-        dispatch({ type: AUTH_ACTIONS.UPDATE_ACTIVITY });
+        const now = Date.now();
+        if (now - lastActivityUpdate.current > ACTIVITY_THROTTLE) {
+          lastActivityUpdate.current = now;
+          dispatch({ type: AUTH_ACTIONS.UPDATE_ACTIVITY });
+        }
       };
 
       events.forEach(event => {
@@ -397,6 +427,17 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AUTH_ACTIONS.RESET_LOGIN_ATTEMPTS });
       dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response.data });
 
+      // Sync with Zustand auth store for API client
+      const { useAuthStore } = await import('../stores/authStore.js');
+      const authStore = useAuthStore.getState();
+      authStore.setUser(response.data.user);
+      authStore.setTokens({
+        accessToken: response.data.tokens?.accessToken || response.data.token,
+        refreshToken: response.data.tokens?.refreshToken,
+        sessionId: response.data.tokens?.sessionId,
+        authMethod: 'jwt'
+      });
+
       // Sync login across tabs
       multiTabSyncManager.syncLogin(response.data.user, response.data.tokens);
 
@@ -465,6 +506,11 @@ export const AuthProvider = ({ children }) => {
       // Clear intervals and timeouts
       clearInterval(sessionCheckInterval.current);
       clearTimeout(activityTimeout.current);
+
+      // Sync with Zustand auth store
+      const { useAuthStore } = await import('../stores/authStore.js');
+      const authStore = useAuthStore.getState();
+      authStore.reset();
 
       // Sync logout across tabs
       multiTabSyncManager.syncLogout(reason);

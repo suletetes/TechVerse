@@ -50,6 +50,17 @@ apiClient.interceptors.request.use(
     const authStore = useAuthStore.getState();
     const authHeader = authStore.getAuthHeader();
     
+    // Debug logging
+    if (import.meta.env.DEV && config.url?.includes('payment')) {
+      console.log('🔑 Auth Debug:', {
+        hasAuthHeader: !!authHeader,
+        authHeader: authHeader ? authHeader.substring(0, 20) + '...' : null,
+        token: authStore.token ? authStore.token.substring(0, 20) + '...' : null,
+        isAuthenticated: authStore.isAuthenticated,
+        user: authStore.user?._id
+      });
+    }
+    
     if (authHeader) {
       config.headers.Authorization = authHeader;
     }
