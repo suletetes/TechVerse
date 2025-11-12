@@ -4,6 +4,7 @@ import {
   createOrder,
   getUserOrders,
   getOrderById,
+  getOrderByNumber,
   updateOrderStatus,
   cancelOrder,
   getOrderTracking,
@@ -94,6 +95,7 @@ const refundValidation = [
 // Protected routes (authenticated users)
 router.post('/', orderValidation, validate, authenticate, createOrder);
 router.get('/user', commonValidations.pagination(), validate, authenticate, getUserOrders);
+router.get('/number/:orderNumber', authenticate, getOrderByNumber);
 router.get('/:id', commonValidations.mongoId('id'), validate, authenticate, getOrderById);
 router.put('/:id/cancel', commonValidations.mongoId('id'), validate, authenticate, cancelOrder);
 router.get('/:id/tracking', commonValidations.mongoId('id'), validate, authenticate, getOrderTracking);
