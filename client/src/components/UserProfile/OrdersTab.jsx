@@ -114,49 +114,38 @@ const OrdersTab = () => {
     };
 
     const handleReorder = async (selectedItems, itemQuantities) => {
-        const successfulItems = [];
-        const failedItems = [];
-        
         try {
-            // Add each selected item to cart
             for (const item of selectedItems) {
-                try {
-                    const quantity = itemQuantities[item.id]?.quantity || 1;
-                    const productId = item.id;
-                    
-                    // Convert variants array to options object
-                    // variants: [{name: "color", value: "silver"}, {name: "storage", value: "128GB"}]
-                    // options: {color: "silver", storage: "128GB"}
-                    const options = {};
-                    if (item.variants && Array.isArray(item.variants)) {
-                        item.variants.forEach(variant => {
-                            if (variant.name && variant.value) {
-                                options[variant.name] = variant.value;
-                            }
-                        });
-                    }
-                    
-                    await addToCart(productId, quantity, options);
-                    successfulItems.push(item.name);
-                } catch (itemError) {
-                    console.error(`Failed to add ${item.name}:`, itemError);
-                    failedItems.push(item.name);
+                const quantity = itemQuantities[item.id]?.quantity || 1;
+                const productId = item.id;
+                
+                const options = {};
+                if (item.variants && Array.isArray(item.variants)) {
+                    item.variants.forEach(variant => {
+                        if (variant.name && variant.value) {
+                            options[variant.name] = variant.value;
+                        }
+                    });
                 }
+                
+                await addToCart(productId, quantity, options);
             }
             
-            // Show appropriate message based on results
-            if (successfulItems.length > 0 && failedItems.length === 0) {
-                console.log('✅ All items added to cart successfully');
-            } else if (successfulItems.length > 0 && failedItems.length > 0) {
-                const errorMsg = `Some items could not be added: ${failedItems.join(', ')} (product may no longer be available)`;
-                console.warn(errorMsg);
-                throw new Error(errorMsg);
-            } else {
-                throw new Error('Unable to add items to cart. Products may no longer be available.');
-            }
+            setToast({
+                message: 'Items added to cart successfully!',
+                type: 'success',
+                action: {
+                    label: 'View Cart',
+                    path: '/cart'
+                }
+            });
+            setActiveModal(null);
+            setSelectedOrder(null);
         } catch (error) {
-            console.error('❌ Error adding items to cart:', error);
-            throw error; // Re-throw so ReorderModal can handle it
+            setToast({
+                message: 'Failed to add items to cart. Please try again.',
+                type: 'error'
+            });
         }
     };
 
@@ -360,20 +349,18 @@ const OrdersTab = () => {
                                                     </svg>
                                                     Details
                                                 </Link>
-                                                {order.tracking?.trackingNumber && (
-                                                    <button
-                                                        className="btn btn-sm btn-outline-info btn-rd"
-                                                        onClick={() => handleOrderAction(order._id, 'track')}
-                                                    >
-                                                        <svg width="14" height="14" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
-                                                            <path d="M16 3h5v5" />
-                                                            <path d="M8 3H3v5" />
-                                                            <path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" />
-                                                            <path d="M21 3l-7.828 7.828A4 4 0 0 0 12 13.657V22" />
-                                                        </svg>
-                                                        Track
-                                                    </button>
-                                                )}
+                                                <Link
+                                                    to={`/user/order/${order._id}/tracking`}
+                                                    className="btn btn-sm btn-outline-info btn-rd"
+                                                >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M16 3h5v5" />
+                                                        <path d="M8 3H3v5" />
+                                                        <path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" />
+                                                        <path d="M21 3l-7.828 7.828A4 4 0 0 0 12 13.657V22" />
+                                                    </svg>
+                                                    Track
+                                                </Link>
                                                 {(order.status === 'pending' || order.status === 'confirmed') && (
                                                     <button
                                                         className="btn btn-sm btn-outline-danger btn-rd"

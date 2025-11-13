@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useOrder } from '../context';
-import { LoadingSpinner } from '../components/Common';
+import { useOrder, useCart } from '../context';
+import { LoadingSpinner, Toast } from '../components/Common';
 import { ReorderModal } from '../components/UserProfile/Modals';
 
 const OrderTracking = () => {
     const { orderId } = useParams();
     const { loadOrder, currentOrder, isLoading, error } = useOrder();
+    const { addToCart } = useCart();
     const [showReorderModal, setShowReorderModal] = useState(false);
+    const [toast, setToast] = useState(null);
 
     useEffect(() => {
         if (orderId) {
@@ -105,25 +107,6 @@ const OrderTracking = () => {
         <div className="bloc bgc-5700 full-width-bloc l-bloc" id="order-tracking-bloc">
             <div className="container bloc-md bloc-lg-md">
                 <div className="row">
-                    {/* Page Header */}
-                    <div className="col-12 mb-4">
-                        <nav aria-label="breadcrumb">
-                            <ol className="breadcrumb">
-                                <li className="breadcrumb-item">
-                                    <Link to="/user" title="Go to My Account">My Account</Link>
-                                </li>
-                                <li className="breadcrumb-item">
-                                    <Link to="/user?tab=orders" title="View all orders">Orders</Link>
-                                </li>
-                                <li className="breadcrumb-item">
-                                    <Link to={`/user/order/${order._id}`} title="View order details">Order Details</Link>
-                                </li>
-                                <li className="breadcrumb-item active" aria-current="page">Tracking</li>
-                            </ol>
-                        </nav>
-                        <h1 className="tc-6533 bold-text">Track Order #{order.orderNumber}</h1>
-                    </div>
-
                     <div className="row">
                         {/* Tracking Timeline */}
                         <div className="col-lg-8 mb-4">
@@ -331,11 +314,50 @@ const OrderTracking = () => {
                 <ReorderModal 
                     onClose={() => setShowReorderModal(false)}
                     order={order}
-                    onReorder={(selectedItems, quantities) => {
-                        console.log('Reorder completed:', selectedItems, quantities);
-                        alert('Items added to cart successfully!');
-                        setShowReorderModal(false);
+                    onReorder={async (selectedItems, itemQuantities) => {
+                        try {
+                            for (const item of selectedItems) {
+                                const quantity = itemQuantities[item.id]?.quantity || 1;
+                                const productId = item.id;
+                                
+                                const options = {};
+                                if (item.variants && Array.isArray(item.variants)) {
+                                    item.variants.forEach(variant => {
+                                        if (variant.name && variant.value) {
+                                            options[variant.name] = variant.value;
+                                        }
+                                    });
+                                }
+                                
+                                await addToCart(productId, quantity, options);
+                            }
+                            
+                            setToast({
+                                message: 'Items added to cart successfully!',
+                                type: 'success',
+                                action: {
+                                    label: 'View Cart',
+                                    path: '/cart'
+                                }
+                            });
+                            setShowReorderModal(false);
+                        } catch (error) {
+                            setToast({
+                                message: 'Failed to add items to cart. Please try again.',
+                                type: 'error'
+                            });
+                        }
                     }}
+                />
+            )}
+
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    action={toast.action}
+                    onClose={() => setToast(null)}
                 />
             )}
         </div>
