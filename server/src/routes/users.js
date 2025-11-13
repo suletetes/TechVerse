@@ -245,8 +245,7 @@ router.post('/payment-methods', authenticate, [
 router.put('/payment-methods/:id', authenticate, [
   param('id').isMongoId().withMessage('Invalid payment method ID format'),
   body('isDefault').optional().isBoolean().withMessage('isDefault must be boolean'),
-  body('cardholderName').optional().trim().isLength({ min: 2, max: 100 }).withMessage('Cardholder name must be 2-100 characters'),
-  body('billingAddress').optional().isObject().withMessage('Billing address must be an object')
+  body('cardholderName').optional().trim().isLength({ min: 2, max: 100 }).withMessage('Cardholder name must be 2-100 characters')
 ], validate, asyncHandler(async (req, res, next) => {
   const paymentMethod = await paymentService.updatePaymentMethod(req.user._id, req.params.id, req.body);
 

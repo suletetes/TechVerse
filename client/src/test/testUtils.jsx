@@ -177,15 +177,6 @@ export const mockOrder = {
     zipCode: '12345',
     country: 'Test Country'
   },
-  billingAddress: {
-    firstName: 'John',
-    lastName: 'Doe',
-    street: '123 Main St',
-    city: 'Test City',
-    state: 'TS',
-    zipCode: '12345',
-    country: 'Test Country'
-  },
   paymentMethod: 'credit_card',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()

@@ -579,7 +579,6 @@ class ComprehensiveSeed {
         trackingNumber: `TRK${faker.string.alphanumeric(10).toUpperCase()}`
       },
       shippingAddress: user.addresses[0] || this.generateAddress(),
-      billingAddress: user.addresses[0] || this.generateAddress(),
       createdAt: orderDate,
       updatedAt: faker.date.between({ from: orderDate, to: new Date() })
     };

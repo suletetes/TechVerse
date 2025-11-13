@@ -295,15 +295,6 @@ const PaymentPage = () => {
                     country: formData.country,
                     phone: formData.phone
                 },
-                billingAddress: formData.sameAsBilling ? {
-                    firstName: formData.firstName,
-                    lastName: formData.lastName,
-                    address: formData.address,
-                    city: formData.city,
-                    postcode: formData.postcode,
-                    country: formData.country,
-                    phone: formData.phone
-                } : null,
                 paymentMethod: 'stripe',
                 paymentDetails: {
                     paymentIntentId: paymentIntent.id,

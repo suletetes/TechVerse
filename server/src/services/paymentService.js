@@ -64,7 +64,6 @@ class PaymentService {
       expiryMonth,
       expiryYear,
       cardholderName,
-      billingAddress,
       isDefault = false
     } = paymentData;
 
@@ -93,8 +92,7 @@ class PaymentService {
       type,
       isDefault,
       createdAt: new Date(),
-      lastUsed: null,
-      billingAddress: billingAddress || {}
+      lastUsed: null
     };
 
     // Handle card-specific data with encryption
@@ -165,8 +163,7 @@ class PaymentService {
       isDefault: pm.isDefault !== undefined ? pm.isDefault : false,
       isActive: pm.isActive !== undefined ? pm.isActive : true,
       createdAt: pm.createdAt,
-      lastUsed: pm.lastUsed,
-      billingAddress: pm.billingAddress || {}
+      lastUsed: pm.lastUsed
     };
 
     // Add card-specific fields if it's a card
@@ -220,13 +217,11 @@ class PaymentService {
     }
 
     // Update allowed fields
-    const allowedUpdates = ['isDefault', 'billingAddress', 'cardholderName'];
+    const allowedUpdates = ['isDefault', 'cardholderName'];
     Object.keys(updateData).forEach(key => {
       if (allowedUpdates.includes(key)) {
         if (key === 'cardholderName' && paymentMethod.card) {
           paymentMethod.card.cardholderName = updateData[key];
-        } else if (key === 'billingAddress') {
-          paymentMethod.billingAddress = { ...paymentMethod.billingAddress, ...updateData[key] };
         } else {
           paymentMethod[key] = updateData[key];
         }
