@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useOrder } from '../../context';
+import { useOrder, useCart } from '../../context';
 import { LoadingSpinner, Toast } from '../Common';
 import { 
     ReorderModal, 
@@ -17,6 +17,8 @@ const OrdersTab = () => {
         loadOrders, 
         cancelOrder
     } = useOrder();
+    
+    const { addToCart } = useCart();
 
     const [orderFilters, setOrderFilters] = useState({
         searchTerm: '',
@@ -112,36 +114,46 @@ const OrdersTab = () => {
     };
 
     const handleReorder = async (selectedItems, itemQuantities) => {
-        console.log('Reordering items:', selectedItems, itemQuantities);
+        const successfulItems = [];
+        const failedItems = [];
         
         try {
             // Add each selected item to cart
             for (const item of selectedItems) {
-                const quantity = itemQuantities[item.id]?.quantity || 1;
-                const productId = item.id;
-                
-                // Convert variants array to options object
-                // variants: [{name: "color", value: "silver"}, {name: "storage", value: "128GB"}]
-                // options: {color: "silver", storage: "128GB"}
-                const options = {};
-                if (item.variants && Array.isArray(item.variants)) {
-                    item.variants.forEach(variant => {
-                        if (variant.name && variant.value) {
-                            options[variant.name] = variant.value;
-                        }
-                    });
+                try {
+                    const quantity = itemQuantities[item.id]?.quantity || 1;
+                    const productId = item.id;
+                    
+                    // Convert variants array to options object
+                    // variants: [{name: "color", value: "silver"}, {name: "storage", value: "128GB"}]
+                    // options: {color: "silver", storage: "128GB"}
+                    const options = {};
+                    if (item.variants && Array.isArray(item.variants)) {
+                        item.variants.forEach(variant => {
+                            if (variant.name && variant.value) {
+                                options[variant.name] = variant.value;
+                            }
+                        });
+                    }
+                    
+                    await addToCart(productId, quantity, options);
+                    successfulItems.push(item.name);
+                } catch (itemError) {
+                    console.error(`Failed to add ${item.name}:`, itemError);
+                    failedItems.push(item.name);
                 }
-                
-                console.log(`Adding to cart: ${item.name} (${quantity}x)`, {
-                    productId,
-                    quantity,
-                    options
-                });
-                
-                await addToCart(productId, quantity, options);
             }
             
-            console.log('✅ All items added to cart successfully');
+            // Show appropriate message based on results
+            if (successfulItems.length > 0 && failedItems.length === 0) {
+                console.log('✅ All items added to cart successfully');
+            } else if (successfulItems.length > 0 && failedItems.length > 0) {
+                const errorMsg = `Some items could not be added: ${failedItems.join(', ')} (product may no longer be available)`;
+                console.warn(errorMsg);
+                throw new Error(errorMsg);
+            } else {
+                throw new Error('Unable to add items to cart. Products may no longer be available.');
+            }
         } catch (error) {
             console.error('❌ Error adding items to cart:', error);
             throw error; // Re-throw so ReorderModal can handle it

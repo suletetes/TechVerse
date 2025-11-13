@@ -14,17 +14,22 @@ const ReorderModal = ({ onClose, order, onReorder }) => {
             
             // Use real order items from the database
             if (order && order.items) {
-                const items = order.items.map(item => ({
-                    id: item._id || item.product,
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.quantity,
-                    image: item.image || '/img/placeholder.jpg',
-                    available: true, // Assume available for now
-                    currentPrice: item.price,
-                    priceChanged: false,
-                    variants: item.variants || []
-                }));
+                const items = order.items.map(item => {
+                    // Try to get product ID from different possible locations
+                    const productId = item.product?._id || item.product || item._id;
+                    
+                    return {
+                        id: productId,
+                        name: item.name,
+                        price: item.price,
+                        quantity: item.quantity,
+                        image: item.image || '/img/placeholder.jpg',
+                        available: true,
+                        currentPrice: item.price,
+                        priceChanged: false,
+                        variants: item.variants || []
+                    };
+                });
 
                 setOrderItems(items);
                 
