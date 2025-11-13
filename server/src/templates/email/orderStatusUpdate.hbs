@@ -38,12 +38,12 @@
             <p>We have an update on your order!</p>
             
             <div class="status-update {{#if (eq status 'shipped')}}status-shipped{{/if}}{{#if (eq status 'delivered')}}status-delivered{{/if}}{{#if (eq status 'cancelled')}}status-cancelled{{/if}}">
-                <h3>📋 Status: {{status}}</h3>
+                <h3> Status: {{status}}</h3>
                 <p><strong>{{statusMessage}}</strong></p>
                 
                 {{#if trackingNumber}}
                 <div class="tracking-info">
-                    <h4>📍 Tracking Information</h4>
+                    <h4> Tracking Information</h4>
                     <p><strong>Tracking Number:</strong> {{trackingNumber}}</p>
                     {{#if estimatedDelivery}}
                     <p><strong>Estimated Delivery:</strong> {{estimatedDelivery}}</p>
@@ -54,12 +54,12 @@
             
             {{#if (eq status 'shipped')}}
             <div style="background: #e3f2fd; padding: 20px; margin: 20px 0; border-radius: 5px;">
-                <h4>🚚 Your package is on its way!</h4>
+                <h4> Your package is on its way!</h4>
                 <p>Your order has been handed over to our shipping partner and is now in transit. You can track its progress using the tracking number above.</p>
                 <ul>
-                    <li>📱 Track your package in real-time</li>
-                    <li>📧 You'll receive delivery notifications</li>
-                    <li>📞 Contact the carrier for delivery preferences</li>
+                    <li> Track your package in real-time</li>
+                    <li> You'll receive delivery notifications</li>
+                    <li> Contact the carrier for delivery preferences</li>
                 </ul>
             </div>
             {{/if}}
@@ -69,16 +69,16 @@
                 <h4>🎉 Your order has been delivered!</h4>
                 <p>We hope you love your new tech! If you have a moment, we'd appreciate your feedback.</p>
                 <ul>
-                    <li>⭐ Leave a product review</li>
-                    <li>📸 Share photos of your purchase</li>
-                    <li>🛍️ Browse our latest arrivals</li>
+                    <li> Leave a product review</li>
+                    <li> Share photos of your purchase</li>
+                    <li> Browse our latest arrivals</li>
                 </ul>
             </div>
             {{/if}}
             
             {{#if (eq status 'cancelled')}}
             <div style="background: #f8d7da; padding: 20px; margin: 20px 0; border-radius: 5px;">
-                <h4>❌ Order Cancelled</h4>
+                <h4> Order Cancelled</h4>
                 <p>Your order has been cancelled. If you didn't request this cancellation, please contact our support team immediately.</p>
                 <p>Any charges will be refunded to your original payment method within 3-5 business days.</p>
             </div>

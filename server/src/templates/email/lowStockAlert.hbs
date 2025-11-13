@@ -33,7 +33,7 @@
             <p>The following product has reached or fallen below the low stock threshold and requires immediate attention.</p>
             
             <div class="product-info">
-                <h3>📦 Product Details</h3>
+                <h3> Product Details</h3>
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr>
                         <td style="padding: 8px 0; font-weight: bold;">Product Name:</td>
@@ -69,11 +69,11 @@
             <div class="alert-box {{#if (eq currentStock 0)}}critical-alert{{/if}}">
                 <h4>
                     {{#if (eq currentStock 0)}}
-                    🚨 CRITICAL: Out of Stock
+                      CRITICAL: Out of Stock
                     {{else if (lt currentStock 5)}}
-                    ⚠️ URGENT: Very Low Stock
+                       URGENT: Very Low Stock
                     {{else}}
-                    📊 WARNING: Low Stock Level
+                      WARNING: Low Stock Level
                     {{/if}}
                 </h4>
                 <p>
@@ -88,14 +88,14 @@
             </div>
             
             <div class="actions">
-                <h4>🎯 Recommended Actions</h4>
+                <h4> Recommended Actions</h4>
                 <ul>
-                    <li>📋 <strong>Review Sales Velocity:</strong> Check recent sales data to determine reorder quantity</li>
-                    <li>📞 <strong>Contact Supplier:</strong> Place reorder with your supplier immediately</li>
-                    <li>📈 <strong>Update Forecasting:</strong> Adjust future inventory planning based on demand</li>
-                    <li>🔄 <strong>Consider Alternatives:</strong> Promote similar products if restocking will take time</li>
+                    <li> <strong>Review Sales Velocity:</strong> Check recent sales data to determine reorder quantity</li>
+                    <li> <strong>Contact Supplier:</strong> Place reorder with your supplier immediately</li>
+                    <li> <strong>Update Forecasting:</strong> Adjust future inventory planning based on demand</li>
+                    <li> <strong>Consider Alternatives:</strong> Promote similar products if restocking will take time</li>
                     {{#if (eq currentStock 0)}}
-                    <li>🚫 <strong>Update Product Status:</strong> Mark as out of stock on the website</li>
+                    <li> <strong>Update Product Status:</strong> Mark as out of stock on the website</li>
                     {{/if}}
                 </ul>
             </div>
