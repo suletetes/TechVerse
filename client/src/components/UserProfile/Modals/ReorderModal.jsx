@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { Toast } from '../../Common';
 
 const ReorderModal = ({ onClose, order, onReorder }) => {
     const [orderItems, setOrderItems] = useState([]);
     const [selectedItems, setSelectedItems] = useState({});
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
+    const [toast, setToast] = useState(null);
 
     useEffect(() => {
         const fetchOrderItems = async () => {
@@ -80,7 +82,10 @@ const ReorderModal = ({ onClose, order, onReorder }) => {
     const handleReorder = async () => {
         const selected = getSelectedItems();
         if (selected.length === 0) {
-            alert('Please select at least one item to reorder.');
+            setToast({
+                message: 'Please select at least one item to reorder.',
+                type: 'warning'
+            });
             return;
         }
 
@@ -92,10 +97,24 @@ const ReorderModal = ({ onClose, order, onReorder }) => {
             const totalItems = selected.reduce((sum, item) => sum + (selectedItems[item.id]?.quantity || 0), 0);
             onReorder(selected, selectedItems);
             
-            alert(`✅ Successfully added ${totalItems} item${totalItems > 1 ? 's' : ''} to your cart!`);
-            onClose();
+            setToast({
+                message: `Successfully added ${totalItems} item${totalItems > 1 ? 's' : ''} to your cart!`,
+                type: 'success',
+                action: {
+                    label: 'View Cart',
+                    path: '/cart'
+                }
+            });
+            
+            // Close modal after showing toast
+            setTimeout(() => {
+                onClose();
+            }, 1000);
         } catch (error) {
-            alert('Sorry, there was an error processing your reorder. Please try again.');
+            setToast({
+                message: 'Sorry, there was an error processing your reorder. Please try again.',
+                type: 'error'
+            });
         } finally {
             setProcessing(false);
         }
@@ -245,6 +264,16 @@ const ReorderModal = ({ onClose, order, onReorder }) => {
                     </div>
                 </div>
             </div>
+            
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    action={toast.action}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </div>
     );
 };

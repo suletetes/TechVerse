@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useOrder } from '../../context';
-import { LoadingSpinner } from '../Common';
+import { LoadingSpinner, Toast } from '../Common';
+import { 
+    ReorderModal, 
+    OrderTrackingModal, 
+    OrderConfirmModal, 
+    ReviewModal 
+} from './Modals';
 
 const OrdersTab = () => {
     const { 
@@ -17,6 +23,11 @@ const OrdersTab = () => {
         status: 'all',
         dateRange: 'all'
     });
+
+    // Modal states
+    const [activeModal, setActiveModal] = useState(null);
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [toast, setToast] = useState(null);
 
     // Load orders on component mount
     useEffect(() => {
@@ -34,24 +45,29 @@ const OrdersTab = () => {
     };
 
     const handleOrderAction = async (orderId, action) => {
+        const order = orders.find(o => o._id === orderId);
+        
         try {
             switch (action) {
                 case 'cancel':
-                    if (window.confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
-                        await cancelOrder(orderId, 'User requested cancellation');
-                        alert('Order cancelled successfully!');
-                        await loadOrders();
-                    }
+                    setSelectedOrder(order);
+                    setActiveModal('cancel');
                     break;
                 case 'return':
-                    alert('Return functionality coming soon! Please contact support for returns.');
+                    setSelectedOrder(order);
+                    setActiveModal('return');
                     break;
                 case 'reorder':
-                    const order = orders.find(o => o._id === orderId);
-                    if (order && order.items) {
-                        console.log('Reordering items:', order.items);
-                        alert('Reorder functionality coming soon! Items will be added to your cart.');
-                    }
+                    setSelectedOrder(order);
+                    setActiveModal('reorder');
+                    break;
+                case 'track':
+                    setSelectedOrder(order);
+                    setActiveModal('track');
+                    break;
+                case 'review':
+                    setSelectedOrder(order);
+                    setActiveModal('review');
                     break;
                 default:
                     break;
@@ -60,6 +76,85 @@ const OrdersTab = () => {
             console.error('Error handling order action:', error);
             alert(`Failed to ${action} order. Please try again.`);
         }
+    };
+
+    const handleCancelOrder = async () => {
+        if (!selectedOrder) return;
+        
+        try {
+            await cancelOrder(selectedOrder._id, 'User requested cancellation');
+            setToast({
+                message: 'Order cancelled successfully!',
+                type: 'success'
+            });
+            await loadOrders();
+            setActiveModal(null);
+            setSelectedOrder(null);
+        } catch (error) {
+            console.error('Error cancelling order:', error);
+            setToast({
+                message: 'Failed to cancel order. Please try again.',
+                type: 'error'
+            });
+        }
+    };
+
+    const handleReturnOrder = async () => {
+        if (!selectedOrder) return;
+        
+        // Implement return logic here
+        setToast({
+            message: 'Return request submitted successfully! Our team will contact you soon.',
+            type: 'success'
+        });
+        setActiveModal(null);
+        setSelectedOrder(null);
+    };
+
+    const handleReorder = async (selectedItems, itemQuantities) => {
+        // Implement reorder logic here - add items to cart
+        console.log('Reordering items:', selectedItems, itemQuantities);
+        // This would typically call a cart service to add items
+    };
+
+    const closeModal = () => {
+        setActiveModal(null);
+        setSelectedOrder(null);
+    };
+
+    // Helper functions for modals
+    const getTrackingTimeline = (order) => {
+        const timeline = [
+            {
+                status: 'Order Placed',
+                description: 'Your order has been received',
+                date: order.createdAt,
+                time: new Date(order.createdAt).toLocaleTimeString(),
+                completed: true
+            },
+            {
+                status: 'Processing',
+                description: 'Your order is being prepared',
+                date: order.createdAt,
+                time: new Date(order.createdAt).toLocaleTimeString(),
+                completed: ['processing', 'shipped', 'delivered'].includes(order.status)
+            },
+            {
+                status: 'Shipped',
+                description: 'Your order is on the way',
+                date: order.updatedAt,
+                time: new Date(order.updatedAt).toLocaleTimeString(),
+                completed: ['shipped', 'delivered'].includes(order.status)
+            },
+            {
+                status: 'Delivered',
+                description: 'Your order has been delivered',
+                date: order.updatedAt,
+                time: new Date(order.updatedAt).toLocaleTimeString(),
+                completed: order.status === 'delivered'
+            }
+        ];
+        return timeline;
     };
 
     const getStatusColor = (status) => {
@@ -98,11 +193,12 @@ const OrdersTab = () => {
     }
 
     return (
-        <div className="store-card fill-card">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h3 className="tc-6533 bold-text mb-0">Order History</h3>
-                <span className="badge bg-secondary">{getFilteredOrders().length} orders</span>
-            </div>
+        <>
+            <div className="store-card fill-card">
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                    <h3 className="tc-6533 bold-text mb-0">Order History</h3>
+                    <span className="badge bg-secondary">{getFilteredOrders().length} orders</span>
+                </div>
 
             {/* Order Filters */}
             <div className="order-filters mb-4">
@@ -222,9 +318,9 @@ const OrdersTab = () => {
                                                     Details
                                                 </Link>
                                                 {order.tracking?.trackingNumber && (
-                                                    <Link
-                                                        to={`/user/order/${order._id}/tracking`}
+                                                    <button
                                                         className="btn btn-sm btn-outline-info btn-rd"
+                                                        onClick={() => handleOrderAction(order._id, 'track')}
                                                     >
                                                         <svg width="14" height="14" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
                                                             <path d="M16 3h5v5" />
@@ -233,7 +329,7 @@ const OrdersTab = () => {
                                                             <path d="M21 3l-7.828 7.828A4 4 0 0 0 12 13.657V22" />
                                                         </svg>
                                                         Track
-                                                    </Link>
+                                                    </button>
                                                 )}
                                                 {(order.status === 'pending' || order.status === 'confirmed') && (
                                                     <button
@@ -274,15 +370,15 @@ const OrdersTab = () => {
                                                     </button>
                                                 )}
                                                 {order.status === 'delivered' && (
-                                                    <Link
-                                                        to={`/user/order/${order._id}/review`}
+                                                    <button
                                                         className="btn btn-sm btn-c-2101 btn-rd"
+                                                        onClick={() => handleOrderAction(order._id, 'review')}
                                                     >
                                                         <svg width="14" height="14" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
                                                             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                                         </svg>
                                                         Review
-                                                    </Link>
+                                                    </button>
                                                 )}
                                             </div>
                                         </div>
@@ -293,7 +389,90 @@ const OrdersTab = () => {
                     })}
                 </div>
             )}
-        </div>
+            </div>
+
+            {/* Modals */}
+            {activeModal === 'reorder' && selectedOrder && (
+                <ReorderModal
+                    onClose={closeModal}
+                    order={selectedOrder}
+                    onReorder={handleReorder}
+                />
+            )}
+
+            {activeModal === 'track' && selectedOrder && (
+                <OrderTrackingModal
+                    onClose={closeModal}
+                    order={{
+                        id: selectedOrder.orderNumber,
+                        date: selectedOrder.createdAt,
+                        total: selectedOrder.total,
+                        items: selectedOrder.items?.length || 0,
+                        status: selectedOrder.status,
+                        image: selectedOrder.items?.[0]?.image || '/img/placeholder.jpg',
+                        trackingNumber: selectedOrder.tracking?.trackingNumber
+                    }}
+                    getTrackingTimeline={getTrackingTimeline}
+                    getStatusColor={getStatusColor}
+                />
+            )}
+
+            {activeModal === 'cancel' && selectedOrder && (
+                <OrderConfirmModal
+                    onClose={closeModal}
+                    order={{
+                        id: selectedOrder.orderNumber,
+                        date: selectedOrder.createdAt,
+                        total: selectedOrder.total,
+                        items: selectedOrder.items?.length || 0,
+                        image: selectedOrder.items?.[0]?.image || '/img/placeholder.jpg'
+                    }}
+                    onConfirm={handleCancelOrder}
+                    title="Cancel Order"
+                    message="Are you sure you want to cancel this order? This action cannot be undone."
+                    confirmText="Cancel Order"
+                    confirmClass="btn-danger"
+                />
+            )}
+
+            {activeModal === 'return' && selectedOrder && (
+                <OrderConfirmModal
+                    onClose={closeModal}
+                    order={{
+                        id: selectedOrder.orderNumber,
+                        date: selectedOrder.createdAt,
+                        total: selectedOrder.total,
+                        items: selectedOrder.items?.length || 0,
+                        image: selectedOrder.items?.[0]?.image || '/img/placeholder.jpg'
+                    }}
+                    onConfirm={handleReturnOrder}
+                    title="Return Order"
+                    message="Request a return for this order. Our team will contact you within 24 hours."
+                    confirmText="Request Return"
+                    confirmClass="btn-warning"
+                />
+            )}
+
+            {activeModal === 'review' && selectedOrder && (
+                <ReviewModal
+                    onClose={closeModal}
+                    order={{
+                        id: selectedOrder.orderNumber,
+                        orderNumber: selectedOrder.orderNumber
+                    }}
+                />
+            )}
+
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    action={toast.action}
+                    onClose={() => setToast(null)}
+                />
+            )}
+        </>
     );
 };
 

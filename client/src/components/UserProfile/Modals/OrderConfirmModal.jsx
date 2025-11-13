@@ -1,26 +1,34 @@
 import React from 'react';
 
-const OrderConfirmModal = ({ onClose, order }) => {
+const OrderConfirmModal = ({ 
+    onClose, 
+    order, 
+    onConfirm,
+    title = 'Confirm Order Receipt',
+    message = 'Please confirm that you have received your order in good condition.',
+    confirmText = 'Confirm Receipt',
+    confirmClass = 'btn-success'
+}) => {
     return (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
             <div className="modal-dialog modal-dialog-centered">
                 <div className="modal-content">
                     <div className="modal-header">
                         <h5 className="modal-title tc-6533 fw-bold">
-                            Confirm Order Receipt
+                            {title}
                         </h5>
                         <button type="button" className="btn-close" onClick={onClose}></button>
                     </div>
                     <div className="modal-body">
                         <div className="text-center mb-4">
                             <div className="mb-3">
-                                <svg width="64" height="64" viewBox="0 0 24 24" className="text-success">
+                                <svg width="64" height="64" viewBox="0 0 24 24" className={confirmClass.includes('danger') ? 'text-danger' : confirmClass.includes('warning') ? 'text-warning' : 'text-success'}>
                                     <path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" />
                                 </svg>
                             </div>
-                            <h5 className="tc-6533 mb-2">Confirm Receipt of Order #{order.id}</h5>
+                            <h5 className="tc-6533 mb-2">{title} #{order.id}</h5>
                             <p className="text-muted mb-3">
-                                Please confirm that you have received your order in good condition.
+                                {message}
                             </p>
                         </div>
 
@@ -37,10 +45,10 @@ const OrderConfirmModal = ({ onClose, order }) => {
                                 <div className="col-9">
                                     <h6 className="tc-6533 mb-1">Order #{order.id}</h6>
                                     <p className="mb-1 small text-muted">
-                                        Delivered on {new Date(order.date).toLocaleDateString()}
+                                        {order.date ? new Date(order.date).toLocaleDateString() : 'N/A'}
                                     </p>
                                     <p className="mb-0 small">
-                                        <strong>Total: £{order.total.toFixed(2)}</strong> • {order.items} items
+                                        <strong>Total: ${order.total.toFixed(2)}</strong> • {order.items} items
                                     </p>
                                 </div>
                             </div>
@@ -101,16 +109,20 @@ const OrderConfirmModal = ({ onClose, order }) => {
                         </button>
                         <button
                             type="button"
-                            className="btn btn-success btn-rd"
+                            className={`btn ${confirmClass} btn-rd`}
                             onClick={() => {
-                                alert('Thank you for confirming receipt of your order!');
-                                onClose();
+                                if (onConfirm) {
+                                    onConfirm();
+                                } else {
+                                    alert('Thank you for confirming receipt of your order!');
+                                    onClose();
+                                }
                             }}
                         >
                             <svg width="16" height="16" viewBox="0 0 24 24" className="me-2" fill="white">
                                 <path d="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" />
                             </svg>
-                            Confirm Receipt
+                            {confirmText}
                         </button>
                     </div>
                 </div>
