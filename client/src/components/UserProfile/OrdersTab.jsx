@@ -6,13 +6,10 @@ import { LoadingSpinner } from '../Common';
 const OrdersTab = () => {
     const { 
         orders, 
-        pagination,
         isLoading, 
         error,
         loadOrders, 
-        cancelOrder,
-        getOrderById,
-        formatOrderStatus
+        cancelOrder
     } = useOrder();
 
     const [orderFilters, setOrderFilters] = useState({
@@ -27,7 +24,6 @@ const OrdersTab = () => {
     }, [loadOrders]);
 
     const getFilteredOrders = () => {
-        // Ensure orders is an array before filtering
         const safeOrders = Array.isArray(orders) ? orders : [];
         return safeOrders.filter(order => {
             const matchesSearch = orderFilters.searchTerm === '' || 
@@ -41,16 +37,28 @@ const OrdersTab = () => {
         try {
             switch (action) {
                 case 'cancel':
-                    await cancelOrder(orderId, 'User requested cancellation');
+                    if (window.confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
+                        await cancelOrder(orderId, 'User requested cancellation');
+                        alert('Order cancelled successfully!');
+                        await loadOrders();
+                    }
+                    break;
+                case 'return':
+                    alert('Return functionality coming soon! Please contact support for returns.');
                     break;
                 case 'reorder':
-                    // Reorder functionality
+                    const order = orders.find(o => o._id === orderId);
+                    if (order && order.items) {
+                        console.log('Reordering items:', order.items);
+                        alert('Reorder functionality coming soon! Items will be added to your cart.');
+                    }
                     break;
                 default:
                     break;
             }
         } catch (error) {
             console.error('Error handling order action:', error);
+            alert(`Failed to ${action} order. Please try again.`);
         }
     };
 
@@ -79,23 +87,16 @@ const OrdersTab = () => {
         return (
             <div className="store-card fill-card">
                 <div className="alert alert-danger">
-                    <div className="d-flex align-items-center mb-3">
-                        <svg width="24" height="24" viewBox="0 0 24 24" className="text-danger me-2">
-                            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                        </svg>
-                        <h5 className="mb-0">Error Loading Orders</h5>
-                    </div>
+                    <h5 className="mb-3">Error Loading Orders</h5>
                     <p className="mb-3">{error}</p>
                     <button className="btn btn-primary" onClick={() => loadOrders()}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                            <path fill="currentColor" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" />
-                        </svg>
                         Try Again
                     </button>
                 </div>
             </div>
         );
     }
+
     return (
         <div className="store-card fill-card">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -153,9 +154,6 @@ const OrdersTab = () => {
 
             {getFilteredOrders().length === 0 ? (
                 <div className="text-center py-5">
-                    <svg width="64" height="64" viewBox="0 0 24 24" className="text-muted mb-3">
-                        <path fill="currentColor" d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1z" />
-                    </svg>
                     <h5 className="tc-6533 mb-3">No orders yet</h5>
                     <p className="tc-6533 mb-4">Start shopping to see your orders here</p>
                     <Link to="/" className="btn btn-c-2101 btn-rd">
@@ -172,6 +170,8 @@ const OrdersTab = () => {
                             month: 'short',
                             day: 'numeric'
                         });
+                        const canReturn = order.status === 'delivered';
+                        const canReorder = true;
 
                         return (
                             <div key={order._id} className="col-12 mb-3">
@@ -181,14 +181,15 @@ const OrdersTab = () => {
                                             <img
                                                 src={firstItem.image || '/img/placeholder.jpg'}
                                                 className="img-fluid rounded"
-                                                alt={firstItem.name || 'Order'}
-                                                style={{ width: '60px', height: '60px', objectFit: 'cover' }}
+                                                alt="Order"
+                                                width="60"
+                                                height="60"
                                             />
                                         </div>
                                         <div className="col-md-3 col-9 mb-3 mb-md-0">
-                                            <h6 className="tc-6533 mb-1">{order.orderNumber}</h6>
+                                            <h6 className="tc-6533 mb-1">Order #{order.orderNumber}</h6>
                                             <p className="tc-6533 sm-text mb-1">{orderDate}</p>
-                                            <p className="tc-6533 sm-text mb-0">{itemCount} {itemCount === 1 ? 'item' : 'items'}</p>
+                                            <p className="tc-6533 sm-text mb-0">{itemCount} items</p>
                                         </div>
                                         <div className="col-md-2 col-6 mb-3 mb-md-0">
                                             <span className={`badge bg-${getStatusColor(order.status)}`}>
@@ -202,13 +203,23 @@ const OrdersTab = () => {
                                             <div className="d-flex gap-2 flex-wrap justify-content-end">
                                                 <Link 
                                                     to={`/order-confirmation/${order.orderNumber}`}
+                                                    className="btn btn-sm btn-outline-success btn-rd"
+                                                >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                                        <polyline points="22 4 12 14.01 9 11.01" />
+                                                    </svg>
+                                                    View
+                                                </Link>
+                                                <Link 
+                                                    to={`/user/order/${order._id}`}
                                                     className="btn btn-sm btn-outline-primary btn-rd"
                                                 >
                                                     <svg width="14" height="14" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
                                                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                                                         <circle cx="12" cy="12" r="3" />
                                                     </svg>
-                                                    View
+                                                    Details
                                                 </Link>
                                                 {order.tracking?.trackingNumber && (
                                                     <Link
@@ -235,6 +246,31 @@ const OrdersTab = () => {
                                                             <line x1="9" y1="9" x2="15" y2="15" />
                                                         </svg>
                                                         Cancel
+                                                    </button>
+                                                )}
+                                                {canReturn && (
+                                                    <button
+                                                        className="btn btn-sm btn-outline-warning btn-rd"
+                                                        onClick={() => handleOrderAction(order._id, 'return')}
+                                                    >
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <polyline points="9 11 12 14 22 4" />
+                                                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                                                        </svg>
+                                                        Return
+                                                    </button>
+                                                )}
+                                                {canReorder && (
+                                                    <button
+                                                        className="btn btn-sm btn-outline-secondary btn-rd"
+                                                        onClick={() => handleOrderAction(order._id, 'reorder')}
+                                                    >
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <polyline points="23 4 23 10 17 10" />
+                                                            <polyline points="1 20 1 14 7 14" />
+                                                            <path d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                                                        </svg>
+                                                        Reorder
                                                     </button>
                                                 )}
                                                 {order.status === 'delivered' && (
