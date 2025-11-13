@@ -12,7 +12,6 @@ export const createOrder = asyncHandler(async (req, res, next) => {
   const {
     items,
     shippingAddress,
-    billingAddress,
     shippingMethod = 'standard',
     paymentMethod,
     discountCode,
@@ -77,7 +76,6 @@ export const createOrder = asyncHandler(async (req, res, next) => {
     user: req.user._id,
     items: processedItems,
     shippingAddress,
-    billingAddress: billingAddress || shippingAddress,
     shipping: {
       cost: shippingCost,
       method: shippingMethod,

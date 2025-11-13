@@ -101,7 +101,6 @@ const orderSchema = new mongoose.Schema({
   
   // Addresses
   shippingAddress: { type: shippingAddressSchema, required: true },
-  billingAddress: shippingAddressSchema,
   
   // Payment
   payment: paymentSchema,
@@ -413,7 +412,7 @@ orderSchema.methods.generateInvoice = function() {
     customer: {
       name: `${this.shippingAddress.firstName} ${this.shippingAddress.lastName}`,
       email: this.user.email, // This would need to be populated
-      address: this.billingAddress || this.shippingAddress
+      address: this.shippingAddress
     },
     items: this.items.map(item => ({
       name: item.name,

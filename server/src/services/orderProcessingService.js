@@ -18,7 +18,6 @@ class OrderProcessingService {
     const {
       items,
       shippingAddress,
-      billingAddress,
       paymentMethodId,
       shippingMethod = 'standard',
       notes = ''
@@ -54,7 +53,6 @@ class OrderProcessingService {
         shipping: orderCalculation.shipping,
         total: orderCalculation.total,
         shippingAddress,
-        billingAddress: billingAddress || shippingAddress,
         payment: {
           method: paymentMethodId,
           status: 'pending',
