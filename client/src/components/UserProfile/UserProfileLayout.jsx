@@ -108,20 +108,15 @@ const UserProfileLayout = ({ initialTab = 'profile' }) => {
                                             href="/profile/edit?section=profile" 
                                             className="btn btn-outline-primary btn-sm"
                                         >
-                                            👤 Personal Info
+                                             Personal Info
                                         </a>
                                         <a 
                                             href="/profile/edit?section=address" 
                                             className="btn btn-outline-primary btn-sm"
                                         >
-                                            📍 Addresses
+                                             Addresses
                                         </a>
-                                        <a 
-                                            href="/profile/edit?section=payment" 
-                                            className="btn btn-outline-primary btn-sm"
-                                        >
-                                            💳 Payment Methods
-                                        </a>
+                                      
                                     </div>
                                 </div>
                             </div>
