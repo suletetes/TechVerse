@@ -1,60 +1,48 @@
-import React, { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useOrder } from '../context';
+import { LoadingSpinner } from '../components/Common';
 import { ReorderModal } from '../components/UserProfile/Modals';
 
 const OrderDetails = () => {
     const { orderId } = useParams();
+    const navigate = useNavigate();
+    const { loadOrder, currentOrder, isLoading, error } = useOrder();
     const [showReorderModal, setShowReorderModal] = useState(false);
 
-    // Mock order data - in real app, fetch based on orderId
-    const order = {
-        id: orderId || 'TV-2024-001234',
-        date: '2024-01-15',
-        status: 'Delivered',
-        total: 3597.60,
-        subtotal: 2998.00,
-        shipping: 0,
-        tax: 599.60,
-        trackingNumber: 'TRK123456789',
-        shippingAddress: {
-            name: 'John Smith',
-            address: '123 Tech Street',
-            city: 'London',
-            postcode: 'SW1A 1AA',
-            country: 'United Kingdom'
-        },
-        billingAddress: {
-            name: 'John Smith',
-            address: '123 Tech Street',
-            city: 'London',
-            postcode: 'SW1A 1AA',
-            country: 'United Kingdom'
-        },
-        paymentMethod: {
-            type: 'Visa',
-            last4: '4242'
-        },
-        items: [
-            {
-                id: 1,
-                name: 'Tablet Air',
-                color: 'Silver',
-                storage: '128GB',
-                price: 1999,
-                quantity: 1,
-                image: '/img/tablet-product.jpg'
-            },
-            {
-                id: 2,
-                name: 'Phone Pro',
-                color: 'Black',
-                storage: '256GB',
-                price: 999,
-                quantity: 1,
-                image: '/img/phone-product.jpg'
-            }
-        ]
-    };
+    useEffect(() => {
+        if (orderId) {
+            loadOrder(orderId);
+        }
+    }, [orderId, loadOrder]);
+
+    if (isLoading) {
+        return (
+            <div className="bloc bgc-5700 full-width-bloc l-bloc" style={{ minHeight: '60vh' }}>
+                <div className="container bloc-md">
+                    <LoadingSpinner />
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !currentOrder) {
+        return (
+            <div className="bloc bgc-5700 full-width-bloc l-bloc">
+                <div className="container bloc-md">
+                    <div className="alert alert-danger">
+                        <h4>Order Not Found</h4>
+                        <p>{error || 'Unable to load order details'}</p>
+                        <Link to="/profile?tab=orders" className="btn btn-primary">
+                            Back to Orders
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    const order = currentOrder;
 
     const getStatusColor = (status) => {
         switch (status.toLowerCase()) {
@@ -85,8 +73,8 @@ const OrderDetails = () => {
                         </nav>
                         <div className="d-flex justify-content-between align-items-center">
                             <div>
-                                <h1 className="tc-6533 bold-text mb-1">Order #{order.id}</h1>
-                                <p className="tc-6533 mb-0">Placed on {new Date(order.date).toLocaleDateString()}</p>
+                                <h1 className="tc-6533 bold-text mb-1">Order #{order.orderNumber}</h1>
+                                <p className="tc-6533 mb-0">Placed on {new Date(order.createdAt).toLocaleDateString()}</p>
                             </div>
                             <span className={`badge bg-${getStatusColor(order.status)} fs-6`}>
                                 {order.status}
@@ -99,10 +87,10 @@ const OrderDetails = () => {
                         <div className="col-lg-8 mb-4">
                             <div className="store-card fill-card mb-4">
                                 <h3 className="tc-6533 bold-text mb-4">Order Items</h3>
-                                {Array.isArray(order.items) ? order.items.map((item) => (
-                                    <div key={item.id} className="d-flex align-items-center p-3 border-bottom">
+                                {Array.isArray(order.items) ? order.items.map((item, index) => (
+                                    <div key={item._id || index} className="d-flex align-items-center p-3 border-bottom">
                                         <img
-                                            src={item.image}
+                                            src={item.image || '/img/placeholder.jpg'}
                                             alt={item.name}
                                             className="rounded me-3"
                                             width="80"
@@ -111,7 +99,11 @@ const OrderDetails = () => {
                                         />
                                         <div className="flex-grow-1">
                                             <h5 className="tc-6533 mb-1">{item.name}</h5>
-                                            <p className="tc-6533 mb-1">{item.color}, {item.storage}</p>
+                                            {item.variants && item.variants.length > 0 && (
+                                                <p className="tc-6533 mb-1">
+                                                    {item.variants.map(v => `${v.name}: ${v.value}`).join(', ')}
+                                                </p>
+                                            )}
                                             <p className="tc-6533 mb-0">Quantity: {item.quantity}</p>
                                         </div>
                                         <div className="text-end">
@@ -126,21 +118,27 @@ const OrderDetails = () => {
                                 <div className="col-md-6 mb-4">
                                     <div className="store-card fill-card h-100">
                                         <h5 className="tc-6533 bold-text mb-3">Shipping Address</h5>
-                                        <p className="tc-6533 mb-1">{order.shippingAddress.name}</p>
+                                        <p className="tc-6533 mb-1">{order.shippingAddress.firstName} {order.shippingAddress.lastName}</p>
                                         <p className="tc-6533 mb-1">{order.shippingAddress.address}</p>
                                         <p className="tc-6533 mb-1">{order.shippingAddress.city}</p>
                                         <p className="tc-6533 mb-1">{order.shippingAddress.postcode}</p>
                                         <p className="tc-6533 mb-0">{order.shippingAddress.country}</p>
+                                        {order.shippingAddress.phone && (
+                                            <p className="tc-6533 mb-0 mt-2">Phone: {order.shippingAddress.phone}</p>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="col-md-6 mb-4">
                                     <div className="store-card fill-card h-100">
                                         <h5 className="tc-6533 bold-text mb-3">Billing Address</h5>
-                                        <p className="tc-6533 mb-1">{order.billingAddress.name}</p>
+                                        <p className="tc-6533 mb-1">{order.billingAddress.firstName} {order.billingAddress.lastName}</p>
                                         <p className="tc-6533 mb-1">{order.billingAddress.address}</p>
                                         <p className="tc-6533 mb-1">{order.billingAddress.city}</p>
                                         <p className="tc-6533 mb-1">{order.billingAddress.postcode}</p>
                                         <p className="tc-6533 mb-0">{order.billingAddress.country}</p>
+                                        {order.billingAddress.phone && (
+                                            <p className="tc-6533 mb-0 mt-2">Phone: {order.billingAddress.phone}</p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -156,7 +154,9 @@ const OrderDetails = () => {
                                 </div>
                                 <div className="d-flex justify-content-between mb-2">
                                     <span className="tc-6533">Shipping:</span>
-                                    <span className="tc-6533">FREE</span>
+                                    <span className="tc-6533">
+                                        {order.shipping?.cost === 0 ? 'FREE' : `$${order.shipping?.cost.toFixed(2)}`}
+                                    </span>
                                 </div>
                                 <div className="d-flex justify-content-between mb-3">
                                     <span className="tc-6533">Tax (VAT):</span>
@@ -168,23 +168,32 @@ const OrderDetails = () => {
                                     <span className="tc-2101 bold-text h5">${order.total.toFixed(2)}</span>
                                 </div>
 
+                                {/* Payment Method */}
+                                {order.payment && (
+                                    <>
+                                        <h5 className="tc-6533 bold-text mb-3">Payment</h5>
+                                        <div className="mb-4">
+                                            <p className="tc-6533 mb-1">Method: {order.payment.method}</p>
+                                            <p className="tc-6533 mb-1">Status: <span className="text-success">{order.payment.status}</span></p>
+                                        </div>
+                                    </>
+                                )}
 
-
-                                {order.trackingNumber && (
+                                {order.tracking?.trackingNumber && (
                                     <>
                                         <h5 className="tc-6533 bold-text mb-3">Tracking</h5>
                                         <div className="mb-4">
                                             <p className="tc-6533 mb-2">Tracking Number:</p>
-                                            <code className="bg-light p-2 rounded d-block">{order.trackingNumber}</code>
+                                            <code className="bg-light p-2 rounded d-block">{order.tracking.trackingNumber}</code>
                                         </div>
                                     </>
                                 )}
 
                                 {/* Action Buttons */}
                                 <div className="d-grid gap-2">
-                                    {order.trackingNumber && (
+                                    {order.tracking?.trackingNumber && (
                                         <Link
-                                            to={`/user/order/${order.id}/tracking`}
+                                            to={`/user/order/${order._id}/tracking`}
                                             className="btn btn-outline-info btn-rd"
                                         >
                                             <svg width="16" height="16" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
@@ -196,9 +205,9 @@ const OrderDetails = () => {
                                             Track Order
                                         </Link>
                                     )}
-                                    {order.status === 'Delivered' && (
+                                    {order.status === 'delivered' && (
                                         <Link
-                                            to={`/user/order/${order.id}/review`}
+                                            to={`/user/order/${order._id}/review`}
                                             className="btn btn-c-2101 btn-rd"
                                         >
                                             <svg width="16" height="16" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">

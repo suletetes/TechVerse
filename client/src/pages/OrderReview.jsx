@@ -1,41 +1,51 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useOrder } from '../context';
+import { LoadingSpinner } from '../components/Common';
 import { ReviewsSection } from '../components';
 
 const OrderReview = () => {
     const { orderId } = useParams();
+    const { loadOrder, currentOrder, isLoading, error } = useOrder();
 
-    // Mock order data - in real app, fetch based on orderId
-    const order = {
-        id: orderId || 'TV-2024-001234',
-        date: '2024-01-15',
-        status: 'Delivered',
-        total: 3597.60,
-        items: [
-            {
-                id: 1,
-                name: 'Tablet Air',
-                color: 'Silver',
-                storage: '128GB',
-                price: 1999,
-                quantity: 1,
-                image: '/img/tablet-product.jpg'
-            },
-            {
-                id: 2,
-                name: 'Phone Pro',
-                color: 'Black',
-                storage: '256GB',
-                price: 999,
-                quantity: 1,
-                image: '/img/phone-product.jpg'
-            }
-        ]
-    };
+    useEffect(() => {
+        if (orderId) {
+            loadOrder(orderId);
+        }
+    }, [orderId, loadOrder]);
+
+    if (isLoading) {
+        return (
+            <div className="bloc bgc-5700 full-width-bloc l-bloc" style={{ minHeight: '60vh' }}>
+                <div className="container bloc-md">
+                    <LoadingSpinner />
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !currentOrder) {
+        return (
+            <div className="bloc bgc-5700 full-width-bloc l-bloc">
+                <div className="container bloc-md">
+                    <div className="alert alert-danger">
+                        <h4>Order Not Found</h4>
+                        <p>{error || 'Unable to load order details'}</p>
+                        <Link to="/profile?tab=orders" className="btn btn-primary">
+                            Back to Orders
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    const order = currentOrder;
 
     const handleReviewSubmit = (reviewData) => {
-        console.log('Review submitted for order:', order.id, reviewData);
+        console.log('Review submitted for order:', order.orderNumber, reviewData);
         alert('Thank you for your review! Your feedback helps other customers make informed decisions.');
+        // TODO: Implement review submission API
         // In real app, redirect to order details or orders list
     };
 
@@ -54,12 +64,12 @@ const OrderReview = () => {
                                     <Link to="/user?tab=orders" title="View all orders">Orders</Link>
                                 </li>
                                 <li className="breadcrumb-item">
-                                    <Link to={`/user/order/${order.id}`} title="View order details">Order Details</Link>
+                                    <Link to={`/user/order/${order._id}`} title="View order details">Order Details</Link>
                                 </li>
                                 <li className="breadcrumb-item active" aria-current="page">Write Review</li>
                             </ol>
                         </nav>
-                        <h1 className="tc-6533 bold-text">Write Review for Order #{order.id}</h1>
+                        <h1 className="tc-6533 bold-text">Write Review for Order #{order.orderNumber}</h1>
                         <p className="tc-6533">Share your experience with the products from this order</p>
                     </div>
 
@@ -72,10 +82,10 @@ const OrderReview = () => {
                                 {/* Order Items to Review */}
                                 <div className="mb-4">
                                     <h5 className="tc-6533 mb-3">Items in this order:</h5>
-                                    {order.items.map((item) => (
-                                        <div key={item.id} className="d-flex align-items-center p-3 border rounded mb-3">
+                                    {order.items.map((item, index) => (
+                                        <div key={item._id || index} className="d-flex align-items-center p-3 border rounded mb-3">
                                             <img
-                                                src={item.image}
+                                                src={item.image || '/img/placeholder.jpg'}
                                                 alt={item.name}
                                                 className="rounded me-3"
                                                 width="60"
@@ -84,7 +94,11 @@ const OrderReview = () => {
                                             />
                                             <div className="flex-grow-1">
                                                 <h6 className="tc-6533 mb-1">{item.name}</h6>
-                                                <p className="tc-6533 mb-0 small">{item.color}, {item.storage}</p>
+                                                {item.variants && item.variants.length > 0 && (
+                                                    <p className="tc-6533 mb-0 small">
+                                                        {item.variants.map(v => `${v.name}: ${v.value}`).join(', ')}
+                                                    </p>
+                                                )}
                                             </div>
                                             <div className="text-end">
                                                 <p className="tc-6533 bold-text mb-0">${item.price.toFixed(2)}</p>
@@ -114,12 +128,12 @@ const OrderReview = () => {
                             <div className="store-card fill-card mb-4">
                                 <h5 className="tc-6533 bold-text mb-3">Order Summary</h5>
                                 <div className="mb-3">
-                                    <small className="text-muted d-block">Order ID:</small>
-                                    <span className="tc-6533">{order.id}</span>
+                                    <small className="text-muted d-block">Order Number:</small>
+                                    <span className="tc-6533">{order.orderNumber}</span>
                                 </div>
                                 <div className="mb-3">
                                     <small className="text-muted d-block">Order Date:</small>
-                                    <span className="tc-6533">{new Date(order.date).toLocaleDateString()}</span>
+                                    <span className="tc-6533">{new Date(order.createdAt).toLocaleDateString()}</span>
                                 </div>
                                 <div className="mb-3">
                                     <small className="text-muted d-block">Total Amount:</small>
@@ -148,7 +162,7 @@ const OrderReview = () => {
                                 <h5 className="tc-6533 bold-text mb-3">Quick Actions</h5>
                                 <div className="d-grid gap-2">
                                     <Link
-                                        to={`/user/order/${order.id}`}
+                                        to={`/user/order/${order._id}`}
                                         className="btn btn-outline-primary btn-rd"
                                     >
                                         <svg width="16" height="16" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
@@ -158,7 +172,7 @@ const OrderReview = () => {
                                         View Order Details
                                     </Link>
                                     <Link
-                                        to={`/user/order/${order.id}/tracking`}
+                                        to={`/user/order/${order._id}/tracking`}
                                         className="btn btn-outline-info btn-rd"
                                     >
                                         <svg width="16" height="16" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
