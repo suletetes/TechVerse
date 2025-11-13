@@ -112,9 +112,40 @@ const OrdersTab = () => {
     };
 
     const handleReorder = async (selectedItems, itemQuantities) => {
-        // Implement reorder logic here - add items to cart
         console.log('Reordering items:', selectedItems, itemQuantities);
-        // This would typically call a cart service to add items
+        
+        try {
+            // Add each selected item to cart
+            for (const item of selectedItems) {
+                const quantity = itemQuantities[item.id]?.quantity || 1;
+                const productId = item.id;
+                
+                // Convert variants array to options object
+                // variants: [{name: "color", value: "silver"}, {name: "storage", value: "128GB"}]
+                // options: {color: "silver", storage: "128GB"}
+                const options = {};
+                if (item.variants && Array.isArray(item.variants)) {
+                    item.variants.forEach(variant => {
+                        if (variant.name && variant.value) {
+                            options[variant.name] = variant.value;
+                        }
+                    });
+                }
+                
+                console.log(`Adding to cart: ${item.name} (${quantity}x)`, {
+                    productId,
+                    quantity,
+                    options
+                });
+                
+                await addToCart(productId, quantity, options);
+            }
+            
+            console.log('✅ All items added to cart successfully');
+        } catch (error) {
+            console.error('❌ Error adding items to cart:', error);
+            throw error; // Re-throw so ReorderModal can handle it
+        }
     };
 
     const closeModal = () => {
