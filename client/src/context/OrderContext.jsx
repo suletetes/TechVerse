@@ -113,7 +113,7 @@ const orderReducer = (state, action) => {
     case ORDER_ACTIONS.LOAD_ORDER_SUCCESS:
       return {
         ...state,
-        currentOrder: action.payload.data || action.payload,
+        currentOrder: action.payload.data?.order || action.payload.data || action.payload,
         isLoading: false,
         error: null
       };

@@ -45,6 +45,7 @@ const OrderDetails = () => {
     const order = currentOrder;
 
     const getStatusColor = (status) => {
+        if (!status) return 'secondary';
         switch (status.toLowerCase()) {
             case 'delivered': return 'success';
             case 'shipped': return 'info';
@@ -58,29 +59,7 @@ const OrderDetails = () => {
         <div className="bloc bgc-5700 full-width-bloc l-bloc" id="order-details-bloc">
             <div className="container bloc-md bloc-lg-md">
                 <div className="row">
-                    {/* Page Header */}
-                    <div className="col-12 mb-4">
-                        <nav aria-label="breadcrumb">
-                            <ol className="breadcrumb">
-                                <li className="breadcrumb-item">
-                                    <Link to="/user" title="Go to My Account">My Account</Link>
-                                </li>
-                                <li className="breadcrumb-item">
-                                    <Link to="/user?tab=orders" title="View all orders">Orders</Link>
-                                </li>
-                                <li className="breadcrumb-item active" aria-current="page">Order Details</li>
-                            </ol>
-                        </nav>
-                        <div className="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h1 className="tc-6533 bold-text mb-1">Order #{order.orderNumber}</h1>
-                                <p className="tc-6533 mb-0">Placed on {new Date(order.createdAt).toLocaleDateString()}</p>
-                            </div>
-                            <span className={`badge bg-${getStatusColor(order.status)} fs-6`}>
-                                {order.status}
-                            </span>
-                        </div>
-                    </div>
+                  
 
                     <div className="row">
                         {/* Order Items */}
@@ -107,7 +86,7 @@ const OrderDetails = () => {
                                             <p className="tc-6533 mb-0">Quantity: {item.quantity}</p>
                                         </div>
                                         <div className="text-end">
-                                            <p className="tc-6533 bold-text h5 mb-0">${item.price.toFixed(2)}</p>
+                                            <p className="tc-6533 bold-text h5 mb-0">${(item.price || 0).toFixed(2)}</p>
                                         </div>
                                     </div>
                                 )) : []}
@@ -118,26 +97,38 @@ const OrderDetails = () => {
                                 <div className="col-md-6 mb-4">
                                     <div className="store-card fill-card h-100">
                                         <h5 className="tc-6533 bold-text mb-3">Shipping Address</h5>
-                                        <p className="tc-6533 mb-1">{order.shippingAddress.firstName} {order.shippingAddress.lastName}</p>
-                                        <p className="tc-6533 mb-1">{order.shippingAddress.address}</p>
-                                        <p className="tc-6533 mb-1">{order.shippingAddress.city}</p>
-                                        <p className="tc-6533 mb-1">{order.shippingAddress.postcode}</p>
-                                        <p className="tc-6533 mb-0">{order.shippingAddress.country}</p>
-                                        {order.shippingAddress.phone && (
-                                            <p className="tc-6533 mb-0 mt-2">Phone: {order.shippingAddress.phone}</p>
+                                        {order.shippingAddress ? (
+                                            <>
+                                                <p className="tc-6533 mb-1">{order.shippingAddress.firstName} {order.shippingAddress.lastName}</p>
+                                                <p className="tc-6533 mb-1">{order.shippingAddress.address}</p>
+                                                <p className="tc-6533 mb-1">{order.shippingAddress.city}</p>
+                                                <p className="tc-6533 mb-1">{order.shippingAddress.postcode}</p>
+                                                <p className="tc-6533 mb-0">{order.shippingAddress.country}</p>
+                                                {order.shippingAddress.phone && (
+                                                    <p className="tc-6533 mb-0 mt-2">Phone: {order.shippingAddress.phone}</p>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <p className="tc-6533 text-muted">No shipping address available</p>
                                         )}
                                     </div>
                                 </div>
                                 <div className="col-md-6 mb-4">
                                     <div className="store-card fill-card h-100">
                                         <h5 className="tc-6533 bold-text mb-3">Billing Address</h5>
-                                        <p className="tc-6533 mb-1">{order.billingAddress.firstName} {order.billingAddress.lastName}</p>
-                                        <p className="tc-6533 mb-1">{order.billingAddress.address}</p>
-                                        <p className="tc-6533 mb-1">{order.billingAddress.city}</p>
-                                        <p className="tc-6533 mb-1">{order.billingAddress.postcode}</p>
-                                        <p className="tc-6533 mb-0">{order.billingAddress.country}</p>
-                                        {order.billingAddress.phone && (
-                                            <p className="tc-6533 mb-0 mt-2">Phone: {order.billingAddress.phone}</p>
+                                        {order.billingAddress ? (
+                                            <>
+                                                <p className="tc-6533 mb-1">{order.billingAddress.firstName} {order.billingAddress.lastName}</p>
+                                                <p className="tc-6533 mb-1">{order.billingAddress.address}</p>
+                                                <p className="tc-6533 mb-1">{order.billingAddress.city}</p>
+                                                <p className="tc-6533 mb-1">{order.billingAddress.postcode}</p>
+                                                <p className="tc-6533 mb-0">{order.billingAddress.country}</p>
+                                                {order.billingAddress.phone && (
+                                                    <p className="tc-6533 mb-0 mt-2">Phone: {order.billingAddress.phone}</p>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <p className="tc-6533 text-muted">No billing address available</p>
                                         )}
                                     </div>
                                 </div>
@@ -150,22 +141,22 @@ const OrderDetails = () => {
                                 <h3 className="tc-6533 bold-text mb-4">Order Summary</h3>
                                 <div className="d-flex justify-content-between mb-2">
                                     <span className="tc-6533">Subtotal:</span>
-                                    <span className="tc-6533">${order.subtotal.toFixed(2)}</span>
+                                    <span className="tc-6533">${(order.subtotal || 0).toFixed(2)}</span>
                                 </div>
                                 <div className="d-flex justify-content-between mb-2">
                                     <span className="tc-6533">Shipping:</span>
                                     <span className="tc-6533">
-                                        {order.shipping?.cost === 0 ? 'FREE' : `$${order.shipping?.cost.toFixed(2)}`}
+                                        {order.shipping?.cost === 0 ? 'FREE' : `$${(order.shipping?.cost || 0).toFixed(2)}`}
                                     </span>
                                 </div>
                                 <div className="d-flex justify-content-between mb-3">
                                     <span className="tc-6533">Tax (VAT):</span>
-                                    <span className="tc-6533">${order.tax.toFixed(2)}</span>
+                                    <span className="tc-6533">${(order.tax || 0).toFixed(2)}</span>
                                 </div>
                                 <hr />
                                 <div className="d-flex justify-content-between mb-4">
                                     <span className="tc-6533 bold-text h5">Total:</span>
-                                    <span className="tc-2101 bold-text h5">${order.total.toFixed(2)}</span>
+                                    <span className="tc-2101 bold-text h5">${(order.total || 0).toFixed(2)}</span>
                                 </div>
 
                                 {/* Payment Method */}
