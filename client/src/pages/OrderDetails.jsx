@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { useOrder } from '../context';
-import { LoadingSpinner } from '../components/Common';
+import { useOrder, useCart } from '../context';
+import { LoadingSpinner, Toast } from '../components/Common';
 import { ReorderModal } from '../components/UserProfile/Modals';
 
 const OrderDetails = () => {
     const { orderId } = useParams();
     const navigate = useNavigate();
     const { loadOrder, currentOrder, isLoading, error } = useOrder();
+    const { addToCart } = useCart();
     const [showReorderModal, setShowReorderModal] = useState(false);
+    const [toast, setToast] = useState(null);
 
     useEffect(() => {
         if (orderId) {
@@ -92,46 +94,23 @@ const OrderDetails = () => {
                                 )) : []}
                             </div>
 
-                            {/* Shipping & Billing */}
-                            <div className="row">
-                                <div className="col-md-6 mb-4">
-                                    <div className="store-card fill-card h-100">
-                                        <h5 className="tc-6533 bold-text mb-3">Shipping Address</h5>
-                                        {order.shippingAddress ? (
-                                            <>
-                                                <p className="tc-6533 mb-1">{order.shippingAddress.firstName} {order.shippingAddress.lastName}</p>
-                                                <p className="tc-6533 mb-1">{order.shippingAddress.address}</p>
-                                                <p className="tc-6533 mb-1">{order.shippingAddress.city}</p>
-                                                <p className="tc-6533 mb-1">{order.shippingAddress.postcode}</p>
-                                                <p className="tc-6533 mb-0">{order.shippingAddress.country}</p>
-                                                {order.shippingAddress.phone && (
-                                                    <p className="tc-6533 mb-0 mt-2">Phone: {order.shippingAddress.phone}</p>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <p className="tc-6533 text-muted">No shipping address available</p>
+                            {/* Shipping Address */}
+                            <div className="store-card fill-card mb-4">
+                                <h5 className="tc-6533 bold-text mb-3">Shipping Address</h5>
+                                {order.shippingAddress ? (
+                                    <>
+                                        <p className="tc-6533 mb-1">{order.shippingAddress.firstName} {order.shippingAddress.lastName}</p>
+                                        <p className="tc-6533 mb-1">{order.shippingAddress.address}</p>
+                                        <p className="tc-6533 mb-1">{order.shippingAddress.city}</p>
+                                        <p className="tc-6533 mb-1">{order.shippingAddress.postcode}</p>
+                                        <p className="tc-6533 mb-0">{order.shippingAddress.country}</p>
+                                        {order.shippingAddress.phone && (
+                                            <p className="tc-6533 mb-0 mt-2">Phone: {order.shippingAddress.phone}</p>
                                         )}
-                                    </div>
-                                </div>
-                                <div className="col-md-6 mb-4">
-                                    <div className="store-card fill-card h-100">
-                                        <h5 className="tc-6533 bold-text mb-3">Billing Address</h5>
-                                        {order.billingAddress ? (
-                                            <>
-                                                <p className="tc-6533 mb-1">{order.billingAddress.firstName} {order.billingAddress.lastName}</p>
-                                                <p className="tc-6533 mb-1">{order.billingAddress.address}</p>
-                                                <p className="tc-6533 mb-1">{order.billingAddress.city}</p>
-                                                <p className="tc-6533 mb-1">{order.billingAddress.postcode}</p>
-                                                <p className="tc-6533 mb-0">{order.billingAddress.country}</p>
-                                                {order.billingAddress.phone && (
-                                                    <p className="tc-6533 mb-0 mt-2">Phone: {order.billingAddress.phone}</p>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <p className="tc-6533 text-muted">No billing address available</p>
-                                        )}
-                                    </div>
-                                </div>
+                                    </>
+                                ) : (
+                                    <p className="tc-6533 text-muted">No shipping address available</p>
+                                )}
                             </div>
                         </div>
 
@@ -246,12 +225,50 @@ const OrderDetails = () => {
                 <ReorderModal 
                     onClose={() => setShowReorderModal(false)}
                     order={order}
-                    onReorder={(selectedItems, quantities) => {
-                        console.log('Reorder completed:', selectedItems, quantities);
-                        // In real app: Add items to cart and show success message
-                        alert('Items added to cart successfully!');
-                        setShowReorderModal(false);
+                    onReorder={async (selectedItems, itemQuantities) => {
+                        try {
+                            for (const item of selectedItems) {
+                                const quantity = itemQuantities[item.id]?.quantity || 1;
+                                const productId = item.id;
+                                
+                                const options = {};
+                                if (item.variants && Array.isArray(item.variants)) {
+                                    item.variants.forEach(variant => {
+                                        if (variant.name && variant.value) {
+                                            options[variant.name] = variant.value;
+                                        }
+                                    });
+                                }
+                                
+                                await addToCart(productId, quantity, options);
+                            }
+                            
+                            setToast({
+                                message: 'Items added to cart successfully!',
+                                type: 'success',
+                                action: {
+                                    label: 'View Cart',
+                                    path: '/cart'
+                                }
+                            });
+                            setShowReorderModal(false);
+                        } catch (error) {
+                            setToast({
+                                message: 'Failed to add items to cart. Please try again.',
+                                type: 'error'
+                            });
+                        }
                     }}
+                />
+            )}
+
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    action={toast.action}
+                    onClose={() => setToast(null)}
                 />
             )}
         </div>
