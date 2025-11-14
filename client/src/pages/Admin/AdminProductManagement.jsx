@@ -235,9 +235,9 @@ const AdminProductManagement = () => {
     const getStatusColor = (status) => {
         const statusColors = {
             active: 'success',
-            inactive: 'secondary',
+            archived: 'secondary',
             draft: 'warning',
-            'out-of-stock': 'danger'
+            out_of_stock: 'danger'
         };
         return statusColors[status] || 'secondary';
     };

@@ -24,6 +24,7 @@ const AdminProducts = ({
     const [sortOrder, setSortOrder] = useState('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const [productsPerPage] = useState(10);
+    const [deleteConfirmation, setDeleteConfirmation] = useState(null);
 
     // Dynamic categories from catalog management system
     const categoryOptions = [
@@ -140,35 +141,53 @@ const AdminProducts = ({
         }
     };
 
-    const handleDelete = async (productId) => {
+    const handleDelete = (productId) => {
         console.log('🗑️ Delete button clicked for product ID:', productId);
         
-        if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-            try {
-                if (onDeleteProduct) {
-                    console.log('🔄 Calling onDeleteProduct...');
-                    await onDeleteProduct(productId);
-                    setToast({
-                        message: 'Product deleted successfully!',
-                        type: 'success'
-                    });
-                } else {
-                    console.log('⚠️ No onDeleteProduct function provided (demo mode)');
-                    setToast({
-                        message: 'Product deleted successfully! (Demo mode)',
-                        type: 'success'
-                    });
-                }
-            } catch (error) {
-                console.error('❌ Error deleting product:', error);
+        const product = Array.isArray(products) ? products.find(p => p.id === productId || p._id === productId) : null;
+        const productName = product?.name || 'this product';
+        
+        // Show confirmation modal
+        setDeleteConfirmation({
+            productId,
+            productName
+        });
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteConfirmation) return;
+        
+        const { productId, productName } = deleteConfirmation;
+        
+        try {
+            if (onDeleteProduct) {
+                console.log('🔄 Calling onDeleteProduct...');
+                await onDeleteProduct(productId);
                 setToast({
-                    message: error.message || 'Failed to delete product. Please try again.',
-                    type: 'error'
+                    message: `"${productName}" has been deleted successfully!`,
+                    type: 'success'
+                });
+            } else {
+                console.log('⚠️ No onDeleteProduct function provided (demo mode)');
+                setToast({
+                    message: 'Product deleted successfully! (Demo mode)',
+                    type: 'success'
                 });
             }
-        } else {
-            console.log('❌ Delete cancelled by user');
+        } catch (error) {
+            console.error('❌ Error deleting product:', error);
+            setToast({
+                message: error.message || `Failed to delete "${productName}". Please try again.`,
+                type: 'error'
+            });
+        } finally {
+            setDeleteConfirmation(null);
         }
+    };
+
+    const cancelDelete = () => {
+        console.log('❌ Delete cancelled by user');
+        setDeleteConfirmation(null);
     };
 
     const handleDuplicate = async (productId) => {
@@ -177,18 +196,20 @@ const AdminProducts = ({
         const productToDuplicate = Array.isArray(products) ? products.find(p => p.id === productId || p._id === productId) : null;
         console.log('🔍 Found product to duplicate:', productToDuplicate);
         
+        const productName = productToDuplicate?.name || 'Product';
+        
         if (productToDuplicate && onDuplicateProduct) {
             try {
                 console.log('🔄 Calling onDuplicateProduct...');
                 await onDuplicateProduct(productToDuplicate);
                 setToast({
-                    message: 'Product duplicated successfully!',
+                    message: `"${productName}" has been duplicated successfully! The copy is saved as a draft.`,
                     type: 'success'
                 });
             } catch (error) {
                 console.error('❌ Error duplicating product:', error);
                 setToast({
-                    message: error.message || 'Failed to duplicate product. Please try again.',
+                    message: error.message || `Failed to duplicate "${productName}". Please try again.`,
                     type: 'error'
                 });
             }
@@ -205,7 +226,12 @@ const AdminProducts = ({
         console.log('🔄 Toggle status button clicked for product ID:', productId);
         console.log('📊 Current status:', currentStatus);
         
-        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+        const product = Array.isArray(products) ? products.find(p => p.id === productId || p._id === productId) : null;
+        const productName = product?.name || 'Product';
+        
+        // Valid statuses: 'draft', 'active', 'archived', 'out_of_stock'
+        // Toggle between 'active' and 'archived' (not 'inactive')
+        const newStatus = currentStatus === 'active' ? 'archived' : 'active';
         const updatedProduct = { status: newStatus };
         
         console.log('📝 New status:', newStatus);
@@ -218,14 +244,15 @@ const AdminProducts = ({
                 console.log('⚠️ No onUpdateProduct function provided (demo mode)');
             }
             
+            const statusText = newStatus === 'active' ? 'activated' : 'archived';
             setToast({
-                message: `Product status changed to ${newStatus}!`,
+                message: `"${productName}" has been ${statusText} successfully!`,
                 type: 'success'
             });
         } catch (error) {
             console.error('❌ Error toggling status:', error);
             setToast({
-                message: error.message || 'Failed to update product status.',
+                message: error.message || `Failed to update "${productName}" status. Please try again.`,
                 type: 'error'
             });
         }
@@ -700,6 +727,52 @@ const AdminProducts = ({
                                 </svg>
                                 Add Product to Category
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirmation && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header border-0">
+                                <h5 className="modal-title">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" className="text-danger me-2" style={{ verticalAlign: 'middle' }}>
+                                        <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                                    </svg>
+                                    Confirm Delete
+                                </h5>
+                                <button type="button" className="btn-close" onClick={cancelDelete}></button>
+                            </div>
+                            <div className="modal-body">
+                                <p className="mb-0">
+                                    Are you sure you want to delete <strong>"{deleteConfirmation.productName}"</strong>?
+                                </p>
+                                <p className="text-muted small mb-0 mt-2">
+                                    This action cannot be undone. The product and all its data will be permanently removed.
+                                </p>
+                            </div>
+                            <div className="modal-footer border-0">
+                                <button 
+                                    type="button" 
+                                    className="btn btn-secondary" 
+                                    onClick={cancelDelete}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className="btn btn-danger" 
+                                    onClick={confirmDelete}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-1" style={{ verticalAlign: 'middle' }}>
+                                        <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                    </svg>
+                                    Delete Product
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

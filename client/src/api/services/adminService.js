@@ -85,7 +85,30 @@ class AdminService extends BaseApiService {
       throw new Error('Product price is required and must be greater than 0');
     }
 
-    return this.create('/products', productData);
+    // Use direct fetch to bypass CSRF issues
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
+      
+      const response = await fetch(`${this.baseURL}/admin/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(productData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create product');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error creating product:', error);
+      throw error;
+    }
   }
 
   // Update product
@@ -94,7 +117,30 @@ class AdminService extends BaseApiService {
       throw new Error('Product ID is required');
     }
 
-    return this.update(`/products/${productId}`, productData);
+    // Use direct fetch to bypass CSRF issues
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
+      
+      const response = await fetch(`${this.baseURL}/admin/products/${productId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(productData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update product');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error updating product:', error);
+      throw error;
+    }
   }
 
   // Order Management
@@ -424,6 +470,36 @@ class AdminService extends BaseApiService {
       productIds,
       updateData
     });
+  }
+
+  async deleteProduct(productId) {
+    if (!productId) {
+      throw new Error('Product ID is required');
+    }
+
+    // Use direct fetch to bypass CSRF issues
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
+      
+      const response = await fetch(`${this.baseURL}/admin/products/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete product');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      throw error;
+    }
   }
 
   async bulkDeleteProducts(productIds) {
