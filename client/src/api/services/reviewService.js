@@ -70,6 +70,15 @@ class ReviewService extends BaseApiService {
         return this.read(url);
     }
 
+    // Get user's reviews for a specific order
+    async getOrderReviews(orderId) {
+        if (!orderId) {
+            throw new Error('Order ID is required');
+        }
+        
+        return this.read(`/reviews/order/${orderId}`);
+    }
+
     // Get review statistics for a product
     async getProductReviewStats(productId) {
         return this.read(`/reviews/product/${productId}/stats`);

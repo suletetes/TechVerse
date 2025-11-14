@@ -559,6 +559,61 @@ router.get('/user/my-reviews', authenticate, validatePagination, async (req, res
     }
 });
 
+// Get user's reviews for a specific order
+router.get('/order/:orderId', authenticate, async (req, res) => {
+    try {
+        const { orderId } = req.params;
+
+        console.log('🔍 DEBUG: Getting reviews for order:', {
+            orderId,
+            userId: req.user._id
+        });
+
+        // Validate orderId
+        if (!orderId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid order ID format'
+            });
+        }
+
+        const reviews = await Review.find({
+            user: req.user._id,
+            order: orderId
+        })
+            .populate('product', 'name images price')
+            .sort({ createdAt: -1 });
+
+        console.log('🔍 DEBUG: Found reviews:', {
+            count: reviews.length,
+            reviews: reviews.map(r => ({
+                id: r._id,
+                product: r.product?._id,
+                order: r.order,
+                rating: r.rating
+            }))
+        });
+
+        res.json({
+            success: true,
+            data: {
+                reviews: reviews.map(review => ({
+                    ...review.toObject(),
+                    helpfulCount: review.helpful.length,
+                    notHelpfulCount: review.notHelpful.length
+                }))
+            }
+        });
+    } catch (error) {
+        console.error('Get order reviews error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to retrieve order reviews',
+            error: error.message
+        });
+    }
+});
+
 // Get review statistics for a product
 router.get('/product/:productId/stats', validateProductId, async (req, res) => {
     try {
