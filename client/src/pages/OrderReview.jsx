@@ -1,18 +1,66 @@
-import React, { useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { useOrder } from '../context';
-import { LoadingSpinner } from '../components/Common';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useOrder, useCart } from '../context';
+import { LoadingSpinner, Toast } from '../components/Common';
 import { ReviewsSection } from '../components';
+import { ReorderModal } from '../components/UserProfile/Modals';
 
 const OrderReview = () => {
     const { orderId } = useParams();
+    const navigate = useNavigate();
     const { loadOrder, currentOrder, isLoading, error } = useOrder();
+    const { addToCart } = useCart();
+    const [showReorderModal, setShowReorderModal] = useState(false);
+    const [toast, setToast] = useState(null);
+    const [existingReview, setExistingReview] = useState(null);
+    const [isEditMode, setIsEditMode] = useState(false);
 
     useEffect(() => {
+        console.log('🔍 DEBUG: OrderReview mounted, orderId:', orderId);
         if (orderId) {
             loadOrder(orderId);
         }
     }, [orderId, loadOrder]);
+
+    // Load existing review after order is loaded
+    useEffect(() => {
+        console.log('🔍 DEBUG: Order changed:', {
+            hasOrder: !!currentOrder,
+            reviewedAt: currentOrder?.reviewedAt,
+            orderNumber: currentOrder?.orderNumber
+        });
+        
+        if (currentOrder) {
+            // Always try to load existing review, regardless of reviewedAt
+            loadExistingReview();
+        }
+    }, [currentOrder]);
+
+    const loadExistingReview = async () => {
+        console.log('🔍 DEBUG: Loading existing review for order:', orderId);
+        try {
+            const { default: reviewService } = await import('../api/services/reviewService.js');
+            const response = await reviewService.getOrderReviews(orderId);
+            
+            console.log('🔍 DEBUG: Review service response:', response);
+            
+            if (response.data && response.data.reviews && response.data.reviews.length > 0) {
+                // Use the first review as the template (all products get same review)
+                const review = response.data.reviews[0];
+                console.log('✅ DEBUG: Found existing review:', review);
+                setExistingReview(review);
+                setIsEditMode(true);
+            } else {
+                console.log('ℹ️ DEBUG: No existing reviews found');
+                setIsEditMode(false);
+                setExistingReview(null);
+            }
+        } catch (error) {
+            console.error('❌ DEBUG: Error loading existing review:', error);
+            setIsEditMode(false);
+            setExistingReview(null);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -42,11 +90,99 @@ const OrderReview = () => {
 
     const order = currentOrder;
 
-    const handleReviewSubmit = (reviewData) => {
-        console.log('Review submitted for order:', order.orderNumber, reviewData);
-        alert('Thank you for your review! Your feedback helps other customers make informed decisions.');
-        // TODO: Implement review submission API
-        // In real app, redirect to order details or orders list
+    const handleReviewSubmit = async (reviewData) => {
+        try {
+            const { default: productService } = await import('../api/services/productService.js');
+            const { default: reviewService } = await import('../api/services/reviewService.js');
+            
+            if (isEditMode && existingReview) {
+                // Update existing review
+                await reviewService.updateReview(existingReview._id, {
+                    rating: reviewData.rating,
+                    title: reviewData.title,
+                    comment: reviewData.comment,
+                    pros: reviewData.pros || [],
+                    cons: reviewData.cons || []
+                });
+                
+                setToast({
+                    message: 'Your review has been updated successfully!',
+                    type: 'success',
+                    action: {
+                        label: 'View Order',
+                        path: `/user/order/${order._id}`
+                    }
+                });
+            } else {
+                // Create new reviews for each product in the order
+                const reviewPromises = order.items.map(async (item) => {
+                    // Extract product ID - handle both populated and non-populated cases
+                    let productId;
+                    if (typeof item.product === 'string') {
+                        productId = item.product;
+                    } else if (item.product && item.product._id) {
+                        productId = item.product._id;
+                    } else if (item._id) {
+                        productId = item._id;
+                    }
+                    
+                    if (!productId) {
+                        console.error('Could not find product ID for item:', item);
+                        return null;
+                    }
+                    
+                    const productReviewData = {
+                        rating: reviewData.rating,
+                        title: reviewData.title,
+                        comment: reviewData.comment,
+                        pros: reviewData.pros || [],
+                        cons: reviewData.cons || [],
+                        orderId: order._id
+                    };
+                    
+                    return productService.addProductReview(productId, productReviewData);
+                });
+                
+                // Filter out null results and wait for all reviews
+                await Promise.all(reviewPromises.filter(p => p !== null));
+                
+                setToast({
+                    message: 'Thank you for your review! Your feedback helps other customers make informed decisions.',
+                    type: 'success',
+                    action: {
+                        label: 'View Order',
+                        path: `/user/order/${order._id}`
+                    }
+                });
+            }
+            
+            console.log('Review submitted for order:', order.orderNumber, reviewData);
+            
+            // Redirect to order details after 3 seconds
+            setTimeout(() => {
+                navigate(`/user/order/${order._id}`);
+            }, 3000);
+        } catch (error) {
+            console.error('❌ DEBUG: Error submitting review:', error);
+            console.error('❌ DEBUG: Error details:', {
+                message: error.message,
+                response: error.response,
+                status: error.status
+            });
+            
+            // Show more detailed error message
+            let errorMessage = 'Failed to submit review. Please try again.';
+            if (error.message && error.message !== 'Bad request') {
+                errorMessage = error.message;
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            }
+            
+            setToast({
+                message: errorMessage,
+                type: 'error'
+            });
+        }
     };
 
     return (
@@ -55,22 +191,14 @@ const OrderReview = () => {
                 <div className="row">
                     {/* Page Header */}
                     <div className="col-12 mb-4">
-                        <nav aria-label="breadcrumb">
-                            <ol className="breadcrumb">
-                                <li className="breadcrumb-item">
-                                    <Link to="/user" title="Go to My Account">My Account</Link>
-                                </li>
-                                <li className="breadcrumb-item">
-                                    <Link to="/user?tab=orders" title="View all orders">Orders</Link>
-                                </li>
-                                <li className="breadcrumb-item">
-                                    <Link to={`/user/order/${order._id}`} title="View order details">Order Details</Link>
-                                </li>
-                                <li className="breadcrumb-item active" aria-current="page">Write Review</li>
-                            </ol>
-                        </nav>
-                        <h1 className="tc-6533 bold-text">Write Review for Order #{order.orderNumber}</h1>
-                        <p className="tc-6533">Share your experience with the products from this order</p>
+                        <h1 className="tc-6533 bold-text">
+                            {isEditMode ? 'Edit' : 'Write'} Review for Order #{order.orderNumber}
+                        </h1>
+                        <p className="tc-6533">
+                            {isEditMode 
+                                ? 'Update your review for the products from this order' 
+                                : 'Share your experience with the products from this order'}
+                        </p>
                     </div>
 
                     <div className="row">
@@ -108,6 +236,11 @@ const OrderReview = () => {
                                 </div>
 
                                 {/* Review Form */}
+                                {console.log('🔍 DEBUG: Rendering ReviewsSection with:', {
+                                    isEditMode,
+                                    hasExistingReview: !!existingReview,
+                                    existingReview
+                                })}
                                 <ReviewsSection
                                     showHeader={false}
                                     showDividers={false}
@@ -116,8 +249,15 @@ const OrderReview = () => {
                                     showReviews={false}
                                     showLoadMore={false}
                                     showWriteReview={true}
-                                    customTitle="Rate Your Purchase"
-                                    customDescription="Help other customers by sharing your honest feedback about these products."
+                                    title={isEditMode ? "Edit Your Review" : "Rate Your Purchase"}
+                                    submitButtonText={isEditMode ? "Update Review" : "Submit Review"}
+                                    writeReviewInitialValues={existingReview ? {
+                                        rating: existingReview.rating,
+                                        title: existingReview.title,
+                                        comment: existingReview.comment,
+                                        pros: existingReview.pros || [],
+                                        cons: existingReview.cons || []
+                                    } : {}}
                                 />
                             </div>
                         </div>
@@ -183,7 +323,10 @@ const OrderReview = () => {
                                         </svg>
                                         Track Order
                                     </Link>
-                                    <button className="btn btn-outline-secondary btn-rd">
+                                    <button 
+                                        className="btn btn-outline-secondary btn-rd"
+                                        onClick={() => setShowReorderModal(true)}
+                                    >
                                         <svg width="16" height="16" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
                                             <polyline points="23 4 23 10 17 10" />
                                             <polyline points="1 20 1 14 7 14" />
@@ -197,6 +340,58 @@ const OrderReview = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Reorder Modal */}
+            {showReorderModal && (
+                <ReorderModal 
+                    onClose={() => setShowReorderModal(false)}
+                    order={order}
+                    onReorder={async (selectedItems, itemQuantities) => {
+                        try {
+                            for (const item of selectedItems) {
+                                const quantity = itemQuantities[item.id]?.quantity || 1;
+                                const productId = item.id;
+                                
+                                const options = {};
+                                if (item.variants && Array.isArray(item.variants)) {
+                                    item.variants.forEach(variant => {
+                                        if (variant.name && variant.value) {
+                                            options[variant.name] = variant.value;
+                                        }
+                                    });
+                                }
+                                
+                                await addToCart(productId, quantity, options);
+                            }
+                            
+                            setToast({
+                                message: 'Items added to cart successfully!',
+                                type: 'success',
+                                action: {
+                                    label: 'View Cart',
+                                    path: '/cart'
+                                }
+                            });
+                            setShowReorderModal(false);
+                        } catch (error) {
+                            setToast({
+                                message: 'Failed to add items to cart. Please try again.',
+                                type: 'error'
+                            });
+                        }
+                    }}
+                />
+            )}
+
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    action={toast.action}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </div>
     );
 };

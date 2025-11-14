@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-const WriteReview = ({ productId, onSubmit, initialValues = {}, context, productInfo }) => {
+const WriteReview = ({ productId, onSubmit, initialValues = {}, context, productInfo, submitButtonText = 'Submit Review' }) => {
     const [formData, setFormData] = useState({
         rating: initialValues.rating || 0,
         title: initialValues.title || '',
@@ -10,6 +10,25 @@ const WriteReview = ({ productId, onSubmit, initialValues = {}, context, product
         productId: productId || productInfo?.id || context?.productId || null,
         productName: productInfo?.name || context?.productName || 'Product'
     });
+
+    // Update form data when initialValues change (for edit mode)
+    useEffect(() => {
+        if (initialValues && Object.keys(initialValues).length > 0) {
+            setFormData({
+                rating: initialValues.rating || 0,
+                title: initialValues.title || '',
+                comment: initialValues.comment || initialValues.review || '',
+                pros: initialValues.pros || [],
+                cons: initialValues.cons || [],
+                productId: productId || productInfo?.id || context?.productId || null,
+                productName: productInfo?.name || context?.productName || 'Product'
+            });
+        }
+    }, [initialValues, productId, productInfo, context]);
+
+    console.log('🔍 DEBUG WriteReview: Initial values:', initialValues);
+    console.log('🔍 DEBUG WriteReview: Form data:', formData);
+    console.log('🔍 DEBUG WriteReview: Submit button text:', submitButtonText);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState(null);
@@ -218,7 +237,7 @@ const WriteReview = ({ productId, onSubmit, initialValues = {}, context, product
                                     <path fill="currentColor"
                                           d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                                 </svg>
-                                Submit Review
+                                {submitButtonText}
                             </>
                         )}
                     </button>

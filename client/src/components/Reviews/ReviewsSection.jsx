@@ -19,8 +19,11 @@ const ReviewsSection = ({
     writeReviewInitialValues = {},
     writeReviewContext,
     productInfo,
-    isLoading = false
+    isLoading = false,
+    submitButtonText = 'Submit Review'
 }) => {
+    console.log('🔍 DEBUG ReviewsSection: Initial values:', writeReviewInitialValues);
+    console.log('🔍 DEBUG ReviewsSection: Submit button text:', submitButtonText);
     // Handle backend review data structure
     const processedReviews = (Array.isArray(reviews) ? reviews : []).filter(review => review && review.rating).map(review => ({
         id: review._id || review.id,
@@ -138,6 +141,7 @@ const ReviewsSection = ({
                             onSubmit={onSubmitReview} 
                             initialValues={writeReviewInitialValues} 
                             context={writeReviewContext}
+                            submitButtonText={submitButtonText}
                         />
                     </>
                 )}
