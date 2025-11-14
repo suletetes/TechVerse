@@ -312,11 +312,24 @@ export const createProduct = asyncHandler(async (req, res, next) => {
     }
     
     if (!category) {
-      return next(new AppError(`Category '${productData.category}' not found`, 400, 'CATEGORY_NOT_FOUND'));
+      // For draft products, allow saving without valid category
+      // For active products, require valid category
+      if (productData.status === 'active') {
+        return next(new AppError(`Category '${productData.category}' not found. Please select a valid category before activating the product.`, 400, 'CATEGORY_NOT_FOUND'));
+      } else {
+        // For drafts, log warning but allow saving
+        logger.warn('Product saved with invalid category', {
+          productName: productData.name,
+          categoryId: productData.category,
+          status: productData.status,
+          userId: req.user._id
+        });
+        // Keep the category ID as is for now, will need to be fixed before activation
+      }
+    } else {
+      // Update productData to use the category ObjectId
+      productData.category = category._id;
     }
-    
-    // Update productData to use the category ObjectId
-    productData.category = category._id;
   }
 
   // Validate slug uniqueness if provided

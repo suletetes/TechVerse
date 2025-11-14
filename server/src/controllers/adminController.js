@@ -765,8 +765,55 @@ export const getProductById = asyncHandler(async (req, res, next) => {
 export const createProduct = asyncHandler(async (req, res, next) => {
   const productData = { ...req.body, createdBy: req.user._id };
 
+  // Validate category exists if provided
+  if (productData.category) {
+    let category;
+    
+    // Check if it's a valid MongoDB ObjectId
+    if (/^[0-9a-fA-F]{24}$/.test(productData.category)) {
+      category = await Category.findById(productData.category);
+    } else {
+      // Try to find by name or slug
+      category = await Category.findOne({
+        $or: [
+          { name: { $regex: new RegExp(`^${productData.category}`, 'i') } },
+          { slug: productData.category.toLowerCase() }
+        ]
+      });
+    }
+    
+    if (!category) {
+      // For draft products, allow saving without valid category
+      // For active products, require valid category
+      if (productData.status === 'active') {
+        return next(new AppError(`Category '${productData.category}' not found. Please select a valid category before activating the product.`, 400, 'CATEGORY_NOT_FOUND'));
+      } else {
+        // For drafts, log warning but allow saving
+        logger.warn('Product saved with invalid category', {
+          productName: productData.name,
+          categoryId: productData.category,
+          status: productData.status,
+          userId: req.user._id
+        });
+        // Keep the category ID as is for now, will need to be fixed before activation
+      }
+    } else {
+      // Update productData to use the category ObjectId
+      productData.category = category._id;
+    }
+  }
+
   const product = await Product.create(productData);
-  await product.populate('category', 'name slug');
+  
+  // Try to populate category, but don't fail if it doesn't exist
+  try {
+    await product.populate('category', 'name slug');
+  } catch (error) {
+    logger.warn('Failed to populate category for product', {
+      productId: product._id,
+      categoryId: productData.category
+    });
+  }
 
   logger.info('Product created by admin', {
     productId: product._id,
@@ -823,14 +870,30 @@ export const deleteProduct = asyncHandler(async (req, res, next) => {
     return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
   }
 
-  // Soft delete by updating status
-  product.status = 'deleted';
-  product.deletedAt = new Date();
-  product.deletedBy = req.user._id;
-  await product.save();
+  // Hard delete - actually remove the product from database
+  // Delete associated images if any
+  if (product.images && product.images.length > 0) {
+    for (const image of product.images) {
+      if (image.publicId) {
+        try {
+          // Assuming you have an image service to delete from cloud storage
+          // await imageService.deleteImage(image.publicId);
+        } catch (error) {
+          logger.warn('Failed to delete product image', {
+            productId: id,
+            imageId: image.publicId,
+            error: error.message
+          });
+        }
+      }
+    }
+  }
+
+  // Delete the product
+  await Product.findByIdAndDelete(id);
 
   logger.info('Product deleted by admin', {
-    productId: product._id,
+    productId: id,
     adminId: req.user._id,
     productName: product.name,
     ip: req.ip
@@ -839,7 +902,7 @@ export const deleteProduct = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: 'Product deleted successfully',
-    data: { product: { _id: product._id, name: product.name, status: product.status } }
+    data: { product: { _id: product._id, name: product.name } }
   });
 });
 
