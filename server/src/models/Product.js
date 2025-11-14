@@ -622,13 +622,15 @@ productSchema.index({
   tags: 'text', 
   brand: 'text' 
 }, {
+  name: 'product_search_index',
   weights: {
     name: 10,
     brand: 5,
     shortDescription: 3,
     tags: 2,
     description: 1
-  }
+  },
+  default_language: 'english'
 });
 productSchema.index({ category: 1, status: 1, visibility: 1 });
 productSchema.index({ brand: 1, status: 1 });

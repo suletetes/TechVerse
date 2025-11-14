@@ -458,6 +458,16 @@ categorySchema.index({ slug: 1 });
 categorySchema.index({ parent: 1, isActive: 1 });
 categorySchema.index({ displayOrder: 1 });
 categorySchema.index({ isFeatured: 1, isActive: 1 });
-categorySchema.index({ name: 'text', description: 'text' });
+categorySchema.index(
+  { name: 'text', description: 'text' },
+  {
+    name: 'category_search_index',
+    weights: {
+      name: 10,
+      description: 1
+    },
+    default_language: 'english'
+  }
+);
 
 export default mongoose.model('Category', categorySchema);

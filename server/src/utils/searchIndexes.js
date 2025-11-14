@@ -14,68 +14,36 @@ export const createSearchIndexes = async () => {
     logger.info('Creating search performance indexes...');
 
     // Text search index for products
-    await Product.collection.createIndex(
-      {
-        name: 'text',
-        description: 'text',
-        shortDescription: 'text',
-        brand: 'text',
-        tags: 'text'
-      },
-      {
-        name: 'product_text_search',
-        weights: {
-          name: 10,
-          brand: 8,
-          shortDescription: 5,
-          tags: 3,
-          description: 1
-        },
-        default_language: 'english'
-      }
-    );
+    // Note: The Product model already defines the text search index
+    // We skip creating it here to avoid conflicts
+    // The index will be automatically created by Mongoose when the model loads
 
     // Compound indexes for common search filters
-    await Product.collection.createIndex(
-      { category: 1, status: 1, visibility: 1 },
-      { name: 'category_status_visibility' }
-    );
+    // Note: These indexes may already exist from the Product model
+    // We use try-catch to skip if they already exist
+    const indexes = [
+      { fields: { category: 1, status: 1, visibility: 1 }, name: 'category_status_visibility' },
+      { fields: { brand: 1, status: 1, visibility: 1 }, name: 'brand_status_visibility' },
+      { fields: { price: 1, status: 1, visibility: 1 }, name: 'price_status_visibility' },
+      { fields: { 'rating.average': -1, status: 1, visibility: 1 }, name: 'rating_status_visibility' },
+      { fields: { 'stock.quantity': 1, status: 1, visibility: 1 }, name: 'stock_status_visibility' },
+      { fields: { createdAt: -1 }, name: 'created_date_desc' },
+      { fields: { 'sales.totalSold': -1 }, name: 'popularity_desc' },
+      { fields: { featured: 1, status: 1, visibility: 1 }, name: 'featured_status_visibility' }
+    ];
 
-    await Product.collection.createIndex(
-      { brand: 1, status: 1, visibility: 1 },
-      { name: 'brand_status_visibility' }
-    );
-
-    await Product.collection.createIndex(
-      { price: 1, status: 1, visibility: 1 },
-      { name: 'price_status_visibility' }
-    );
-
-    await Product.collection.createIndex(
-      { 'rating.average': -1, status: 1, visibility: 1 },
-      { name: 'rating_status_visibility' }
-    );
-
-    await Product.collection.createIndex(
-      { 'stock.quantity': 1, status: 1, visibility: 1 },
-      { name: 'stock_status_visibility' }
-    );
-
-    // Indexes for sorting
-    await Product.collection.createIndex(
-      { createdAt: -1 },
-      { name: 'created_date_desc' }
-    );
-
-    await Product.collection.createIndex(
-      { 'sales.totalSold': -1 },
-      { name: 'popularity_desc' }
-    );
-
-    await Product.collection.createIndex(
-      { featured: 1, status: 1, visibility: 1 },
-      { name: 'featured_status_visibility' }
-    );
+    for (const index of indexes) {
+      try {
+        await Product.collection.createIndex(index.fields, { name: index.name });
+      } catch (error) {
+        // Skip if index already exists
+        if (error.code === 85 || error.message.includes('already exists')) {
+          // Index already exists, skip silently
+        } else {
+          throw error;
+        }
+      }
+    }
 
     // Compound index for advanced filtering
     await Product.collection.createIndex(
@@ -104,15 +72,21 @@ export const createSearchIndexes = async () => {
     );
 
     // Category indexes
-    await Category.collection.createIndex(
-      { name: 'text', description: 'text' },
-      { name: 'category_text_search' }
-    );
-
-    await Category.collection.createIndex(
-      { isActive: 1, name: 1 },
-      { name: 'active_categories' }
-    );
+    // Note: Text index already created by fix script as 'category_search_index'
+    // Skip creating it here to avoid conflicts
+    
+    try {
+      await Category.collection.createIndex(
+        { isActive: 1, name: 1 },
+        { name: 'active_categories' }
+      );
+    } catch (error) {
+      if (error.code === 85 || error.message.includes('already exists')) {
+        // Index already exists, skip silently
+      } else {
+        throw error;
+      }
+    }
 
     // User indexes for performance
     await User.collection.createIndex(
@@ -224,7 +198,7 @@ export const dropSearchIndexes = async () => {
     logger.info('Dropping search indexes...');
 
     const indexesToDrop = [
-      'product_text_search',
+      'product_search_index',
       'category_status_visibility',
       'brand_status_visibility',
       'price_status_visibility',
@@ -236,7 +210,7 @@ export const dropSearchIndexes = async () => {
       'advanced_search_compound',
       'specifications_search',
       'tags_status_visibility',
-      'category_text_search',
+      'category_search_index',
       'active_categories'
     ];
 
