@@ -121,13 +121,6 @@ const orderSchema = new mongoose.Schema({
     default: 'pending'
   },
   
-  // Fulfillment
-  fulfillmentStatus: {
-    type: String,
-    enum: ['unfulfilled', 'partial', 'fulfilled'],
-    default: 'unfulfilled'
-  },
-  
   // Tracking
   tracking: trackingSchema,
   
@@ -140,17 +133,6 @@ const orderSchema = new mongoose.Schema({
   // Notes
   notes: String,
   customerNotes: String,
-  
-  // Flags
-  isGift: { type: Boolean, default: false },
-  giftMessage: String,
-  
-  // Risk assessment
-  riskLevel: {
-    type: String,
-    enum: ['low', 'medium', 'high'],
-    default: 'low'
-  },
   
   // Customer service
   tags: [String],
@@ -262,7 +244,6 @@ orderSchema.methods.updateStatus = async function(newStatus, notes = '', updated
       break;
     case 'shipped':
       this.shippedAt = now;
-      this.fulfillmentStatus = 'fulfilled';
       break;
     case 'delivered':
       this.deliveredAt = now;

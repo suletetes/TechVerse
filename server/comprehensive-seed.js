@@ -605,7 +605,18 @@ class ComprehensiveSeed {
         
         if (!userProductPairs.has(pairKey)) {
           userProductPairs.add(pairKey);
-          const review = this.generateReview(product, user);
+          
+          // Try to find an order from this user that contains this product
+          let linkedOrder = null;
+          if (this.orders && this.orders.length > 0) {
+            linkedOrder = this.orders.find(order => 
+              order.user.toString() === user._id.toString() &&
+              order.items.some(item => item.product.toString() === product._id.toString()) &&
+              order.status === 'delivered'
+            );
+          }
+          
+          const review = this.generateReview(product, user, linkedOrder?._id);
           reviews.push(review);
           createdReviews++;
         }
@@ -619,7 +630,7 @@ class ComprehensiveSeed {
   /**
    * Generate realistic review
    */
-  generateReview(product, user) {
+  generateReview(product, user, orderId = null) {
     const rating = faker.helpers.weightedArrayElement([
       { weight: 5, value: 1 },
       { weight: 10, value: 2 },
@@ -674,7 +685,7 @@ class ComprehensiveSeed {
       }
     }
 
-    return {
+    const reviewData = {
       user: user._id,
       product: product._id,
       rating,
@@ -685,7 +696,8 @@ class ComprehensiveSeed {
         { weight: 10, value: 'pending' },
         { weight: 5, value: 'rejected' }
       ]),
-      verified: faker.datatype.boolean(0.7), // 70% verified purchases
+      verified: orderId ? true : faker.datatype.boolean(0.3), // If linked to order, mark as verified
+      verifiedPurchase: orderId ? true : false, // Only true if linked to an order
       helpful,
       notHelpful,
       createdAt: faker.date.between({ 
@@ -693,6 +705,13 @@ class ComprehensiveSeed {
         to: new Date() 
       })
     };
+
+    // Add order reference if available
+    if (orderId) {
+      reviewData.order = orderId;
+    }
+
+    return reviewData;
   }
 
   /**
