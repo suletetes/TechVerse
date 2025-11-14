@@ -204,19 +204,63 @@ const productReducer = (state, action) => {
       };
 
     case PRODUCT_ACTIONS.SEARCH_PRODUCTS_SUCCESS:
-      return {
+      // Handle both response structures:
+      // 1. Transformed: { data: [...products], pagination: {...} }
+      // 2. Original: { data: { products: [...], pagination: {...} } }
+      console.log('🔍 SEARCH_PRODUCTS_SUCCESS - Raw payload:', action.payload);
+      
+      const searchData = action.payload.data;
+      let searchProducts = Array.isArray(searchData) ? searchData : (searchData?.products || []);
+      const searchPagination = action.payload.pagination || searchData?.pagination || {};
+      
+      // Convert Mongoose documents to plain objects if needed
+      searchProducts = searchProducts.map(product => {
+        // If it's a Mongoose document, extract the _doc property
+        if (product && product._doc) {
+          return { ...product._doc, _id: product._doc._id || product._id };
+        }
+        // If it has $__ property (Mongoose document), convert to plain object
+        if (product && product.$__) {
+          const plainProduct = {};
+          for (const key in product) {
+            if (key !== '$__' && key !== '$isNew' && !key.startsWith('$')) {
+              plainProduct[key] = product[key];
+            }
+          }
+          return plainProduct;
+        }
+        return product;
+      });
+      
+      console.log('🔍 SEARCH_PRODUCTS_SUCCESS - Extracted:', {
+        searchDataType: Array.isArray(searchData) ? 'array' : typeof searchData,
+        productsCount: searchProducts.length,
+        paginationKeys: Object.keys(searchPagination),
+        firstProduct: searchProducts[0]?.name,
+        firstProductKeys: searchProducts[0] ? Object.keys(searchProducts[0]).slice(0, 10) : [],
+        firstProductFull: searchProducts[0]
+      });
+      
+      const newState = {
         ...state,
-        searchResults: action.payload.data || [],
+        searchResults: searchProducts,
         pagination: {
-          page: action.payload.page || 1,
-          limit: action.payload.limit || 20,
-          total: action.payload.total || 0,
-          totalPages: action.payload.totalPages || 0,
-          hasMore: action.payload.hasMore || false
+          page: searchPagination.page || searchPagination.currentPage || action.payload.page || 1,
+          limit: searchPagination.limit || action.payload.limit || 20,
+          total: searchPagination.total || searchPagination.totalProducts || action.payload.total || 0,
+          totalPages: searchPagination.totalPages || action.payload.totalPages || 0,
+          hasMore: searchPagination.hasMore || searchPagination.hasNextPage || action.payload.hasMore || false
         },
         isLoading: false,
         error: null
       };
+      
+      console.log('🔍 SEARCH_PRODUCTS_SUCCESS - New state:', {
+        searchResultsCount: newState.searchResults.length,
+        pagination: newState.pagination
+      });
+      
+      return newState;
 
     case PRODUCT_ACTIONS.SET_SEARCH_QUERY:
       return { ...state, searchQuery: action.payload };
@@ -498,12 +542,16 @@ export const ProductProvider = ({ children }) => {
 
   // Search products
   const searchProducts = useCallback(async (query, filters = {}, loadMore = false) => {
+    console.log('🔍 searchProducts called:', { query, filters, loadMore });
+    
     if (!query || query.trim().length < 2) {
+      console.log('⚠️ Search query too short');
       dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: 'Search query must be at least 2 characters' });
       return;
     }
 
     try {
+      console.log('🔄 Starting search...');
       dispatch({ type: PRODUCT_ACTIONS.SET_LOADING, payload: true });
 
       const searchParams = {
@@ -511,13 +559,16 @@ export const ProductProvider = ({ children }) => {
         page: loadMore ? (filters.page || 1) + 1 : 1
       };
 
+      console.log('📤 Calling productService.searchProducts with:', { query, searchParams });
       const response = await productService.searchProducts(query, searchParams);
+      console.log('📥 Search response received:', response);
 
       dispatch({ type: PRODUCT_ACTIONS.SET_SEARCH_QUERY, payload: query });
       dispatch({ type: PRODUCT_ACTIONS.SEARCH_PRODUCTS_SUCCESS, payload: response });
 
       return response;
     } catch (error) {
+      console.error('❌ Search error:', error);
       dispatch({ type: PRODUCT_ACTIONS.SET_ERROR, payload: error.message });
       showNotification(error.message, 'error');
       throw error;

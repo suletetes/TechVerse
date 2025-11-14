@@ -4,6 +4,15 @@ import { useProduct } from "../context";
 import { LoadingSpinner } from "../components/Common";
 import { ProductFilters, ProductCard, ProductCardList, Pagination, ViewToggle } from "../components";
 
+// Debounce utility function
+const debounce = (func, wait) => {
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+    };
+};
+
 const Products = () => {
     const { categorySlug } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -11,17 +20,18 @@ const Products = () => {
     // Context hooks
     const {
         products,
+        searchResults,
+        searchQuery,
         categories,
         pagination,
         isLoading,
         error,
         loadProducts,
+        searchProducts,
         loadCategories,
         setFilters,
         clearFilters: clearProductFilters
     } = useProduct();
-
-    // Remove debug logging for performance
 
     // Local state
     const [viewMode, setViewMode] = useState("grid");
@@ -34,6 +44,17 @@ const Products = () => {
         brand: searchParams.get('brand') || '',
         category: searchParams.get('category') || '',
         inStock: searchParams.get('inStock') ? searchParams.get('inStock') === 'true' : null
+    });
+
+    // Use searchResults when there's a search query, otherwise use products
+    const displayProducts = searchQuery && localFilters.search ? searchResults : products;
+    
+    console.log('📦 Products.jsx - Display state:', {
+        hasSearchQuery: !!searchQuery,
+        localSearch: localFilters.search,
+        productsCount: products.length,
+        searchResultsCount: searchResults.length,
+        displayingCount: displayProducts.length
     });
 
     // Load categories on mount
@@ -54,10 +75,15 @@ const Products = () => {
 
     // Debounced search function
     const debouncedLoadProducts = useCallback(
-        debounce((filters) => {
-            loadProducts(filters);
+        debounce((filters, isSearch = false) => {
+            if (isSearch && filters.search) {
+                console.log('🔍 Debounced search triggered:', filters.search);
+                searchProducts(filters.search, filters);
+            } else {
+                loadProducts(filters);
+            }
         }, 300),
-        [loadProducts]
+        [loadProducts, searchProducts]
     );
 
     // Main effect to handle all filter changes
@@ -95,10 +121,12 @@ const Products = () => {
         // Apply filters to context
         setFilters(filters);
 
-        // Use debounced loading for search, immediate for other filters
-        if (localFilters.search && localFilters.search.length > 0) {
-            debouncedLoadProducts(filters);
+        // Use searchProducts for search queries, loadProducts for browsing
+        if (localFilters.search && localFilters.search.trim().length >= 2) {
+            console.log('🔍 Products.jsx - Calling searchProducts with:', localFilters.search, filters);
+            debouncedLoadProducts(filters, true); // Pass true to indicate it's a search
         } else {
+            console.log('📦 Products.jsx - Calling loadProducts with:', filters);
             loadProducts(filters);
         }
     }, [localFilters, categorySlug]);
@@ -112,17 +140,17 @@ const Products = () => {
 
     // Get unique brands from current products for filters
     const brands = useMemo(() => {
-        if (!Array.isArray(products)) return [];
-        const uniqueBrands = [...new Set(products.map(product => product.brand).filter(Boolean))];
+        if (!Array.isArray(displayProducts)) return [];
+        const uniqueBrands = [...new Set(displayProducts.map(product => product.brand).filter(Boolean))];
         return uniqueBrands.sort();
-    }, [products]);
+    }, [displayProducts]);
 
     // Get price range from current products
     const priceRange = useMemo(() => {
-        if (!Array.isArray(products) || products.length === 0) return [0, 1000];
-        const prices = products.map(product => product.price || 0);
+        if (!Array.isArray(displayProducts) || displayProducts.length === 0) return [0, 1000];
+        const prices = displayProducts.map(product => product.price || 0);
         return [Math.min(...prices), Math.max(...prices)];
-    }, [products]);
+    }, [displayProducts]);
 
     const handleFilterChange = useCallback((filterName, value) => {
         setLocalFilters(prev => ({
@@ -147,7 +175,13 @@ const Products = () => {
             filters.category = effectiveCategory;
         }
 
-        loadProducts(filters);
+        // Use searchProducts if there's a search term, otherwise loadProducts
+        if (localFilters.search && localFilters.search.trim().length >= 2) {
+            console.log('🔍 Page change with search:', localFilters.search, page);
+            searchProducts(localFilters.search, filters);
+        } else {
+            loadProducts(filters);
+        }
     }, [localFilters, categorySlug, searchParams, loadProducts]);
 
     const clearFilters = useCallback(() => {
@@ -170,7 +204,7 @@ const Products = () => {
     }, [categorySlug, setSearchParams, clearProductFilters]);
 
     // Show loading state
-    if (isLoading && (!Array.isArray(products) || products.length === 0)) {
+    if (isLoading && (!Array.isArray(displayProducts) || displayProducts.length === 0)) {
         return (
             <div className="bloc bgc-5700 none full-width-bloc l-bloc" id="bloc-8">
                 <div className="container bloc-md-sm bloc-md bloc-lg-md">
@@ -247,14 +281,14 @@ const Products = () => {
                         categories={categories || []}
                         priceRange={priceRange}
                         onClearFilters={clearFilters}
-                        resultsCount={pagination.total || (Array.isArray(products) ? products.length : 0)}
+                        resultsCount={pagination.total || (Array.isArray(displayProducts) ? displayProducts.length : 0)}
                         isLoading={isLoading}
                     />
 
                     {/* Remove debug info for production */}
 
                     {/* Products Grid/List */}
-                    {(!Array.isArray(products) || products.length === 0) && !isLoading ? (
+                    {(!Array.isArray(displayProducts) || displayProducts.length === 0) && !isLoading ? (
                         <div className="col-12 text-center py-5">
                             <div className="tc-6533">
                                 <i className="fa fa-search fa-3x mb-3 opacity-50"></i>
@@ -268,7 +302,7 @@ const Products = () => {
                     ) : (
                         <React.Fragment key="products-container">
                             {/* Loading overlay for filter changes */}
-                            {isLoading && Array.isArray(products) && products.length > 0 && (
+                            {isLoading && Array.isArray(displayProducts) && displayProducts.length > 0 && (
                                 <div className="col-12 mb-3">
                                     <div className="d-flex justify-content-center">
                                         <LoadingSpinner size="sm" />
@@ -278,7 +312,7 @@ const Products = () => {
                             )}
 
                             {/* Products */}
-                            {Array.isArray(products) && products.map((product) => (
+                            {Array.isArray(displayProducts) && displayProducts.map((product) => (
                                 viewMode === 'grid' ? (
                                     <ProductCard
                                         key={product._id}
@@ -313,18 +347,5 @@ const Products = () => {
         </div>
     );
 };
-
-// Debounce utility function (moved outside component to prevent recreation)
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
 
 export default Products;

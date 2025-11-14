@@ -68,7 +68,7 @@ const ProductCard = ({ product }) => {
                     </span>
                 </div>
                 
-                <Link to={`/product/${product._id || product.id}`} className="text-decoration-none">
+                <Link to={`/product/${product.slug || product._id || product.id}`} className="text-decoration-none">
                     <picture>
                         <source type="image/webp" srcSet={product.webp} />
                         <img
@@ -90,7 +90,7 @@ const ProductCard = ({ product }) => {
                 
                 <div className="row g-0 p-3">
                     <div className="col-12 mb-2">
-                        <Link to={`/product/${product._id || product.id}`} className="text-decoration-none">
+                        <Link to={`/product/${product.slug || product._id || product.id}`} className="text-decoration-none">
                             <h5 className="tc-6533 mb-1 lg-sub-title">{product.name || 'Product Name'}</h5>
                         </Link>
                         <small className="text-muted">{product.brand || 'Brand'}</small>
@@ -101,7 +101,7 @@ const ProductCard = ({ product }) => {
                     </div>
                     <div className="col-lg-4 align-self-end">
                         <Link
-                            to={`/product/${product._id || product.id}`}
+                            to={`/product/${product.slug || product._id || product.id}`}
                             className={`btn btn-sm btn-rd float-lg-end buy-btn w-100 ${!inStock ? 'btn-secondary disabled' : 'btn-c-2101'}`}
                             style={{transition: 'all 0.3s ease', pointerEvents: !inStock ? 'none' : 'auto'}}
                         >

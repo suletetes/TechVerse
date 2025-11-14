@@ -32,7 +32,7 @@ const ProductCardList = ({ product }) => {
                 
                 {/* Product Image */}
                 <div className="flex-shrink-0" style={{width: '200px'}}>
-                    <Link to={`/product/${product._id || product.id}`}>
+                    <Link to={`/product/${product.slug || product._id || product.id}`}>
                         <picture>
                             <source type="image/webp" srcSet={product.webp} />
                             <img
@@ -61,7 +61,7 @@ const ProductCardList = ({ product }) => {
                 {/* Product Details */}
                 <div className="flex-grow-1 p-3 d-flex flex-column justify-content-between">
                     <div>
-                        <Link to={`/product/${product._id || product.id}`} className="text-decoration-none">
+                        <Link to={`/product/${product.slug || product._id || product.id}`} className="text-decoration-none">
                             <h5 className="tc-6533 mb-2 lg-sub-title">{product.name || 'Product Name'}</h5>
                         </Link>
                         <p className="text-muted mb-2">{product.brand || 'Brand'}</p>
@@ -96,7 +96,7 @@ const ProductCardList = ({ product }) => {
                             </button>
                         </div>
                         <Link
-                            to={`/product/${product._id || product.id}`}
+                            to={`/product/${product.slug || product._id || product.id}`}
                             className="btn btn-sm btn-rd btn-c-2101 buy-btn"
                             style={{transition: 'all 0.3s ease', minWidth: '100px'}}
                         >
