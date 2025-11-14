@@ -165,12 +165,79 @@ const AdminOrders = ({
         if (onPrintInvoice) {
             onPrintInvoice(order);
         } else {
-            window.print();
+            // Create a printable invoice in a new window
+            const printWindow = window.open('', '_blank');
+            const orderId = order._id || order.id;
+            const orderNumber = order.orderNumber || orderId;
+            const customerName = order.customer || order.user?.name || 'Customer';
+            const customerEmail = order.customerEmail || order.user?.email || '';
+            
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Invoice - ${orderNumber}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .invoice-header { text-align: center; margin-bottom: 30px; }
+                        .invoice-details { margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+                        th { background-color: #f5f5f5; }
+                        .total-row { font-weight: bold; background-color: #f9f9f9; }
+                        @media print { button { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="invoice-header">
+                        <h1>INVOICE</h1>
+                        <p>Order #${orderNumber}</p>
+                        <p>Date: ${new Date(order.createdAt || order.date).toLocaleDateString()}</p>
+                    </div>
+                    
+                    <div class="invoice-details">
+                        <h3>Customer Information</h3>
+                        <p><strong>Name:</strong> ${customerName}</p>
+                        <p><strong>Email:</strong> ${customerEmail}</p>
+                        <p><strong>Status:</strong> ${order.status}</p>
+                    </div>
+                    
+                    <h3>Order Items</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(order.items || []).map(item => `
+                                <tr>
+                                    <td>${item.name || 'Product'}</td>
+                                    <td>${item.quantity || 1}</td>
+                                    <td>$${(item.price || 0).toFixed(2)}</td>
+                                    <td>$${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                            <tr class="total-row">
+                                <td colspan="3">Total</td>
+                                <td>$${(order.total || 0).toFixed(2)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <button onclick="window.print()" style="padding: 10px 20px; margin-top: 20px;">Print Invoice</button>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
         }
         
         setToast({
-            message: 'Preparing invoice for printing...',
-            type: 'info'
+            message: 'Invoice opened in new window',
+            type: 'success'
         });
     };
 
@@ -206,25 +273,45 @@ const AdminOrders = ({
         if (handleExport) {
             handleExport(filteredOrders);
         } else {
-            // Create CSV export
+            // Create CSV export with proper field mapping
             const csv = [
-                ['Order ID', 'Customer', 'Date', 'Status', 'Items', 'Total'],
-                ...filteredOrders.map(order => [
-                    order.id,
-                    order.customer,
-                    new Date(order.date).toLocaleDateString(),
-                    order.status,
-                    Array.isArray(order.items) ? order.items.length : (order.orderItems?.length || order.items || 0),
-                    order.total
-                ])
+                ['Order ID', 'Order Number', 'Customer', 'Email', 'Date', 'Status', 'Items', 'Total'],
+                ...filteredOrders.map(order => {
+                    const orderId = order._id || order.id || 'N/A';
+                    const orderNumber = order.orderNumber || orderId;
+                    const customerName = order.customer || 
+                                       order.user?.name || 
+                                       (order.shippingAddress?.firstName && order.shippingAddress?.lastName 
+                                           ? `${order.shippingAddress.firstName} ${order.shippingAddress.lastName}`
+                                           : 'N/A');
+                    const customerEmail = order.customerEmail || order.user?.email || 'N/A';
+                    const orderDate = order.date || order.createdAt;
+                    const dateStr = orderDate ? new Date(orderDate).toLocaleDateString() : 'N/A';
+                    const itemCount = Array.isArray(order.items) 
+                        ? order.items.length 
+                        : (order.orderItems?.length || 0);
+                    const total = order.total || 0;
+                    
+                    return [
+                        orderId,
+                        orderNumber,
+                        `"${customerName}"`, // Wrap in quotes for CSV
+                        customerEmail,
+                        dateStr,
+                        order.status || 'pending',
+                        itemCount,
+                        total.toFixed(2)
+                    ];
+                })
             ].map(row => row.join(',')).join('\n');
             
-            const blob = new Blob([csv], { type: 'text/csv' });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `orders-${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = `orders-export-${new Date().toISOString().split('T')[0]}.csv`;
             a.click();
+            window.URL.revokeObjectURL(url);
         }
         
         setToast({
@@ -596,7 +683,10 @@ const AdminOrders = ({
                                                             <strong>Name:</strong> {
                                                                 order.customer || 
                                                                 order.user?.name || 
-                                                                order.shippingAddress?.fullName || 
+                                                                order.shippingAddress?.fullName ||
+                                                                (order.shippingAddress?.firstName && order.shippingAddress?.lastName 
+                                                                    ? `${order.shippingAddress.firstName} ${order.shippingAddress.lastName}`
+                                                                    : null) ||
                                                                 'N/A'
                                                             }
                                                         </div>
@@ -604,6 +694,7 @@ const AdminOrders = ({
                                                             <strong>Email:</strong> {
                                                                 order.customerEmail || 
                                                                 order.user?.email || 
+                                                                order.email ||
                                                                 'N/A'
                                                             }
                                                         </div>
@@ -611,7 +702,9 @@ const AdminOrders = ({
                                                             <strong>Phone:</strong> {
                                                                 order.customerPhone || 
                                                                 order.shippingAddress?.phone || 
+                                                                order.shippingAddress?.phoneNumber ||
                                                                 order.user?.phone || 
+                                                                order.phone ||
                                                                 'N/A'
                                                             }
                                                         </div>
@@ -619,7 +712,18 @@ const AdminOrders = ({
                                                             <strong>Shipping Address:</strong><br />
                                                             <small className="text-muted">
                                                                 {order.shippingAddress && typeof order.shippingAddress === 'object' 
-                                                                    ? `${order.shippingAddress.street || ''}, ${order.shippingAddress.city || ''}, ${order.shippingAddress.state || ''} ${order.shippingAddress.zipCode || ''}`
+                                                                    ? (() => {
+                                                                        const addr = order.shippingAddress;
+                                                                        const parts = [
+                                                                            addr.street || addr.address || addr.addressLine1,
+                                                                            addr.addressLine2,
+                                                                            addr.city,
+                                                                            addr.state || addr.province,
+                                                                            addr.zipCode || addr.postalCode || addr.zip,
+                                                                            addr.country
+                                                                        ].filter(Boolean);
+                                                                        return parts.length > 0 ? parts.join(', ') : 'N/A';
+                                                                    })()
                                                                     : order.shippingAddress || 'N/A'
                                                                 }
                                                             </small>
@@ -686,11 +790,19 @@ const AdminOrders = ({
                                                             </tr>
                                                             <tr>
                                                                 <td colSpan="4" className="text-end">Shipping:</td>
-                                                                <td>{formatCurrency(order.shipping || order.total * 0.05)}</td>
+                                                                <td>{formatCurrency(
+                                                                    typeof order.shipping === 'number' 
+                                                                        ? order.shipping 
+                                                                        : order.shipping?.cost || order.shippingCost || 0
+                                                                )}</td>
                                                             </tr>
                                                             <tr>
                                                                 <td colSpan="4" className="text-end">Tax:</td>
-                                                                <td>{formatCurrency(order.tax || order.total * 0.05)}</td>
+                                                                <td>{formatCurrency(
+                                                                    typeof order.tax === 'number'
+                                                                        ? order.tax
+                                                                        : order.tax?.amount || order.taxAmount || 0
+                                                                )}</td>
                                                             </tr>
                                                             <tr className="table-active">
                                                                 <td colSpan="4" className="text-end fw-bold">Total:</td>
@@ -701,18 +813,28 @@ const AdminOrders = ({
                                                 </div>
                                                 
                                                                 <div className="mt-3 d-flex gap-2 flex-wrap">
-                                                                    <select 
-                                                                        className="form-select form-select-sm w-auto"
-                                                                        onChange={(e) => handleUpdateStatus(orderId, e.target.value)}
-                                                                        defaultValue={order.status}
-                                                                    >
-                                                                        <option value="">Update Status</option>
-                                                                        <option value="pending">Pending</option>
-                                                                        <option value="processing">Processing</option>
-                                                                        <option value="shipped">Shipped</option>
-                                                                        <option value="delivered">Delivered</option>
-                                                                        <option value="cancelled">Cancelled</option>
-                                                                    </select>
+                                                                    {order.status !== 'delivered' && order.status !== 'cancelled' ? (
+                                                                        <select 
+                                                                            className="form-select form-select-sm w-auto"
+                                                                            onChange={(e) => handleUpdateStatus(orderId, e.target.value)}
+                                                                            defaultValue={order.status}
+                                                                        >
+                                                                            <option value="">Update Status</option>
+                                                                            <option value="pending">Pending</option>
+                                                                            <option value="processing">Processing</option>
+                                                                            <option value="shipped">Shipped</option>
+                                                                            <option value="delivered">Delivered</option>
+                                                                            <option value="cancelled">Cancelled</option>
+                                                                        </select>
+                                                                    ) : (
+                                                                        <div className="alert alert-secondary py-2 px-3 mb-0">
+                                                                            <small>
+                                                                                <strong>Status:</strong> {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                                                                {order.status === 'delivered' && ' - Order completed'}
+                                                                                {order.status === 'cancelled' && ' - Order cancelled'}
+                                                                            </small>
+                                                                        </div>
+                                                                    )}
                                                                     <button 
                                                                         className="btn btn-outline-primary btn-sm"
                                                                         onClick={() => handlePrintInvoice(order)}
