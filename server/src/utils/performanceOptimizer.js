@@ -52,7 +52,11 @@ export const createDatabaseIndexes = async () => {
     // Individual field indexes
     await Product.collection.createIndex({ category: 1, status: 1 });
     await Product.collection.createIndex({ sections: 1 });
-    await Product.collection.createIndex({ name: "text", description: "text", brand: "text" });
+    
+    // Text search index - only create if it doesn't exist
+    // Note: The Product model already defines this index, so we skip it here
+    // to avoid conflicts. If needed, it will be created by Mongoose.
+    
     await Product.collection.createIndex({ "stock.quantity": 1 });
     await Product.collection.createIndex({ featured: 1, status: 1 });
     await Product.collection.createIndex({ price: 1 });
