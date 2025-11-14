@@ -153,7 +153,8 @@ class AdminService extends BaseApiService {
         headers['X-CSRF-Token'] = csrfToken;
       }
       
-      const response = await fetch(`${this.baseURL}/admin/orders/${orderId}/status`, {
+      // Try /status endpoint first, fallback to main endpoint
+      let response = await fetch(`${this.baseURL}/admin/orders/${orderId}/status`, {
         method: 'PUT',
         headers,
         credentials: 'include',
@@ -162,6 +163,20 @@ class AdminService extends BaseApiService {
           notes: notes.trim()
         })
       });
+
+      // If 501 Not Implemented, try the main order endpoint with PATCH
+      if (response.status === 501) {
+        console.log('🔄 /status endpoint not implemented, trying main endpoint...');
+        response = await fetch(`${this.baseURL}/admin/orders/${orderId}`, {
+          method: 'PATCH',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify({
+            status,
+            notes: notes.trim()
+          })
+        });
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to update order status' }));

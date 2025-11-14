@@ -48,12 +48,16 @@ import {
   bulkUpdateOrderStatus,
   getOrderAnalytics,
   processRefund,
+  cancelOrder,
+  sendOrderEmail,
   exportOrders,
   getAdminProfile,
   updateAdminProfile,
   getAllReviews,
   getPendingReviews,
   moderateReview,
+  approveReview,
+  rejectReview,
   bulkModerateReviews,
   getReviewAnalytics,
   deleteReview,
@@ -177,6 +181,13 @@ router.put('/reviews/:id/moderate', authenticate, requireAdmin, [
   body('action').isIn(['approve', 'reject', 'flag']).withMessage('Invalid moderation action'),
   body('notes').optional().trim().isLength({ max: 500 }).withMessage('Notes must be less than 500 characters')
 ], validate, moderateReview);
+router.patch('/reviews/:id/approve', authenticate, requireAdmin, [
+  commonValidations.mongoId('id')
+], validate, approveReview);
+router.patch('/reviews/:id/reject', authenticate, requireAdmin, [
+  commonValidations.mongoId('id'),
+  body('reason').optional().trim().isLength({ max: 200 }).withMessage('Reason must be less than 200 characters')
+], validate, rejectReview);
 router.put('/reviews/bulk-moderate', authenticate, requireAdmin, [
   body('reviewIds').isArray({ min: 1, max: 50 }).withMessage('Review IDs array is required (max 50 items)'),
   body('reviewIds.*').isMongoId().withMessage('Each review ID must be valid'),
@@ -212,6 +223,14 @@ router.post('/orders/:id/refund', authenticate, requireAdmin, [
   body('reason').trim().isLength({ min: 5, max: 200 }).withMessage('Refund reason is required (5-200 characters)'),
   body('refundItems').optional().isArray().withMessage('Refund items must be an array')
 ], validate, processRefund);
+router.post('/orders/:id/cancel', authenticate, requireAdmin, [
+  commonValidations.mongoId('id'),
+  body('reason').optional().trim().isLength({ max: 200 }).withMessage('Reason must be less than 200 characters')
+], validate, cancelOrder);
+router.post('/orders/:id/email', authenticate, requireAdmin, [
+  commonValidations.mongoId('id'),
+  body('emailType').isIn(['confirmation', 'shipping', 'delivered', 'cancelled']).withMessage('Invalid email type')
+], validate, sendOrderEmail);
 
 // Category management routes
 router.get('/categories', getAllCategories);

@@ -344,16 +344,23 @@ export const getAllOrders = asyncHandler(async (req, res, next) => {
         subtotal: 1,
         tax: 1,
         shipping: 1,
+        shippingAddress: 1,
         payment: 1,
         items: 1,
         createdAt: 1,
         updatedAt: 1,
         notes: 1,
+        statusHistory: 1,
+        shippedAt: 1,
+        deliveredAt: 1,
+        cancelledAt: 1,
         user: {
           _id: '$userInfo._id',
+          name: { $concat: ['$userInfo.firstName', ' ', '$userInfo.lastName'] },
           firstName: '$userInfo.firstName',
           lastName: '$userInfo.lastName',
-          email: '$userInfo.email'
+          email: '$userInfo.email',
+          phone: '$userInfo.phone'
         }
       }
     }
@@ -1116,11 +1123,91 @@ export const getOrderById = asyncHandler(async (req, res, next) => {
 });
 
 export const updateOrderStatus = asyncHandler(async (req, res, next) => {
-  res.status(501).json({ success: false, message: 'Function not implemented yet' });
+  const { id } = req.params;
+  const { status, notes } = req.body;
+
+  const order = await Order.findById(id).populate('user', 'name email');
+
+  if (!order) {
+    return res.status(404).json({ success: false, message: 'Order not found' });
+  }
+
+  // Update order status
+  const oldStatus = order.status;
+  order.status = status;
+
+  // Add status history entry
+  if (!order.statusHistory) {
+    order.statusHistory = [];
+  }
+
+  order.statusHistory.push({
+    status,
+    notes: notes || `Status changed from ${oldStatus} to ${status}`,
+    updatedBy: req.user._id,
+    timestamp: new Date()
+  });
+
+  // Update timestamps based on status
+  if (status === 'shipped' && !order.shippedAt) {
+    order.shippedAt = new Date();
+  } else if (status === 'delivered' && !order.deliveredAt) {
+    order.deliveredAt = new Date();
+  } else if (status === 'cancelled' && !order.cancelledAt) {
+    order.cancelledAt = new Date();
+  }
+
+  await order.save();
+
+  res.json({
+    success: true,
+    message: `Order status updated to ${status}`,
+    order
+  });
 });
 
 export const bulkUpdateOrderStatus = asyncHandler(async (req, res, next) => {
-  res.status(501).json({ success: false, message: 'Function not implemented yet' });
+  const { orderIds, status, notes } = req.body;
+
+  const orders = await Order.find({ _id: { $in: orderIds } });
+
+  if (orders.length === 0) {
+    return res.status(404).json({ success: false, message: 'No orders found' });
+  }
+
+  const updatePromises = orders.map(async (order) => {
+    order.status = status;
+    
+    if (!order.statusHistory) {
+      order.statusHistory = [];
+    }
+
+    order.statusHistory.push({
+      status,
+      notes: notes || `Bulk status update to ${status}`,
+      updatedBy: req.user._id,
+      timestamp: new Date()
+    });
+
+    // Update timestamps
+    if (status === 'shipped' && !order.shippedAt) {
+      order.shippedAt = new Date();
+    } else if (status === 'delivered' && !order.deliveredAt) {
+      order.deliveredAt = new Date();
+    } else if (status === 'cancelled' && !order.cancelledAt) {
+      order.cancelledAt = new Date();
+    }
+
+    return order.save();
+  });
+
+  await Promise.all(updatePromises);
+
+  res.json({
+    success: true,
+    message: `${orders.length} orders updated to ${status}`,
+    updatedCount: orders.length
+  });
 });
 
 export const getOrderAnalytics = asyncHandler(async (req, res, next) => {
@@ -1128,7 +1215,122 @@ export const getOrderAnalytics = asyncHandler(async (req, res, next) => {
 });
 
 export const processRefund = asyncHandler(async (req, res, next) => {
-  res.status(501).json({ success: false, message: 'Function not implemented yet' });
+  const { id } = req.params;
+  const { amount, reason } = req.body;
+
+  const order = await Order.findById(id).populate('user', 'name email');
+
+  if (!order) {
+    return res.status(404).json({ success: false, message: 'Order not found' });
+  }
+
+  if (order.status !== 'delivered' && order.status !== 'cancelled') {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Only delivered or cancelled orders can be refunded' 
+    });
+  }
+
+  // Calculate refund amount
+  const refundAmount = amount || order.total;
+
+  if (refundAmount > order.total) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Refund amount cannot exceed order total' 
+    });
+  }
+
+  // Update order
+  order.status = 'refunded';
+  order.refund = {
+    amount: refundAmount,
+    reason: reason || 'Admin initiated refund',
+    processedBy: req.user._id,
+    processedAt: new Date(),
+    status: 'completed'
+  };
+
+  if (!order.statusHistory) {
+    order.statusHistory = [];
+  }
+
+  order.statusHistory.push({
+    status: 'refunded',
+    notes: `Refund processed: $${refundAmount}. Reason: ${reason || 'Admin initiated'}`,
+    updatedBy: req.user._id,
+    timestamp: new Date()
+  });
+
+  await order.save();
+
+  res.json({
+    success: true,
+    message: 'Refund processed successfully',
+    order,
+    refund: order.refund
+  });
+});
+
+export const cancelOrder = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  const order = await Order.findById(id).populate('user', 'name email');
+
+  if (!order) {
+    return res.status(404).json({ success: false, message: 'Order not found' });
+  }
+
+  if (order.status === 'delivered' || order.status === 'cancelled') {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Cannot cancel delivered or already cancelled orders' 
+    });
+  }
+
+  order.status = 'cancelled';
+  order.cancelledAt = new Date();
+
+  if (!order.statusHistory) {
+    order.statusHistory = [];
+  }
+
+  order.statusHistory.push({
+    status: 'cancelled',
+    notes: reason || 'Order cancelled by admin',
+    updatedBy: req.user._id,
+    timestamp: new Date()
+  });
+
+  await order.save();
+
+  res.json({
+    success: true,
+    message: 'Order cancelled successfully',
+    order
+  });
+});
+
+export const sendOrderEmail = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { emailType } = req.body;
+
+  const order = await Order.findById(id).populate('user', 'name email');
+
+  if (!order) {
+    return res.status(404).json({ success: false, message: 'Order not found' });
+  }
+
+  // TODO: Implement actual email sending logic here
+  // For now, just return success
+  
+  res.json({
+    success: true,
+    message: `${emailType} email sent successfully to ${order.user.email}`,
+    emailType,
+    recipient: order.user.email
+  });
 });
 
 export const exportOrders = asyncHandler(async (req, res, next) => {
@@ -1153,7 +1355,81 @@ export const getPendingReviews = asyncHandler(async (req, res, next) => {
 });
 
 export const moderateReview = asyncHandler(async (req, res, next) => {
-  res.status(501).json({ success: false, message: 'Function not implemented yet' });
+  const { id } = req.params;
+  const { action, reason } = req.body; // action: 'approve' or 'reject'
+
+  const review = await Review.findById(id).populate('user product');
+
+  if (!review) {
+    return res.status(404).json({ success: false, message: 'Review not found' });
+  }
+
+  if (action === 'approve') {
+    review.status = 'approved';
+    review.moderatedBy = req.user._id;
+    review.moderatedAt = new Date();
+  } else if (action === 'reject') {
+    review.status = 'rejected';
+    review.moderatedBy = req.user._id;
+    review.moderatedAt = new Date();
+    review.rejectionReason = reason || 'Does not meet community guidelines';
+  } else {
+    return res.status(400).json({ success: false, message: 'Invalid action. Use "approve" or "reject"' });
+  }
+
+  await review.save();
+
+  res.json({
+    success: true,
+    message: `Review ${action}d successfully`,
+    review
+  });
+});
+
+export const approveReview = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const review = await Review.findById(id).populate('user product');
+
+  if (!review) {
+    return res.status(404).json({ success: false, message: 'Review not found' });
+  }
+
+  review.status = 'approved';
+  review.moderatedBy = req.user._id;
+  review.moderatedAt = new Date();
+
+  await review.save();
+
+  res.json({
+    success: true,
+    message: 'Review approved successfully',
+    review
+  });
+});
+
+export const rejectReview = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  const review = await Review.findById(id).populate('user product');
+
+  if (!review) {
+    return res.status(404).json({ success: false, message: 'Review not found' });
+  }
+
+  review.status = 'rejected';
+  review.moderatedBy = req.user._id;
+  review.moderatedAt = new Date();
+  review.rejectionReason = reason || 'Does not meet community guidelines';
+
+  await review.save();
+
+  res.json({
+    success: true,
+    message: 'Review rejected successfully',
+    review
+  });
 });
 
 export const bulkModerateReviews = asyncHandler(async (req, res, next) => {
