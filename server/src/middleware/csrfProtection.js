@@ -158,6 +158,9 @@ export const conditionalCSRF = (req, res, next) => {
     '/api/users/payment-methods', // User payment methods management
     '/api/admin/profile',
     '/api/admin/categories', // Admin category management
+    '/api/admin/products', // Admin product management
+    '/api/admin/orders', // Admin order management
+    '/api/admin/reviews', // Admin review management
     '/api/cart', // Cart API endpoints
     '/api/wishlist', // Wishlist API endpoints
     '/api/reviews', // Review API endpoints
