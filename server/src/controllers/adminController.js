@@ -184,6 +184,35 @@ export const getReviews = async (req, res) => {
         }
       },
       { $unwind: '$productInfo' },
+      {
+        $project: {
+          _id: 1,
+          rating: 1,
+          title: 1,
+          comment: 1,
+          status: 1,
+          verified: 1,
+          verifiedPurchase: 1,
+          order: 1,
+          helpful: 1,
+          notHelpful: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          user: {
+            _id: '$userInfo._id',
+            firstName: '$userInfo.firstName',
+            lastName: '$userInfo.lastName',
+            name: '$userInfo.name',
+            email: '$userInfo.email'
+          },
+          product: {
+            _id: '$productInfo._id',
+            name: '$productInfo.name',
+            image: '$productInfo.image',
+            images: '$productInfo.images'
+          }
+        }
+      },
       { $sort: sort },
       { $skip: skip },
       { $limit: limitNum }
@@ -1504,7 +1533,42 @@ export const getReviewAnalytics = asyncHandler(async (req, res, next) => {
 });
 
 export const deleteReview = asyncHandler(async (req, res, next) => {
-  res.status(501).json({ success: false, message: 'Function not implemented yet' });
+  const { id } = req.params;
+
+  const review = await Review.findById(id);
+  
+  if (!review) {
+    return next(new AppError('Review not found', 404, 'REVIEW_NOT_FOUND'));
+  }
+
+  // Delete the review
+  await Review.findByIdAndDelete(id);
+
+  // Update product rating after deleting review
+  try {
+    const product = await Product.findById(review.product);
+    if (product) {
+      await product.updateRating();
+    }
+  } catch (error) {
+    logger.warn('Failed to update product rating after review deletion', {
+      reviewId: id,
+      productId: review.product,
+      error: error.message
+    });
+  }
+
+  logger.info('Review deleted by admin', {
+    reviewId: id,
+    productId: review.product,
+    adminId: req.user._id,
+    ip: req.ip
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Review deleted successfully'
+  });
 });
 
 // Activity log removed - feature deprecated
