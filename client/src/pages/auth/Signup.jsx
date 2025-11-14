@@ -103,7 +103,7 @@ const Signup = () => {
                 lastName: formData.lastName.trim(),
                 email: formData.email.trim().toLowerCase(),
                 password: formData.password,
-                subscribeNewsletter: formData.subscribeNewsletter
+                confirmPassword: formData.confirmPassword
             };
 
             const result = await register(userData);
