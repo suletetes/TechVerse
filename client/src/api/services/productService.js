@@ -292,7 +292,7 @@ class ProductService extends BaseApiService {
       throw new Error('Product ID is required');
     }
 
-    const { rating, comment, title } = reviewData;
+    const { rating, comment, title, pros, cons, orderId } = reviewData;
 
     // Validate review data
     if (!rating || rating < 1 || rating > 5) {
@@ -303,11 +303,20 @@ class ProductService extends BaseApiService {
       throw new Error('Review comment must be at least 10 characters');
     }
 
-    return this.create(this.endpoints.REVIEWS(productId), {
+    const payload = {
       rating: parseInt(rating),
       comment: comment.trim(),
-      title: title?.trim() || ''
-    });
+      title: title?.trim() || '',
+      pros: pros || [],
+      cons: cons || []
+    };
+
+    // Add orderId if provided
+    if (orderId) {
+      payload.orderId = orderId;
+    }
+
+    return this.create(this.endpoints.REVIEWS(productId), payload);
   }
 
   // Admin: Create product

@@ -106,12 +106,20 @@ const reviewValidation = [
     .withMessage('Review comment must be between 10 and 1000 characters'),
   body('pros')
     .optional()
-    .isArray({ max: 5 })
+    .isArray()
+    .withMessage('Pros must be an array')
+    .custom((value) => value.length <= 5)
     .withMessage('Maximum 5 pros allowed'),
   body('cons')
     .optional()
-    .isArray({ max: 5 })
-    .withMessage('Maximum 5 cons allowed')
+    .isArray()
+    .withMessage('Cons must be an array')
+    .custom((value) => value.length <= 5)
+    .withMessage('Maximum 5 cons allowed'),
+  body('orderId')
+    .optional()
+    .isMongoId()
+    .withMessage('Order ID must be a valid MongoDB ObjectId')
 ];
 
 const searchValidation = [

@@ -741,7 +741,18 @@ export const getProductsByCategory = asyncHandler(async (req, res, next) => {
 // @access  Private
 export const addProductReview = asyncHandler(async (req, res, next) => {
   const { id: productId } = req.params;
-  const { rating, title, comment, pros, cons } = req.body;
+  const { rating, title, comment, pros, cons, orderId } = req.body;
+  
+  console.log('🔍 DEBUG addProductReview:', {
+    productId,
+    userId: req.user?._id,
+    rating,
+    title,
+    comment,
+    pros,
+    cons,
+    orderId
+  });
 
   // Check if product exists - try by ID first, then by slug
   let product = null;
@@ -759,9 +770,50 @@ export const addProductReview = asyncHandler(async (req, res, next) => {
   // Check if user already reviewed this product
   const existingReview = await Review.findOne({
     user: req.user._id,
-    product: productId
+    product: product._id
   });
 
+  console.log('🔍 DEBUG existingReview:', {
+    exists: !!existingReview,
+    hasOrder: !!existingReview?.order,
+    existingOrderId: existingReview?.order?.toString(),
+    newOrderId: orderId,
+    match: existingReview?.order?.toString() === orderId
+  });
+
+  // If review exists and orderId is provided, update it
+  if (existingReview && orderId) {
+    // Update the review regardless of whether it had an order before
+    existingReview.rating = rating;
+    existingReview.title = title;
+    existingReview.comment = comment;
+    existingReview.pros = pros || [];
+    existingReview.cons = cons || [];
+    existingReview.order = orderId; // Set/update the order reference
+    existingReview.verifiedPurchase = true;
+    
+    await existingReview.save();
+    await existingReview.populate('user', 'firstName lastName');
+
+    logger.info('Product review updated', {
+      reviewId: existingReview._id,
+      productId: product._id,
+      userId: req.user._id,
+      rating,
+      orderId,
+      ip: req.ip
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Review updated successfully',
+      data: {
+        review: existingReview
+      }
+    });
+  }
+
+  // If review exists but no orderId provided, don't allow duplicate
   if (existingReview) {
     return next(new AppError('You have already reviewed this product', 400, 'REVIEW_EXISTS'));
   }
@@ -777,6 +829,12 @@ export const addProductReview = asyncHandler(async (req, res, next) => {
     cons: cons || []
   };
 
+  // Add order reference if provided
+  if (orderId) {
+    reviewData.order = orderId;
+    reviewData.verifiedPurchase = true;
+  }
+
   // Handle image uploads if any
   if (req.files && req.files.images) {
     try {
@@ -791,11 +849,25 @@ export const addProductReview = asyncHandler(async (req, res, next) => {
   const review = await Review.create(reviewData);
   await review.populate('user', 'firstName lastName');
 
+  // If this review is for an order, mark the order as reviewed
+  if (orderId) {
+    try {
+      const Order = mongoose.model('Order');
+      await Order.findByIdAndUpdate(orderId, {
+        reviewedAt: new Date()
+      });
+    } catch (error) {
+      logger.error('Failed to update order reviewedAt', { orderId, error });
+      // Don't fail the review creation if order update fails
+    }
+  }
+
   logger.info('Product review added', {
     reviewId: review._id,
     productId: product._id,
     userId: req.user._id,
     rating,
+    orderId: orderId || null,
     ip: req.ip
   });
 
