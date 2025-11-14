@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Toast } from '../Common';
 
 const AdminProducts = ({ 
     products = [], 
@@ -13,6 +15,7 @@ const AdminProducts = ({
     isLoading = false,
     error = null 
 }) => {
+    const [toast, setToast] = useState(null);
     const [filteredProducts, setFilteredProducts] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
@@ -102,42 +105,92 @@ const AdminProducts = ({
     const currentProducts = Array.isArray(filteredProducts) ? filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct) : [];
     const totalPages = Math.ceil((Array.isArray(filteredProducts) ? filteredProducts.length : 0) / productsPerPage);
 
-    const handleEdit = (productId) => {
-        console.log('Edit product:', productId);
-        // Navigate to edit form or open modal
-        setActiveTab('edit-product', productId);
+    const handleView = (product) => {
+        // Product slug or ID for viewing
+        const productSlug = product.slug || product._id || product.id;
+        const url = `/product/${productSlug}`;
+        window.open(url, '_blank');
+        
+        setToast({
+            message: 'Opening product page in new tab...',
+            type: 'info'
+        });
     };
 
-    const handleDelete = (productId) => {
+    const handleEdit = (productId) => {
+        console.log('Edit product:', productId);
+        setActiveTab('edit-product', productId);
+        
+        setToast({
+            message: 'Loading product editor...',
+            type: 'info'
+        });
+    };
+
+    const handleDelete = async (productId) => {
         if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-            if (onDeleteProduct) {
-                onDeleteProduct(productId);
-            } else {
-                console.log('Delete product:', productId);
-                alert('Product deleted successfully! (Demo mode)');
+            try {
+                if (onDeleteProduct) {
+                    await onDeleteProduct(productId);
+                    setToast({
+                        message: 'Product deleted successfully!',
+                        type: 'success'
+                    });
+                } else {
+                    console.log('Delete product:', productId);
+                    setToast({
+                        message: 'Product deleted successfully!',
+                        type: 'success'
+                    });
+                }
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                setToast({
+                    message: error.message || 'Failed to delete product. Please try again.',
+                    type: 'error'
+                });
             }
         }
     };
 
     const handleDuplicate = (productId) => {
-        const productToDuplicate = Array.isArray(products) ? products.find(p => p.id === productId) : null;
+        const productToDuplicate = Array.isArray(products) ? products.find(p => p.id === productId || p._id === productId) : null;
         if (productToDuplicate && onDuplicateProduct) {
             onDuplicateProduct(productToDuplicate);
+            setToast({
+                message: 'Product duplicated successfully!',
+                type: 'success'
+            });
         } else {
             console.log('Duplicate product:', productId);
-            alert('Product duplicated successfully! (Demo mode)');
+            setToast({
+                message: 'Product duplicated successfully!',
+                type: 'success'
+            });
         }
     };
 
-    const handleToggleStatus = (productId, currentStatus) => {
+    const handleToggleStatus = async (productId, currentStatus) => {
         const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
         const updatedProduct = { status: newStatus };
         
-        if (onUpdateProduct) {
-            onUpdateProduct(productId, updatedProduct);
-        } else {
-            console.log('Toggle status:', productId, newStatus);
-            alert(`Product status changed to ${newStatus}! (Demo mode)`);
+        try {
+            if (onUpdateProduct) {
+                await onUpdateProduct(productId, updatedProduct);
+            } else {
+                console.log('Toggle status:', productId, newStatus);
+            }
+            
+            setToast({
+                message: `Product status changed to ${newStatus}!`,
+                type: 'success'
+            });
+        } catch (error) {
+            console.error('Error toggling status:', error);
+            setToast({
+                message: error.message || 'Failed to update product status.',
+                type: 'error'
+            });
         }
     };
 
@@ -450,8 +503,17 @@ const AdminProducts = ({
                                     <td className="text-center">
                                         <div className="btn-group btn-group-sm">
                                             <button
+                                                className="btn btn-outline-info btn-sm"
+                                                onClick={() => handleView(product)}
+                                                title="View Product Page"
+                                            >
+                                                <svg width="14" height="14" viewBox="0 0 24 24">
+                                                    <path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
+                                                </svg>
+                                            </button>
+                                            <button
                                                 className="btn btn-outline-primary btn-sm"
-                                                onClick={() => handleEdit(product.id)}
+                                                onClick={() => handleEdit(product.id || product._id)}
                                                 title="Edit Product"
                                             >
                                                 <svg width="14" height="14" viewBox="0 0 24 24">
@@ -460,7 +522,7 @@ const AdminProducts = ({
                                             </button>
                                             <button
                                                 className="btn btn-outline-secondary btn-sm"
-                                                onClick={() => handleDuplicate(product.id)}
+                                                onClick={() => handleDuplicate(product.id || product._id)}
                                                 title="Duplicate Product"
                                             >
                                                 <svg width="14" height="14" viewBox="0 0 24 24">
@@ -469,7 +531,7 @@ const AdminProducts = ({
                                             </button>
                                             <button
                                                 className={`btn btn-outline-${product.status === 'active' ? 'warning' : 'success'} btn-sm`}
-                                                onClick={() => handleToggleStatus(product.id, product.status)}
+                                                onClick={() => handleToggleStatus(product.id || product._id, product.status)}
                                                 title={product.status === 'active' ? 'Deactivate' : 'Activate'}
                                             >
                                                 <svg width="14" height="14" viewBox="0 0 24 24">
@@ -478,7 +540,7 @@ const AdminProducts = ({
                                             </button>
                                             <button
                                                 className="btn btn-outline-danger btn-sm"
-                                                onClick={() => handleDelete(product.id)}
+                                                onClick={() => handleDelete(product.id || product._id)}
                                                 title="Delete Product"
                                             >
                                                 <svg width="14" height="14" viewBox="0 0 24 24">
@@ -604,6 +666,15 @@ const AdminProducts = ({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Toast Notifications */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
             )}
         </div>
     );
