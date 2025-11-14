@@ -194,7 +194,19 @@ class ProductService extends BaseApiService {
     if (maxPrice !== undefined) params.maxPrice = maxPrice;
 
     try {
-      return this.search(this.endpoints.SEARCH, trimmedQuery, params);
+      const result = await this.search(this.endpoints.SEARCH, trimmedQuery, params);
+      
+      // Check both possible response structures
+      const products = Array.isArray(result?.data) ? result.data : result?.data?.products || [];
+      const pagination = result?.pagination || result?.data?.pagination || {};
+      
+      console.log('✅ Search results received:', {
+        productsCount: products.length,
+        totalProducts: pagination.totalProducts || pagination.total || 0,
+        query: trimmedQuery,
+        responseStructure: Array.isArray(result?.data) ? 'array' : 'object'
+      });
+      return result;
     } catch (error) {
       // If search fails, return empty results instead of throwing
       console.warn('Search failed:', error.message);
