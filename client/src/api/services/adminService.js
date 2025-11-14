@@ -137,10 +137,164 @@ class AdminService extends BaseApiService {
       throw new Error('Order status is required');
     }
 
-    return this.update(`${this.endpoints.ORDERS}/${orderId}/status`, {
-      status,
-      notes: notes.trim()
-    });
+    // Get CSRF token first
+    const csrfToken = await this.getCsrfToken();
+    
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
+      
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+      
+      // Add CSRF token if available
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+      
+      const response = await fetch(`${this.baseURL}/admin/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({
+          status,
+          notes: notes.trim()
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update order status' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('❌ Error updating order status:', error);
+      throw error;
+    }
+  }
+
+  // Helper method to get CSRF token
+  async getCsrfToken() {
+    try {
+      // Try to get from cookie first
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'csrf-token' || name === 'XSRF-TOKEN') {
+          return decodeURIComponent(value);
+        }
+      }
+
+      // If not in cookie, fetch from server
+      const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
+      const response = await fetch(`${this.baseURL}/security/csrf-token`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.csrfToken || data.token;
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not fetch CSRF token:', error.message);
+    }
+    
+    return null;
+  }
+
+  async cancelOrder(orderId) {
+    if (!orderId) {
+      throw new Error('Order ID is required');
+    }
+
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
+      
+      const response = await fetch(`${this.baseURL}/admin/orders/${orderId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to cancel order' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('❌ Error cancelling order:', error);
+      throw error;
+    }
+  }
+
+  async refundOrder(orderId) {
+    if (!orderId) {
+      throw new Error('Order ID is required');
+    }
+
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
+      
+      const response = await fetch(`${this.baseURL}/admin/orders/${orderId}/refund`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to refund order' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('❌ Error refunding order:', error);
+      throw error;
+    }
+  }
+
+  async sendOrderEmail(orderId, emailType = 'confirmation') {
+    if (!orderId) {
+      throw new Error('Order ID is required');
+    }
+
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
+      
+      const response = await fetch(`${this.baseURL}/admin/orders/${orderId}/email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include',
+        body: JSON.stringify({ emailType })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to send email' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('❌ Error sending order email:', error);
+      throw error;
+    }
   }
 
   // User Management
@@ -493,6 +647,112 @@ class AdminService extends BaseApiService {
     return this.read(`${this.endpoints.PRODUCTS}/low-stock`, {
       threshold
     });
+  }
+
+  // Review Management
+  async getAdminReviews(params = {}) {
+    const {
+      page = 1,
+      limit = 1000,
+      status,
+      rating,
+      ...otherParams
+    } = params;
+
+    const queryParams = { ...otherParams };
+    if (status) queryParams.status = status;
+    if (rating) queryParams.rating = rating;
+
+    return this.read(this.endpoints.REVIEWS || '/admin/reviews', {
+      params: queryParams
+    });
+  }
+
+  async approveReview(reviewId) {
+    if (!reviewId) {
+      throw new Error('Review ID is required');
+    }
+
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
+      
+      const response = await fetch(`${this.baseURL}/admin/reviews/${reviewId}/approve`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to approve review' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('❌ Error approving review:', error);
+      throw error;
+    }
+  }
+
+  async rejectReview(reviewId) {
+    if (!reviewId) {
+      throw new Error('Review ID is required');
+    }
+
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
+      
+      const response = await fetch(`${this.baseURL}/admin/reviews/${reviewId}/reject`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to reject review' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('❌ Error rejecting review:', error);
+      throw error;
+    }
+  }
+
+  async deleteReview(reviewId) {
+    if (!reviewId) {
+      throw new Error('Review ID is required');
+    }
+
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
+      
+      const response = await fetch(`${this.baseURL}/admin/reviews/${reviewId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete review' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('❌ Error deleting review:', error);
+      throw error;
+    }
   }
 }
 

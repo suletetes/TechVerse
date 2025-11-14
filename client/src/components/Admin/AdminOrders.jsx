@@ -66,9 +66,9 @@ const AdminOrders = ({
         if (onViewOrder) {
             onViewOrder(order);
         } else {
-            // Open order details in new tab
+            // Open order details in new tab - use correct route
             const orderId = order._id || order.id;
-            window.open(`/order/${orderId}`, '_blank');
+            window.open(`/user/order/${orderId}`, '_blank');
         }
         
         setToast({

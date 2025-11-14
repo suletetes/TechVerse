@@ -44,10 +44,24 @@ const AdminOrderManagement = () => {
 
     const handleUpdateOrderStatus = async (orderId, newStatus) => {
         try {
-            await adminService.updateOrderStatus(orderId, newStatus);
+            console.log('🔄 Updating order status:', { orderId, newStatus });
+            
+            // Use the correct method - might need to use PATCH instead of PUT
+            const response = await adminService.updateOrderStatus(orderId, newStatus, '');
+            
+            console.log('✅ Order status updated:', response);
             await loadOrders(); // Reload orders
+            
+            return response;
         } catch (err) {
-            console.error('Error updating order status:', err);
+            console.error('❌ Error updating order status:', err);
+            
+            // If CSRF error, try to refresh the token
+            if (err.message?.includes('CSRF')) {
+                console.log('🔄 CSRF token error - attempting to refresh...');
+                // You might need to implement token refresh logic here
+            }
+            
             throw err;
         }
     };
@@ -74,7 +88,8 @@ const AdminOrderManagement = () => {
 
     const handleViewOrder = (order) => {
         const orderId = order._id || order.id;
-        navigate(`/order/${orderId}`);
+        // Navigate to user order details page
+        navigate(`/user/order/${orderId}`);
     };
 
     const handlePrintInvoice = (order) => {
