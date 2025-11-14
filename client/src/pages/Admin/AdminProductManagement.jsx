@@ -1,9 +1,148 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import AdminProductsNew from '../../components/Admin/AdminProductsNew';
+import { AdminProducts, AdminAddProduct } from '../../components/Admin';
+import { adminService } from '../../api/services/index.js';
+import { adminDataStore } from '../../utils/AdminDataStore';
+import { useAuth } from '../../context/AuthContext';
+import { useAdmin } from '../../context/AdminContext';
 
 const AdminProductManagement = () => {
+    const { user, isAuthenticated, isAdmin } = useAuth();
+    const { categories: adminCategories } = useAdmin();
     const [activeTab, setActiveTab] = useState('products');
+    const [editingProductId, setEditingProductId] = useState(null);
+    const [allProducts, setAllProducts] = useState([]);
+    const [allCategories, setAllCategories] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Load products and categories
+    useEffect(() => {
+        loadProducts();
+        
+        if (adminCategories && adminCategories.length > 0) {
+            setAllCategories(adminCategories);
+        } else {
+            loadCategories();
+        }
+    }, []);
+
+    const loadProducts = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await adminService.getAdminProducts({ limit: 1000 });
+            
+            let backendProducts = [];
+            if (response?.data?.products) {
+                backendProducts = response.data.products;
+            } else if (response?.products) {
+                backendProducts = response.products;
+            } else if (response?.data && Array.isArray(response.data)) {
+                backendProducts = response.data;
+            } else if (Array.isArray(response)) {
+                backendProducts = response;
+            }
+            
+            setAllProducts(backendProducts);
+            setLoading(false);
+        } catch (err) {
+            console.error('❌ Error loading products:', err);
+            setError(err.message);
+            setLoading(false);
+        }
+    };
+
+    const loadCategories = async () => {
+        try {
+            const response = await adminService.getCategories();
+            const categories = response?.data || response || [];
+            setAllCategories(categories);
+        } catch (err) {
+            console.error('❌ Error loading categories:', err);
+        }
+    };
+
+    const handleSetActiveTab = (tab, productId = null) => {
+        console.log('🔄 Switching tab to:', tab, 'Product ID:', productId);
+        setActiveTab(tab);
+        if (productId) {
+            setEditingProductId(productId);
+        }
+    };
+
+    const handleUpdateProduct = async (productId, updatedData) => {
+        try {
+            await adminService.updateProduct(productId, updatedData);
+            await loadProducts(); // Reload products
+        } catch (err) {
+            console.error('Error updating product:', err);
+            throw err;
+        }
+    };
+
+    const handleDeleteProduct = async (productId) => {
+        try {
+            await adminService.deleteProduct(productId);
+            await loadProducts(); // Reload products
+        } catch (err) {
+            console.error('Error deleting product:', err);
+            throw err;
+        }
+    };
+
+    const handleDuplicateProduct = async (product) => {
+        try {
+            const duplicatedProduct = {
+                ...product,
+                name: `${product.name} (Copy)`,
+                slug: `${product.slug}-copy-${Date.now()}`,
+                _id: undefined,
+                id: undefined
+            };
+            await adminService.createProduct(duplicatedProduct);
+            await loadProducts(); // Reload products
+        } catch (err) {
+            console.error('Error duplicating product:', err);
+            throw err;
+        }
+    };
+
+    const handleSaveProduct = async (productData) => {
+        try {
+            if (editingProductId) {
+                await adminService.updateProduct(editingProductId, productData);
+            } else {
+                await adminService.createProduct(productData);
+            }
+            await loadProducts();
+            setActiveTab('products');
+            setEditingProductId(null);
+        } catch (err) {
+            console.error('Error saving product:', err);
+            throw err;
+        }
+    };
+
+    const getStatusColor = (status) => {
+        const statusColors = {
+            active: 'success',
+            inactive: 'secondary',
+            draft: 'warning',
+            'out-of-stock': 'danger'
+        };
+        return statusColors[status] || 'secondary';
+    };
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(amount || 0);
+    };
+
+    const editProduct = editingProductId ? allProducts.find(p => (p.id || p._id) === editingProductId) : null;
 
     return (
         <div className="min-vh-100 bg-light">
@@ -29,7 +168,33 @@ const AdminProductManagement = () => {
                 </div>
 
                 {/* Products Component */}
-                <AdminProductsNew setActiveTab={setActiveTab} />
+                {activeTab === 'products' && (
+                    <AdminProducts
+                        products={allProducts}
+                        categories={allCategories}
+                        setActiveTab={handleSetActiveTab}
+                        getStatusColor={getStatusColor}
+                        formatCurrency={formatCurrency}
+                        onUpdateProduct={handleUpdateProduct}
+                        onDeleteProduct={handleDeleteProduct}
+                        onDuplicateProduct={handleDuplicateProduct}
+                        isLoading={loading}
+                        error={error}
+                    />
+                )}
+
+                {/* Add/Edit Product Form */}
+                {(activeTab === 'add-product' || activeTab === 'edit-product') && (
+                    <AdminAddProduct
+                        editProduct={editProduct}
+                        categories={allCategories}
+                        onSave={handleSaveProduct}
+                        onCancel={() => {
+                            setActiveTab('products');
+                            setEditingProductId(null);
+                        }}
+                    />
+                )}
             </div>
         </div>
     );

@@ -106,9 +106,13 @@ const AdminProducts = ({
     const totalPages = Math.ceil((Array.isArray(filteredProducts) ? filteredProducts.length : 0) / productsPerPage);
 
     const handleView = (product) => {
+        console.log('🔍 View button clicked for product:', product);
+        
         // Product slug or ID for viewing
         const productSlug = product.slug || product._id || product.id;
         const url = `/product/${productSlug}`;
+        
+        console.log('📍 Opening URL:', url);
         window.open(url, '_blank');
         
         setToast({
@@ -118,67 +122,92 @@ const AdminProducts = ({
     };
 
     const handleEdit = (productId) => {
-        console.log('Edit product:', productId);
-        setActiveTab('edit-product', productId);
+        console.log('✏️ Edit button clicked for product ID:', productId);
+        console.log('📋 setActiveTab function:', typeof setActiveTab);
         
-        setToast({
-            message: 'Loading product editor...',
-            type: 'info'
-        });
+        if (typeof setActiveTab === 'function') {
+            setActiveTab('edit-product', productId);
+            setToast({
+                message: 'Loading product editor...',
+                type: 'info'
+            });
+        } else {
+            console.error('❌ setActiveTab is not a function!');
+            setToast({
+                message: 'Error: Cannot switch to edit mode',
+                type: 'error'
+            });
+        }
     };
 
     const handleDelete = async (productId) => {
+        console.log('🗑️ Delete button clicked for product ID:', productId);
+        
         if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
             try {
                 if (onDeleteProduct) {
+                    console.log('🔄 Calling onDeleteProduct...');
                     await onDeleteProduct(productId);
                     setToast({
                         message: 'Product deleted successfully!',
                         type: 'success'
                     });
                 } else {
-                    console.log('Delete product:', productId);
+                    console.log('⚠️ No onDeleteProduct function provided (demo mode)');
                     setToast({
-                        message: 'Product deleted successfully!',
+                        message: 'Product deleted successfully! (Demo mode)',
                         type: 'success'
                     });
                 }
             } catch (error) {
-                console.error('Error deleting product:', error);
+                console.error('❌ Error deleting product:', error);
                 setToast({
                     message: error.message || 'Failed to delete product. Please try again.',
                     type: 'error'
                 });
             }
+        } else {
+            console.log('❌ Delete cancelled by user');
         }
     };
 
     const handleDuplicate = (productId) => {
+        console.log('📋 Duplicate button clicked for product ID:', productId);
+        
         const productToDuplicate = Array.isArray(products) ? products.find(p => p.id === productId || p._id === productId) : null;
+        console.log('🔍 Found product to duplicate:', productToDuplicate);
+        
         if (productToDuplicate && onDuplicateProduct) {
+            console.log('🔄 Calling onDuplicateProduct...');
             onDuplicateProduct(productToDuplicate);
             setToast({
                 message: 'Product duplicated successfully!',
                 type: 'success'
             });
         } else {
-            console.log('Duplicate product:', productId);
+            console.log('⚠️ No onDuplicateProduct function provided (demo mode)');
             setToast({
-                message: 'Product duplicated successfully!',
+                message: 'Product duplicated successfully! (Demo mode)',
                 type: 'success'
             });
         }
     };
 
     const handleToggleStatus = async (productId, currentStatus) => {
+        console.log('🔄 Toggle status button clicked for product ID:', productId);
+        console.log('📊 Current status:', currentStatus);
+        
         const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
         const updatedProduct = { status: newStatus };
         
+        console.log('📝 New status:', newStatus);
+        
         try {
             if (onUpdateProduct) {
+                console.log('🔄 Calling onUpdateProduct...');
                 await onUpdateProduct(productId, updatedProduct);
             } else {
-                console.log('Toggle status:', productId, newStatus);
+                console.log('⚠️ No onUpdateProduct function provided (demo mode)');
             }
             
             setToast({
@@ -186,7 +215,7 @@ const AdminProducts = ({
                 type: 'success'
             });
         } catch (error) {
-            console.error('Error toggling status:', error);
+            console.error('❌ Error toggling status:', error);
             setToast({
                 message: error.message || 'Failed to update product status.',
                 type: 'error'
