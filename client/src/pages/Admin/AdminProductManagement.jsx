@@ -74,8 +74,25 @@ const AdminProductManagement = () => {
 
     const handleUpdateProduct = async (productId, updatedData) => {
         try {
-            await adminService.updateProduct(productId, updatedData);
-            await loadProducts(); // Reload products
+            // Get the full product first
+            const product = allProducts.find(p => (p._id || p.id) === productId);
+            
+            if (!product) {
+                throw new Error('Product not found');
+            }
+            
+            // Merge with existing product data to pass validation
+            const fullUpdate = {
+                name: product.name,
+                description: product.description || product.shortDescription,
+                price: product.price,
+                brand: product.brand,
+                category: product.category?._id || product.category,
+                ...updatedData
+            };
+            
+            await adminService.updateProduct(productId, fullUpdate);
+            await loadProducts();
         } catch (err) {
             console.error('Error updating product:', err);
             throw err;
@@ -85,7 +102,7 @@ const AdminProductManagement = () => {
     const handleDeleteProduct = async (productId) => {
         try {
             await adminService.deleteProduct(productId);
-            await loadProducts(); // Reload products
+            await loadProducts();
         } catch (err) {
             console.error('Error deleting product:', err);
             throw err;
@@ -94,15 +111,105 @@ const AdminProductManagement = () => {
 
     const handleDuplicateProduct = async (product) => {
         try {
-            const duplicatedProduct = {
-                ...product,
+            // Extract category ID properly
+            let categoryId;
+            if (product.category) {
+                if (typeof product.category === 'object' && product.category._id) {
+                    categoryId = product.category._id;
+                } else if (typeof product.category === 'string') {
+                    categoryId = product.category;
+                } else {
+                    throw new Error('Invalid category format');
+                }
+            } else {
+                throw new Error('Product must have a category');
+            }
+
+            // Ensure we have required fields
+            if (!product.name || !product.price || !product.brand) {
+                throw new Error('Product missing required fields (name, price, brand)');
+            }
+
+            // Clean up the product data for duplication - only include required and valid fields
+            const cleanProduct = {
                 name: `${product.name} (Copy)`,
-                slug: `${product.slug}-copy-${Date.now()}`,
-                _id: undefined,
-                id: undefined
+                description: product.description || product.shortDescription || `Copy of ${product.name}`,
+                price: Number(product.price),
+                brand: product.brand,
+                category: categoryId
             };
-            await adminService.createProduct(duplicatedProduct);
-            await loadProducts(); // Reload products
+
+            // Add optional fields only if they exist and are valid
+            if (product.shortDescription) {
+                cleanProduct.shortDescription = product.shortDescription;
+            }
+
+            if (product.comparePrice && Number(product.comparePrice) > 0) {
+                cleanProduct.comparePrice = Number(product.comparePrice);
+            }
+
+            if (product.cost && Number(product.cost) > 0) {
+                cleanProduct.cost = Number(product.cost);
+            }
+
+            // Don't copy SKU to avoid conflicts - let backend generate new one
+            // Don't copy slug - let backend generate new one
+
+            // Stock information
+            if (product.stock) {
+                cleanProduct.stock = {
+                    quantity: Number(product.stock.quantity) || 0,
+                    lowStockThreshold: Number(product.stock.lowStockThreshold) || 10,
+                    trackQuantity: product.stock.trackQuantity !== false
+                };
+            }
+
+            // Arrays - only include if they have items
+            if (product.images && product.images.length > 0) {
+                cleanProduct.images = product.images;
+            }
+
+            if (product.variants && product.variants.length > 0) {
+                cleanProduct.variants = product.variants;
+            }
+
+            if (product.specifications && product.specifications.length > 0) {
+                cleanProduct.specifications = product.specifications;
+            }
+
+            if (product.features && product.features.length > 0) {
+                cleanProduct.features = product.features;
+            }
+
+            if (product.tags && product.tags.length > 0) {
+                cleanProduct.tags = product.tags;
+            }
+
+            // Other optional fields
+            if (product.weight) {
+                cleanProduct.weight = product.weight;
+            }
+
+            if (product.dimensions) {
+                cleanProduct.dimensions = product.dimensions;
+            }
+
+            if (product.shipping) {
+                cleanProduct.shipping = product.shipping;
+            }
+
+            if (product.seo) {
+                cleanProduct.seo = product.seo;
+            }
+
+            // Set as draft and not featured
+            cleanProduct.status = 'draft';
+            cleanProduct.visibility = product.visibility || 'public';
+            cleanProduct.featured = false;
+            
+            console.log('📋 Duplicating product with data:', cleanProduct);
+            await adminService.createProduct(cleanProduct);
+            await loadProducts();
         } catch (err) {
             console.error('Error duplicating product:', err);
             throw err;

@@ -171,19 +171,27 @@ const AdminProducts = ({
         }
     };
 
-    const handleDuplicate = (productId) => {
+    const handleDuplicate = async (productId) => {
         console.log('📋 Duplicate button clicked for product ID:', productId);
         
         const productToDuplicate = Array.isArray(products) ? products.find(p => p.id === productId || p._id === productId) : null;
         console.log('🔍 Found product to duplicate:', productToDuplicate);
         
         if (productToDuplicate && onDuplicateProduct) {
-            console.log('🔄 Calling onDuplicateProduct...');
-            onDuplicateProduct(productToDuplicate);
-            setToast({
-                message: 'Product duplicated successfully!',
-                type: 'success'
-            });
+            try {
+                console.log('🔄 Calling onDuplicateProduct...');
+                await onDuplicateProduct(productToDuplicate);
+                setToast({
+                    message: 'Product duplicated successfully!',
+                    type: 'success'
+                });
+            } catch (error) {
+                console.error('❌ Error duplicating product:', error);
+                setToast({
+                    message: error.message || 'Failed to duplicate product. Please try again.',
+                    type: 'error'
+                });
+            }
         } else {
             console.log('⚠️ No onDuplicateProduct function provided (demo mode)');
             setToast({
