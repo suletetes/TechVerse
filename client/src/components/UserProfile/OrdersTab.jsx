@@ -5,8 +5,7 @@ import { LoadingSpinner, Toast } from '../Common';
 import { 
     ReorderModal, 
     OrderTrackingModal, 
-    OrderConfirmModal, 
-    ReviewModal 
+    OrderConfirmModal
 } from './Modals';
 
 const OrdersTab = () => {
@@ -25,6 +24,10 @@ const OrdersTab = () => {
         status: 'all',
         dateRange: 'all'
     });
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const ordersPerPage = 10;
 
     // Modal states
     const [activeModal, setActiveModal] = useState(null);
@@ -46,6 +49,20 @@ const OrdersTab = () => {
         });
     };
 
+    const getPaginatedOrders = () => {
+        const filtered = getFilteredOrders();
+        const startIndex = (currentPage - 1) * ordersPerPage;
+        const endIndex = startIndex + ordersPerPage;
+        return filtered.slice(startIndex, endIndex);
+    };
+
+    const totalPages = Math.ceil(getFilteredOrders().length / ordersPerPage);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [orderFilters]);
+
     const handleOrderAction = async (orderId, action) => {
         const order = orders.find(o => o._id === orderId);
         
@@ -66,10 +83,6 @@ const OrdersTab = () => {
                 case 'track':
                     setSelectedOrder(order);
                     setActiveModal('track');
-                    break;
-                case 'review':
-                    setSelectedOrder(order);
-                    setActiveModal('review');
                     break;
                 default:
                     break;
@@ -289,8 +302,9 @@ const OrdersTab = () => {
                     </Link>
                 </div>
             ) : (
+                <>
                 <div className="row">
-                    {getFilteredOrders().map((order) => {
+                    {getPaginatedOrders().map((order) => {
                         const firstItem = order.items?.[0] || {};
                         const itemCount = order.items?.length || 0;
                         const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', {
@@ -400,15 +414,16 @@ const OrdersTab = () => {
                                                     </button>
                                                 )}
                                                 {order.status === 'delivered' && (
-                                                    <button
+                                                    <Link
+                                                        to={`/user/order/${order._id}/review`}
                                                         className="btn btn-sm btn-c-2101 btn-rd"
-                                                        onClick={() => handleOrderAction(order._id, 'review')}
+                                                        title={order.reviewedAt ? 'Edit your review' : 'Write a review'}
                                                     >
                                                         <svg width="14" height="14" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
                                                             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                                         </svg>
-                                                        Review
-                                                    </button>
+                                                        {order.reviewedAt ? 'Edit' : 'Review'}
+                                                    </Link>
                                                 )}
                                             </div>
                                         </div>
@@ -418,6 +433,70 @@ const OrdersTab = () => {
                         );
                     })}
                 </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="d-flex justify-content-center align-items-center mt-4">
+                        <nav aria-label="Order pagination">
+                            <ul className="pagination mb-0">
+                                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                    <button 
+                                        className="page-link" 
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        Previous
+                                    </button>
+                                </li>
+                                
+                                {[...Array(totalPages)].map((_, index) => {
+                                    const pageNum = index + 1;
+                                    // Show first page, last page, current page, and pages around current
+                                    if (
+                                        pageNum === 1 ||
+                                        pageNum === totalPages ||
+                                        (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                                    ) {
+                                        return (
+                                            <li key={pageNum} className={`page-item ${currentPage === pageNum ? 'active' : ''}`}>
+                                                <button 
+                                                    className="page-link" 
+                                                    onClick={() => setCurrentPage(pageNum)}
+                                                >
+                                                    {pageNum}
+                                                </button>
+                                            </li>
+                                        );
+                                    } else if (
+                                        pageNum === currentPage - 2 ||
+                                        pageNum === currentPage + 2
+                                    ) {
+                                        return (
+                                            <li key={pageNum} className="page-item disabled">
+                                                <span className="page-link">...</span>
+                                            </li>
+                                        );
+                                    }
+                                    return null;
+                                })}
+                                
+                                <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                    <button 
+                                        className="page-link" 
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        Next
+                                    </button>
+                                </li>
+                            </ul>
+                        </nav>
+                        <span className="ms-3 text-muted small">
+                            Page {currentPage} of {totalPages} ({getFilteredOrders().length} orders)
+                        </span>
+                    </div>
+                )}
+                </>
             )}
             </div>
 
@@ -480,16 +559,6 @@ const OrdersTab = () => {
                     message="Request a return for this order. Our team will contact you within 24 hours."
                     confirmText="Request Return"
                     confirmClass="btn-warning"
-                />
-            )}
-
-            {activeModal === 'review' && selectedOrder && (
-                <ReviewModal
-                    onClose={closeModal}
-                    order={{
-                        id: selectedOrder.orderNumber,
-                        orderNumber: selectedOrder.orderNumber
-                    }}
                 />
             )}
 
