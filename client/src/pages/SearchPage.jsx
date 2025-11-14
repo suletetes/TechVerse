@@ -46,6 +46,11 @@ const SearchPage = () => {
 
   // Handle search results from AdvancedSearch component
   const handleSearchResults = (results) => {
+    console.log('🎯 SearchPage - handleSearchResults called with:', {
+      results,
+      productsCount: results?.products?.length || 0,
+      pagination: results?.pagination
+    });
     setSearchResults(results);
     setCurrentPage(results.pagination?.currentPage || 1);
   };
