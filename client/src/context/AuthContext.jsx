@@ -471,7 +471,7 @@ export const AuthProvider = ({ children }) => {
         lastName: userData.lastName,
         email: userData.email,
         password: userData.password,
-        subscribeNewsletter: userData.subscribeNewsletter
+        confirmPassword: userData.confirmPassword
       };
 
       const response = await authService.register(registrationData);

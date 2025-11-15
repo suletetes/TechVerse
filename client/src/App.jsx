@@ -26,6 +26,7 @@ import {
     AdminOrderManagement,
     AdminProductManagement
 } from "./pages"
+import AdminReviewManagement from './pages/Admin/AdminReviewManagement.jsx';
 
 import { CategoryManagement } from "./pages/admin"
 import EditProfile from "./pages/EditProfile"
@@ -47,6 +48,8 @@ import {
     Signup,
     Login
 } from "./pages/auth"
+import VerifyEmail from './pages/auth/VerifyEmail.jsx';
+import ForgotPassword from './pages/auth/ForgotPassword.jsx';
 
 const router = createBrowserRouter([
     {
@@ -82,6 +85,14 @@ const router = createBrowserRouter([
             {
                 path: 'signup',
                 element: <Signup />,
+            },
+            {
+                path: 'forgot-password',
+                element: <ForgotPassword />,
+            },
+            {
+                path: 'auth/verify-email',
+                element: <VerifyEmail />,
             },
             {
                 path: 'contact',
@@ -154,6 +165,14 @@ const router = createBrowserRouter([
                 element: (
                     <AdminGuard>
                         <CategoryManagement />
+                    </AdminGuard>
+                ),
+            },
+            {
+                path: 'admin/reviews',
+                element: (
+                    <AdminGuard>
+                        <AdminReviewManagement />
                     </AdminGuard>
                 ),
             },

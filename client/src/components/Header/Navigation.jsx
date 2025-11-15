@@ -133,6 +133,12 @@ const Navigation = () => {
                                                                         Admin Panel
                                                                     </Link>
                                                                 </li>
+                                                                <li>
+                                                                    <Link className="dropdown-item" to="/admin/reviews" style={{ color: '#212529', padding: '0.5rem 1rem' }}>
+                                                                        <i className="fas fa-star me-2"></i>
+                                                                        Review Management
+                                                                    </Link>
+                                                                </li>
                                                                 <li><hr className="dropdown-divider" /></li>
                                                             </>
                                                         ) : (
