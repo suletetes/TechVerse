@@ -107,25 +107,33 @@ const Categories = () => {
         loadCategories();
     }, [loadCategories]);
 
-    // Only show categories that we have images for (from defaultCategories)
-    const displayCategories = defaultCategories.map(defaultCat => {
-        // Find matching backend category
-        const backendCat = Array.isArray(categories)
-            ? categories.find(cat => cat.slug === defaultCat.slug)
-            : null;
+    // Map to get image for each category
+    const imageMap = {
+        'phones': phonesImg,
+        'tablets': tabletsImg,
+        'computers': computerImg,
+        'tvs': tvImg,
+        'gaming': gameImg,
+        'watches': watchImg,
+        'audio': audioImg,
+        'cameras': cameraImg,
+        'accessories': accessoriesImg
+    };
 
-        return {
-            ...defaultCat, // Start with default (includes image and structure)
-            ...(backendCat || {}), // Override with backend data if available
-            image: defaultCat.image, // Always use default image
-            productCount: backendCat?.productCount || defaultCat.productCount || 0,
-            featured: backendCat?.featured !== undefined ? backendCat.featured : defaultCat.featured
-        };
-    });
+    // Use backend categories if available, otherwise use defaults
+    const displayCategories = Array.isArray(categories) && categories.length > 0
+        ? categories.map(cat => ({
+            ...cat,
+            id: cat._id || cat.id,
+            // Use backend image if available, otherwise use local image based on slug
+            image: cat.image?.url || cat.image || imageMap[cat.slug] || imageMap[cat.slug?.toLowerCase()] || phonesImg,
+            featured: cat.isFeatured || false
+        }))
+        : defaultCategories;
 
     // Separate featured and regular categories
-    const featuredCategories = displayCategories.filter(cat => cat.featured);
-    const regularCategories = displayCategories.filter(cat => !cat.featured);
+    const featuredCategories = displayCategories.filter(cat => cat.featured || cat.isFeatured);
+    const regularCategories = displayCategories.filter(cat => !cat.featured && !cat.isFeatured);
 
     if (isLoading) {
         return (

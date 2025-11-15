@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context';
+import { useAuth, useNotification } from '../../context';
 import { LoadingSpinner } from '../../components/Common';
 
 const Signup = () => {
     const navigate = useNavigate();
     const { register, isLoading, error, isAuthenticated, clearError } = useAuth();
+    const { showNotification } = useNotification();
     
     const [formData, setFormData] = useState({
         firstName: '',
@@ -108,16 +109,19 @@ const Signup = () => {
 
             const result = await register(userData);
 
+            // Show success notification with email verification reminder
+            showNotification(
+                `Welcome! A verification link has been sent to ${userData.email}. Please check your email to unlock all features.`,
+                'success',
+                8000 // Show for 8 seconds
+            );
+
             if (result.requiresVerification) {
-                // Redirect to verification page or show message
-                navigate('/login', { 
-                    state: { 
-                        message: 'Registration successful! Please check your email to verify your account.',
-                        email: userData.email
-                    }
-                });
+                // User needs to verify email but can still log in
+                // Redirect to home page where they'll see limited functionality
+                navigate('/');
             } else {
-                // Registration successful, user is logged in
+                // Registration successful, user is logged in and verified
                 navigate('/');
             }
         } catch (err) {
