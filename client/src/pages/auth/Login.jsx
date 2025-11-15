@@ -330,7 +330,7 @@ const Login = () => {
                                                             Remember me
                                                         </label>
                                                     </div>
-                                                    <Link to="/forgot-password" className="tc-2101 sm-text">
+                                                    <Link to="auth/forgot-password" className="tc-2101 sm-text">
                                                         Forgot password?
                                                     </Link>
                                                 </div>
