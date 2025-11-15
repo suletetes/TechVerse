@@ -118,11 +118,6 @@ export const useHomepageSection = (sectionType, options = {}) => {
       setError(null);
       setRetryCount(0);
 
-      // Call success callback
-      if (onSuccess) {
-        onSuccess(safeProducts, sectionType);
-      }
-
     } catch (err) {
       if (!mountedRef.current) return;
 
@@ -130,11 +125,6 @@ export const useHomepageSection = (sectionType, options = {}) => {
       
       const errorMessage = err.message || `Failed to load ${sectionType} products`;
       setError(errorMessage);
-
-      // Call error callback
-      if (onError) {
-        onError(err, sectionType);
-      }
 
       // Auto-retry logic
       if (retryCount < maxRetries && !isRetry) {
@@ -155,8 +145,6 @@ export const useHomepageSection = (sectionType, options = {}) => {
     sectionType, 
     sectionConfig.method, 
     effectiveLimit, 
-    onSuccess, 
-    onError, 
     retryCount, 
     maxRetries, 
     retryDelay
@@ -168,18 +156,31 @@ export const useHomepageSection = (sectionType, options = {}) => {
     fetchData(false);
   }, [fetchData]);
 
-  // Auto-load data on mount or when dependencies change
+  // Auto-load data on mount only
   useEffect(() => {
     if (autoLoad) {
       fetchData(false);
     }
-  }, [autoLoad, fetchData]);
+  }, [autoLoad]); // Only depend on autoLoad, not fetchData
 
   // Refresh data function
   const refresh = useCallback(() => {
     setRetryCount(0);
     fetchData(false);
   }, [fetchData]);
+
+  // Handle callbacks separately to avoid infinite loops
+  useEffect(() => {
+    if (data.length > 0 && onSuccess) {
+      onSuccess(data, sectionType);
+    }
+  }, [data.length]); // Only trigger when data length changes
+
+  useEffect(() => {
+    if (error && onError) {
+      onError(new Error(error), sectionType);
+    }
+  }, [error]);
 
   return {
     data,

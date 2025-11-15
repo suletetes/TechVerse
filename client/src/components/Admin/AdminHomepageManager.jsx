@@ -3,11 +3,25 @@ import productService from '../../api/services/productService';
 import { useNotification } from '../../context';
 
 const AdminHomepageManager = () => {
-    const notificationContext = useNotification();
-    const showNotification = notificationContext?.showNotification || ((msg, type) => {
-        console.log(`[${type}] ${msg}`);
-        alert(msg);
-    });
+    const { showSuccess, showError, showWarning, showInfo } = useNotification();
+    
+    const showNotification = (message, type = 'info') => {
+        switch(type) {
+            case 'success':
+                showSuccess(message);
+                break;
+            case 'error':
+                showError(message);
+                break;
+            case 'warning':
+                showWarning(message);
+                break;
+            case 'info':
+            default:
+                showInfo(message);
+                break;
+        }
+    };
     const [sectionAssignments, setSectionAssignments] = useState({
         latest: [],
         topSellers: [],
@@ -42,6 +56,52 @@ const AdminHomepageManager = () => {
         filterProducts();
     }, [searchTerm, categoryFilter, availableProducts]);
 
+    const loadSectionAssignments = async () => {
+        try {
+            // Load section assignments
+            const sectionData = {};
+            const sectionMap = {
+                latest: 'latest',
+                topSellers: 'topSeller',
+                quickPicks: 'quickPick',
+                weeklyDeals: 'weeklyDeal'
+            };
+            
+            for (const [key, backendName] of Object.entries(sectionMap)) {
+                try {
+                    const res = await productService.getProductsBySection(backendName, 100);
+                    
+                    // Handle different response structures
+                    let sectionProducts = [];
+                    if (res.data?.products) {
+                        sectionProducts = res.data.products;
+                    } else if (Array.isArray(res.data)) {
+                        sectionProducts = res.data;
+                    } else if (res.products) {
+                        sectionProducts = res.products;
+                    } else if (Array.isArray(res)) {
+                        sectionProducts = res;
+                    }
+                    
+                    // Only store products that actually have this section assigned
+                    const filteredProducts = sectionProducts.filter(p => {
+                        const sections = p.sections || [];
+                        return sections.includes(backendName);
+                    });
+                    
+                    sectionData[key] = filteredProducts.map(p => p._id || p.id);
+                } catch (err) {
+                    console.warn(`Failed to load ${key}:`, err);
+                    sectionData[key] = [];
+                }
+            }
+            
+            setSectionAssignments(sectionData);
+        } catch (err) {
+            console.error('Failed to load section assignments:', err);
+        }
+    };
+
     const loadHomepageData = async () => {
         try {
             setIsLoading(true);
@@ -70,26 +130,7 @@ const AdminHomepageManager = () => {
             setCategories(cats);
 
             // Load section assignments
-            const sectionData = {};
-            const sectionMap = {
-                latest: 'latest',
-                topSellers: 'topSeller',
-                quickPicks: 'quickPick',
-                weeklyDeals: 'weeklyDeal'
-            };
-            
-            for (const [key, backendName] of Object.entries(sectionMap)) {
-                try {
-                    const res = await productService.getProductsBySection(backendName);
-                    const sectionProducts = res.data?.products || res.products || [];
-                    sectionData[key] = sectionProducts.map(p => p._id);
-                } catch (err) {
-                    console.warn(`Failed to load ${key}:`, err);
-                    sectionData[key] = [];
-                }
-            }
-            
-            setSectionAssignments(sectionData);
+            await loadSectionAssignments();
         } catch (err) {
             console.error('Failed to load homepage data:', err);
         } finally {
@@ -147,44 +188,20 @@ const AdminHomepageManager = () => {
                 return;
             }
 
-            // Update sections array
-            const currentSections = fullProduct.sections || [];
             const newSection = sectionMap[sectionKey];
             
-            if (!currentSections.includes(newSection)) {
-                const updatedSections = [...currentSections, newSection];
-                
-                // Update product with new sections - only send necessary fields
-                // Get category ID properly
-                let categoryId;
-                if (typeof fullProduct.category === 'object' && fullProduct.category?._id) {
-                    categoryId = fullProduct.category._id;
-                } else if (typeof fullProduct.category === 'string' && fullProduct.category.length === 24) {
-                    categoryId = fullProduct.category;
-                } else {
-                    // Find category by name
-                    const cat = categories.find(c => c.name === fullProduct.category);
-                    categoryId = cat?._id || cat?.id;
-                }
-                
-                const updateData = {
-                    name: fullProduct.name,
-                    description: fullProduct.description,
-                    price: fullProduct.price,
-                    category: categoryId,
-                    sections: updatedSections
-                };
-                
-                await productService.updateProduct(productId, updateData);
-                
-                setSectionAssignments(prev => ({
-                    ...prev,
-                    [sectionKey]: [...prev[sectionKey], productId]
-                }));
-                
-                showNotification('Product added successfully', 'success');
-                setShowProductSelector(false);
-            }
+            // Add this section to product's existing sections
+            const currentSections = fullProduct.sections || [];
+            const updatedSections = [...new Set([...currentSections, newSection])]; // Use Set to avoid duplicates
+            
+            // Use dedicated sections update endpoint
+            await productService.updateProductSections(productId, updatedSections);
+            
+            // Refresh section assignments from backend to ensure consistency
+            await loadSectionAssignments();
+            
+            showNotification(`Product added to ${section.name}`, 'success');
+            setShowProductSelector(false);
         } catch (err) {
             console.error('Failed to add product:', err);
             showNotification(err.message || 'Failed to add product to section', 'error');
@@ -200,51 +217,79 @@ const AdminHomepageManager = () => {
                 weeklyDeals: 'weeklyDeal'
             };
             
+            console.log('Removing product:', { sectionKey, productId });
+            
             // Load full product data first
             const productResponse = await productService.getProductById(productId);
             const fullProduct = productResponse.data?.product || productResponse.product || productResponse;
+            
+            console.log('Product data:', fullProduct);
             
             if (!fullProduct) {
                 showNotification('Product not found', 'error');
                 return;
             }
 
-            // Remove section from product
+            // Remove this section from product's sections array
             const currentSections = fullProduct.sections || [];
-            const updatedSections = currentSections.filter(s => s !== sectionMap[sectionKey]);
+            const sectionToRemove = sectionMap[sectionKey];
+            const updatedSections = currentSections.filter(s => s !== sectionToRemove);
             
-            // Update product with new sections - only send necessary fields
-            // Get category ID properly
-            let categoryId;
-            if (typeof fullProduct.category === 'object' && fullProduct.category?._id) {
-                categoryId = fullProduct.category._id;
-            } else if (typeof fullProduct.category === 'string' && fullProduct.category.length === 24) {
-                categoryId = fullProduct.category;
-            } else {
-                // Find category by name
-                const cat = categories.find(c => c.name === fullProduct.category);
-                categoryId = cat?._id || cat?.id;
-            }
+            console.log('Updating sections:', { currentSections, sectionToRemove, updatedSections });
             
-            const updateData = {
-                name: fullProduct.name,
-                description: fullProduct.description,
-                price: fullProduct.price,
-                category: categoryId,
-                sections: updatedSections
-            };
+            // Use dedicated sections update endpoint
+            const result = await productService.updateProductSections(productId, updatedSections);
+            console.log('Update result:', result);
             
-            await productService.updateProduct(productId, updateData);
+            // Refresh section assignments from backend to ensure consistency
+            await loadSectionAssignments();
             
-            setSectionAssignments(prev => ({
-                ...prev,
-                [sectionKey]: prev[sectionKey].filter(id => id !== productId)
-            }));
-            
-            showNotification('Product removed successfully', 'success');
+            showNotification('Product removed from section', 'success');
         } catch (err) {
             console.error('Failed to remove product:', err);
             showNotification(err.message || 'Failed to remove product from section', 'error');
+        }
+    };
+
+    const handleClearSection = async (sectionKey) => {
+        if (!window.confirm(`Are you sure you want to remove all products from ${homepageSections[sectionKey].name}?`)) {
+            return;
+        }
+
+        try {
+            const sectionMap = {
+                latest: 'latest',
+                topSellers: 'topSeller',
+                quickPicks: 'quickPick',
+                weeklyDeals: 'weeklyDeal'
+            };
+            
+            const assigned = sectionAssignments[sectionKey] || [];
+            const sectionToRemove = sectionMap[sectionKey];
+            
+            // Remove section from all assigned products
+            for (const productId of assigned) {
+                try {
+                    const productResponse = await productService.getProductById(productId);
+                    const fullProduct = productResponse.data?.product || productResponse.product || productResponse;
+                    
+                    if (fullProduct) {
+                        const currentSections = fullProduct.sections || [];
+                        const updatedSections = currentSections.filter(s => s !== sectionToRemove);
+                        await productService.updateProductSections(productId, updatedSections);
+                    }
+                } catch (err) {
+                    console.warn(`Failed to remove product ${productId}:`, err);
+                }
+            }
+            
+            // Refresh section assignments
+            await loadSectionAssignments();
+            
+            showNotification(`All products removed from ${homepageSections[sectionKey].name}`, 'success');
+        } catch (err) {
+            console.error('Failed to clear section:', err);
+            showNotification(err.message || 'Failed to clear section', 'error');
         }
     };
 
@@ -282,9 +327,9 @@ const AdminHomepageManager = () => {
             {/* Sections */}
             {Object.entries(homepageSections).map(([key, section]) => {
                 const assigned = sectionAssignments[key] || [];
-                const assignedProducts = assigned.map(id => 
-                    availableProducts.find(p => p.id === id)
-                ).filter(Boolean);
+                const assignedProducts = assigned
+                    .map(id => availableProducts.find(p => p.id === id || p._id === id))
+                    .filter(Boolean);
 
                 return (
                     <div key={key} className="card mb-4">
@@ -295,13 +340,23 @@ const AdminHomepageManager = () => {
                                     {assigned.length} / {section.max} products
                                 </small>
                             </div>
-                            <button
-                                className={`btn btn-${section.color} btn-sm`}
-                                onClick={() => openProductSelector(key)}
-                                disabled={assigned.length >= section.max}
-                            >
-                                + Add Products
-                            </button>
+                            <div className="d-flex gap-2">
+                                {assigned.length > 0 && (
+                                    <button
+                                        className="btn btn-outline-danger btn-sm"
+                                        onClick={() => handleClearSection(key)}
+                                    >
+                                        Clear All
+                                    </button>
+                                )}
+                                <button
+                                    className={`btn btn-${section.color} btn-sm`}
+                                    onClick={() => openProductSelector(key)}
+                                    disabled={assigned.length >= section.max}
+                                >
+                                    + Add Products
+                                </button>
+                            </div>
                         </div>
                         <div className="card-body">
                             {assignedProducts.length === 0 ? (
