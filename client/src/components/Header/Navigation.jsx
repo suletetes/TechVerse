@@ -139,12 +139,6 @@ const Navigation = () => {
                                                                         Review Management
                                                                     </Link>
                                                                 </li>
-                                                                <li>
-                                                                    <Link className="dropdown-item" to="/admin/roles" style={{ color: '#212529', padding: '0.5rem 1rem' }}>
-                                                                        <i className="fas fa-user-shield me-2"></i>
-                                                                        Role Management
-                                                                    </Link>
-                                                                </li>
                                                                 <li><hr className="dropdown-divider" /></li>
                                                             </>
                                                         ) : (

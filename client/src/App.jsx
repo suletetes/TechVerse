@@ -27,8 +27,6 @@ import {
     AdminProductManagement
 } from "./pages"
 import AdminReviewManagement from './pages/Admin/AdminReviewManagement.jsx';
-import AdminRoleManagementPage from './pages/Admin/AdminRoleManagement.jsx';
-
 import { CategoryManagement } from "./pages/admin"
 import EditProfile from "./pages/EditProfile"
 import "./utils/uiUpdateSummary" // UI update summary and verification
@@ -51,6 +49,7 @@ import {
 } from "./pages/auth"
 import VerifyEmail from './pages/auth/VerifyEmail.jsx';
 import ForgotPassword from './pages/auth/ForgotPassword.jsx';
+import ResetPassword from './pages/auth/ResetPassword.jsx';
 
 const router = createBrowserRouter([
     {
@@ -86,6 +85,10 @@ const router = createBrowserRouter([
             {
                 path: 'forgot-password',
                 element: <ForgotPassword />,
+            },
+            {
+                path: 'reset-password',
+                element: <ResetPassword />,
             },
             {
                 path: 'auth/verify-email',
@@ -173,16 +176,7 @@ const router = createBrowserRouter([
                     </AdminGuard>
                 ),
             },
-            {
-                path: 'admin/roles',
-                element: (
-                    <AdminGuard>
-                        <AdminRoleManagementPage />
-                    </AdminGuard>
-                ),
-            },
-
-
+            
             // User routes - protected with UserGuard
             {
                 path: 'profile',
