@@ -108,7 +108,6 @@ import wishlistRoutes from './src/routes/wishlist.js';
 import reviewRoutes from './src/routes/reviews.js';
 import specificationRoutes from './src/routes/specifications.js';
 import stockRoutes from './src/routes/stock.js';
-import roleRoutes from './src/routes/roles.js';
 // Initialize Passport strategies
 initializePassport();
 // Connect to MongoDB
@@ -264,7 +263,6 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/specifications', specificationRoutes);
 app.use('/api/stock', stockRoutes);
-app.use('/api/admin/roles', roleRoutes);
 // Health check endpoints
 import healthCheck from './src/utils/healthCheck.js';
 import healthMonitor from './src/utils/healthMonitor.js';
@@ -529,6 +527,17 @@ async function startServer() {
     const server = app.listen(PORT, async () => {
       // Log server startup information
       healthCheck.logServerStartup(PORT, NODE_ENV);
+      
+      // Initialize email service
+      try {
+        const emailService = (await import('./src/services/emailService.js')).default;
+        await emailService.initialize();
+      } catch (error) {
+        logger.warn('Email service initialization failed, continuing without email', {
+          error: error.message
+        });
+      }
+      
       // Perform startup health checks
       try {
         const healthCheckResult = await healthCheck.performStartupHealthCheck();
