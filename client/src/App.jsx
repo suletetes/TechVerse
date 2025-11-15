@@ -27,6 +27,7 @@ import {
     AdminProductManagement
 } from "./pages"
 import AdminReviewManagement from './pages/Admin/AdminReviewManagement.jsx';
+import AdminRoleManagementPage from './pages/Admin/AdminRoleManagement.jsx';
 
 import { CategoryManagement } from "./pages/admin"
 import EditProfile from "./pages/EditProfile"
@@ -169,6 +170,14 @@ const router = createBrowserRouter([
                 element: (
                     <AdminGuard>
                         <AdminReviewManagement />
+                    </AdminGuard>
+                ),
+            },
+            {
+                path: 'admin/roles',
+                element: (
+                    <AdminGuard>
+                        <AdminRoleManagementPage />
                     </AdminGuard>
                 ),
             },
