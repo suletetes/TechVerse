@@ -220,13 +220,14 @@ router.get('/validate-slug/:slug',
     }
   }
 );
+// Section route MUST come before specific routes to avoid conflicts
+router.get('/section/:section', cacheProductList, sectionValidation, validate, getProductsBySection);
 router.get('/featured', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getFeaturedProducts);
 router.get('/top-sellers', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getTopSellingProducts);
 router.get('/latest', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getLatestProducts);
 router.get('/on-sale', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getProductsOnSale);
 router.get('/weekly-deals', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getWeeklyDeals);
 router.get('/quick-picks', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getQuickPicks);
-router.get('/section/:section', cacheProductList, sectionValidation, validate, getProductsBySection);
 router.get('/category/:categoryId', 
   [commonValidations.mongoId('categoryId'), ...commonValidations.pagination()], 
   validate, 

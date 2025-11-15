@@ -575,9 +575,11 @@ class ProductService extends BaseApiService {
       throw new Error(`Invalid section names: ${invalidSections.join(', ')}`);
     }
 
-    return this.update(`${this.endpoints.BASE}/${productId}/sections`, {
-      action: 'replace',
-      sections
+    // Use PATCH for partial updates (sections only)
+    return this.request({
+      url: `/admin/products/${productId}/sections`,
+      method: 'PATCH',
+      body: { sections }
     });
   }
 

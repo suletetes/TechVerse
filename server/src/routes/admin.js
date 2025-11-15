@@ -23,6 +23,7 @@ import {
   getProductsInSection,
   removeProductFromSection,
   addProductToSection,
+  updateProductSections,
   getSectionOverview,
   clearSection,
   getAvailableProducts,
@@ -286,6 +287,10 @@ router.post('/products', authenticate, requireAdmin, [
 router.put('/products/:id', authenticate, requireAdmin, [
   commonValidations.mongoId('id')
 ], validate, updateProduct);
+router.patch('/products/:id/sections', authenticate, requireAdmin, [
+  commonValidations.mongoId('id'),
+  body('sections').isArray().withMessage('Sections must be an array')
+], validate, updateProductSections);
 router.put('/products/bulk', authenticate, requireAdmin, [
   body('updates').isArray({ min: 1, max: 100 }).withMessage('Updates array is required (max 100 items)'),
   body('action').isIn(['price_update', 'stock_update', 'status_update', 'category_update', 'general']).withMessage('Valid action is required')

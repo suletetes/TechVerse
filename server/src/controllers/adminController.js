@@ -1131,35 +1131,381 @@ export const updateCategorySpecifications = asyncHandler(async (req, res, next) 
 });
 
 export const setProductsInSection = asyncHandler(async (req, res, next) => {
-  res.status(501).json({ success: false, message: 'Function not implemented yet' });
+  const { section } = req.params;
+  const { productIds } = req.body;
+
+  // Validate section
+  const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  if (!validSections.includes(section)) {
+    return next(new AppError('Invalid section', 400, 'INVALID_SECTION'));
+  }
+
+  // Validate productIds
+  if (!Array.isArray(productIds) || productIds.length === 0) {
+    return next(new AppError('Product IDs must be a non-empty array', 400, 'INVALID_PRODUCT_IDS'));
+  }
+
+  // Remove this section from all products first
+  await Product.updateMany(
+    { sections: section },
+    { $pull: { sections: section } }
+  );
+
+  // Add section to specified products only
+  const result = await Product.updateMany(
+    { _id: { $in: productIds } },
+    { $addToSet: { sections: section } }
+  );
+
+  if (result.matchedCount === 0) {
+    return next(new AppError('No products found with the provided IDs', 404, 'PRODUCTS_NOT_FOUND'));
+  }
+
+  logger.info('Products added to section', {
+    section,
+    productCount: result.modifiedCount,
+    adminId: req.user._id
+  });
+
+  res.status(200).json({
+    success: true,
+    message: `${result.modifiedCount} products added to ${section} section`,
+    data: {
+      section,
+      modifiedCount: result.modifiedCount,
+      totalRequested: productIds.length
+    }
+  });
 });
 
 export const getProductsInSection = asyncHandler(async (req, res, next) => {
-  res.status(501).json({ success: false, message: 'Function not implemented yet' });
+  const { section } = req.params;
+
+  // Validate section
+  const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  if (!validSections.includes(section)) {
+    return next(new AppError('Invalid section', 400, 'INVALID_SECTION'));
+  }
+
+  const products = await Product.find({ sections: section })
+    .populate('category', 'name slug')
+    .select('_id name price image category sections status stock')
+    .lean();
+
+  res.status(200).json({
+    success: true,
+    message: `Products in ${section} section retrieved successfully`,
+    data: {
+      section,
+      products,
+      count: products.length
+    }
+  });
 });
 
 export const removeProductFromSection = asyncHandler(async (req, res, next) => {
-  res.status(501).json({ success: false, message: 'Function not implemented yet' });
+  const { section, productId } = req.params;
+
+  // Validate section
+  const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  if (!validSections.includes(section)) {
+    return next(new AppError('Invalid section', 400, 'INVALID_SECTION'));
+  }
+
+  const product = await Product.findById(productId);
+  if (!product) {
+    return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
+  }
+
+  const result = await Product.findByIdAndUpdate(
+    productId,
+    { $pull: { sections: section } },
+    { new: true }
+  );
+
+  logger.info('Product removed from section', {
+    section,
+    productId,
+    adminId: req.user._id
+  });
+
+  res.status(200).json({
+    success: true,
+    message: `Product removed from ${section} section`,
+    data: {
+      product: result
+    }
+  });
 });
 
 export const addProductToSection = asyncHandler(async (req, res, next) => {
-  res.status(501).json({ success: false, message: 'Function not implemented yet' });
+  const { section, productId } = req.params;
+
+  // Validate section
+  const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  if (!validSections.includes(section)) {
+    return next(new AppError('Invalid section', 400, 'INVALID_SECTION'));
+  }
+
+  const product = await Product.findById(productId);
+  if (!product) {
+    return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
+  }
+
+  // Remove from all other sections and add to this section
+  const result = await Product.findByIdAndUpdate(
+    productId,
+    { 
+      sections: [section]
+    },
+    { new: true }
+  ).populate('category', 'name slug');
+
+  logger.info('Product added to section', {
+    section,
+    productId,
+    productName: product.name,
+    adminId: req.user._id
+  });
+
+  res.status(200).json({
+    success: true,
+    message: `Product added to ${section} section`,
+    data: {
+      product: result
+    }
+  });
+});
+
+// @desc    Update product sections only (without full product validation)
+// @route   PATCH /api/admin/products/:id/sections
+// @access  Private (Admin only)
+export const updateProductSections = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { sections } = req.body;
+
+  // Validate sections
+  if (!Array.isArray(sections)) {
+    return next(new AppError('Sections must be an array', 400, 'INVALID_SECTIONS'));
+  }
+
+  const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  const invalidSections = sections.filter(s => !validSections.includes(s));
+  
+  if (invalidSections.length > 0) {
+    return next(new AppError(`Invalid sections: ${invalidSections.join(', ')}`, 400, 'INVALID_SECTIONS'));
+  }
+
+  // Check if product exists
+  const existingProduct = await Product.findById(id);
+  if (!existingProduct) {
+    return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
+  }
+
+  // If adding to a section, remove from all other sections first
+  if (sections.length > 0) {
+    // Remove this product from all sections
+    await Product.updateOne(
+      { _id: id },
+      { $set: { sections: [] } }
+    );
+  }
+
+  // Now set the new sections
+  const product = await Product.findByIdAndUpdate(
+    id,
+    { sections },
+    { new: true, runValidators: false } // Don't run full validation
+  ).populate('category', 'name slug');
+
+  logger.info('Product sections updated', {
+    productId: id,
+    sections,
+    adminId: req.user._id
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Product sections updated successfully',
+    data: { product }
+  });
 });
 
 export const getSectionOverview = asyncHandler(async (req, res, next) => {
-  res.status(501).json({ success: false, message: 'Function not implemented yet' });
+  const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  
+  const sectionData = await Promise.all(
+    validSections.map(async (section) => {
+      const count = await Product.countDocuments({ sections: section });
+      const products = await Product.find({ sections: section })
+        .select('_id name price image')
+        .limit(5)
+        .lean();
+      
+      return {
+        section,
+        count,
+        products
+      };
+    })
+  );
+
+  res.status(200).json({
+    success: true,
+    message: 'Section overview retrieved successfully',
+    data: {
+      sections: sectionData
+    }
+  });
 });
 
 export const clearSection = asyncHandler(async (req, res, next) => {
-  res.status(501).json({ success: false, message: 'Function not implemented yet' });
+  const { section } = req.params;
+
+  // Validate section
+  const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  if (!validSections.includes(section)) {
+    return next(new AppError('Invalid section', 400, 'INVALID_SECTION'));
+  }
+
+  const result = await Product.updateMany(
+    { sections: section },
+    { $pull: { sections: section } }
+  );
+
+  logger.info('Section cleared', {
+    section,
+    productsAffected: result.modifiedCount,
+    adminId: req.user._id
+  });
+
+  res.status(200).json({
+    success: true,
+    message: `${section} section cleared successfully`,
+    data: {
+      section,
+      productsAffected: result.modifiedCount
+    }
+  });
 });
 
 export const getAvailableProducts = asyncHandler(async (req, res, next) => {
-  res.status(501).json({ success: false, message: 'Function not implemented yet' });
+  const { section, limit = 20, page = 1 } = req.query;
+
+  // Validate section if provided
+  if (section) {
+    const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+    if (!validSections.includes(section)) {
+      return next(new AppError('Invalid section', 400, 'INVALID_SECTION'));
+    }
+  }
+
+  const skip = (page - 1) * limit;
+
+  // Get products not in the specified section (or all products if no section specified)
+  const query = section ? { sections: { $ne: section } } : {};
+
+  const [products, total] = await Promise.all([
+    Product.find(query)
+      .select('_id name price image category status stock')
+      .populate('category', 'name slug')
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean(),
+    Product.countDocuments(query)
+  ]);
+
+  res.status(200).json({
+    success: true,
+    message: 'Available products retrieved successfully',
+    data: {
+      products,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        total,
+        limit: parseInt(limit)
+      }
+    }
+  });
 });
 
 export const bulkUpdateProductSections = asyncHandler(async (req, res, next) => {
-  res.status(501).json({ success: false, message: 'Function not implemented yet' });
+  const { updates } = req.body;
+
+  // Validate updates
+  if (!Array.isArray(updates) || updates.length === 0) {
+    return next(new AppError('Updates must be a non-empty array', 400, 'INVALID_UPDATES'));
+  }
+
+  const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
+  
+  const results = [];
+  const errors = [];
+
+  for (const update of updates) {
+    const { productId, sections } = update;
+
+    // Validate sections
+    if (!Array.isArray(sections)) {
+      errors.push({
+        productId,
+        error: 'Sections must be an array'
+      });
+      continue;
+    }
+
+    // Validate each section
+    const invalidSections = sections.filter(s => !validSections.includes(s));
+    if (invalidSections.length > 0) {
+      errors.push({
+        productId,
+        error: `Invalid sections: ${invalidSections.join(', ')}`
+      });
+      continue;
+    }
+
+    try {
+      const product = await Product.findByIdAndUpdate(
+        productId,
+        { sections },
+        { new: true }
+      );
+
+      if (!product) {
+        errors.push({
+          productId,
+          error: 'Product not found'
+        });
+      } else {
+        results.push({
+          productId,
+          success: true,
+          sections: product.sections
+        });
+      }
+    } catch (error) {
+      errors.push({
+        productId,
+        error: error.message
+      });
+    }
+  }
+
+  logger.info('Bulk product sections updated', {
+    successCount: results.length,
+    errorCount: errors.length,
+    adminId: req.user._id
+  });
+
+  res.status(200).json({
+    success: errors.length === 0,
+    message: `${results.length} products updated successfully${errors.length > 0 ? `, ${errors.length} errors` : ''}`,
+    data: {
+      results,
+      errors
+    }
+  });
 });
 
 export const getAnalytics = asyncHandler(async (req, res, next) => {
