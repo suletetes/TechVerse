@@ -964,10 +964,8 @@ export const getProductReviews = asyncHandler(async (req, res, next) => {
 // @route   GET /api/products/categories
 // @access  Public
 export const getCategories = asyncHandler(async (req, res, next) => {
-  const categories = await Category.find({ isActive: true })
-    .select('name slug description image parent displayOrder productCount')
-    .populate('parent', 'name slug')
-    .sort({ displayOrder: 1, name: 1 });
+  // Use getWithProductCount to include product counts and isFeatured
+  const categories = await Category.getWithProductCount(false); // false = only active categories
 
   res.status(200).json({
     success: true,
