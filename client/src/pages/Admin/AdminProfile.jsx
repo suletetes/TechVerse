@@ -142,7 +142,7 @@ const AdminProfile = () => {
         }
     }, [isAuthenticated, isAdmin, navigate]);
 
-    // Load initial data
+    // Load initial data - only on mount
     useEffect(() => {
         if (isAuthenticated && isAdmin()) {
             loadDashboardStats({ period: dateRange });
@@ -157,32 +157,19 @@ const AdminProfile = () => {
                 }
             });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAuthenticated, isAdmin, dateRange]);
 
-    // Sync categories from AdminDataStore
+    // Sync categories from AdminDataStore - only update local state, don't trigger loads
     useEffect(() => {
-        const updateCategories = () => {
-            const storedCategories = adminDataStore.getData('categories');
-            // Debug logging removed to eliminate spam
-            
-            if (Array.isArray(storedCategories) && storedCategories.length > 0) {
-                setLocalCategories(storedCategories);
-            } else if (Array.isArray(categories) && categories.length > 0) {
-                setLocalCategories(categories);
-            } else {
-                setLocalCategories([]); // Ensure it's always an array
-            }
-        };
-
-        updateCategories();
-
-        // If no categories are available, try to load them
-        const storedCats = adminDataStore.getData('categories');
-        if ((!Array.isArray(storedCats) || storedCats.length === 0) && 
-            (!Array.isArray(categories) || categories.length === 0) && 
-            !isCategoriesLoading && 
-            isAuthenticated && isAdmin()) {
-            loadCategories();
+        const storedCategories = adminDataStore.getData('categories');
+        
+        if (Array.isArray(storedCategories) && storedCategories.length > 0) {
+            setLocalCategories(storedCategories);
+        } else if (Array.isArray(categories) && categories.length > 0) {
+            setLocalCategories(categories);
+        } else {
+            setLocalCategories([]);
         }
 
         // Listen for category updates from AdminDataStore

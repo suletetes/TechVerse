@@ -16,6 +16,8 @@ const AdminReviews = ({
     const [currentPage, setCurrentPage] = useState(1);
     const [reviewsPerPage] = useState(10);
     const [expandedReviews, setExpandedReviews] = useState(new Set());
+    const [deleteConfirmation, setDeleteConfirmation] = useState(null);
+    const [rejectConfirmation, setRejectConfirmation] = useState(null);
 
     const toggleReviewExpansion = (reviewId) => {
         const newExpanded = new Set(expandedReviews);
@@ -47,47 +49,63 @@ const AdminReviews = ({
         }
     };
 
-    const handleReject = async (reviewId) => {
+    const handleReject = (reviewId) => {
         console.log('❌ Reject review clicked:', reviewId);
+        const review = reviews.find(r => r._id === reviewId);
+        setRejectConfirmation({ reviewId, review });
+    };
+
+    const confirmReject = async () => {
+        if (!rejectConfirmation) return;
         
-        if (window.confirm('Are you sure you want to reject this review?')) {
-            try {
-                if (onRejectReview) {
-                    await onRejectReview(reviewId);
-                    setToast({
-                        message: 'Review rejected successfully!',
-                        type: 'success'
-                    });
-                }
-            } catch (error) {
-                console.error('❌ Error rejecting review:', error);
+        const { reviewId } = rejectConfirmation;
+        
+        try {
+            if (onRejectReview) {
+                await onRejectReview(reviewId);
                 setToast({
-                    message: error.message || 'Failed to reject review',
-                    type: 'error'
+                    message: 'Review rejected successfully!',
+                    type: 'success'
                 });
             }
+        } catch (error) {
+            console.error('❌ Error rejecting review:', error);
+            setToast({
+                message: error.message || 'Failed to reject review',
+                type: 'error'
+            });
+        } finally {
+            setRejectConfirmation(null);
         }
     };
 
-    const handleDelete = async (reviewId) => {
+    const handleDelete = (reviewId) => {
         console.log('🗑️ Delete review clicked:', reviewId);
+        const review = reviews.find(r => r._id === reviewId);
+        setDeleteConfirmation({ reviewId, review });
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteConfirmation) return;
         
-        if (window.confirm('Are you sure you want to delete this review? This action cannot be undone.')) {
-            try {
-                if (onDeleteReview) {
-                    await onDeleteReview(reviewId);
-                    setToast({
-                        message: 'Review deleted successfully!',
-                        type: 'success'
-                    });
-                }
-            } catch (error) {
-                console.error('❌ Error deleting review:', error);
+        const { reviewId } = deleteConfirmation;
+        
+        try {
+            if (onDeleteReview) {
+                await onDeleteReview(reviewId);
                 setToast({
-                    message: error.message || 'Failed to delete review',
-                    type: 'error'
+                    message: 'Review deleted successfully!',
+                    type: 'success'
                 });
             }
+        } catch (error) {
+            console.error('❌ Error deleting review:', error);
+            setToast({
+                message: error.message || 'Failed to delete review',
+                type: 'error'
+            });
+        } finally {
+            setDeleteConfirmation(null);
         }
     };
 
@@ -314,23 +332,46 @@ const AdminReviews = ({
                                                 <td>
                                                     <div className="d-flex align-items-center">
                                                         <img
-                                                            src={review.product?.image || review.product?.images?.[0]?.url || '/img/placeholder.jpg'}
-                                                            alt={review.product?.name || 'Product'}
+                                                            src={review.product?.image || review.product?.images?.[0]?.url || review.productInfo?.image || review.productInfo?.images?.[0]?.url || '/img/placeholder.jpg'}
+                                                            alt={review.product?.name || review.productInfo?.name || 'Product'}
                                                             className="rounded me-2"
                                                             width="40"
                                                             height="40"
                                                             style={{ objectFit: 'cover' }}
                                                         />
                                                         <div>
-                                                            <div className="fw-medium">{review.product?.name || 'Unknown Product'}</div>
+                                                            <div className="fw-medium">{review.product?.name || review.productInfo?.name || 'Unknown Product'}</div>
                                                             <small className="text-muted">Order: {review.order || 'N/A'}</small>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td>
                                                     <div>
-                                                        <div className="fw-medium">{review.user?.name || 'Anonymous'}</div>
-                                                        <small className="text-muted">{review.user?.email || 'N/A'}</small>
+                                                        <div className="fw-medium">
+                                                            {(() => {
+                                                                const userData = review.user || review.userInfo;
+                                                                // Debug: log the user data structure
+                                                                if (!userData?.firstName && !userData?.lastName && !userData?.name) {
+                                                                    console.log('Review user data:', { review: review._id, user: userData });
+                                                                }
+                                                                if (userData?.firstName && userData?.lastName) {
+                                                                    return `${userData.firstName} ${userData.lastName}`;
+                                                                }
+                                                                if (userData?.name) {
+                                                                    return userData.name;
+                                                                }
+                                                                if (userData?.email) {
+                                                                    return userData.email.split('@')[0];
+                                                                }
+                                                                return 'Anonymous';
+                                                            })()}
+                                                        </div>
+                                                        <small className="text-muted">
+                                                            {(() => {
+                                                                const userData = review.user || review.userInfo;
+                                                                return userData?.email || '';
+                                                            })()}
+                                                        </small>
                                                     </div>
                                                 </td>
                                                 <td>
@@ -430,15 +471,26 @@ const AdminReviews = ({
                                                                     </div>
                                                                     <div className="mb-2">
                                                                         <small className="text-muted">Order ID:</small>
-                                                                        <div>{review.order || 'N/A'}</div>
+                                                                        <div>
+                                                                            {review.order ? (
+                                                                                <code className="text-primary">{review.order}</code>
+                                                                            ) : (
+                                                                                <span className="text-muted">No order linked</span>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                     <div className="mb-2">
                                                                         <small className="text-muted">Verified Purchase:</small>
                                                                         <div>
-                                                                            {review.verifiedPurchase ? (
-                                                                                <span className="badge bg-success">Yes</span>
+                                                                            {review.verifiedPurchase || review.verified ? (
+                                                                                <span className="badge bg-success">
+                                                                                    <svg width="12" height="12" viewBox="0 0 24 24" className="me-1">
+                                                                                        <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                                                                                    </svg>
+                                                                                    Verified
+                                                                                </span>
                                                                             ) : (
-                                                                                <span className="badge bg-secondary">No</span>
+                                                                                <span className="badge bg-secondary">Not Verified</span>
                                                                             )}
                                                                         </div>
                                                                     </div>
@@ -553,6 +605,60 @@ const AdminReviews = ({
                         </div>
                     )}
                 </>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirmation && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header border-0">
+                                <h5 className="modal-title">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" className="text-danger me-2" fill="currentColor" style={{ verticalAlign: 'middle' }}>
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                                    </svg>
+                                    Confirm Delete
+                                </h5>
+                                <button type="button" className="btn-close" onClick={() => setDeleteConfirmation(null)}></button>
+                            </div>
+                            <div className="modal-body">
+                                <p className="mb-0">Are you sure you want to delete this review?</p>
+                                <p className="text-muted small mb-0 mt-2">This action cannot be undone.</p>
+                            </div>
+                            <div className="modal-footer border-0">
+                                <button type="button" className="btn btn-secondary" onClick={() => setDeleteConfirmation(null)}>Cancel</button>
+                                <button type="button" className="btn btn-danger" onClick={confirmDelete}>Delete Review</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Reject Confirmation Modal */}
+            {rejectConfirmation && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header border-0">
+                                <h5 className="modal-title">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" className="text-warning me-2" fill="currentColor" style={{ verticalAlign: 'middle' }}>
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                                    </svg>
+                                    Confirm Reject
+                                </h5>
+                                <button type="button" className="btn-close" onClick={() => setRejectConfirmation(null)}></button>
+                            </div>
+                            <div className="modal-body">
+                                <p className="mb-0">Are you sure you want to reject this review?</p>
+                                <p className="text-muted small mb-0 mt-2">The review will be marked as rejected and hidden from customers.</p>
+                            </div>
+                            <div className="modal-footer border-0">
+                                <button type="button" className="btn btn-secondary" onClick={() => setRejectConfirmation(null)}>Cancel</button>
+                                <button type="button" className="btn btn-warning" onClick={confirmReject}>Reject Review</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Toast Notifications */}
