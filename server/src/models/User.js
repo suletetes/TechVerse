@@ -315,7 +315,9 @@ userSchema.methods.generateAuthToken = function() {
   };
   
   return jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '7d'
+    expiresIn: process.env.JWT_EXPIRE || '7d',
+    issuer: process.env.JWT_ISSUER || 'techverse-api',
+    audience: process.env.JWT_AUDIENCE || 'techverse-client'
   });
 };
 
@@ -327,7 +329,9 @@ userSchema.methods.generateRefreshToken = function() {
   };
   
   return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d'
+    expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d',
+    issuer: process.env.JWT_ISSUER || 'techverse-api',
+    audience: process.env.JWT_AUDIENCE || 'techverse-client'
   });
 };
 
