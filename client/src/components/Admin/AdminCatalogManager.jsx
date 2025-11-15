@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminCategoryManager from './AdminCategoryManager';
 import AdminSpecificationManager from './AdminSpecificationManager';
 import productService from '../../api/services/productService';
+import adminService from '../../api/services/adminService';
 
 const AdminCatalogManager = ({ 
     onSaveCategory,
@@ -28,26 +29,46 @@ const AdminCatalogManager = ({
             setError(null);
 
             // Load categories and products in parallel
+            // Use adminService.getCategories() to get categories with product counts
             const [categoriesResponse, productsResponse] = await Promise.all([
-                productService.getCategories(),
+                adminService.getCategories(), // This calls /admin/categories which includes productCount
                 productService.getProducts({ limit: 1000 }) // Get all products for accurate counts
             ]);
 
             console.log('📦 Categories response:', categoriesResponse);
             console.log('📦 Products response:', productsResponse);
 
-            // Process categories
-            const backendCategories = categoriesResponse.data || categoriesResponse || [];
+            // Process categories - handle different response structures
+            let backendCategories = [];
+            if (categoriesResponse.data?.categories) {
+                backendCategories = categoriesResponse.data.categories;
+            } else if (Array.isArray(categoriesResponse.data)) {
+                backendCategories = categoriesResponse.data;
+            } else if (categoriesResponse.categories) {
+                backendCategories = categoriesResponse.categories;
+            } else if (Array.isArray(categoriesResponse)) {
+                backendCategories = categoriesResponse;
+            }
+            
             console.log('📋 Backend categories count:', backendCategories.length);
+            console.log('📋 First category raw data:', JSON.stringify(backendCategories[0], null, 2));
+            
+            if (!Array.isArray(backendCategories)) {
+                console.error('❌ backendCategories is not an array:', typeof backendCategories, backendCategories);
+                throw new Error('Categories data is not in expected format');
+            }
+            
             const processedCategories = backendCategories.map(category => ({
                 id: category._id,
+                _id: category._id, // Keep both for compatibility
                 name: category.name,
                 slug: category.slug,
                 description: category.description || '',
                 image: category.image || `/img/category-${category.slug}.jpg`,
                 isActive: category.isActive !== false,
+                isFeatured: category.isFeatured || false, // Add isFeatured field
                 sortOrder: category.displayOrder || 0,
-                productCount: 0, // Will be calculated below
+                productCount: category.productCount || 0, // Use backend productCount
                 parentId: category.parent?._id || null,
                 seoTitle: category.seo?.title || `${category.name} - Shop Now`,
                 seoDescription: category.seo?.description || `Discover our ${category.name} collection`,
@@ -58,6 +79,14 @@ const AdminCatalogManager = ({
                     returnPolicy: '30-day return policy'
                 }
             }));
+            
+            console.log('📊 Processed categories summary:');
+            processedCategories.forEach(c => {
+                console.log(`  - ${c.name}: ${c.productCount} products, featured: ${c.isFeatured}`);
+            });
+            
+            const featuredCount = processedCategories.filter(c => c.isFeatured).length;
+            console.log(`📊 Total featured categories: ${featuredCount}`);
 
             // Process products
             const backendProducts = productsResponse.data?.products || productsResponse.products || [];
@@ -74,19 +103,10 @@ const AdminCatalogManager = ({
                 updatedAt: product.updatedAt
             }));
 
-            // Calculate product counts for categories
-            const categoriesWithCounts = processedCategories.map(category => ({
-                ...category,
-                productCount: processedProducts.filter(product => 
-                    product.categoryId === category.id || 
-                    product.category === category.name
-                ).length
-            }));
-
-            console.log('✅ Processed categories:', categoriesWithCounts.length);
+            console.log('✅ Processed categories:', processedCategories.length);
             console.log('✅ Processed products:', processedProducts.length);
             
-            setCategories(categoriesWithCounts);
+            setCategories(processedCategories);
             setProducts(processedProducts);
             setLastUpdated(new Date());
 

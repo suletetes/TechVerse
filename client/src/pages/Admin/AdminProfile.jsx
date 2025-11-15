@@ -26,7 +26,6 @@ import AdminProductsNew from "../../components/Admin/AdminProductsNew";
 import AdminOrdersNew from "../../components/Admin/AdminOrdersNew";
 import AdminUsersNew from "../../components/Admin/AdminUsersNew";
 import AdminDashboardBright from "../../components/Admin/AdminDashboardBright";
-import AdminRoleManagement from "../../components/Admin/AdminRoleManagement";
 
 import { adminDataStore } from "../../utils/AdminDataStore";
 import { ensureCsrfToken } from "../../utils/csrfUtils";
@@ -541,11 +540,6 @@ const AdminProfile = () => {
             case 'users':
                 return (
                     <AdminUsersNew />
-                );
-
-            case 'roles':
-                return (
-                    <AdminRoleManagement />
                 );
 
             case 'notifications':
