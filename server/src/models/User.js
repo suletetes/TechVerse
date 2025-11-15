@@ -108,7 +108,16 @@ const userSchema = new mongoose.Schema({
   dateOfBirth: Date,
   role: {
     type: String,
-    enum: ['user', 'admin'],
+    enum: [
+      'user', 
+      'customer_support', 
+      'content_moderator', 
+      'inventory_manager', 
+      'marketing_manager', 
+      'sales_manager', 
+      'admin', 
+      'super_admin'
+    ],
     default: 'user'
   },
   isActive: {
