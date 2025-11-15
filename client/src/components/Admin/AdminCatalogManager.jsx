@@ -188,77 +188,7 @@ const AdminCatalogManager = ({
             </div>
         );
     }
-    const sampleCategories = [
-        {
-            id: 1,
-            name: 'Tablets',
-            slug: 'tablets',
-            description: 'High-performance tablets for work and entertainment',
-            image: '/img/category-tablets.jpg',
-            isActive: true,
-            sortOrder: 1,
-            productCount: getProductCountForCategory('Tablets'),
-            parentId: null,
-            seoTitle: 'Tablets - Latest iPad, Android & Windows Tablets',
-            seoDescription: 'Shop the latest tablets from top brands. Find iPad, Android, and Windows tablets with fast shipping.',
-            relatedCategories: [
-                { name: 'iPad Pro', path: '/category/tablets/ipad-pro', count: 12 },
-                { name: 'iPad Air', path: '/category/tablets/ipad-air', count: 8 },
-                { name: 'Android Tablets', path: '/category/tablets/android', count: 15 }
-            ],
-            categoryFeatures: {
-                freeShipping: true,
-                warranty: '2 Year Warranty',
-                returnPolicy: '30-day return policy'
-            }
-        },
-        {
-            id: 2,
-            name: 'Phones',
-            slug: 'phones',
-            description: 'Latest smartphones with cutting-edge technology',
-            image: '/img/category-phones.jpg',
-            isActive: true,
-            sortOrder: 2,
-            productCount: getProductCountForCategory('Phones'),
-            parentId: null,
-            seoTitle: 'Smartphones - iPhone, Samsung, Google Pixel',
-            seoDescription: 'Discover the latest smartphones with advanced features and competitive prices.',
-            relatedCategories: [
-                { name: 'iPhone', path: '/category/phones/iphone', count: 18 },
-                { name: 'Samsung Galaxy', path: '/category/phones/samsung', count: 22 },
-                { name: 'Google Pixel', path: '/category/phones/pixel', count: 5 }
-            ],
-            categoryFeatures: {
-                freeShipping: true,
-                warranty: '1 Year Warranty',
-                returnPolicy: '14-day return policy'
-            }
-        },
-        {
-            id: 3,
-            name: 'Laptops',
-            slug: 'laptops',
-            description: 'Professional laptops for work and gaming',
-            image: '/img/category-laptops.jpg',
-            isActive: true,
-            sortOrder: 3,
-            productCount: getProductCountForCategory('Laptops'),
-            parentId: null,
-            seoTitle: 'Laptops - MacBook, Windows, Gaming Laptops',
-            seoDescription: 'Find the perfect laptop for work, study, or gaming. Top brands and competitive prices.',
-            relatedCategories: [
-                { name: 'MacBook', path: '/category/laptops/macbook', count: 8 },
-                { name: 'Gaming Laptops', path: '/category/laptops/gaming', count: 12 },
-                { name: 'Business Laptops', path: '/category/laptops/business', count: 12 }
-            ],
-            categoryFeatures: {
-                freeShipping: true,
-                warranty: '3 Year Warranty',
-                returnPolicy: '30-day return policy'
-            }
-        }
-    ];
+
 
     // Sample specifications data
     const sampleSpecifications = {
@@ -382,11 +312,18 @@ const AdminCatalogManager = ({
 
                 {activeTab === 'specifications' && (
                     <div className="tab-pane active">
-                        <AdminSpecificationManager
-                            categories={categories.length > 0 ? categories : sampleCategories}
-                            specifications={Object.keys(specifications).length > 0 ? specifications : sampleSpecifications}
-                            onSaveSpecifications={handleSaveSpecificationsWrapper}
-                        />
+                        {categories.length > 0 ? (
+                            <AdminSpecificationManager
+                                categories={categories}
+                                specifications={Object.keys(specifications).length > 0 ? specifications : sampleSpecifications}
+                                onSaveSpecifications={handleSaveSpecificationsWrapper}
+                            />
+                        ) : (
+                            <div className="alert alert-warning">
+                                <h5><i className="fas fa-exclamation-triangle me-2"></i>No Categories Available</h5>
+                                <p className="mb-0">Please create categories first before managing specifications.</p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

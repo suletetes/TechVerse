@@ -1,584 +1,438 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const AdminCategoryManager = ({ 
     categories = [],
     onSaveCategory,
-    onDeleteCategory,
-    onUpdateCategorySpecs
+    onDeleteCategory
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
-    const [selectedCategory, setSelectedCategory] = useState(null);
-    const [activeTab, setActiveTab] = useState('basic');
+    const [imagePreview, setImagePreview] = useState('');
 
     const [categoryForm, setCategoryForm] = useState({
         name: '',
-        slug: '',
         description: '',
         image: '',
-        parentId: null,
+        isFeatured: false,
         isActive: true,
-        sortOrder: 0,
-        seoTitle: '',
-        seoDescription: '',
-        breadcrumbPath: [],
-        relatedCategories: [],
-        categoryFeatures: {
-            freeShipping: false,
-            warranty: '',
-            returnPolicy: '',
-            specialOffers: []
-        }
+        displayOrder: 0
     });
+
+    // Separate featured and regular categories
+    const featuredCategories = categories.filter(cat => cat.isFeatured);
+    const regularCategories = categories.filter(cat => !cat.isFeatured);
 
     const filteredCategories = categories.filter(category =>
         category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         category.description?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleSaveCategory = () => {
-        const categoryData = {
-            ...categoryForm,
-            slug: categoryForm.slug || categoryForm.name.toLowerCase().replace(/\s+/g, '-'),
-            updatedAt: new Date().toISOString()
-        };
-
-        // Only include ID if editing existing category
-        if (editingCategory && (editingCategory._id || editingCategory.id)) {
-            categoryData._id = editingCategory._id || editingCategory.id;
-        }
-        // For new categories, don't set ID - let backend generate MongoDB ObjectId
-
-        onSaveCategory(categoryData);
-        resetForm();
+    const handleInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setCategoryForm(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
     };
 
-    const resetForm = () => {
-        setCategoryForm({
-            name: '',
-            slug: '',
-            description: '',
-            image: '',
-            parentId: null,
-            isActive: true,
-            sortOrder: 0,
-            seoTitle: '',
-            seoDescription: '',
-            breadcrumbPath: [],
-            relatedCategories: [],
-            categoryFeatures: {
-                freeShipping: false,
-                warranty: '',
-                returnPolicy: '',
-                specialOffers: []
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
             }
-        });
-        setEditingCategory(null);
-        setShowAddForm(false);
-        setSelectedCategory(null);
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image size must be less than 5MB');
+                return;
+            }
+
+            // Create preview
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result);
+                setCategoryForm(prev => ({
+                    ...prev,
+                    image: reader.result
+                }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSaveCategory = async () => {
+        if (!categoryForm.name.trim()) {
+            alert('Category name is required');
+            return;
+        }
+
+        try {
+            const categoryData = {
+                ...categoryForm,
+                name: categoryForm.name.trim(),
+                description: categoryForm.description.trim()
+            };
+
+            // Add ID for updates (use 'id' not '_id' for AdminProfile compatibility)
+            if (editingCategory) {
+                categoryData.id = editingCategory._id || editingCategory.id;
+            }
+
+            await onSaveCategory(categoryData);
+            handleCancelEdit();
+        } catch (error) {
+            console.error('Error saving category:', error);
+            alert('Failed to save category: ' + error.message);
+        }
     };
 
     const handleEditCategory = (category) => {
+        setEditingCategory(category);
         setCategoryForm({
             name: category.name || '',
-            slug: category.slug || '',
             description: category.description || '',
-            image: category.image || '',
-            parentId: category.parentId || null,
-            isActive: category.isActive !== undefined ? category.isActive : true,
-            sortOrder: category.sortOrder || 0,
-            seoTitle: category.seoTitle || '',
-            seoDescription: category.seoDescription || '',
-            breadcrumbPath: category.breadcrumbPath || [],
-            relatedCategories: category.relatedCategories || [],
-            categoryFeatures: category.categoryFeatures || {
-                freeShipping: false,
-                warranty: '',
-                returnPolicy: '',
-                specialOffers: []
-            }
+            image: category.image?.url || category.image || '',
+            isFeatured: category.isFeatured || false,
+            isActive: category.isActive !== false,
+            displayOrder: category.displayOrder || 0
         });
-        setEditingCategory(category);
-        setSelectedCategory(category);
+        setImagePreview(category.image?.url || category.image || '');
         setShowAddForm(true);
     };
 
-    const handleDeleteCategory = (categoryId) => {
+    const handleDeleteCategory = async (categoryId) => {
         if (window.confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
-            onDeleteCategory(categoryId);
+            try {
+                await onDeleteCategory(categoryId);
+            } catch (error) {
+                console.error('Error deleting category:', error);
+                alert('Failed to delete category');
+            }
         }
     };
 
-    const addRelatedCategory = () => {
+    const handleCancelEdit = () => {
+        setEditingCategory(null);
+        setShowAddForm(false);
+        setImagePreview('');
         setCategoryForm({
-            ...categoryForm,
-            relatedCategories: [
-                ...categoryForm.relatedCategories,
-                { name: '', path: '', count: 0 }
-            ]
-        });
-    };
-
-    const updateRelatedCategory = (index, field, value) => {
-        const updated = [...categoryForm.relatedCategories];
-        updated[index] = { ...updated[index], [field]: value };
-        setCategoryForm({
-            ...categoryForm,
-            relatedCategories: updated
-        });
-    };
-
-    const removeRelatedCategory = (index) => {
-        setCategoryForm({
-            ...categoryForm,
-            relatedCategories: categoryForm.relatedCategories.filter((_, i) => i !== index)
+            name: '',
+            description: '',
+            image: '',
+            isFeatured: false,
+            isActive: true,
+            displayOrder: 0
         });
     };
 
     return (
         <div className="category-manager">
+            {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h4 className="tc-6533 fw-bold mb-0">Category Manager</h4>
-                <button 
+                <div>
+                    <h4 className="mb-1">Category Management</h4>
+                    <p className="text-muted small mb-0">
+                        Manage your product categories. Featured categories appear at the top.
+                    </p>
+                </div>
+                <button
                     className="btn btn-primary"
-                    onClick={() => setShowAddForm(true)}
+                    onClick={() => setShowAddForm(!showAddForm)}
                 >
                     <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
                         <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                     </svg>
-                    Add Category
+                    {showAddForm ? 'Cancel' : 'Add Category'}
                 </button>
             </div>
 
-            {!showAddForm ? (
-                <>
-                    {/* Search and Filters */}
-                    <div className="row mb-4">
-                        <div className="col-md-6">
-                            <div className="input-group">
-                                <span className="input-group-text">
-                                    <svg width="16" height="16" viewBox="0 0 24 24">
-                                        <path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                                    </svg>
-                                </span>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    placeholder="Search categories..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
+            {/* Add/Edit Form */}
+            {showAddForm && (
+                <div className="card mb-4">
+                    <div className="card-body">
+                        <h5 className="card-title mb-4">
+                            {editingCategory ? 'Edit Category' : 'Add New Category'}
+                        </h5>
+
+                        <div className="row">
+                            {/* Basic Info */}
+                            <div className="col-md-8">
+                                <div className="mb-3">
+                                    <label className="form-label fw-semibold">
+                                        Category Name <span className="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        name="name"
+                                        value={categoryForm.name}
+                                        onChange={handleInputChange}
+                                        placeholder="e.g., Smartphones, Laptops, Tablets"
+                                    />
+                                </div>
+
+                                <div className="mb-3">
+                                    <label className="form-label fw-semibold">Description</label>
+                                    <textarea
+                                        className="form-control"
+                                        name="description"
+                                        value={categoryForm.description}
+                                        onChange={handleInputChange}
+                                        rows="3"
+                                        placeholder="Brief description of this category"
+                                    />
+                                </div>
+
+                                <div className="row">
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">Display Order</label>
+                                            <input
+                                                type="number"
+                                                className="form-control"
+                                                name="displayOrder"
+                                                value={categoryForm.displayOrder}
+                                                onChange={handleInputChange}
+                                                min="0"
+                                            />
+                                            <small className="text-muted">Lower numbers appear first</small>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">Status</label>
+                                            <div className="form-check form-switch">
+                                                <input
+                                                    className="form-check-input"
+                                                    type="checkbox"
+                                                    id="isActive"
+                                                    name="isActive"
+                                                    checked={categoryForm.isActive}
+                                                    onChange={handleInputChange}
+                                                />
+                                                <label className="form-check-label" htmlFor="isActive">
+                                                    {categoryForm.isActive ? 'Active' : 'Inactive'}
+                                                </label>
+                                            </div>
+                                            <div className="form-check form-switch mt-2">
+                                                <input
+                                                    className="form-check-input"
+                                                    type="checkbox"
+                                                    id="isFeatured"
+                                                    name="isFeatured"
+                                                    checked={categoryForm.isFeatured}
+                                                    onChange={handleInputChange}
+                                                />
+                                                <label className="form-check-label" htmlFor="isFeatured">
+                                                    Featured Category
+                                                </label>
+                                            </div>
+                                            <small className="text-muted d-block mt-1">
+                                                Featured categories appear at the top
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
 
-                    {/* Categories List */}
-                    <div className="row">
-                        {filteredCategories.map(category => (
-                            <div key={category.id} className="col-md-6 col-lg-4 mb-4">
-                                <div className="card h-100">
-                                    {category.image && (
-                                        <img 
-                                            src={category.image} 
-                                            className="card-img-top" 
-                                            alt={category.name}
-                                            style={{ height: '150px', objectFit: 'cover' }}
-                                        />
-                                    )}
-                                    <div className="card-body d-flex flex-column">
-                                        <div className="d-flex justify-content-between align-items-start mb-2">
-                                            <h6 className="card-title mb-0">{category.name}</h6>
-                                            <div className="d-flex gap-1">
-                                                <span className={`badge ${category.isActive ? 'bg-success' : 'bg-secondary'}`}>
-                                                    {category.isActive ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        
-                                        <p className="card-text text-muted small flex-grow-1">
-                                            {category.description || 'No description available'}
-                                        </p>
-                                        
-                                        <div className="category-meta mb-3">
-                                            <div className="row text-center">
-                                                <div className="col-4">
-                                                    <div className="small text-muted">Products</div>
-                                                    <div className="fw-bold">{category.productCount || 0}</div>
-                                                </div>
-                                                <div className="col-4">
-                                                    <div className="small text-muted">Order</div>
-                                                    <div className="fw-bold">{category.sortOrder || 0}</div>
-                                                </div>
-                                                <div className="col-4">
-                                                    <div className="small text-muted">Parent</div>
-                                                    <div className="fw-bold">{category.parentId ? 'Yes' : 'No'}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="d-flex gap-2 mt-auto">
-                                            <button 
-                                                className="btn btn-outline-primary btn-sm flex-fill"
-                                                onClick={() => handleEditCategory(category)}
-                                            >
-                                                <svg width="14" height="14" viewBox="0 0 24 24" className="me-1">
-                                                    <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/>
-                                                </svg>
-                                                Edit
-                                            </button>
-                                            <button 
-                                                className="btn btn-outline-danger btn-sm"
-                                                onClick={() => handleDeleteCategory(category.id)}
+                            {/* Image Upload */}
+                            <div className="col-md-4">
+                                <label className="form-label fw-semibold">Category Image</label>
+                                <div className="border rounded p-3 text-center">
+                                    {imagePreview ? (
+                                        <div className="position-relative">
+                                            <img
+                                                src={imagePreview}
+                                                alt="Preview"
+                                                className="img-fluid rounded mb-2"
+                                                style={{ maxHeight: '200px', objectFit: 'cover' }}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm btn-danger position-absolute top-0 end-0 m-2"
+                                                onClick={() => {
+                                                    setImagePreview('');
+                                                    setCategoryForm(prev => ({ ...prev, image: '' }));
+                                                }}
                                             >
                                                 <svg width="14" height="14" viewBox="0 0 24 24">
-                                                    <path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+                                                    <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
                                                 </svg>
                                             </button>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </>
-            ) : (
-                /* Category Form */
-                <div className="category-form">
-                    <div className="d-flex justify-content-between align-items-center mb-4">
-                        <h5 className="mb-0">
-                            {editingCategory ? `Edit Category: ${editingCategory.name}` : 'Add New Category'}
-                        </h5>
-                        <button 
-                            className="btn btn-outline-secondary"
-                            onClick={resetForm}
-                        >
-                            <svg width="16" height="16" viewBox="0 0 24 24" className="me-1">
-                                <path fill="currentColor" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
-                            </svg>
-                            Cancel
-                        </button>
-                    </div>
-
-                    {/* Form Tabs */}
-                    <ul className="nav nav-tabs mb-4">
-                        <li className="nav-item">
-                            <button 
-                                className={`nav-link ${activeTab === 'basic' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('basic')}
-                            >
-                                Basic Info
-                            </button>
-                        </li>
-                        <li className="nav-item">
-                            <button 
-                                className={`nav-link ${activeTab === 'navigation' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('navigation')}
-                            >
-                                Navigation
-                            </button>
-                        </li>
-                        <li className="nav-item">
-                            <button 
-                                className={`nav-link ${activeTab === 'features' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('features')}
-                            >
-                                Features
-                            </button>
-                        </li>
-                        <li className="nav-item">
-                            <button 
-                                className={`nav-link ${activeTab === 'seo' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('seo')}
-                            >
-                                SEO
-                            </button>
-                        </li>
-                    </ul>
-
-                    {/* Basic Info Tab */}
-                    {activeTab === 'basic' && (
-                        <div className="row">
-                            <div className="col-md-6">
-                                <div className="mb-3">
-                                    <label className="form-label">Category Name *</label>
+                                    ) : (
+                                        <div className="py-4">
+                                            <svg width="48" height="48" viewBox="0 0 24 24" className="text-muted mb-2">
+                                                <path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                                            </svg>
+                                            <p className="text-muted small mb-2">No image selected</p>
+                                        </div>
+                                    )}
                                     <input
-                                        type="text"
-                                        className="form-control"
-                                        value={categoryForm.name}
-                                        onChange={(e) => setCategoryForm({
-                                            ...categoryForm,
-                                            name: e.target.value,
-                                            slug: e.target.value.toLowerCase().replace(/\s+/g, '-')
-                                        })}
-                                        placeholder="e.g., Tablets"
+                                        type="file"
+                                        className="form-control form-control-sm"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
                                     />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Slug</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={categoryForm.slug}
-                                        onChange={(e) => setCategoryForm({
-                                            ...categoryForm,
-                                            slug: e.target.value
-                                        })}
-                                        placeholder="e.g., tablets"
-                                    />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Parent Category</label>
-                                    <select
-                                        className="form-select"
-                                        value={categoryForm.parentId || ''}
-                                        onChange={(e) => setCategoryForm({
-                                            ...categoryForm,
-                                            parentId: e.target.value || null
-                                        })}
-                                    >
-                                        <option value="">No Parent (Top Level)</option>
-                                        {categories.filter(cat => cat.id !== editingCategory?.id).map(cat => (
-                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Sort Order</label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        value={categoryForm.sortOrder}
-                                        onChange={(e) => setCategoryForm({
-                                            ...categoryForm,
-                                            sortOrder: parseInt(e.target.value) || 0
-                                        })}
-                                    />
-                                </div>
-                            </div>
-                            <div className="col-md-6">
-                                <div className="mb-3">
-                                    <label className="form-label">Description</label>
-                                    <textarea
-                                        className="form-control"
-                                        rows="4"
-                                        value={categoryForm.description}
-                                        onChange={(e) => setCategoryForm({
-                                            ...categoryForm,
-                                            description: e.target.value
-                                        })}
-                                        placeholder="Category description..."
-                                    />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Category Image URL</label>
-                                    <input
-                                        type="url"
-                                        className="form-control"
-                                        value={categoryForm.image}
-                                        onChange={(e) => setCategoryForm({
-                                            ...categoryForm,
-                                            image: e.target.value
-                                        })}
-                                        placeholder="https://example.com/image.jpg"
-                                    />
-                                </div>
-                                <div className="mb-3">
-                                    <div className="form-check">
-                                        <input
-                                            className="form-check-input"
-                                            type="checkbox"
-                                            checked={categoryForm.isActive}
-                                            onChange={(e) => setCategoryForm({
-                                                ...categoryForm,
-                                                isActive: e.target.checked
-                                            })}
-                                        />
-                                        <label className="form-check-label">
-                                            Active Category
-                                        </label>
-                                    </div>
+                                    <small className="text-muted d-block mt-2">
+                                        Max 5MB • JPG, PNG, WebP
+                                    </small>
                                 </div>
                             </div>
                         </div>
-                    )}
 
-                    {/* Navigation Tab */}
-                    {activeTab === 'navigation' && (
-                        <div>
-                            <h6 className="mb-3">Related Categories</h6>
-                            {categoryForm.relatedCategories.map((related, index) => (
-                                <div key={index} className="row mb-3 align-items-end">
-                                    <div className="col-md-4">
-                                        <label className="form-label">Category Name</label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            value={related.name}
-                                            onChange={(e) => updateRelatedCategory(index, 'name', e.target.value)}
-                                            placeholder="e.g., iPad Pro"
-                                        />
-                                    </div>
-                                    <div className="col-md-4">
-                                        <label className="form-label">Path</label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            value={related.path}
-                                            onChange={(e) => updateRelatedCategory(index, 'path', e.target.value)}
-                                            placeholder="e.g., /category/tablets/ipad-pro"
-                                        />
-                                    </div>
-                                    <div className="col-md-2">
-                                        <label className="form-label">Count</label>
-                                        <input
-                                            type="number"
-                                            className="form-control"
-                                            value={related.count}
-                                            onChange={(e) => updateRelatedCategory(index, 'count', parseInt(e.target.value) || 0)}
-                                        />
-                                    </div>
-                                    <div className="col-md-2">
-                                        <button
-                                            type="button"
-                                            className="btn btn-outline-danger"
-                                            onClick={() => removeRelatedCategory(index)}
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
+                        {/* Action Buttons */}
+                        <div className="d-flex gap-2 mt-4">
                             <button
-                                type="button"
-                                className="btn btn-outline-primary"
-                                onClick={addRelatedCategory}
+                                className="btn btn-primary"
+                                onClick={handleSaveCategory}
                             >
-                                <svg width="16" height="16" viewBox="0 0 24 24" className="me-1">
-                                    <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                                <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                                    <path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
                                 </svg>
-                                Add Related Category
+                                {editingCategory ? 'Update Category' : 'Save Category'}
+                            </button>
+                            <button
+                                className="btn btn-outline-secondary"
+                                onClick={handleCancelEdit}
+                            >
+                                Cancel
                             </button>
                         </div>
-                    )}
-
-                    {/* Features Tab */}
-                    {activeTab === 'features' && (
-                        <div className="row">
-                            <div className="col-md-6">
-                                <div className="mb-3">
-                                    <div className="form-check">
-                                        <input
-                                            className="form-check-input"
-                                            type="checkbox"
-                                            checked={categoryForm.categoryFeatures.freeShipping}
-                                            onChange={(e) => setCategoryForm({
-                                                ...categoryForm,
-                                                categoryFeatures: {
-                                                    ...categoryForm.categoryFeatures,
-                                                    freeShipping: e.target.checked
-                                                }
-                                            })}
-                                        />
-                                        <label className="form-check-label">
-                                            Free Shipping Available
-                                        </label>
-                                    </div>
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Warranty Information</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={categoryForm.categoryFeatures.warranty}
-                                        onChange={(e) => setCategoryForm({
-                                            ...categoryForm,
-                                            categoryFeatures: {
-                                                ...categoryForm.categoryFeatures,
-                                                warranty: e.target.value
-                                            }
-                                        })}
-                                        placeholder="e.g., 2 Year Warranty"
-                                    />
-                                </div>
-                            </div>
-                            <div className="col-md-6">
-                                <div className="mb-3">
-                                    <label className="form-label">Return Policy</label>
-                                    <textarea
-                                        className="form-control"
-                                        rows="3"
-                                        value={categoryForm.categoryFeatures.returnPolicy}
-                                        onChange={(e) => setCategoryForm({
-                                            ...categoryForm,
-                                            categoryFeatures: {
-                                                ...categoryForm.categoryFeatures,
-                                                returnPolicy: e.target.value
-                                            }
-                                        })}
-                                        placeholder="Return policy details..."
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* SEO Tab */}
-                    {activeTab === 'seo' && (
-                        <div className="row">
-                            <div className="col-md-6">
-                                <div className="mb-3">
-                                    <label className="form-label">SEO Title</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={categoryForm.seoTitle}
-                                        onChange={(e) => setCategoryForm({
-                                            ...categoryForm,
-                                            seoTitle: e.target.value
-                                        })}
-                                        placeholder="SEO optimized title"
-                                    />
-                                </div>
-                            </div>
-                            <div className="col-md-6">
-                                <div className="mb-3">
-                                    <label className="form-label">SEO Description</label>
-                                    <textarea
-                                        className="form-control"
-                                        rows="3"
-                                        value={categoryForm.seoDescription}
-                                        onChange={(e) => setCategoryForm({
-                                            ...categoryForm,
-                                            seoDescription: e.target.value
-                                        })}
-                                        placeholder="SEO meta description"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Form Actions */}
-                    <div className="d-flex gap-2 mt-4">
-                        <button 
-                            className="btn btn-primary"
-                            onClick={handleSaveCategory}
-                        >
-                            <svg width="16" height="16" viewBox="0 0 24 24" className="me-1">
-                                <path fill="currentColor" d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/>
-                            </svg>
-                            {editingCategory ? 'Update Category' : 'Save Category'}
-                        </button>
-                        <button 
-                            className="btn btn-outline-secondary"
-                            onClick={resetForm}
-                        >
-                            Cancel
-                        </button>
                     </div>
                 </div>
             )}
+
+            {/* Search */}
+            <div className="mb-4">
+                <div className="input-group">
+                    <span className="input-group-text">
+                        <svg width="16" height="16" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/>
+                        </svg>
+                    </span>
+                    <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Search categories..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </div>
+
+            {/* Featured Categories Section */}
+            {featuredCategories.length > 0 && (
+                <div className="mb-4">
+                    <div className="d-flex align-items-center mb-3">
+                        <svg width="20" height="20" viewBox="0 0 24 24" className="text-warning me-2">
+                            <path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                        </svg>
+                        <h5 className="mb-0">Featured Categories</h5>
+                        <span className="badge bg-warning ms-2">{featuredCategories.length}</span>
+                    </div>
+                    <div className="row">
+                        {featuredCategories.map((category) => (
+                            <div key={category._id || category.id} className="col-md-4 mb-3">
+                                <CategoryCard
+                                    category={category}
+                                    onEdit={handleEditCategory}
+                                    onDelete={handleDeleteCategory}
+                                    isFeatured={true}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* All Categories Section */}
+            <div>
+                <h5 className="mb-3">
+                    All Categories
+                    <span className="badge bg-primary ms-2">{filteredCategories.length}</span>
+                </h5>
+                {filteredCategories.length === 0 ? (
+                    <div className="alert alert-info">
+                        <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
+                            <path fill="currentColor" d="M13 9h-2V7h2m0 10h-2v-6h2m-1-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2z"/>
+                        </svg>
+                        No categories found. Click "Add Category" to create your first category.
+                    </div>
+                ) : (
+                    <div className="row">
+                        {filteredCategories.map((category) => (
+                            <div key={category._id || category.id} className="col-md-4 mb-3">
+                                <CategoryCard
+                                    category={category}
+                                    onEdit={handleEditCategory}
+                                    onDelete={handleDeleteCategory}
+                                    isFeatured={category.isFeatured}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Category Card Component
+const CategoryCard = ({ category, onEdit, onDelete, isFeatured }) => {
+    return (
+        <div className="card h-100">
+            {category.image && (
+                <img
+                    src={category.image?.url || category.image}
+                    alt={category.name}
+                    className="card-img-top"
+                    style={{ height: '150px', objectFit: 'cover' }}
+                />
+            )}
+            <div className="card-body">
+                <div className="d-flex justify-content-between align-items-start mb-2">
+                    <h6 className="card-title mb-0">{category.name}</h6>
+                    {isFeatured && (
+                        <svg width="16" height="16" viewBox="0 0 24 24" className="text-warning">
+                            <path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                        </svg>
+                    )}
+                </div>
+                <p className="card-text small text-muted mb-2">
+                    {category.description || 'No description'}
+                </p>
+                <div className="d-flex justify-content-between align-items-center">
+                    <small className="text-muted">
+                        {category.productCount || 0} products
+                    </small>
+                    <span className={`badge ${category.isActive ? 'bg-success' : 'bg-secondary'}`}>
+                        {category.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                </div>
+            </div>
+            <div className="card-footer bg-transparent border-top-0">
+                <div className="btn-group w-100">
+                    <button
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => onEdit(category)}
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/>
+                        </svg>
+                    </button>
+                    <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => onDelete(category._id || category.id)}
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };
