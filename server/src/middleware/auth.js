@@ -389,7 +389,8 @@ export const requireAdmin = (req, res, next) => {
     });
   }
 
-  if (req.user.role !== 'admin') {
+  // Allow both 'admin' and 'super_admin' roles
+  if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
     logger.warn('Admin access denied', {
       userId: req.user._id,
       role: req.user.role,
