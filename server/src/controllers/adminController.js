@@ -1302,19 +1302,10 @@ export const updateProductSections = asyncHandler(async (req, res, next) => {
     return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
   }
 
-  // If adding to a section, remove from all other sections first
-  if (sections.length > 0) {
-    // Remove this product from all sections
-    await Product.updateOne(
-      { _id: id },
-      { $set: { sections: [] } }
-    );
-  }
-
-  // Now set the new sections
+  // Update the sections directly (no need to clear first)
   const product = await Product.findByIdAndUpdate(
     id,
-    { sections },
+    { $set: { sections } },
     { new: true, runValidators: false } // Don't run full validation
   ).populate('category', 'name slug');
 

@@ -108,6 +108,7 @@ import wishlistRoutes from './src/routes/wishlist.js';
 import reviewRoutes from './src/routes/reviews.js';
 import specificationRoutes from './src/routes/specifications.js';
 import stockRoutes from './src/routes/stock.js';
+import roleRoutes from './src/routes/roles.js';
 // Initialize Passport strategies
 initializePassport();
 // Connect to MongoDB
@@ -263,6 +264,7 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/specifications', specificationRoutes);
 app.use('/api/stock', stockRoutes);
+app.use('/api/admin/roles', roleRoutes);
 // Health check endpoints
 import healthCheck from './src/utils/healthCheck.js';
 import healthMonitor from './src/utils/healthMonitor.js';

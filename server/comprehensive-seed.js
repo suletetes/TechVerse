@@ -486,13 +486,16 @@ class ComprehensiveSeed {
 
   /**
    * Generate product sections
+   * Ensures good distribution across all homepage sections
    */
   generateSections() {
     const sections = [];
-    if (faker.datatype.boolean(0.3)) sections.push('latest');
-    if (faker.datatype.boolean(0.2)) sections.push('topSeller');
-    if (faker.datatype.boolean(0.15)) sections.push('featured');
-    if (faker.datatype.boolean(0.1)) sections.push('weeklyDeal');
+    // Increased probabilities and added quickPick
+    if (faker.datatype.boolean(0.15)) sections.push('latest');      // ~15% of products
+    if (faker.datatype.boolean(0.15)) sections.push('topSeller');   // ~15% of products
+    if (faker.datatype.boolean(0.10)) sections.push('quickPick');   // ~10% of products
+    if (faker.datatype.boolean(0.10)) sections.push('weeklyDeal');  // ~10% of products
+    if (faker.datatype.boolean(0.05)) sections.push('featured');    // ~5% of products
     return sections;
   }
 
@@ -734,6 +737,26 @@ class ComprehensiveSeed {
     console.log(`\n💰 Total Revenue: $${totalRevenue.toFixed(2)}`);
     console.log(`📊 Average Order Value: $${avgOrderValue.toFixed(2)}`);
     console.log(`⭐ Average Rating: ${avgRating.toFixed(1)}/5`);
+    
+    // Homepage sections distribution
+    console.log('\n🏠 Homepage Sections:');
+    const sectionCounts = { latest: 0, topSeller: 0, quickPick: 0, weeklyDeal: 0, featured: 0 };
+    this.products.forEach(product => {
+      product.sections?.forEach(section => {
+        if (sectionCounts[section] !== undefined) sectionCounts[section]++;
+      });
+    });
+    console.log(`   Latest: ${sectionCounts.latest} | Top Sellers: ${sectionCounts.topSeller} | Quick Picks: ${sectionCounts.quickPick} | Weekly Deals: ${sectionCounts.weeklyDeal} | Featured: ${sectionCounts.featured}`);
+    
+    // Review status
+    console.log('\n📝 Review Status:');
+    const reviewStatus = { approved: 0, pending: 0, rejected: 0 };
+    this.reviews.forEach(review => {
+      if (reviewStatus[review.status] !== undefined) reviewStatus[review.status]++;
+    });
+    console.log(`   Approved: ${reviewStatus.approved} | Pending: ${reviewStatus.pending} | Rejected: ${reviewStatus.rejected}`);
+    
+    console.log('\n🔐 Admin: admin@techverse.com / Admin123!');
   }
 }
 
