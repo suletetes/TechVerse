@@ -476,15 +476,16 @@ export const AuthProvider = ({ children }) => {
 
       const response = await authService.register(registrationData);
 
+      // Always store tokens and user data, even if email verification is required
+      dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response.data});
+
+      // Sync login across tabs
+      multiTabSyncManager.syncLogin(response.data.user, response.data.tokens);
+
       if (response.data?.requiresVerification) {
         showNotification('Registration successful! Please check your email to verify your account.', 'success');
         return { requiresVerification: true, email: userData.email };
       }
-
-      dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response.data });
-
-      // Sync login across tabs
-      multiTabSyncManager.syncLogin(response.data.user, response.data.tokens);
 
       showNotification('Registration successful!', 'success');
       return response;
