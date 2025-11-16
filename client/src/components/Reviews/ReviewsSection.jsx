@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import ReviewsSummary from './ReviewsSummary';
 import ReviewItem from './ReviewItem';
 import WriteReview from './WriteReview';
@@ -20,10 +21,13 @@ const ReviewsSection = ({
     writeReviewContext,
     productInfo,
     isLoading = false,
-    submitButtonText = 'Submit Review'
+    submitButtonText = 'Submit Review',
+    initialDisplayLimit = 3 // Show only 3 reviews initially
 }) => {
     console.log('🔍 DEBUG ReviewsSection: Initial values:', writeReviewInitialValues);
     console.log('🔍 DEBUG ReviewsSection: Submit button text:', submitButtonText);
+    
+    const navigate = useNavigate();
     // Handle backend review data structure
     const processedReviews = (Array.isArray(reviews) ? reviews : []).filter(review => review && review.rating).map(review => ({
         id: review._id || review.id,
@@ -41,7 +45,7 @@ const ReviewsSection = ({
     }));
 
     // Fallback reviews if none provided and not loading
-    const displayReviews = processedReviews.length > 0 ? processedReviews : (!isLoading ? [
+    const allReviews = processedReviews.length > 0 ? processedReviews : (!isLoading ? [
         {
             id: 1,
             name: "Sarah Johnson",
@@ -73,6 +77,10 @@ const ReviewsSection = ({
             helpful: 5
         },
     ] : []);
+
+    // Limit displayed reviews
+    const displayReviews = allReviews.slice(0, initialDisplayLimit);
+    const hasMoreReviews = allReviews.length > initialDisplayLimit;
 
     return (
         <div className="store-card outline-card fill-card">
@@ -121,13 +129,16 @@ const ReviewsSection = ({
                     </div>
                 )}
 
-                {showLoadMore && displayReviews.length > 0 && !isLoading && (
+                {showLoadMore && hasMoreReviews && !isLoading && (
                     <div className="text-center mt-4">
-                        <button className="btn btn-outline-primary btn-rd px-4">
+                        <button 
+                            className="btn btn-outline-primary btn-rd px-4"
+                            onClick={() => navigate(`/product/${productInfo?.slug || productId}/reviews`)}
+                        >
                             <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                                <path fill="currentColor" d="M7 14l5-5 5 5z"/>
+                                <path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
                             </svg>
-                            Load More Reviews
+                            View All {allReviews.length} Reviews
                         </button>
                     </div>
                 )}

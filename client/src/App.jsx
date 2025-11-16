@@ -26,6 +26,7 @@ import {
     AdminOrderManagement,
     AdminProductManagement
 } from "./pages"
+import ProductReviews from './pages/ProductReviews.jsx';
 import AdminReviewManagement from './pages/Admin/AdminReviewManagement.jsx';
 import { CategoryManagement } from "./pages/admin"
 import EditProfile from "./pages/EditProfile"
@@ -73,6 +74,10 @@ const router = createBrowserRouter([
             {
                 path: 'product/:id',
                 element: <Product />,
+            },
+            {
+                path: 'product/:id/reviews',
+                element: <ProductReviews />,
             },
             {
                 path: 'login',

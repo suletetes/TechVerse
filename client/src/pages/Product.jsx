@@ -736,6 +736,7 @@ const Product = () => {
                             onSubmitReview={handleSubmitReview}
                             productInfo={{
                                 id: product?._id || 'product-001',
+                                slug: product?.slug || id,
                                 name: product?.name || 'Product',
                                 variant: `${selectedColor} - ${selectedStorage}`,
                                 image: product?.images?.[0]?.url || '../img/tablet-thumb.jpg'

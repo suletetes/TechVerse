@@ -46,7 +46,7 @@ const ReviewItem = ({ review }) => {
             <h6 className="tc-6533 fw-semibold mb-2">{title}</h6>
             <p className="text-muted mb-3">{reviewText}</p>
 
-            <div className="d-flex justify-content-between align-items-center">
+            {/* <div className="d-flex justify-content-between align-items-center">
                 <div className="d-flex align-items-center">
                     <button className="btn btn-sm btn-outline-secondary me-2">
                         <svg width="14" height="14" viewBox="0 0 24 24" className="me-1">
@@ -68,7 +68,7 @@ const ReviewItem = ({ review }) => {
                     </svg>
                     Report
                 </button>
-            </div>
+            </div> */}
         </div>
     );
 };
