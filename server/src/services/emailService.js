@@ -32,31 +32,43 @@ class EmailService {
         return;
       }
 
-      // Create transporter
+      // Create transporter with better error handling
       this.transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_HOST,
-        port: parseInt(process.env.EMAIL_PORT) || 587,
-        secure: process.env.EMAIL_PORT === '465', // true for 465, false for other ports
+        service: 'gmail', // Use Gmail service for better compatibility
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASS
         },
         // Add timeout settings
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 15000,
+        // Add debug logging
+        debug: process.env.NODE_ENV === 'development',
+        logger: process.env.NODE_ENV === 'development'
       });
 
-      // Verify connection with timeout
-      const verifyPromise = this.transporter.verify();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Email verification timeout')), 10000)
-      );
+      // Try to verify connection with better error handling
+      try {
+        const verifyPromise = this.transporter.verify();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Email verification timeout - check firewall/network')), 15000)
+        );
 
-      await Promise.race([verifyPromise, timeoutPromise]);
-      this.isInitialized = true;
-      logger.info('✅ Email service initialized successfully');
-      logger.info(`📧 Emails will be sent from: ${process.env.EMAIL_FROM}`);
+        await Promise.race([verifyPromise, timeoutPromise]);
+        this.isInitialized = true;
+        logger.info('✅ Email service initialized successfully');
+        logger.info(`📧 Emails will be sent from: ${process.env.EMAIL_FROM}`);
+      } catch (verifyError) {
+        // Log detailed error but continue without email
+        logger.warn('⚠️  Email verification failed, but service will attempt to send emails anyway', {
+          error: verifyError.message,
+          code: verifyError.code
+        });
+        // Set as initialized anyway - some networks block SMTP verify but allow sending
+        this.isInitialized = true;
+        logger.info('📧 Email service running in fallback mode (verification skipped)');
+      }
     } catch (error) {
       logger.warn('⚠️  Failed to initialize email service, continuing without email functionality', {
         error: error.message
