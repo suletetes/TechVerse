@@ -102,26 +102,6 @@ const AdminDashboardBright = ({ setActiveTab }) => {
                                 </p>
                             </div>
                         </div>
-                        <div className="d-flex gap-3 align-items-center">
-                            <select 
-                                className="form-select form-select-lg border-2 border-primary" 
-                                value={dateRange} 
-                                onChange={(e) => handleDateRangeChange(e.target.value)}
-                                style={{ 
-                                    width: '160px',
-                                    backgroundColor: '#f8f9ff',
-                                    borderRadius: '15px',
-                                    fontWeight: '600'
-                                }}
-                            >
-                                <option value="7days">Last 7 days</option>
-                                <option value="30days">Last 30 days</option>
-                                <option value="90days">Last 90 days</option>
-                            </select>
-                            <button className="btn btn-primary btn-lg px-4" style={{ borderRadius: '15px', fontWeight: '600' }}>
-                                <i className="fas fa-download me-2"></i>Export Report
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>

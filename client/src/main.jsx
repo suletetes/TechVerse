@@ -7,6 +7,7 @@ import "./assets/css/style.css";
 import "./assets/css/ecommerce.css";
 import "./assets/css/category-enhancements.css";
 import "./assets/css/variant-colors.css";
+import "./styles/text-visibility-fix.css";
 
 // Development utilities
 if (import.meta.env?.DEV) {
