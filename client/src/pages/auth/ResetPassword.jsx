@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const ResetPassword = () => {
-  const { resetPassword } = useAuth();
+  const { resetPassword, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
@@ -28,6 +28,15 @@ const ResetPassword = () => {
       setToken(tokenFromUrl);
     }
   }, [searchParams]);
+
+  // Redirect logged-in users who try to access this page without a valid token
+  useEffect(() => {
+    const tokenFromUrl = searchParams.get('token');
+    if (isAuthenticated && !tokenFromUrl) {
+      // User is logged in and trying to access reset password without a token
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, searchParams, navigate]);
 
   // Calculate password strength
   useEffect(() => {

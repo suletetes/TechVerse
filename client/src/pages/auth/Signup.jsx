@@ -159,7 +159,7 @@ const Signup = () => {
                                         <h5 className="tc-2175 mb-3">Member Benefits</h5>
                                         <ul className="tc-654" style={{listStyle: 'none', padding: 0}}>
                                             <li className="mb-2"> Exclusive member-only deals</li>
-                                            <li className="mb-2"> Free shipping on orders over £50</li>
+                                            <li className="mb-2"> Free shipping on orders over $50</li>
                                             <li className="mb-2"> Early access to new products</li>
                                             <li className="mb-2"> Easy returns and exchanges</li>
                                             <li className="mb-2"> Priority customer support</li>

@@ -1,14 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfileProvider } from '../../context/UserProfileContext';
 import { useAuth } from '../../context';
-import { LoadingSpinner } from '../Common';
+import { LoadingSpinner, Toast } from '../Common';
 import ProfileTab from './ProfileTab';
 import OrdersTab from './OrdersTab';
 import ActivityTab from './ActivityTab';
+import { PasswordChangeModal } from './Modals';
+import API_BASE_URL from '../../api/config.js';
+import { tokenManager } from '../../utils/tokenManager.js';
+import { ensureCsrfToken } from '../../utils/csrfUtils';
 
 const UserProfileLayout = ({ initialTab = 'profile' }) => {
     const { user, isLoading } = useAuth();
     const [activeTab, setActiveTab] = useState(initialTab);
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+    const [passwordErrors, setPasswordErrors] = useState({});
+    const [showPasswords, setShowPasswords] = useState({
+        current: false,
+        new: false,
+        confirm: false
+    });
+    const [toast, setToast] = useState(null);
 
     // Update active tab when initialTab prop changes
     useEffect(() => {
@@ -38,12 +55,144 @@ const UserProfileLayout = ({ initialTab = 'profile' }) => {
         );
     }
 
+    // Password validation
+    const validatePassword = (password) => {
+        const errors = [];
+        if (password.length < 6) errors.push('At least 6 characters');
+        if (!/[a-z]/.test(password)) errors.push('One lowercase letter');
+        if (!/[A-Z]/.test(password)) errors.push('One uppercase letter');
+        if (!/\d/.test(password)) errors.push('One number');
+        return errors;
+    };
+
+    // Get password strength
+    const getPasswordStrength = (password) => {
+        if (!password) return { strength: 0, label: 'None', color: 'secondary' };
+        
+        let strength = 0;
+        if (password.length >= 6) strength += 25;
+        if (password.length >= 10) strength += 25;
+        if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
+        if (/\d/.test(password)) strength += 15;
+        if (/[^a-zA-Z0-9]/.test(password)) strength += 10;
+        
+        if (strength < 40) return { strength, label: 'Weak', color: 'danger' };
+        if (strength < 70) return { strength, label: 'Fair', color: 'warning' };
+        if (strength < 90) return { strength, label: 'Good', color: 'info' };
+        return { strength: 100, label: 'Strong', color: 'success' };
+    };
+
+    // Toggle password visibility
+    const togglePasswordVisibility = (field) => {
+        setShowPasswords(prev => ({
+            ...prev,
+            [field]: !prev[field]
+        }));
+    };
+
+    // Handle password input change
+    const handlePasswordChange = (e) => {
+        const { name, value } = e.target;
+        setPasswordData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+        
+        // Clear error for this field
+        setPasswordErrors(prev => ({
+            ...prev,
+            [name]: ''
+        }));
+    };
+
+    // Handle password submit
+    const handlePasswordSubmit = async (e) => {
+        e.preventDefault();
+        
+        // Validate
+        const errors = {};
+        
+        if (!passwordData.currentPassword) {
+            errors.currentPassword = 'Current password is required';
+        }
+        
+        if (!passwordData.newPassword) {
+            errors.newPassword = 'New password is required';
+        } else {
+            const validationErrors = validatePassword(passwordData.newPassword);
+            if (validationErrors.length > 0) {
+                errors.newPassword = validationErrors.join(', ');
+            }
+        }
+        
+        if (!passwordData.confirmPassword) {
+            errors.confirmPassword = 'Please confirm your new password';
+        } else if (passwordData.newPassword !== passwordData.confirmPassword) {
+            errors.confirmPassword = 'Passwords do not match';
+        }
+        
+        if (passwordData.currentPassword === passwordData.newPassword) {
+            errors.newPassword = 'New password must be different from current password';
+        }
+        
+        if (Object.keys(errors).length > 0) {
+            setPasswordErrors(errors);
+            return;
+        }
+        
+        try {
+            // Get CSRF token
+            const csrfToken = await ensureCsrfToken();
+            
+            // Call API
+            const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${tokenManager.getToken()}`,
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({
+                    currentPassword: passwordData.currentPassword,
+                    newPassword: passwordData.newPassword
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to change password');
+            }
+            
+            // Success - close modal and show toast
+            setShowPasswordModal(false);
+            setPasswordData({
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: ''
+            });
+            setPasswordErrors({});
+            
+            setToast({
+                message: 'Password changed successfully! You will receive a confirmation email.',
+                type: 'success'
+            });
+            
+        } catch (error) {
+            console.error('Error changing password:', error);
+            setToast({
+                message: error.message || 'Failed to change password. Please try again.',
+                type: 'error'
+            });
+        }
+    };
+
     const renderTabContent = () => {
         switch (activeTab) {
             case 'profile':
                 return (
                     <UserProfileProvider>
-                        <ProfileTab />
+                        <ProfileTab onPasswordChange={() => setShowPasswordModal(true)} />
                     </UserProfileProvider>
                 );
             case 'orders':
@@ -53,7 +202,7 @@ const UserProfileLayout = ({ initialTab = 'profile' }) => {
             default:
                 return (
                     <UserProfileProvider>
-                        <ProfileTab />
+                        <ProfileTab onPasswordChange={() => setShowPasswordModal(true)} />
                     </UserProfileProvider>
                 );
         }
@@ -61,6 +210,39 @@ const UserProfileLayout = ({ initialTab = 'profile' }) => {
 
     return (
         <div className="bloc bgc-5700 full-width-bloc l-bloc" id="user-profile-bloc">
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
+            
+            {/* Password Change Modal */}
+            {showPasswordModal && (
+                <PasswordChangeModal
+                    onClose={() => {
+                        setShowPasswordModal(false);
+                        setPasswordData({
+                            currentPassword: '',
+                            newPassword: '',
+                            confirmPassword: ''
+                        });
+                        setPasswordErrors({});
+                    }}
+                    passwordData={passwordData}
+                    setPasswordData={setPasswordData}
+                    passwordErrors={passwordErrors}
+                    showPasswords={showPasswords}
+                    handlePasswordSubmit={handlePasswordSubmit}
+                    handlePasswordChange={handlePasswordChange}
+                    togglePasswordVisibility={togglePasswordVisibility}
+                    getPasswordStrength={getPasswordStrength}
+                    validatePassword={validatePassword}
+                />
+            )}
+            
             <div className="container bloc-md bloc-lg-md">
                 <div className="row">
                     <div className="col-12 mb-4">
