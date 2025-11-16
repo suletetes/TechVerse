@@ -19,6 +19,7 @@ const ProductReviews = () => {
     const [totalPages, setTotalPages] = useState(0);
     const [ratingBreakdown, setRatingBreakdown] = useState(null);
     const [reviewsLoading, setReviewsLoading] = useState(false);
+    const [error, setError] = useState(null);
     const reviewsPerPage = 10;
 
     // Load product info
@@ -51,6 +52,9 @@ const ProductReviews = () => {
 
                 reviewDebugger.logApiRequest(`/api/products/${id}/reviews`, params);
                 reviewDebugger.logFilterSort(filterRating, sortBy);
+                
+                // Clear previous error
+                setError(null);
                 
                 const response = await reviewService.getProductReviews(id, params);
                 
@@ -100,109 +104,17 @@ const ProductReviews = () => {
                     setTotalReviews(responseData.pagination.totalReviews);
                     setTotalPages(responseData.pagination.totalPages);
                     setRatingBreakdown(responseData.ratingBreakdown);
-
-                    // If no reviews from DB, show sample reviews
-                    if (processedReviews.length === 0) {
-                        reviewDebugger.logFallbackToSample('No reviews in database');
-                        setReviews([
-                            {
-                                id: 1,
-                                name: "Sarah Johnson",
-                                rating: 5,
-                                date: "2 days ago",
-                                title: "Excellent product, highly recommended!",
-                                review: "I've been using this product for a month now and it has exceeded all my expectations. The quality is outstanding and it works perfectly for my needs.",
-                                verified: true,
-                                helpful: 12,
-                                pros: ["Great quality", "Easy to use", "Good value"],
-                                cons: []
-                            },
-                            {
-                                id: 2,
-                                name: "Michael Chen",
-                                rating: 5,
-                                date: "1 week ago",
-                                title: "Perfect for work and daily use",
-                                review: "This product has been a game-changer for my daily routine. Highly efficient and reliable. Would definitely recommend to anyone looking for quality.",
-                                verified: true,
-                                helpful: 8,
-                                pros: ["Reliable", "Fast performance"],
-                                cons: []
-                            },
-                            {
-                                id: 3,
-                                name: "Emily Rodriguez",
-                                rating: 4,
-                                date: "2 weeks ago",
-                                title: "Great value for money",
-                                review: "Overall a great product. Does exactly what it promises. Minor issues but nothing major. Very satisfied with my purchase.",
-                                verified: true,
-                                helpful: 5,
-                                pros: ["Good price", "Works well"],
-                                cons: ["Could be faster"]
-                            },
-                            {
-                                id: 4,
-                                name: "David Kim",
-                                rating: 5,
-                                date: "3 weeks ago",
-                                title: "Exceeded expectations",
-                                review: "I was skeptical at first, but this product has proven to be worth every penny. The build quality is excellent and it performs flawlessly.",
-                                verified: true,
-                                helpful: 15,
-                                pros: ["Excellent build", "Great performance"],
-                                cons: []
-                            },
-                            {
-                                id: 5,
-                                name: "Lisa Anderson",
-                                rating: 4,
-                                date: "1 month ago",
-                                title: "Very satisfied",
-                                review: "Good product overall. It meets all my requirements and the customer service was excellent. Would buy again.",
-                                verified: true,
-                                helpful: 6,
-                                pros: ["Good customer service", "Reliable"],
-                                cons: ["Packaging could be better"]
-                            }
-                        ]);
-                        setTotalReviews(5);
-                        setTotalPages(1);
-                    }
                 }
             } catch (error) {
                 reviewDebugger.endTimer('fetchReviews');
                 reviewDebugger.logApiError(`/api/products/${id}/reviews`, error);
-                reviewDebugger.logFallbackToSample(`API Error: ${error.message}`);
-                // Show sample reviews on error
-                setReviews([
-                    {
-                        id: 1,
-                        name: "Sarah Johnson",
-                        rating: 5,
-                        date: "2 days ago",
-                        title: "Excellent product, highly recommended!",
-                        review: "I've been using this product for a month now and it has exceeded all my expectations. The quality is outstanding and it works perfectly for my needs.",
-                        verified: true,
-                        helpful: 12,
-                        pros: ["Great quality", "Easy to use", "Good value"],
-                        cons: []
-                    },
-                    {
-                        id: 2,
-                        name: "Michael Chen",
-                        rating: 5,
-                        date: "1 week ago",
-                        title: "Perfect for work and daily use",
-                        review: "This product has been a game-changer for my daily routine. Highly efficient and reliable. Would definitely recommend to anyone looking for quality.",
-                        verified: true,
-                        helpful: 8,
-                        pros: ["Reliable", "Fast performance"],
-                        cons: []
-                    }
-                ]);
-                setTotalReviews(2);
-                setTotalPages(1);
+                
+                // Set error state - no fallback data
+                setReviews([]);
+                setTotalReviews(0);
+                setTotalPages(0);
+                setRatingBreakdown(null);
+                setError(error.message || 'Failed to load reviews');
             } finally {
                 setReviewsLoading(false);
                 reviewDebugger.printSummary();
@@ -415,7 +327,24 @@ const ProductReviews = () => {
                             </div>
 
                             {/* Reviews List */}
-                            {reviewsLoading ? (
+                            {error ? (
+                                <div className="text-center py-5">
+                                    <svg width="64" height="64" viewBox="0 0 24 24" className="text-danger mb-3">
+                                        <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                                    </svg>
+                                    <h5 className="tc-6533 mb-2">Failed to Load Reviews</h5>
+                                    <p className="text-muted mb-3">{error}</p>
+                                    <button 
+                                        className="btn btn-primary"
+                                        onClick={() => {
+                                            setError(null);
+                                            setCurrentPage(1);
+                                        }}
+                                    >
+                                        Try Again
+                                    </button>
+                                </div>
+                            ) : reviewsLoading ? (
                                 <div className="text-center py-5">
                                     <LoadingSpinner size="lg" />
                                     <p className="text-muted mt-3">Loading reviews...</p>
