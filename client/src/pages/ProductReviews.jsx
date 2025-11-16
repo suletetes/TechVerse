@@ -226,8 +226,12 @@ const ProductReviews = () => {
     }, [filterRating]);
 
     // Calculate rating distribution from API data or fallback
+    console.log('Rating Breakdown:', ratingBreakdown);
+    console.log('Total Reviews:', totalReviews);
+    
+    // API returns: {ratings: [{rating: 5, count: 3}], totalReviews: 5, averageRating: 4.6}
     const ratingCounts = ratingBreakdown?.ratings?.map(r => ({
-        rating: r._id,
+        rating: r.rating, // Use r.rating, not r._id
         count: r.count,
         percentage: totalReviews > 0 ? (r.count / totalReviews) * 100 : 0
     })) || [5, 4, 3, 2, 1].map(rating => ({
@@ -236,11 +240,15 @@ const ProductReviews = () => {
         percentage: 0
     }));
 
+    console.log('Rating Counts:', ratingCounts);
+
     // Ensure all ratings 1-5 are present
     const allRatingCounts = [5, 4, 3, 2, 1].map(rating => {
         const existing = ratingCounts.find(r => r.rating === rating);
         return existing || { rating, count: 0, percentage: 0 };
     });
+
+    console.log('All Rating Counts:', allRatingCounts);
 
     // Calculate average rating from API data or reviews
     const averageRating = ratingBreakdown?.averageRating?.toFixed(1) || 
@@ -281,21 +289,7 @@ const ProductReviews = () => {
     return (
         <div className="bloc bgc-5700 full-width-bloc l-bloc" id="product-reviews-page">
             <div className="container bloc-md bloc-lg-md">
-                {/* Breadcrumb */}
-                <nav aria-label="breadcrumb" className="mb-4">
-                    <ol className="breadcrumb">
-                        <li className="breadcrumb-item">
-                            <Link to="/">Home</Link>
-                        </li>
-                        <li className="breadcrumb-item">
-                            <Link to={`/product/${currentProduct.slug || id}`}>{currentProduct.name}</Link>
-                        </li>
-                        <li className="breadcrumb-item active" aria-current="page">
-                            All Reviews
-                        </li>
-                    </ol>
-                </nav>
-
+                
                 {/* Header */}
                 <div className="row mb-4">
                     <div className="col-12">
