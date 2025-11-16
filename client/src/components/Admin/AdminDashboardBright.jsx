@@ -36,17 +36,20 @@ const AdminDashboardBright = ({ setActiveTab }) => {
         setDateRange(newRange);
     }, []);
 
-    // Safe data extraction with fallbacks
-    const stats = useMemo(() => dashboardStats?.overview || {
-        totalUsers: 156,
-        totalProducts: 89,
-        totalOrders: 234,
-        totalRevenue: 15420,
-        newUsers: 12,
-        newOrders: 8,
-        pendingOrders: 5,
-        lowStockProducts: 3,
-        pendingReviews: 7
+    // Safe data extraction with fallbacks - will use real API data when available
+    const stats = useMemo(() => {
+        const overview = dashboardStats?.overview || {};
+        return {
+            totalUsers: overview.totalUsers || 0,
+            totalProducts: overview.totalProducts || 0,
+            totalOrders: overview.totalOrders || 0,
+            totalRevenue: overview.totalRevenue || 0,
+            newUsers: overview.newUsers || 0,
+            newOrders: overview.newOrders || 0,
+            pendingOrders: overview.pendingOrders || 0,
+            lowStockProducts: overview.lowStockProducts || 0,
+            pendingReviews: overview.pendingReviews || 0
+        };
     }, [dashboardStats]);
 
     const formatCurrency = useCallback((amount) => {
@@ -127,7 +130,7 @@ const AdminDashboardBright = ({ setActiveTab }) => {
             <div className="row g-4 mb-5">
                 {/* Revenue Card */}
                 <div className="col-xl-3 col-lg-6 col-md-6">
-                    <div className="card border-0 h-100" style={{ 
+                    <div className="card border-0 h-100 hover-lift" style={{ 
                         backgroundColor: '#e3f2fd', 
                         borderRadius: '20px',
                         border: '3px solid #2196f3',
@@ -256,126 +259,46 @@ const AdminDashboardBright = ({ setActiveTab }) => {
                 </div>
             </div>
 
-            {/* Quick Stats Row */}
-            <div className="row g-4 mb-5">
-                <div className="col-lg-8">
-                    <div className="card border-0" style={{ 
-                        backgroundColor: '#ffffff', 
-                        borderRadius: '20px',
-                        border: '2px solid #e0e0e0',
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
-                    }}>
-                        <div className="card-header bg-transparent border-0 pb-0 pt-4 px-4">
-                            <h4 className="fw-bold text-dark mb-0">
-                                <i className="fas fa-chart-line text-primary me-2"></i>
-                                Quick Overview
-                            </h4>
-                        </div>
-                        <div className="card-body p-4">
-                            <div className="row g-4">
-                                <div className="col-md-3 col-sm-6">
-                                    <div className="text-center p-3" style={{ 
-                                        backgroundColor: '#e3f2fd', 
-                                        borderRadius: '15px',
-                                        border: '2px solid #2196f3'
-                                    }}>
-                                        <div className="mb-2">
-                                            <i className="fas fa-user-plus text-primary fs-3"></i>
-                                        </div>
-                                        <h4 className="fw-bold text-primary mb-1">{stats.newUsers}</h4>
-                                        <small className="text-muted fw-semibold">New Users Today</small>
-                                    </div>
-                                </div>
-                                <div className="col-md-3 col-sm-6">
-                                    <div className="text-center p-3" style={{ 
-                                        backgroundColor: '#e8f5e8', 
-                                        borderRadius: '15px',
-                                        border: '2px solid #4caf50'
-                                    }}>
-                                        <div className="mb-2">
-                                            <i className="fas fa-shopping-bag text-success fs-3"></i>
-                                        </div>
-                                        <h4 className="fw-bold text-success mb-1">{stats.newOrders}</h4>
-                                        <small className="text-muted fw-semibold">New Orders Today</small>
-                                    </div>
-                                </div>
-                                <div className="col-md-3 col-sm-6">
-                                    <div className="text-center p-3" style={{ 
-                                        backgroundColor: '#fff3e0', 
-                                        borderRadius: '15px',
-                                        border: '2px solid #ff9800'
-                                    }}>
-                                        <div className="mb-2">
-                                            <i className="fas fa-clock text-warning fs-3"></i>
-                                        </div>
-                                        <h4 className="fw-bold text-warning mb-1">{stats.pendingOrders}</h4>
-                                        <small className="text-muted fw-semibold">Pending Orders</small>
-                                    </div>
-                                </div>
-                                <div className="col-md-3 col-sm-6">
-                                    <div className="text-center p-3" style={{ 
-                                        backgroundColor: '#ffebee', 
-                                        borderRadius: '15px',
-                                        border: '2px solid #f44336'
-                                    }}>
-                                        <div className="mb-2">
-                                            <i className="fas fa-exclamation-triangle text-danger fs-3"></i>
-                                        </div>
-                                        <h4 className="fw-bold text-danger mb-1">{stats.lowStockProducts}</h4>
-                                        <small className="text-muted fw-semibold">Low Stock Items</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            {/* Quick Links */}
+            <div className="row g-3 mb-4">
+                <div className="col-md-6">
+                    <button 
+                        className="btn btn-outline-primary btn-lg w-100 d-flex align-items-center justify-content-center"
+                        onClick={() => navigate('/admin/products')}
+                        style={{ borderRadius: '15px', padding: '1rem' }}
+                    >
+                        <i className="fas fa-box me-2"></i>
+                        View All Products
+                    </button>
                 </div>
+                <div className="col-md-6">
+                    <button 
+                        className="btn btn-outline-success btn-lg w-100 d-flex align-items-center justify-content-center"
+                        onClick={() => navigate('/admin/orders')}
+                        style={{ borderRadius: '15px', padding: '1rem' }}
+                    >
+                        <i className="fas fa-shopping-cart me-2"></i>
+                        View All Orders
+                    </button>
+                </div>
+            </div>
 
-                <div className="col-lg-4">
-                    <div className="card border-0 h-100" style={{ 
-                        backgroundColor: '#ffffff', 
+            {/* Welcome Message */}
+            <div className="row g-4 mb-5">
+                <div className="col-12">
+                    <div className="card border-0" style={{ 
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                         borderRadius: '20px',
-                        border: '2px solid #e0e0e0',
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+                        boxShadow: '0 10px 30px rgba(102, 126, 234, 0.3)'
                     }}>
-                        <div className="card-header bg-transparent border-0 pb-0 pt-4 px-4">
-                            <h4 className="fw-bold text-dark mb-0">
-                                <i className="fas fa-bell text-warning me-2"></i>
-                                Recent Activity
-                            </h4>
-                        </div>
-                        <div className="card-body p-4">
-                            <div className="d-flex align-items-center mb-3 p-2" style={{ backgroundColor: '#e8f5e8', borderRadius: '10px' }}>
-                                <div className="bg-success rounded-circle p-2 me-3">
-                                    <i className="fas fa-check text-white small"></i>
-                                </div>
-                                <div className="flex-grow-1">
-                                    <p className="mb-0 fw-semibold">New order #1234</p>
-                                    <small className="text-muted">2 minutes ago</small>
-                                </div>
-                            </div>
-                            <div className="d-flex align-items-center mb-3 p-2" style={{ backgroundColor: '#e3f2fd', borderRadius: '10px' }}>
-                                <div className="bg-primary rounded-circle p-2 me-3">
-                                    <i className="fas fa-user text-white small"></i>
-                                </div>
-                                <div className="flex-grow-1">
-                                    <p className="mb-0 fw-semibold">New user registered</p>
-                                    <small className="text-muted">5 minutes ago</small>
-                                </div>
-                            </div>
-                            <div className="d-flex align-items-center mb-3 p-2" style={{ backgroundColor: '#fff3e0', borderRadius: '10px' }}>
-                                <div className="bg-warning rounded-circle p-2 me-3">
-                                    <i className="fas fa-box text-white small"></i>
-                                </div>
-                                <div className="flex-grow-1">
-                                    <p className="mb-0 fw-semibold">Stock alert: iPhone 15</p>
-                                    <small className="text-muted">10 minutes ago</small>
-                                </div>
-                            </div>
-                            <div className="text-center mt-4">
-                                <button className="btn btn-outline-primary btn-lg px-4" style={{ borderRadius: '15px', fontWeight: '600' }}>
-                                    View All Activity
-                                </button>
-                            </div>
+                        <div className="card-body p-5 text-center text-white">
+                            <h3 className="fw-bold mb-3">
+                                <i className="fas fa-rocket me-2"></i>
+                                Your Store is Performing Great!
+                            </h3>
+                            <p className="lead mb-0">
+                                Manage your products, orders, and customers all in one place.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -403,8 +326,8 @@ const AdminDashboardBright = ({ setActiveTab }) => {
                             </div>
                         </div>
                         <div className="card-body p-4">
-                            {/* Quick Actions Grid */}
-                            <div className="row g-4 mb-5">
+                            {/* Quick Actions Grid - Centered */}
+                            <div className="row g-4 mb-5 justify-content-center">
                                 <div className="col-xl-3 col-lg-4 col-md-6">
                                     <div 
                                         className="d-flex align-items-center p-4 h-100 cursor-pointer hover-lift" 
@@ -414,7 +337,7 @@ const AdminDashboardBright = ({ setActiveTab }) => {
                                             border: '2px solid #2196f3',
                                             transition: 'all 0.3s ease'
                                         }}
-                                        onClick={() => setActiveTab && setActiveTab('products')}
+                                        onClick={() => navigate('/admin/products')}
                                     >
                                         <div className="flex-shrink-0 me-3">
                                             <div className="bg-primary rounded-circle p-3">
@@ -437,7 +360,7 @@ const AdminDashboardBright = ({ setActiveTab }) => {
                                             border: '2px solid #9c27b0',
                                             transition: 'all 0.3s ease'
                                         }}
-                                        onClick={() => setActiveTab && setActiveTab('orders')}
+                                        onClick={() => navigate('/admin/orders')}
                                     >
                                         <div className="flex-shrink-0 me-3">
                                             <div className="bg-purple rounded-circle p-3" style={{ backgroundColor: '#9c27b0' }}>
@@ -460,39 +383,16 @@ const AdminDashboardBright = ({ setActiveTab }) => {
                                             border: '2px solid #4caf50',
                                             transition: 'all 0.3s ease'
                                         }}
-                                        onClick={() => setActiveTab && setActiveTab('users')}
+                                        onClick={() => navigate('/admin/categories')}
                                     >
                                         <div className="flex-shrink-0 me-3">
                                             <div className="bg-success rounded-circle p-3">
-                                                <i className="fas fa-users text-white fs-4"></i>
+                                                <i className="fas fa-th-large text-white fs-4"></i>
                                             </div>
                                         </div>
                                         <div className="flex-grow-1">
-                                            <h6 className="fw-bold mb-1 text-success">Manage Users</h6>
-                                            <p className="text-muted mb-0 small">User management</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="col-xl-3 col-lg-4 col-md-6">
-                                    <div 
-                                        className="d-flex align-items-center p-4 h-100 cursor-pointer hover-lift" 
-                                        style={{ 
-                                            backgroundColor: '#fff3e0', 
-                                            borderRadius: '15px',
-                                            border: '2px solid #ff9800',
-                                            transition: 'all 0.3s ease'
-                                        }}
-                                        onClick={() => setActiveTab && setActiveTab('analytics')}
-                                    >
-                                        <div className="flex-shrink-0 me-3">
-                                            <div className="bg-warning rounded-circle p-3">
-                                                <i className="fas fa-chart-bar text-white fs-4"></i>
-                                            </div>
-                                        </div>
-                                        <div className="flex-grow-1">
-                                            <h6 className="fw-bold mb-1 text-warning">Analytics</h6>
-                                            <p className="text-muted mb-0 small">View reports</p>
+                                            <h6 className="fw-bold mb-1 text-success">Categories</h6>
+                                            <p className="text-muted mb-0 small">Manage categories</p>
                                         </div>
                                     </div>
                                 </div>
