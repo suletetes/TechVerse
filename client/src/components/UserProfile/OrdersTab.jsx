@@ -89,7 +89,10 @@ const OrdersTab = () => {
             }
         } catch (error) {
             console.error('Error handling order action:', error);
-            alert(`Failed to ${action} order. Please try again.`);
+            setToast({
+                message: `Failed to ${action} order. Please try again.`,
+                type: 'error'
+            });
         }
     };
 

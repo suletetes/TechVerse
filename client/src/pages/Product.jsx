@@ -179,7 +179,10 @@ const Product = () => {
         
         // Check if product is in stock
         if (currentProduct.stock?.quantity === 0) {
-            alert('Sorry, this product is currently out of stock.');
+            setToast({
+                message: 'Sorry, this product is currently out of stock.',
+                type: 'warning'
+            });
             return;
         }
 
@@ -221,7 +224,10 @@ const Product = () => {
             }
         } catch (error) {
             console.error('Error adding to cart:', error);
-            alert('Failed to add product to cart. Please try again.');
+            setToast({
+                message: 'Failed to add product to cart. Please try again.',
+                type: 'error'
+            });
         }
     }, [currentProduct, selectedColor, selectedStorage, quantity, isAuthenticated, addToCart, navigate, id]);
 
@@ -241,7 +247,10 @@ const Product = () => {
         
         // Check if product is in stock
         if (currentProduct.stock?.quantity === 0) {
-            alert('Sorry, this product is currently out of stock.');
+            setToast({
+                message: 'Sorry, this product is currently out of stock.',
+                type: 'warning'
+            });
             return;
         }
 
@@ -258,7 +267,10 @@ const Product = () => {
             navigate('/payment');
         } catch (error) {
             console.error('Error processing buy now:', error);
-            alert('Failed to process your request. Please try again.');
+            setToast({
+                message: 'Failed to process your request. Please try again.',
+                type: 'error'
+            });
         }
     }, [currentProduct, selectedColor, selectedStorage, quantity, isAuthenticated, addToCart, navigate, id]);
 
@@ -546,7 +558,10 @@ const Product = () => {
             submittedAt: new Date().toISOString()
         };
         console.log('Complete review data:', reviewWithProduct);
-        alert(`Thank you for your ${reviewData.rating}-star review of the Tablet Air!`);
+        setToast({
+            message: `Thank you for your ${reviewData.rating}-star review of the Tablet Air!`,
+            type: 'success'
+        });
     };
 
     return (
