@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, useAdmin } from '../../context';
 import API_BASE_URL from '../../api/config.js';
-import { LoadingSpinner } from '../../components/Common';
+import { LoadingSpinner, Toast } from '../../components/Common';
 import { tokenManager } from '../../utils/tokenManager.js';
 import {
     AdminSidebar,
@@ -119,6 +119,7 @@ const AdminProfile = () => {
         newPassword: '',
         confirmPassword: ''
     });
+    const [toast, setToast] = useState(null);
 
     // Check authentication and admin access
     useEffect(() => {
@@ -230,9 +231,9 @@ const AdminProfile = () => {
 
     // Utility functions - memoized to prevent re-creation
     const formatCurrency = useMemo(() => (amount) => {
-        return new Intl.NumberFormat('en-GB', {
+        return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: 'GBP'
+            currency: 'USD'
         }).format(amount || 0);
     }, []);
 
@@ -383,7 +384,10 @@ const AdminProfile = () => {
                 setIsEditingProfile(false);
                 
                 // Show success message
-                alert('Admin profile updated successfully!');
+                setToast({
+                    message: 'Admin profile updated successfully!',
+                    type: 'success'
+                });
                 console.log('✅ Admin profile saved successfully');
             } else {
                 const errorData = await response.json();
@@ -394,7 +398,10 @@ const AdminProfile = () => {
             
             // For now, still allow the edit to complete (since backend might not be ready)
             setIsEditingProfile(false);
-            alert('Profile updated locally. Note: Backend integration needed for persistence.');
+            setToast({
+                message: 'Profile updated locally. Note: Backend integration needed for persistence.',
+                type: 'warning'
+            });
         }
     };
 
@@ -405,12 +412,18 @@ const AdminProfile = () => {
             
             // Validate file type and size
             if (!file.type.startsWith('image/')) {
-                alert('Please select an image file');
+                setToast({
+                    message: 'Please select an image file',
+                    type: 'error'
+                });
                 return;
             }
             
             if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                alert('File size must be less than 5MB');
+                setToast({
+                    message: 'File size must be less than 5MB',
+                    type: 'error'
+                });
                 return;
             }
             
@@ -436,22 +449,100 @@ const AdminProfile = () => {
         }));
     };
 
-    const handlePasswordChange = async () => {
+    const handlePasswordChange = async (e) => {
+        e.preventDefault();
+        
         try {
-            if (passwordData.newPassword !== passwordData.confirmPassword) {
-                alert('New passwords do not match');
+            // Validation
+            if (!passwordData.currentPassword) {
+                setToast({
+                    message: 'Please enter your current password',
+                    type: 'error'
+                });
                 return;
             }
-            // Here you would typically call an API to change the password
-            console.log('Changing password...');
+            
+            if (!passwordData.newPassword) {
+                setToast({
+                    message: 'Please enter a new password',
+                    type: 'error'
+                });
+                return;
+            }
+            
+            if (passwordData.newPassword.length < 6) {
+                setToast({
+                    message: 'New password must be at least 6 characters long',
+                    type: 'error'
+                });
+                return;
+            }
+            
+            if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(passwordData.newPassword)) {
+                setToast({
+                    message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+                    type: 'error'
+                });
+                return;
+            }
+            
+            if (passwordData.newPassword !== passwordData.confirmPassword) {
+                setToast({
+                    message: 'New passwords do not match',
+                    type: 'error'
+                });
+                return;
+            }
+            
+            if (passwordData.currentPassword === passwordData.newPassword) {
+                setToast({
+                    message: 'New password must be different from current password',
+                    type: 'error'
+                });
+                return;
+            }
+            
+            // Get CSRF token
+            const csrfToken = await ensureCsrfToken();
+            
+            // Call API to change password
+            const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${tokenManager.getToken()}`,
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({
+                    currentPassword: passwordData.currentPassword,
+                    newPassword: passwordData.newPassword
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to change password');
+            }
+            
+            // Clear form
             setPasswordData({
                 currentPassword: '',
                 newPassword: '',
                 confirmPassword: ''
             });
-            alert('Password changed successfully');
+            
+            setToast({
+                message: 'Password changed successfully! You will receive a confirmation email.',
+                type: 'success'
+            });
+            
         } catch (error) {
             console.error('Error changing password:', error);
+            setToast({
+                message: error.message || 'Failed to change password. Please try again.',
+                type: 'error'
+            });
         }
     };
 
@@ -618,6 +709,15 @@ const AdminProfile = () => {
 
     return (
         <div className="min-vh-100 bg-light">
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
+            
             <div className="container-fluid p-0">
                 {/* Mobile Overlay */}
                 {sidebarOpen && (

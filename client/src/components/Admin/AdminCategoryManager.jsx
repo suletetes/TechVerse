@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Toast } from '../Common';
 
 const AdminCategoryManager = ({ 
     categories = [],
@@ -9,6 +10,7 @@ const AdminCategoryManager = ({
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
     const [imagePreview, setImagePreview] = useState('');
+    const [toast, setToast] = useState(null);
 
     const [categoryForm, setCategoryForm] = useState({
         name: '',
@@ -41,11 +43,17 @@ const AdminCategoryManager = ({
         if (file) {
             // Validate file
             if (!file.type.startsWith('image/')) {
-                alert('Please select an image file');
+                setToast({
+                    message: 'Please select an image file',
+                    type: 'error'
+                });
                 return;
             }
             if (file.size > 5 * 1024 * 1024) {
-                alert('Image size must be less than 5MB');
+                setToast({
+                    message: 'Image size must be less than 5MB',
+                    type: 'error'
+                });
                 return;
             }
 
@@ -64,7 +72,10 @@ const AdminCategoryManager = ({
 
     const handleSaveCategory = async () => {
         if (!categoryForm.name.trim()) {
-            alert('Category name is required');
+            setToast({
+                message: 'Category name is required',
+                type: 'error'
+            });
             return;
         }
 
@@ -84,7 +95,10 @@ const AdminCategoryManager = ({
             handleCancelEdit();
         } catch (error) {
             console.error('Error saving category:', error);
-            alert('Failed to save category: ' + error.message);
+            setToast({
+                message: 'Failed to save category: ' + error.message,
+                type: 'error'
+            });
         }
     };
 
@@ -108,7 +122,10 @@ const AdminCategoryManager = ({
                 await onDeleteCategory(categoryId);
             } catch (error) {
                 console.error('Error deleting category:', error);
-                alert('Failed to delete category');
+                setToast({
+                    message: 'Failed to delete category',
+                    type: 'error'
+                });
             }
         }
     };
@@ -129,6 +146,15 @@ const AdminCategoryManager = ({
 
     return (
         <div className="category-manager">
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
+            
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
