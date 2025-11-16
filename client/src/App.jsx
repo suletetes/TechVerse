@@ -5,6 +5,7 @@ import { ErrorBoundary, RouterErrorBoundary } from './components';
 import { AppProviders } from './context';
 import AuthGuard, { AdminGuard, UserGuard } from './components/Auth/AuthGuard.jsx';
 import { UserRoles } from './services/authService.js';
+import { NotificationContainer } from './components/Common';
 import {
     Contact,
     HomeLayout,
@@ -318,6 +319,7 @@ const App = () => {
         <ErrorBoundary>
             <QueryClientProvider client={queryClient}>
                 <AppProviders>
+                    <NotificationContainer />
                     <RouterProvider router={router} />
                 </AppProviders>
             </QueryClientProvider>

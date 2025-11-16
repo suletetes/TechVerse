@@ -6,7 +6,7 @@ import { LoadingSpinner } from '../../components/Common';
 const Signup = () => {
     const navigate = useNavigate();
     const { register, isLoading, error, isAuthenticated, clearError } = useAuth();
-    const { showNotification } = useNotification();
+    const { addNotification, showSuccess, showError } = useNotification();
     
     const [formData, setFormData] = useState({
         firstName: '',
@@ -110,9 +110,8 @@ const Signup = () => {
             const result = await register(userData);
 
             // Show success notification with email verification reminder
-            showNotification(
+            showSuccess(
                 `Welcome! A verification link has been sent to ${userData.email}. Please check your email to unlock all features.`,
-                'success',
                 8000 // Show for 8 seconds
             );
 

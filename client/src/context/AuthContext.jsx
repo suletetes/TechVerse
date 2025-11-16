@@ -479,6 +479,17 @@ export const AuthProvider = ({ children }) => {
       // Always store tokens and user data, even if email verification is required
       dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: response.data});
 
+      // Sync with Zustand auth store for API client (same as login)
+      const { useAuthStore } = await import('../stores/authStore.js');
+      const authStore = useAuthStore.getState();
+      authStore.setUser(response.data.user);
+      authStore.setTokens({
+        accessToken: response.data.tokens?.accessToken || response.data.token,
+        refreshToken: response.data.tokens?.refreshToken,
+        sessionId: response.data.tokens?.sessionId,
+        authMethod: 'jwt'
+      });
+
       // Sync login across tabs
       multiTabSyncManager.syncLogin(response.data.user, response.data.tokens);
 
