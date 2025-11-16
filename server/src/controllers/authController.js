@@ -180,7 +180,7 @@ export const register = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Create user
+  // Create user with active status (email verification is optional for login)
   const user = await User.create({
     firstName,
     lastName,
@@ -188,6 +188,7 @@ export const register = asyncHandler(async (req, res, next) => {
     password,
     phone,
     referredBy,
+    accountStatus: 'active', // Set to active immediately
     ipAddress: req.ip,
     userAgent: req.get('User-Agent')
   });

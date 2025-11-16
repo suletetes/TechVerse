@@ -154,6 +154,10 @@ export const conditionalCSRF = (req, res, next) => {
     '/api/auth/refresh',
     '/api/auth/profile',
     '/api/auth/change-password', // Password change endpoint
+    '/api/auth/resend-verification', // Email verification resend
+    '/api/auth/verify-email', // Email verification
+    '/api/auth/forgot-password', // Password reset request
+    '/api/auth/reset-password', // Password reset
     '/api/users/profile',
     '/api/users/addresses', // User addresses management
     '/api/users/payment-methods', // User payment methods management

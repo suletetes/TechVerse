@@ -582,7 +582,8 @@ userSchema.pre('save', function(next) {
 
 // Pre-save middleware for email verification
 userSchema.pre('save', function(next) {
-  if (this.isNew) {
+  // Only set to pending if accountStatus hasn't been explicitly set
+  if (this.isNew && !this.accountStatus) {
     this.accountStatus = 'pending';
   }
   next();
