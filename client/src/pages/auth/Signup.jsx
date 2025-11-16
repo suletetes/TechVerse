@@ -158,7 +158,7 @@ const Signup = () => {
                                         <h5 className="tc-2175 mb-3">Member Benefits</h5>
                                         <ul className="tc-654" style={{listStyle: 'none', padding: 0}}>
                                             <li className="mb-2"> Exclusive member-only deals</li>
-                                            <li className="mb-2"> Free shipping on orders over $50</li>
+                                            {/* <li className="mb-2"> Free shipping on orders over $50</li> */}
                                             <li className="mb-2"> Early access to new products</li>
                                             <li className="mb-2"> Easy returns and exchanges</li>
                                             <li className="mb-2"> Priority customer support</li>
@@ -348,7 +348,7 @@ const Signup = () => {
                                                 disabled={isLoading}
                                             />
                                             <label className="form-check-label tc-6533 sm-text" htmlFor="agreeToTerms">
-                                                I agree to the <Link to="/terms" className="tc-2101"> Terms of Service </Link> and <Link to="/privacy" className="tc-2101"> Privacy Policy</Link>
+                                                I agree to the <Link to="/terms" className="tc-2101">Terms of Service</Link> and <Link to="/privacy" className="tc-2101">Privacy Policy</Link>
                                             </label>
                                             {validationErrors.agreeToTerms && (
                                                 <div className="invalid-feedback d-block">

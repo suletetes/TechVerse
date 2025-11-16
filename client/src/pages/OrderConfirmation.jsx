@@ -238,7 +238,7 @@ const OrderConfirmation = () => {
 
                                     {/* Action Buttons */}
                                     <div className="d-grid gap-2">
-                                        <Link to={`/orders/${order._id}`} className="btn btn-c-2101 btn-rd">
+                                        <Link to={`/user/order/${order._id}`} className="btn btn-c-2101 btn-rd">
                                             View Order Details
                                         </Link>
                                         <Link to="/" className="btn btn-outline-primary btn-rd">
