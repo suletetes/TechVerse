@@ -142,20 +142,20 @@ export const validateVariantSelections = (variants, selections) => {
 /**
  * Format price with currency symbol
  * @param {number} price - Price to format
- * @param {string} currency - Currency symbol (default: '£')
+ * @param {string} currency - Currency symbol (default: '$')
  * @returns {string} Formatted price string
  */
-export const formatPrice = (price, currency = '£') => {
+export const formatPrice = (price, currency = '$') => {
   return `${currency}${price.toLocaleString()}`;
 };
 
 /**
  * Format price modifier for display
  * @param {number} modifier - Price modifier amount
- * @param {string} currency - Currency symbol (default: '£')
- * @returns {string} Formatted modifier string (e.g., '+£100', '-£50')
+ * @param {string} currency - Currency symbol (default: '$')
+ * @returns {string} Formatted modifier string (e.g., '+$100', '-$50')
  */
-export const formatPriceModifier = (modifier, currency = '£') => {
+export const formatPriceModifier = (modifier, currency = '$') => {
   if (modifier === 0) return '';
   const sign = modifier > 0 ? '+' : '';
   return `${sign}${currency}${modifier.toLocaleString()}`;
