@@ -221,7 +221,8 @@ router.get('/validate-slug/:slug',
   }
 );
 // Section route MUST come before specific routes to avoid conflicts
-router.get('/section/:section', cacheProductList, sectionValidation, validate, getProductsBySection);
+// Cache disabled for sections to prevent data collision between different sections
+router.get('/section/:section', sectionValidation, validate, getProductsBySection);
 router.get('/featured', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getFeaturedProducts);
 router.get('/top-sellers', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getTopSellingProducts);
 router.get('/latest', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getLatestProducts);

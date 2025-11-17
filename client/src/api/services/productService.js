@@ -6,6 +6,9 @@
 import BaseApiService from '../core/BaseApiService.js';
 import { API_ENDPOINTS } from '../config.js';
 
+// VERIFICATION LOG - If you see this, the new code is loaded
+console.log('🔥🔥🔥 [PRODUCT_SERVICE_INIT] ProductService module loaded - NEW VERSION with section fix! 🔥🔥🔥');
+
 class ProductService extends BaseApiService {
   constructor() {
     super({
@@ -18,6 +21,9 @@ class ProductService extends BaseApiService {
         timeout: 15000
       }
     });
+    
+    console.log('🔥 [PRODUCT_SERVICE_INIT] ProductService instance created');
+    console.log('🔥 [PRODUCT_SERVICE_INIT] Endpoints:', this.endpoints);
     
     // Simple cache for categories to reduce API calls
     this.categoriesCache = null;
@@ -526,7 +532,17 @@ class ProductService extends BaseApiService {
       throw new Error('Invalid section name');
     }
 
-    return this.read(`${this.endpoints.BASE}/section/${section}`, { limit });
+    // Add cache-busting timestamp to ensure fresh data
+    const timestamp = Date.now();
+    const url = `${this.endpoints.BASE}/section/${section}`;
+    console.log(`🌐 [PRODUCT_SERVICE] getProductsBySection called:`);
+    console.log(`   Section: ${section}`);
+    console.log(`   URL: ${url}`);
+    console.log(`   Limit: ${limit}`);
+    console.log(`   Timestamp: ${timestamp}`);
+    
+    // Disable deduplication for section requests to prevent collision
+    return this.read(url, { limit, _t: timestamp }, { dedupe: false, forceNew: true });
   }
 
   // Add product to section
