@@ -12,12 +12,19 @@
 
 import mongoose from 'mongoose';
 import { faker } from '@faker-js/faker';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import connectDB from '../src/config/database.js';
 import { User, Product, Category, Order, Review } from '../src/models/index.js';
 import { generateSpecificationsForProduct } from '../src/utils/specificationGenerator.js';
 import { generateStockLevel, generatePricing } from '../src/utils/stockPricingGenerator.js';
 import { generateProductSEO, generateProductImages } from '../src/utils/seoGenerator.js';
 import passwordService from '../src/services/passwordService.js';
+import cloudinary from '../src/config/cloudinary.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Seeding configuration
 const SEED_CONFIG = {
@@ -38,6 +45,61 @@ class ComprehensiveSeed {
   }
 
   /**
+   * Upload images to Cloudinary
+   */
+  async uploadImagesToCloudinary() {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    
+    // Skip if Cloudinary not configured
+    if (!cloudName || cloudName === 'your-cloud-name') {
+      console.log('⚠️  Cloudinary not configured - using local images\n');
+      return;
+    }
+
+    console.log('📤 Uploading images to Cloudinary...\n');
+
+    try {
+      // Upload category images
+      const categoriesPath = path.join(__dirname, 'images/categories');
+      const categoryFiles = fs.readdirSync(categoriesPath).filter(f => f.endsWith('.jpg'));
+
+      console.log(`  Uploading ${categoryFiles.length} category images...`);
+      for (const file of categoryFiles) {
+        const filePath = path.join(categoriesPath, file);
+        const publicId = file.replace('.jpg', '');
+        
+        await cloudinary.uploader.upload(filePath, {
+          folder: 'techverse/categories',
+          public_id: publicId,
+          overwrite: true
+        });
+      }
+      console.log(`  ✅ Uploaded ${categoryFiles.length} category images\n`);
+
+      // Upload product images
+      const productsPath = path.join(__dirname, 'images/products');
+      const productFiles = fs.readdirSync(productsPath).filter(f => f.endsWith('.jpg') || f.endsWith('.webp'));
+
+      console.log(`  Uploading ${productFiles.length} product images...`);
+      for (const file of productFiles) {
+        const filePath = path.join(productsPath, file);
+        const publicId = file.replace(/\.(jpg|webp)$/, '');
+        
+        await cloudinary.uploader.upload(filePath, {
+          folder: 'techverse/products',
+          public_id: publicId,
+          overwrite: true
+        });
+      }
+      console.log(`  ✅ Uploaded ${productFiles.length} product images\n`);
+
+    } catch (error) {
+      console.error('❌ Image upload failed:', error.message);
+      console.log('⚠️  Continuing with local images...\n');
+    }
+  }
+
+  /**
    * Main seeding function
    */
   async seed() {
@@ -46,6 +108,9 @@ class ComprehensiveSeed {
       
       // Connect to database
       await connectDB();
+      
+      // Upload images to Cloudinary first
+      await this.uploadImagesToCloudinary();
       
       // Clear existing data
       await this.clearDatabase();
@@ -87,6 +152,18 @@ class ComprehensiveSeed {
   }
 
   /**
+   * Get image URL (Cloudinary or local fallback)
+   */
+  getImageUrl(path) {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    if (cloudName && cloudName !== 'your-cloud-name') {
+      return `https://res.cloudinary.com/${cloudName}/image/upload/${path}`;
+    }
+    // Fallback to local images for development
+    return `/img/${path.split('/').pop()}`;
+  }
+
+  /**
    * Seed product categories
    */
   async seedCategories() {
@@ -97,6 +174,11 @@ class ComprehensiveSeed {
         name: 'Smartphones',
         slug: 'phones',
         description: 'Latest smartphones with cutting-edge technology',
+        image: {
+          url: this.getImageUrl('techverse/categories/phones.jpg'),
+          alt: 'Smartphones Category',
+          publicId: 'techverse/categories/phones'
+        },
         isActive: true,
         showInMenu: true,
         displayOrder: 1,
@@ -106,6 +188,11 @@ class ComprehensiveSeed {
         name: 'Tablets',
         slug: 'tablets',
         description: 'Powerful tablets for work and entertainment',
+        image: {
+          url: this.getImageUrl('techverse/categories/tablets.jpg'),
+          alt: 'Tablets Category',
+          publicId: 'techverse/categories/tablets'
+        },
         isActive: true,
         showInMenu: true,
         displayOrder: 2,
@@ -115,6 +202,11 @@ class ComprehensiveSeed {
         name: 'Laptops & Computers',
         slug: 'computers',
         description: 'High-performance computers and laptops',
+        image: {
+          url: this.getImageUrl('techverse/categories/computer.jpg'),
+          alt: 'Computers Category',
+          publicId: 'techverse/categories/computer'
+        },
         isActive: true,
         showInMenu: true,
         displayOrder: 3,
@@ -124,6 +216,11 @@ class ComprehensiveSeed {
         name: 'Smart TVs',
         slug: 'tvs',
         description: 'Smart TVs with stunning picture quality',
+        image: {
+          url: this.getImageUrl('techverse/categories/TV.jpg'),
+          alt: 'Smart TVs Category',
+          publicId: 'techverse/categories/TV'
+        },
         isActive: true,
         showInMenu: true,
         displayOrder: 4,
@@ -133,6 +230,11 @@ class ComprehensiveSeed {
         name: 'Gaming Consoles',
         slug: 'gaming',
         description: 'Gaming consoles and accessories',
+        image: {
+          url: this.getImageUrl('techverse/categories/Game.jpg'),
+          alt: 'Gaming Category',
+          publicId: 'techverse/categories/Game'
+        },
         isActive: true,
         showInMenu: true,
         displayOrder: 5,
@@ -142,6 +244,11 @@ class ComprehensiveSeed {
         name: 'Smart Watches',
         slug: 'watches',
         description: 'Smartwatches and fitness trackers',
+        image: {
+          url: this.getImageUrl('techverse/categories/watch.jpg'),
+          alt: 'Smart Watches Category',
+          publicId: 'techverse/categories/watch'
+        },
         isActive: true,
         showInMenu: true,
         displayOrder: 6,
@@ -151,6 +258,11 @@ class ComprehensiveSeed {
         name: 'Audio & Headphones',
         slug: 'audio',
         description: 'Premium audio equipment and headphones',
+        image: {
+          url: this.getImageUrl('techverse/categories/Audio.jpg'),
+          alt: 'Audio & Headphones Category',
+          publicId: 'techverse/categories/Audio'
+        },
         isActive: true,
         showInMenu: true,
         displayOrder: 7,
@@ -160,6 +272,11 @@ class ComprehensiveSeed {
         name: 'Cameras',
         slug: 'cameras',
         description: 'Digital cameras and photography equipment',
+        image: {
+          url: this.getImageUrl('techverse/categories/Camera.jpg'),
+          alt: 'Cameras Category',
+          publicId: 'techverse/categories/Camera'
+        },
         isActive: true,
         showInMenu: true,
         displayOrder: 8,
@@ -169,6 +286,11 @@ class ComprehensiveSeed {
         name: 'Accessories',
         slug: 'accessories',
         description: 'Tech accessories and peripherals',
+        image: {
+          url: this.getImageUrl('techverse/categories/Accessories.jpg'),
+          alt: 'Accessories Category',
+          publicId: 'techverse/categories/Accessories'
+        },
         isActive: true,
         showInMenu: true,
         displayOrder: 9,
@@ -178,6 +300,11 @@ class ComprehensiveSeed {
         name: 'Smart Home',
         slug: 'home-smart-devices',
         description: 'Smart home devices and automation',
+        image: {
+          url: this.getImageUrl('techverse/categories/home-smart-devices.jpg'),
+          alt: 'Smart Home Category',
+          publicId: 'techverse/categories/home-smart-devices'
+        },
         isActive: true,
         showInMenu: true,
         displayOrder: 10,
@@ -187,6 +314,11 @@ class ComprehensiveSeed {
         name: 'Fitness & Health',
         slug: 'fitness-health',
         description: 'Fitness trackers and health monitoring devices',
+        image: {
+          url: this.getImageUrl('techverse/categories/fitness-health.jpg'),
+          alt: 'Fitness & Health Category',
+          publicId: 'techverse/categories/fitness-health'
+        },
         isActive: true,
         showInMenu: true,
         displayOrder: 11,
