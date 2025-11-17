@@ -110,7 +110,7 @@ export const cacheProductList = createCacheMiddleware({
   ttl: 600, // 10 minutes
   keyGenerator: (req) => {
     const params = {
-      category: req.params.category,
+      category: req.query.category || req.params.category,  // Check query first, then params
       section: req.params.section || req.query.section,  // Check both params and query
       page: req.query.page || 1,
       limit: req.query.limit || 20,

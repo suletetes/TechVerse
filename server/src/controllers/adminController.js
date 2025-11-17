@@ -491,9 +491,7 @@ export const getAllCategories = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: 'Categories retrieved successfully',
-    data: {
-      categories
-    }
+    data: categories  // Return array directly, not nested in object
   });
 });
 
