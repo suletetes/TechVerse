@@ -29,7 +29,6 @@ const localFolders = {
   products: path.join(uploadsDir, 'products'),
   categories: path.join(uploadsDir, 'categories'),
   users: path.join(uploadsDir, 'users'),
-  reviews: path.join(uploadsDir, 'reviews'),
   banners: path.join(uploadsDir, 'banners'),
   temp: path.join(uploadsDir, 'temp')
 };
@@ -55,8 +54,6 @@ const localStorage = multer.diskStorage({
       uploadPath = localFolders.categories;
     } else if (file.fieldname.includes('avatar') || file.fieldname.includes('user')) {
       uploadPath = localFolders.users;
-    } else if (file.fieldname.includes('review')) {
-      uploadPath = localFolders.reviews;
     } else if (file.fieldname.includes('banner')) {
       uploadPath = localFolders.banners;
     } else {
