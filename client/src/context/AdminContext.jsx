@@ -345,10 +345,6 @@ Orders
       // Ensure we always have an array
       const validCategories = Array.isArray(categoriesData) ? categoriesData : [];
       
-      if (validCategories.length > 0) {
-        console.log('✅ Categories loaded successfully:', validCategories.length);
-      }
-      
       return {
         ...state,
         categories: validCategories,

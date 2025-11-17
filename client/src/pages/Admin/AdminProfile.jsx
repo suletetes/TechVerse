@@ -143,6 +143,23 @@ const AdminProfile = () => {
         }
     }, [isAuthenticated, isAdmin, navigate]);
 
+    // Sync categories from context to local state
+    useEffect(() => {
+        if (categories && Array.isArray(categories) && categories.length > 0) {
+            setLocalCategories(categories);
+        }
+    }, [categories]);
+
+    // Load categories when needed for add/edit product
+    useEffect(() => {
+        if ((activeTab === 'add-product' || activeTab === 'edit-product') && 
+            !isCategoriesLoading && 
+            (!categories || categories.length === 0)) {
+            console.log('📂 Loading categories for product form...');
+            loadCategories();
+        }
+    }, [activeTab, isCategoriesLoading, categories, loadCategories]);
+
     // Load initial data - only on mount
     useEffect(() => {
         if (isAuthenticated && isAdmin()) {
@@ -564,11 +581,6 @@ const AdminProfile = () => {
                 );
 
             case 'add-product':
-                // Ensure categories are loaded before showing the form
-                if (!isCategoriesLoading && (!localCategories || localCategories.length === 0)) {
-                    loadCategories();
-                }
-                
                 return (
                     <AdminAddProduct
                         categories={localCategories || []}

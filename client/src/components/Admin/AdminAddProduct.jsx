@@ -13,48 +13,32 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     const [validCategories, setValidCategories] = useState([]);
     
     useEffect(() => {
-        console.log('AdminAddProduct - Categories received:', categories);
-        console.log('Categories type:', typeof categories, 'isArray:', Array.isArray(categories), 'length:', categories?.length);
-        
-        // Check if we received valid categories or products by mistake
+        // Validate and set categories
         if (Array.isArray(categories) && categories.length > 0) {
             const firstItem = categories[0];
-            console.log('First category item:', firstItem);
             
-            // More flexible validation - check for typical category properties
+            // Check for typical category properties
             const isCategory = firstItem && typeof firstItem === 'object' && 
                               (firstItem.name || firstItem.categoryName) && 
                               !firstItem.hasOwnProperty('price') && 
                               !firstItem.hasOwnProperty('stock');
             
             if (isCategory) {
-                console.log('✅ Valid category data received');
                 setValidCategories(categories);
             } else {
-                console.warn('⚠️ Received products instead of categories! Using fallback categories.');
-                console.warn('First item structure:', Object.keys(firstItem || {}));
-                setValidCategories(getFallbackCategories());
+                console.error('❌ Received invalid data instead of categories');
+                setValidCategories([]);
             }
         } else {
-            console.warn('⚠️ No valid categories received, using fallback');
-            setValidCategories(getFallbackCategories());
+            setValidCategories([]);
         }
     }, [categories]);
     
-    // Fallback categories for testing
-    const getFallbackCategories = () => [
-        { _id: '6907c4cd76b828091bdb9704', name: 'Smartphones', slug: 'phones' },
-        { _id: '6907c4cd76b828091bdb9705', name: 'Tablets', slug: 'tablets' },
-        { _id: '6907c4cd76b828091bdb9706', name: 'Laptops & Computers', slug: 'computers' },
-        { _id: '6907c4cd76b828091bdb9707', name: 'Smart TVs', slug: 'tvs' },
-        { _id: '6907c4cd76b828091bdb9708', name: 'Gaming Consoles', slug: 'gaming' },
-        { _id: '6907c4cd76b828091bdb9709', name: 'Smart Watches', slug: 'watches' },
-        { _id: '6907c4cd76b828091bdb970a', name: 'Audio & Headphones', slug: 'audio' },
-        { _id: '6907c4cd76b828091bdb970b', name: 'Cameras', slug: 'cameras' },
-        { _id: '6907c4cd76b828091bdb970c', name: 'Accessories', slug: 'accessories' },
-        { _id: '6907c4cd76b828091bdb970d', name: 'Smart Home', slug: 'home-smart-devices' },
-        { _id: '6907c4cd76b828091bdb970e', name: 'Fitness & Health', slug: 'fitness-health' }
-    ];    
+    // Fallback categories - will be empty to force proper category loading
+    const getFallbackCategories = () => {
+        console.warn('⚠️ Using empty fallback categories - please ensure categories are loaded from API');
+        return [];
+    };    
     const [formData, setFormData] = useState({
         // Basic Information
         name: editProduct?.name || '',
