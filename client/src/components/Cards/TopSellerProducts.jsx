@@ -39,19 +39,33 @@ const TopSellerProducts = ({
     const safeProducts = Array.isArray(products) ? products : [];
 
     // Transform API data to component format
-    const transformedProducts = safeProducts.map(product => ({
-        id: product._id,
-        name: product.name,
-        price: `From £${product.price}`,
-        link: `/product/${product.slug || product._id}`,
-        webp: product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder-product.webp',
-        image: product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder-product.jpg',
-        brand: product.brand || 'TechVerse',
-        category: product.category?.name || 'premium',
-        stock: product.stock,
-        inStock: product.stock?.quantity > 0 && product.status === 'active',
-        rating: product.rating?.average || 4.5
-    }));
+    const transformedProducts = safeProducts.map(product => {
+        // Debug logging
+        console.log('🔍 [TOP_SELLERS] Transforming product:', {
+            name: product.name,
+            stock: product.stock,
+            status: product.status,
+            rating: product.rating,
+            _id: product._id
+        });
+        
+        return {
+            id: product._id,
+            _id: product._id,
+            slug: product.slug,
+            name: product.name,
+            price: `From £${product.price}`,
+            link: `/product/${product.slug || product._id}`,
+            webp: product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder-product.webp',
+            image: product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder-product.jpg',
+            images: product.images,
+            brand: product.brand || 'TechVerse',
+            category: product.category?.name || 'premium',
+            stock: product.stock,
+            status: product.status,
+            rating: product.rating
+        };
+    });
 
     const renderContent = () => {
         if (isLoading) {

@@ -15,13 +15,27 @@ const ProductCard = ({ product }) => {
         );
     }
 
+    // Debug logging
+    console.log('🎴 [PRODUCT_CARD] Received product:', {
+        name: product.name,
+        stock: product.stock,
+        status: product.status,
+        rating: product.rating
+    });
+
     const getStockStatus = () => {
-        // If stock tracking is disabled, assume in stock
-        if (!product.stock || product.stock.trackQuantity === false) {
+        // If stock object doesn't exist, assume in stock
+        if (!product.stock) {
             return { text: 'In Stock', class: 'text-success' };
         }
         
-        const quantity = product.stock.quantity || 0;
+        // If stock tracking is disabled, assume in stock
+        if (product.stock.trackQuantity === false) {
+            return { text: 'In Stock', class: 'text-success' };
+        }
+        
+        // Get quantity, default to 0 only if stock object exists but quantity is undefined
+        const quantity = typeof product.stock.quantity === 'number' ? product.stock.quantity : 0;
         const lowStockThreshold = product.stock.lowStockThreshold || 10;
         
         if (quantity === 0) return { text: 'Out of Stock', class: 'text-danger' };
@@ -30,27 +44,51 @@ const ProductCard = ({ product }) => {
     };
 
     const stockStatus = getStockStatus();
+    
+    // Determine if product is in stock
     const inStock = product.status === 'active' && (
         !product.stock || 
         product.stock.trackQuantity === false || 
-        (product.stock.quantity && product.stock.quantity > 0)
+        (typeof product.stock.quantity === 'number' && product.stock.quantity > 0)
     );
+
+    // Debug stock calculation
+    console.log('📊 [PRODUCT_CARD] Stock calculation:', {
+        name: product.name,
+        status: product.status,
+        hasStock: !!product.stock,
+        trackQuantity: product.stock?.trackQuantity,
+        quantity: product.stock?.quantity,
+        stockStatus: stockStatus.text,
+        inStock
+    });
 
 
 
     return (
         <div className="text-start d-flex col-md-6 col-lg-4 mb-4">
             <div className="store-card fill-card position-relative w-100">
-                {/* Rating Badge */}
-                {product.rating && (
-                    <div className="position-absolute top-0 end-0 m-2" style={{ zIndex: 10 }}>
-                        <span className="badge bg-warning text-dark">
-                            <i className="fa fa-star"></i> {typeof product.rating === 'object' 
-                                ? product.rating?.average?.toFixed(1) || '0.0'
-                                : product.rating?.toFixed(1) || '0.0'}
-                        </span>
-                    </div>
-                )}
+                {/* Rating Badge - Only show if rating exists and is greater than 0 */}
+                {(() => {
+                    let ratingValue = 0;
+                    if (typeof product.rating === 'object' && product.rating?.average) {
+                        ratingValue = product.rating.average;
+                    } else if (typeof product.rating === 'number') {
+                        ratingValue = product.rating;
+                    }
+                    
+                    // Only show badge if rating is greater than 0
+                    if (ratingValue > 0) {
+                        return (
+                            <div className="position-absolute top-0 end-0 m-2" style={{ zIndex: 10 }}>
+                                <span className="badge bg-warning text-dark">
+                                    <i className="fa fa-star"></i> {ratingValue.toFixed(1)}
+                                </span>
+                            </div>
+                        );
+                    }
+                    return null;
+                })()}
                 
                 {/* Category Badge */}
                 <div className="position-absolute top-0 start-0 m-2" style={{ zIndex: 10 }}>
@@ -96,7 +134,9 @@ const ProductCard = ({ product }) => {
                         <small className="text-muted">{product.brand || 'Brand'}</small>
                     </div>
                     <div className="col-lg-8">
-                        <p className="tc-6533 float-lg-none mb-1 fw-bold">${product.price || 'Price'}</p>
+                        <p className="tc-6533 float-lg-none mb-1 fw-bold">
+                            {typeof product.price === 'string' ? product.price : `£${product.price}`}
+                        </p>
                         <small className={`${stockStatus.class} fw-bold`}>{stockStatus.text}</small>
                     </div>
                     <div className="col-lg-4 align-self-end">
