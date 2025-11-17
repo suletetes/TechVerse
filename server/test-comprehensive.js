@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import ComprehensiveSeed from './comprehensive-seed.js';
+import ComprehensiveSeed from './seed/index.js';
 
-console.log('🚀 Starting comprehensive seed test...');
+console.log('🚀 Starting comprehensive seed...');
 
 const seeder = new ComprehensiveSeed();
 seeder.seed().catch(error => {
