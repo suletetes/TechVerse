@@ -1,16 +1,22 @@
 import { useState } from 'react';
 import { Toast } from '../Common';
+import uploadService from '../../api/services/uploadService';
+import { useNotification } from '../../context';
 
 const AdminCategoryManager = ({ 
     categories = [],
     onSaveCategory,
     onDeleteCategory
 }) => {
+    const { showSuccess, showError, showWarning } = useNotification();
+    
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
     const [imagePreview, setImagePreview] = useState('');
     const [toast, setToast] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
 
     const [categoryForm, setCategoryForm] = useState({
         name: '',
@@ -41,50 +47,70 @@ const AdminCategoryManager = ({
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            // Validate file
-            if (!file.type.startsWith('image/')) {
-                setToast({
-                    message: 'Please select an image file',
-                    type: 'error'
-                });
-                return;
-            }
-            if (file.size > 5 * 1024 * 1024) {
-                setToast({
-                    message: 'Image size must be less than 5MB',
-                    type: 'error'
-                });
+            // Validate file using uploadService
+            const validation = uploadService.validateFile(file, {
+                maxSize: 5 * 1024 * 1024, // 5MB
+                allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+            });
+
+            if (!validation.isValid) {
+                showError(validation.errors.join(', '));
                 return;
             }
 
-            // Create preview
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result);
-                setCategoryForm(prev => ({
-                    ...prev,
-                    image: reader.result
-                }));
-            };
-            reader.readAsDataURL(file);
+            // Store file for upload and create preview
+            setSelectedFile(file);
+            const previewUrl = uploadService.createPreviewUrl(file);
+            setImagePreview(previewUrl);
         }
     };
 
     const handleSaveCategory = async () => {
         if (!categoryForm.name.trim()) {
-            setToast({
-                message: 'Category name is required',
-                type: 'error'
-            });
+            showError('Category name is required');
             return;
         }
 
         try {
+            setIsUploading(true);
+            
             const categoryData = {
                 ...categoryForm,
                 name: categoryForm.name.trim(),
                 description: categoryForm.description.trim()
             };
+
+            // Upload image if a new file was selected
+            if (selectedFile) {
+                try {
+                    const uploadResult = await uploadService.uploadSingleImage(selectedFile, {
+                        alt: categoryForm.name,
+                        category: 'categories',
+                        isPrimary: true
+                    });
+
+                    const uploadedImageUrl = uploadResult.data?.image?.url || uploadResult.data?.url;
+                    const publicId = uploadResult.data?.image?.publicId || null;
+
+                    categoryData.image = {
+                        url: uploadedImageUrl,
+                        publicId: publicId,
+                        alt: categoryForm.name
+                    };
+                } catch (uploadError) {
+                    showError('Failed to upload image: ' + uploadError.message);
+                    setIsUploading(false);
+                    return;
+                }
+            } else if (imagePreview && !imagePreview.startsWith('blob:')) {
+                // Keep existing image if no new file selected
+                if (editingCategory && editingCategory.image) {
+                    // Preserve the full image object from the original category
+                    categoryData.image = editingCategory.image;
+                } else if (categoryForm.image) {
+                    categoryData.image = categoryForm.image;
+                }
+            }
 
             // Add ID for updates (use 'id' not '_id' for AdminProfile compatibility)
             if (editingCategory) {
@@ -93,12 +119,16 @@ const AdminCategoryManager = ({
 
             await onSaveCategory(categoryData);
             handleCancelEdit();
+            showSuccess(editingCategory ? 'Category updated successfully!' : 'Category created successfully!');
         } catch (error) {
-            console.error('Error saving category:', error);
-            setToast({
-                message: 'Failed to save category: ' + error.message,
-                type: 'error'
-            });
+            // Check for specific error messages
+            if (error.message?.includes('duplicate') || error.message?.includes('already exists')) {
+                showError('A category with this name already exists. Please use a unique name.');
+            } else {
+                showError(error.message || 'Failed to save category');
+            }
+        } finally {
+            setIsUploading(false);
         }
     };
 
@@ -120,20 +150,23 @@ const AdminCategoryManager = ({
         if (window.confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
             try {
                 await onDeleteCategory(categoryId);
+                showSuccess('Category deleted successfully!');
             } catch (error) {
-                console.error('Error deleting category:', error);
-                setToast({
-                    message: 'Failed to delete category',
-                    type: 'error'
-                });
+                showError(error.message || 'Failed to delete category');
             }
         }
     };
 
     const handleCancelEdit = () => {
+        // Cleanup preview URL if it's a blob
+        if (imagePreview && imagePreview.startsWith('blob:')) {
+            uploadService.cleanupPreviewUrl(imagePreview);
+        }
+        
         setEditingCategory(null);
         setShowAddForm(false);
         setImagePreview('');
+        setSelectedFile(null);
         setCategoryForm({
             name: '',
             description: '',
@@ -279,7 +312,12 @@ const AdminCategoryManager = ({
                                                 type="button"
                                                 className="btn btn-sm btn-danger position-absolute top-0 end-0 m-2"
                                                 onClick={() => {
+                                                    // Cleanup blob URL if exists
+                                                    if (imagePreview && imagePreview.startsWith('blob:')) {
+                                                        uploadService.cleanupPreviewUrl(imagePreview);
+                                                    }
                                                     setImagePreview('');
+                                                    setSelectedFile(null);
                                                     setCategoryForm(prev => ({ ...prev, image: '' }));
                                                 }}
                                             >
@@ -314,15 +352,26 @@ const AdminCategoryManager = ({
                             <button
                                 className="btn btn-primary"
                                 onClick={handleSaveCategory}
+                                disabled={isUploading}
                             >
-                                <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
-                                    <path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
-                                </svg>
-                                {editingCategory ? 'Update Category' : 'Save Category'}
+                                {isUploading ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Uploading...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                                            <path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+                                        </svg>
+                                        {editingCategory ? 'Update Category' : 'Save Category'}
+                                    </>
+                                )}
                             </button>
                             <button
                                 className="btn btn-outline-secondary"
                                 onClick={handleCancelEdit}
+                                disabled={isUploading}
                             >
                                 Cancel
                             </button>

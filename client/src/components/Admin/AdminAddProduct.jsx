@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { generateProductSlug, validateProductSlug, mapCategoryToConfig } from '../../config/categoryConfig';
 import DynamicVariantBuilder from './DynamicVariantBuilder';
+import uploadService from '../../api/services/uploadService';
+import { useNotification } from '../../context';
 import './AdminAddProduct.css';
 
 const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = [] }) => {
+    const { showSuccess, showError, showWarning, showInfo } = useNotification();
+    
     const [currentStep, setCurrentStep] = useState(1);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [categoryConfig, setCategoryConfig] = useState(null);
@@ -618,43 +622,59 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         
         if (isUploading) return;
 
+        // Validate file
+        const validation = uploadService.validateFile(file, {
+            maxSize: 10 * 1024 * 1024, // 10MB
+            allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+        });
+
+        if (!validation.isValid) {
+            setErrors(prev => ({
+                ...prev,
+                upload: validation.errors.join(', ')
+            }));
+            return;
+        }
+
         setIsUploading(true);
         setUploadProgress(0);
 
         try {
-            // Create preview URL for immediate display
-            const previewUrl = URL.createObjectURL(file);
+            // Upload to server with progress tracking
+            const result = await uploadService.uploadSingleImage(file, {
+                alt: formData.name || 'Product Image',
+                category: 'products',
+                isPrimary: type === 'main',
+                onProgress: (progressEvent) => {
+                    const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    setUploadProgress(percentCompleted);
+                }
+            });
+
+            const uploadedImageUrl = result.data?.image?.url || result.data?.url;
+            const publicId = result.data?.image?.publicId || null;
 
             if (type === 'main') {
-                handleInputChange('mainImage', previewUrl);
+                handleInputChange('mainImage', uploadedImageUrl);
             } else {
                 // Handle additional images for media gallery
-                const tempMedia = {
-                    id: `temp-${Date.now()}`,
+                const newMedia = {
+                    id: `img-${Date.now()}`,
                     type: 'image',
-                    src: previewUrl,
-                    thumbnail: previewUrl,
+                    src: uploadedImageUrl,
+                    url: uploadedImageUrl,
+                    thumbnail: uploadedImageUrl,
                     alt: formData.name || 'Product Image',
                     title: file.name,
-                    isPrimary: false
+                    isPrimary: false,
+                    publicId: publicId
                 };
 
                 setFormData(prev => ({
                     ...prev,
-                    mediaGallery: [...prev.mediaGallery, tempMedia]
+                    mediaGallery: [...prev.mediaGallery, newMedia]
                 }));
             }
-
-            // Simulate upload progress
-            const interval = setInterval(() => {
-                setUploadProgress(prev => {
-                    if (prev >= 100) {
-                        clearInterval(interval);
-                        return 100;
-                    }
-                    return prev + 10;
-                });
-            }, 100);
 
             // Clear any upload errors
             setErrors(prev => {
@@ -664,15 +684,17 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             });
 
         } catch (error) {
+            const errorMsg = error.message || 'Upload failed. Please try again.';
             setErrors(prev => ({
                 ...prev,
-                upload: error.message
+                upload: errorMsg
             }));
+            showError(errorMsg);
         } finally {
             setTimeout(() => {
                 setIsUploading(false);
                 setUploadProgress(0);
-            }, 1200);
+            }, 500);
         }
     };
 
@@ -757,13 +779,10 @@ const validateStep = (step) => {
         setCurrentStep(prev => Math.max(prev - 1, 1));
     };
 
-    const handleSave = (isDraft = false) => {
-        console.log('🔄 handleSave called with isDraft:', isDraft);
-        console.log('📋 Current formData:', formData);
-        
+    const handleSave = async (isDraft = false) => {
         // Validate form before saving (skip validation for drafts)
         if (!isDraft && !validateForm()) {
-            console.log('❌ Form validation failed');
+            showError('Please fix the validation errors before saving');
             return;
         }
 
@@ -790,15 +809,25 @@ const validateStep = (step) => {
                 lowStockThreshold: parseInt(formData.stock.lowStockThreshold) || 10
             },
 
-            // Images
-            images: formData.mediaGallery
-                .filter(media => media.type === 'image')
-                .map((media, index) => ({
-                    url: media.src || media.url,
-                    alt: media.alt || formData.name,
-                    isPrimary: index === 0 || media.isPrimary || false,
-                    publicId: media.publicId || null
-                })),
+            // Images - include main image and gallery images
+            images: [
+                // Main image first (if exists)
+                ...(formData.mainImage ? [{
+                    url: formData.mainImage,
+                    alt: formData.name || 'Product Image',
+                    isPrimary: true,
+                    publicId: null
+                }] : []),
+                // Then gallery images
+                ...formData.mediaGallery
+                    .filter(media => media.type === 'image')
+                    .map((media, index) => ({
+                        url: media.src || media.url,
+                        alt: media.alt || formData.name,
+                        isPrimary: false,
+                        publicId: media.publicId || null
+                    }))
+            ],
 
             // Variants - use dynamic variants from DynamicVariantBuilder
             variants: (formData.variants || [])
@@ -916,12 +945,25 @@ const validateStep = (step) => {
         }
         
         if (validationErrors.length > 0) {
-            alert(`❌ Validation Errors:\n${validationErrors.join('\n')}`);
+            validationErrors.forEach(error => showError(error));
             return;
         }
 
-        console.log('📤 Final productData being sent:', JSON.stringify(productData, null, 2));
-        onSave(productData);
+        try {
+            await onSave(productData);
+            showSuccess(editProduct ? 'Product updated successfully!' : 'Product created successfully!');
+        } catch (error) {
+            // Check for specific error messages
+            if (error.message?.includes('SKU')) {
+                showError('A product with this SKU already exists. Please use a unique SKU.');
+            } else if (error.message?.includes('slug')) {
+                showError('A product with this slug already exists. Please use a unique slug.');
+            } else if (error.message?.includes('duplicate')) {
+                showError('A product with similar details already exists.');
+            } else {
+                showError(error.message || 'Failed to save product. Please try again.');
+            }
+        }
     };
 
     const calculateProfitMargin = () => {
