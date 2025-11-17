@@ -60,9 +60,6 @@ const AdminHomepageManager = () => {
 
     const loadSectionAssignments = async () => {
         try {
-            console.log('🔄 [ADMIN_HOMEPAGE] ========== Loading Section Assignments ==========');
-            
-            // Load section assignments
             const sectionData = {};
             const sectionMap = {
                 latest: 'latest',
@@ -73,18 +70,7 @@ const AdminHomepageManager = () => {
             
             for (const [key, backendName] of Object.entries(sectionMap)) {
                 try {
-                    console.log(`\n📥 [ADMIN_HOMEPAGE] Fetching section: "${key}" (backend field: "${backendName}")`);
                     const res = await productService.getProductsBySection(backendName, 100);
-                    
-                    console.log(`📦 [ADMIN_HOMEPAGE] Response structure for "${key}":`, {
-                        hasData: !!res.data,
-                        hasProducts: !!res.data?.products,
-                        isArray: Array.isArray(res.data),
-                        responseKeys: Object.keys(res),
-                        dataType: typeof res.data,
-                        dataKeys: res.data ? Object.keys(res.data) : null
-                    });
-                    console.log(`📦 [ADMIN_HOMEPAGE] Full response for "${key}":`, res);
                     
                     // Handle different response structures
                     let sectionProducts = [];
@@ -98,53 +84,21 @@ const AdminHomepageManager = () => {
                         sectionProducts = res;
                     }
                     
-                    console.log(`📋 [ADMIN_HOMEPAGE] Extracted ${sectionProducts.length} products for "${key}"`);
-                    
-                    // Verify each product has the correct section
-                    const productDetails = sectionProducts.map(p => ({
-                        id: p._id,
-                        name: p.name,
-                        sections: p.sections || []
-                    }));
-                    
-                    console.log(`🔍 [ADMIN_HOMEPAGE] Product details for "${key}":`, productDetails);
-                    
                     // Only store products that actually have this section assigned
                     const filteredProducts = sectionProducts.filter(p => {
                         const sections = p.sections || [];
-                        const hasSection = sections.includes(backendName);
-                        
-                        if (!hasSection) {
-                            console.warn(`⚠️ [ADMIN_HOMEPAGE] Product "${p.name}" (${p._id}) missing section "${backendName}". Has: [${sections.join(', ')}]`);
-                        }
-                        
-                        return hasSection;
+                        return sections.includes(backendName);
                     });
-                    
-                    console.log(`✅ [ADMIN_HOMEPAGE] Verified ${filteredProducts.length}/${sectionProducts.length} products for "${key}"`);
-                    
-                    if (filteredProducts.length > 0) {
-                        console.log(`📌 [ADMIN_HOMEPAGE] Products in "${key}":`, 
-                            filteredProducts.map(p => `  - ${p.name} (${p._id})`).join('\n')
-                        );
-                    }
                     
                     sectionData[key] = filteredProducts.map(p => p._id || p.id);
                 } catch (err) {
-                    console.error(`❌ [ADMIN_HOMEPAGE] Failed to load "${key}":`, err.message);
                     sectionData[key] = [];
                 }
             }
             
-            console.log('\n✨ [ADMIN_HOMEPAGE] ========== Final Section Assignments ==========');
-            Object.entries(sectionData).forEach(([key, ids]) => {
-                console.log(`  ${key}: ${ids.length} products [${ids.join(', ')}]`);
-            });
-            console.log('========================================\n');
-            
             setSectionAssignments(sectionData);
         } catch (err) {
-            console.error('❌ [ADMIN_HOMEPAGE] Critical error loading sections:', err);
+            console.error('Error loading sections:', err);
         }
     };
 
@@ -204,28 +158,15 @@ const AdminHomepageManager = () => {
     };
 
     const handleAddProduct = async (sectionKey, productId) => {
-        console.log(`\n➕ [ADMIN_HOMEPAGE] ========== Adding Product to Section ==========`);
-        console.log(`   Section: ${sectionKey}`);
-        console.log(`   Product ID: ${productId}`);
-        
         const currentProducts = sectionAssignments[sectionKey] || [];
         const section = homepageSections[sectionKey];
         
-        console.log(`📊 [ADMIN_HOMEPAGE] Current state:`, {
-            sectionKey,
-            currentProductCount: currentProducts.length,
-            maxAllowed: section.max,
-            currentProductIds: currentProducts
-        });
-        
         if (currentProducts.includes(productId)) {
-            console.warn(`⚠️ [ADMIN_HOMEPAGE] Product ${productId} already in ${sectionKey}`);
             showNotification('Product already in this section', 'warning');
             return;
         }
         
         if (currentProducts.length >= section.max) {
-            console.warn(`⚠️ [ADMIN_HOMEPAGE] Section ${sectionKey} is full (${currentProducts.length}/${section.max})`);
             showNotification(`Maximum ${section.max} products allowed in ${section.name}`, 'warning');
             return;
         }
@@ -238,83 +179,45 @@ const AdminHomepageManager = () => {
                 weeklyDeals: 'weeklyDeal'
             };
             
-            console.log(`🔍 [ADMIN_HOMEPAGE] Fetching product details...`);
-            
             // Load full product data first
             const productResponse = await productService.getProductById(productId);
             const fullProduct = productResponse.data?.product || productResponse.product || productResponse;
             
             if (!fullProduct) {
-                console.error(`❌ [ADMIN_HOMEPAGE] Product ${productId} not found`);
                 showNotification('Product not found', 'error');
                 return;
             }
-
-            console.log(`📦 [ADMIN_HOMEPAGE] Product details:`, {
-                id: fullProduct._id,
-                name: fullProduct.name,
-                currentSections: fullProduct.sections || []
-            });
 
             const newSection = sectionMap[sectionKey];
             
             // Add this section to product's existing sections
             const currentSections = fullProduct.sections || [];
-            const updatedSections = [...new Set([...currentSections, newSection])]; // Use Set to avoid duplicates
-            
-            console.log(`🔄 [ADMIN_HOMEPAGE] Section update:`, {
-                productName: fullProduct.name,
-                before: currentSections,
-                adding: newSection,
-                after: updatedSections
-            });
+            const updatedSections = [...new Set([...currentSections, newSection])];
             
             // Use dedicated sections update endpoint
-            console.log(`📡 [ADMIN_HOMEPAGE] Calling API to update sections...`);
             const updateResult = await productService.updateProductSections(productId, updatedSections);
-            console.log(`✅ [ADMIN_HOMEPAGE] API response:`, updateResult);
             
             // Verify the update was successful
             const updatedProduct = updateResult.data?.product || updateResult.product;
-            if (updatedProduct) {
-                console.log(`🔍 [ADMIN_HOMEPAGE] Verifying update:`, {
-                    productId: updatedProduct._id,
-                    productName: updatedProduct.name,
-                    sectionsAfterUpdate: updatedProduct.sections
-                });
-                
-                if (!updatedProduct.sections.includes(newSection)) {
-                    console.error(`❌ [ADMIN_HOMEPAGE] CRITICAL: Section "${newSection}" NOT in updated product!`);
-                    showNotification('Failed to add product to section - update not saved', 'error');
-                    return;
-                }
+            if (updatedProduct && !updatedProduct.sections.includes(newSection)) {
+                showNotification('Failed to add product to section', 'error');
+                return;
             }
             
-            // Wait a bit for database to fully commit
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Wait for database commit
+            await new Promise(resolve => setTimeout(resolve, 300));
             
-            // Refresh section assignments from backend to ensure consistency
-            console.log(`🔄 [ADMIN_HOMEPAGE] Refreshing all section assignments...`);
+            // Refresh section assignments
             await loadSectionAssignments();
-            
-            console.log(`✨ [ADMIN_HOMEPAGE] Product successfully added to ${section.name}`);
-            console.log(`========================================\n`);
             
             showNotification(`Product added to ${section.name}`, 'success');
             setShowProductSelector(false);
         } catch (err) {
-            console.error(`❌ [ADMIN_HOMEPAGE] Error adding product:`, err);
-            console.error(`   Error message:`, err.message);
-            console.error(`   Error stack:`, err.stack);
             showNotification(err.message || 'Failed to add product to section', 'error');
         }
     };
 
     const handleRemoveProduct = async (sectionKey, productId) => {
-        console.log(`\n➖ [ADMIN_HOMEPAGE] ========== Removing Product from Section ==========`);
-        console.log(`   Section: ${sectionKey}`);
-        console.log(`   Product ID: ${productId}`);
-        
         try {
             const sectionMap = {
                 latest: 'latest',
@@ -323,71 +226,38 @@ const AdminHomepageManager = () => {
                 weeklyDeals: 'weeklyDeal'
             };
             
-            console.log(`🔍 [ADMIN_HOMEPAGE] Fetching product details...`);
-            
             // Load full product data first
             const productResponse = await productService.getProductById(productId);
             const fullProduct = productResponse.data?.product || productResponse.product || productResponse;
             
             if (!fullProduct) {
-                console.error(`❌ [ADMIN_HOMEPAGE] Product ${productId} not found`);
                 showNotification('Product not found', 'error');
                 return;
             }
-
-            console.log(`📦 [ADMIN_HOMEPAGE] Product details:`, {
-                id: fullProduct._id,
-                name: fullProduct.name,
-                currentSections: fullProduct.sections || []
-            });
 
             // Remove this section from product's sections array
             const currentSections = fullProduct.sections || [];
             const sectionToRemove = sectionMap[sectionKey];
             const updatedSections = currentSections.filter(s => s !== sectionToRemove);
             
-            console.log(`🔄 [ADMIN_HOMEPAGE] Section update:`, {
-                productName: fullProduct.name,
-                before: currentSections,
-                removing: sectionToRemove,
-                after: updatedSections
-            });
-            
             // Use dedicated sections update endpoint
-            console.log(`📡 [ADMIN_HOMEPAGE] Calling API to update sections...`);
             const result = await productService.updateProductSections(productId, updatedSections);
-            console.log(`✅ [ADMIN_HOMEPAGE] API response:`, result);
             
             // Verify the update was successful
             const updatedProduct = result.data?.product || result.product;
-            if (updatedProduct) {
-                console.log(`🔍 [ADMIN_HOMEPAGE] Verifying update:`, {
-                    productId: updatedProduct._id,
-                    productName: updatedProduct.name,
-                    sectionsAfterUpdate: updatedProduct.sections
-                });
-                
-                if (updatedProduct.sections.includes(sectionToRemove)) {
-                    console.error(`❌ [ADMIN_HOMEPAGE] CRITICAL: Section "${sectionToRemove}" STILL in product!`);
-                    showNotification('Failed to remove product from section - update not saved', 'error');
-                    return;
-                }
+            if (updatedProduct && updatedProduct.sections.includes(sectionToRemove)) {
+                showNotification('Failed to remove product from section', 'error');
+                return;
             }
             
-            // Wait a bit for database to fully commit
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Wait for database commit
+            await new Promise(resolve => setTimeout(resolve, 300));
             
-            // Refresh section assignments from backend to ensure consistency
-            console.log(`🔄 [ADMIN_HOMEPAGE] Refreshing all section assignments...`);
+            // Refresh section assignments
             await loadSectionAssignments();
-            
-            console.log(`✨ [ADMIN_HOMEPAGE] Product successfully removed from ${homepageSections[sectionKey].name}`);
-            console.log(`========================================\n`);
             
             showNotification('Product removed from section', 'success');
         } catch (err) {
-            console.error(`❌ [ADMIN_HOMEPAGE] Error removing product:`, err);
-            console.error(`   Error message:`, err.message);
             showNotification(err.message || 'Failed to remove product from section', 'error');
         }
     };
@@ -396,9 +266,6 @@ const AdminHomepageManager = () => {
         if (!window.confirm(`Are you sure you want to remove all products from ${homepageSections[sectionKey].name}?`)) {
             return;
         }
-
-        console.log(`\n🗑️ [ADMIN_HOMEPAGE] ========== Clearing Section ==========`);
-        console.log(`   Section: ${sectionKey}`);
 
         try {
             const sectionMap = {
@@ -411,52 +278,27 @@ const AdminHomepageManager = () => {
             const assigned = sectionAssignments[sectionKey] || [];
             const sectionToRemove = sectionMap[sectionKey];
             
-            console.log(`📊 [ADMIN_HOMEPAGE] Clearing ${assigned.length} products from "${sectionKey}"`);
-            console.log(`   Product IDs:`, assigned);
-            
             // Remove section from all assigned products
-            let successCount = 0;
-            let failCount = 0;
-            
             for (const productId of assigned) {
                 try {
-                    console.log(`🔄 [ADMIN_HOMEPAGE] Processing product ${productId}...`);
-                    
                     const productResponse = await productService.getProductById(productId);
                     const fullProduct = productResponse.data?.product || productResponse.product || productResponse;
                     
                     if (fullProduct) {
                         const currentSections = fullProduct.sections || [];
                         const updatedSections = currentSections.filter(s => s !== sectionToRemove);
-                        
-                        console.log(`   Product: ${fullProduct.name}`);
-                        console.log(`   Before: [${currentSections.join(', ')}]`);
-                        console.log(`   After: [${updatedSections.join(', ')}]`);
-                        
                         await productService.updateProductSections(productId, updatedSections);
-                        successCount++;
-                        console.log(`   ✅ Updated successfully`);
                     }
                 } catch (err) {
-                    failCount++;
-                    console.warn(`   ❌ Failed to remove product ${productId}:`, err.message);
+                    // Continue with other products even if one fails
                 }
             }
             
-            console.log(`\n📊 [ADMIN_HOMEPAGE] Clear section results:`);
-            console.log(`   Success: ${successCount}`);
-            console.log(`   Failed: ${failCount}`);
-            
             // Refresh section assignments
-            console.log(`🔄 [ADMIN_HOMEPAGE] Refreshing section assignments...`);
             await loadSectionAssignments();
-            
-            console.log(`✨ [ADMIN_HOMEPAGE] Section cleared successfully`);
-            console.log(`========================================\n`);
             
             showNotification(`All products removed from ${homepageSections[sectionKey].name}`, 'success');
         } catch (err) {
-            console.error(`❌ [ADMIN_HOMEPAGE] Error clearing section:`, err);
             showNotification(err.message || 'Failed to clear section', 'error');
         }
     };

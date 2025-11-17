@@ -234,9 +234,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     };
 
     const loadSampleData = () => {
-        console.log('🔄 Loading sample data...');
-        console.log('📋 Available categories:', validCategories);
-        
         // Check if we have categories
         if (!validCategories || validCategories.length === 0) {
             alert('❌ No categories available. Please create categories first or wait for them to load.');
@@ -257,13 +254,11 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         if (computersCategory) {
             categoryId = computersCategory._id || computersCategory.id;
             selectedCategoryName = computersCategory.name;
-            console.log('✅ Found computers category:', computersCategory);
         } else {
             // Use the first available category as fallback
             const firstCategory = validCategories[0];
             categoryId = firstCategory._id || firstCategory.id;
             selectedCategoryName = firstCategory.name;
-            console.log('⚠️ Using first available category:', firstCategory);
         }
         
         if (!categoryId) {
@@ -366,8 +361,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         slugGeneratedRef.current = false;
         setCurrentCategoryId(categoryId);
         
-        console.log('✅ Sample data loaded successfully');
-        alert(`✅ Sample MacBook Pro data loaded!\nCategory: ${selectedCategoryName}\nID: ${categoryId}`);
+        alert(`✅ Sample MacBook Pro data loaded!\nCategory: ${selectedCategoryName}`);
     };
 
     // Initialize currentCategoryId when formData.category changes
@@ -563,8 +557,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     };
 
     const handleProductOptionChange = (optionType, optionId, field, value) => {
-        console.log('handleProductOptionChange called:', { optionType, optionId, field, value });
-        
         setFormData(prev => {
             const currentOptions = prev.productOptions || {};
             const currentOptionType = currentOptions[optionType] || { name: optionType, options: [] };
@@ -574,7 +566,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                 option.id === optionId ? { ...option, [field]: value } : option
             );
             
-            const result = {
+            return {
                 ...prev,
                 productOptions: {
                     ...currentOptions,
@@ -584,9 +576,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                     }
                 }
             };
-            
-            console.log('Updated formData.productOptions:', result.productOptions);
-            return result;
         });
     };
 
@@ -627,10 +616,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         const file = e.target.files[0];
         if (!file) return;
         
-        if (isUploading) {
-            console.log('Upload already in progress, skipping...');
-            return;
-        }
+        if (isUploading) return;
 
         setIsUploading(true);
         setUploadProgress(0);
@@ -650,7 +636,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                     thumbnail: previewUrl,
                     alt: formData.name || 'Product Image',
                     title: file.name,
-                    uploading: true
+                    isPrimary: false
                 };
 
                 setFormData(prev => ({
@@ -659,7 +645,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
                 }));
             }
 
-            // Simulate upload progress for demo
+            // Simulate upload progress
             const interval = setInterval(() => {
                 setUploadProgress(prev => {
                     if (prev >= 100) {
@@ -678,7 +664,6 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             });
 
         } catch (error) {
-            console.error('Upload failed:', error);
             setErrors(prev => ({
                 ...prev,
                 upload: error.message
@@ -687,7 +672,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
             setTimeout(() => {
                 setIsUploading(false);
                 setUploadProgress(0);
-            }, 1500);
+            }, 1200);
         }
     };
 
