@@ -726,22 +726,45 @@ const Product = () => {
                     {/* Customer Reviews Section - Full Width Below */}
                     <div
                         className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
-                        <ReviewsSection 
-                            productId={product?._id}
-                            reviews={reviews}
-                            averageRating={product?.rating?.average || 0}
-                            totalReviews={product?.rating?.count || 0}
-                            isLoading={reviewsLoading}
-                            showWriteReview={false} 
-                            onSubmitReview={handleSubmitReview}
-                            productInfo={{
-                                id: product?._id || 'product-001',
-                                slug: product?.slug || id,
-                                name: product?.name || 'Product',
-                                variant: `${selectedColor} - ${selectedStorage}`,
-                                image: product?.images?.[0]?.url || '../img/tablet-thumb.jpg'
-                            }}
-                        />
+                        {reviewsLoading ? (
+                            <div className="text-center py-5">
+                                <LoadingSpinner size="md" />
+                                <p className="tc-6533 mt-3">Loading reviews...</p>
+                            </div>
+                        ) : reviews.length > 0 ? (
+                            <ReviewsSection 
+                                productId={product?._id}
+                                reviews={reviews}
+                                averageRating={product?.rating?.average || 0}
+                                totalReviews={product?.rating?.count || 0}
+                                isLoading={false}
+                                showWriteReview={false} 
+                                onSubmitReview={handleSubmitReview}
+                                productInfo={{
+                                    id: product?._id || 'product-001',
+                                    slug: product?.slug || id,
+                                    name: product?.name || 'Product',
+                                    variant: `${selectedColor} - ${selectedStorage}`,
+                                    image: product?.images?.[0]?.url || '../img/tablet-thumb.jpg'
+                                }}
+                            />
+                        ) : (
+                            <div className="store-card outline-card fill-card text-center py-5">
+                                <div className="tc-6533">
+                                    <i className="fa fa-star-o fa-3x mb-3 opacity-50"></i>
+                                    <h4>No Reviews Yet</h4>
+                                    <p className="text-muted">Be the first to review this product!</p>
+                                    {isAuthenticated && (
+                                        <button 
+                                            className="btn btn-primary btn-rd mt-3"
+                                            onClick={() => navigate(`/product/${id}/review`)}
+                                        >
+                                            Write a Review
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Related Products Section */}

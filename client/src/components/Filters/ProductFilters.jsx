@@ -87,8 +87,8 @@ const ProductFilters = ({
                     >
                         <option value="">All Categories</option>
                         {Array.isArray(categories) && categories.map(category => {
-                            // Always use the category name as the value to prevent ObjectId issues
-                            const categoryValue = category.name || category.slug || category;
+                            // Use slug as the value for consistent filtering
+                            const categoryValue = category.slug || category.name || category;
                             const categoryDisplay = category.name || (typeof category === 'string' ? category.charAt(0).toUpperCase() + category.slice(1) : 'Unknown Category');
                             
                             return (

@@ -64,8 +64,8 @@ const Products = () => {
 
     // Main effect to handle all filter changes
     useEffect(() => {
-        const categoryFromQuery = searchParams.get('category');
-        const effectiveCategory = categorySlug || categoryFromQuery || localFilters.category;
+        // Priority: localFilters.category (user selection) > categorySlug (URL param) > categoryFromQuery (URL query)
+        const effectiveCategory = localFilters.category || categorySlug || searchParams.get('category');
 
         // Build filters object
         const filters = {
@@ -81,8 +81,6 @@ const Products = () => {
         if (localFilters.minPrice) filters.minPrice = localFilters.minPrice;
         if (localFilters.maxPrice) filters.maxPrice = localFilters.maxPrice;
         if (localFilters.inStock !== null) filters.inStock = localFilters.inStock;
-        
-
 
         // Update URL params
         const params = new URLSearchParams();
@@ -115,9 +113,11 @@ const Products = () => {
         localFilters.minPrice,
         localFilters.maxPrice,
         localFilters.inStock,
-        categorySlug
-        // Removed searchParams, setSearchParams, setFilters, loadProducts, debouncedSearch from dependencies
-        // to prevent infinite loops - these are stable references
+        categorySlug,
+        setSearchParams,
+        setFilters,
+        loadProducts,
+        debouncedSearch
     ]);
 
     // Get current category info
