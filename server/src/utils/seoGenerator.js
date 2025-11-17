@@ -258,34 +258,44 @@ const generateSlug = (name) => {
  */
 export const generateProductImages = (product, category) => {
   const { name, brand } = product;
-  const baseSlug = generateSlug(name);
   
-  // Define image types by category
-  const imageTypes = {
-    phones: ['main', 'back', 'side', 'screen'],
-    tablets: ['main', 'side', 'keyboard', 'pencil'],
-    computers: ['main', 'open', 'ports', 'keyboard'],
-    tvs: ['main', 'side', 'remote', 'wall-mount'],
-    gaming: ['main', 'controller', 'games', 'setup'],
-    watches: ['main', 'bands', 'screen', 'charging'],
-    audio: ['main', 'wearing', 'case', 'controls'],
-    cameras: ['main', 'lens', 'back', 'viewfinder'],
-    accessories: ['main', 'usage', 'compatibility', 'package'],
-    'home-smart-devices': ['main', 'setup', 'app', 'room'],
-    'fitness-health': ['main', 'wearing', 'app', 'charging']
+  // Use generic product images based on category
+  const categoryImageMap = {
+    phones: 'phone-product',
+    tablets: 'tablet-product',
+    computers: 'laptop-product',
+    tvs: 'tv-product',
+    gaming: 'phone-product', // Use phone as fallback
+    watches: 'phone-product',
+    audio: 'phone-product',
+    cameras: 'phone-product',
+    accessories: 'phone-product',
+    'home-smart-devices': 'phone-product',
+    'fitness-health': 'phone-product'
   };
   
-  const types = imageTypes[category] || ['main', 'side', 'detail', 'package'];
+  const baseImage = categoryImageMap[category] || 'phone-product';
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const useCloudinary = cloudName && cloudName !== 'your-cloud-name';
   
-  return types.map((type, index) => ({
-    url: `/img/${baseSlug}-${type}.jpg`,
-    alt: generateImageAlt(name, brand, type),
-    isPrimary: index === 0,
-    type: type,
-    width: 800,
-    height: 600,
-    format: 'jpg'
-  }));
+  // Generate 4 images (main, back, side, detail) using the same base image
+  const imageTypes = ['main', 'back', 'side', 'detail'];
+  
+  return imageTypes.map((type, index) => {
+    const url = useCloudinary
+      ? `https://res.cloudinary.com/${cloudName}/image/upload/techverse/products/${baseImage}.jpg`
+      : `/img/${baseImage}.jpg`;
+    
+    return {
+      url,
+      alt: generateImageAlt(name, brand, type),
+      isPrimary: index === 0,
+      type: type,
+      width: 800,
+      height: 600,
+      format: 'jpg'
+    };
+  });
 };
 
 /**
