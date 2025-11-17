@@ -29,6 +29,7 @@
     "concurrently": "^8.2.2"
   },
   "dependencies": {
-    "@sentry/profiling-node": "^10.21.0"
+    "@sentry/profiling-node": "^10.21.0",
+    "node-fetch": "^3.3.2"
   }
 }
