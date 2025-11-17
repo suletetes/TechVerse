@@ -14,7 +14,7 @@ import {
 } from '../controllers/uploadController.js';
 import { authenticate, requireAdmin } from '../middleware/passportAuth.js';
 import { validate } from '../middleware/validation.js';
-import ImageService from '../services/imageService.js';
+import CloudinaryImageService from '../services/cloudinaryImageService.js';
 import {
   advancedFileValidation,
   fileQuarantine,
@@ -53,7 +53,7 @@ router.get('/test', testImageAccessibility);
 router.post('/image', 
   authenticate, 
   requireAdmin,
-  ImageService.uploadSingle('image'),
+  CloudinaryImageService.uploadSingle('image', 'techverse/products'),
   uploadSingleImage
 );
 
@@ -62,7 +62,7 @@ router.post('/images',
   requireAdmin,
   auditFileOperation('MULTIPLE_IMAGE_UPLOAD'),
   uploadRateLimit({ maxUploadsPerHour: 50 }),
-  ImageService.uploadMultiple('images', 10),
+  CloudinaryImageService.uploadMultiple('images', 10, 'techverse/products'),
   advancedFileValidation({
     maxFileSize: 10 * 1024 * 1024, // 10MB per file
     allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
@@ -82,7 +82,7 @@ router.post('/product-images',
   requireAdmin,
   auditFileOperation('PRODUCT_IMAGE_UPLOAD'),
   uploadRateLimit({ maxUploadsPerHour: 200 }),
-  ImageService.uploadMultiple('productImages', 10),
+  CloudinaryImageService.uploadMultiple('productImages', 10, 'techverse/products'),
   advancedFileValidation({
     maxFileSize: 15 * 1024 * 1024, // 15MB for product images
     allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
@@ -99,7 +99,7 @@ router.post('/user-avatar',
   authenticate,
   auditFileOperation('USER_AVATAR_UPLOAD'),
   uploadRateLimit({ maxUploadsPerHour: 10, maxSizePerHour: 50 * 1024 * 1024 }),
-  ImageService.uploadSingle('avatar'),
+  CloudinaryImageService.uploadSingle('avatar', 'techverse/users'),
   advancedFileValidation({
     maxFileSize: 5 * 1024 * 1024, // 5MB for avatars
     allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
@@ -116,7 +116,7 @@ router.post('/review-images',
   authenticate,
   auditFileOperation('REVIEW_IMAGE_UPLOAD'),
   uploadRateLimit({ maxUploadsPerHour: 20, maxSizePerHour: 100 * 1024 * 1024 }),
-  ImageService.uploadMultiple('reviewImages', 5),
+  CloudinaryImageService.uploadMultiple('reviewImages', 5, 'techverse/reviews'),
   advancedFileValidation({
     maxFileSize: 8 * 1024 * 1024, // 8MB for review images
     allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],

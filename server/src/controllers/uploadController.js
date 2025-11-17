@@ -21,13 +21,26 @@ export const uploadSingleImage = asyncHandler(async (req, res, next) => {
       return next(new AppError('Invalid file type. Only images are allowed.', 400, 'INVALID_FILE_TYPE'));
     }
 
-    // Generate URLs for frontend (simplified)
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const relativePath = req.file.path.replace(process.cwd(), '').replace(/\\/g, '/');
-    const imageUrl = `${baseUrl}${relativePath}`;
+    // Check if Cloudinary upload (has path starting with http)
+    const isCloudinary = req.file.path && req.file.path.startsWith('http');
+    
+    let imageUrl, publicId;
+    
+    if (isCloudinary) {
+      // Cloudinary upload
+      imageUrl = req.file.path; // Cloudinary returns secure_url in path
+      publicId = req.file.filename; // Cloudinary returns public_id in filename
+    } else {
+      // Local upload
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const relativePath = req.file.path.replace(process.cwd(), '').replace(/\\/g, '/');
+      imageUrl = `${baseUrl}${relativePath}`;
+      publicId = null;
+    }
 
     const imageData = {
       url: imageUrl,
+      publicId: publicId,
       path: req.file.path,
       filename: req.file.filename,
       originalName: req.file.originalname,
@@ -38,7 +51,7 @@ export const uploadSingleImage = asyncHandler(async (req, res, next) => {
     logger.info('Image uploaded successfully', {
       originalName: req.file.originalname,
       size: req.file.size,
-      path: req.file.path,
+      storage: isCloudinary ? 'cloudinary' : 'local',
       userId: req.user?._id
     });
 
@@ -69,34 +82,28 @@ export const uploadMultipleImages = asyncHandler(async (req, res, next) => {
     const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     for (const file of req.files) {
-      // Validate each file
-      ImageService.validateImage(file);
+      // Check if Cloudinary upload
+      const isCloudinary = file.path && file.path.startsWith('http');
+      
+      let imageUrl, publicId;
+      
+      if (isCloudinary) {
+        // Cloudinary upload
+        imageUrl = file.path;
+        publicId = file.filename;
+      } else {
+        // Local upload
+        const relativePath = file.path.replace(process.cwd(), '').replace(/\\/g, '/');
+        imageUrl = `${baseUrl}${relativePath}`;
+        publicId = null;
+      }
 
-      // Process each image
-      const processedImages = await ImageService.processImage(file.path, {
-        width: 800,
-        height: 600,
-        quality: 85,
-        createWebP: true,
-        createThumbnail: true
-      });
-
-      // Generate URLs for frontend
       const imageData = {
-        original: {
-          url: ImageService.getImageUrl(processedImages.original.replace(process.cwd(), ''), baseUrl),
-          path: processedImages.original
-        },
-        webp: processedImages.webp ? {
-          url: ImageService.getImageUrl(processedImages.webp.replace(process.cwd(), ''), baseUrl),
-          path: processedImages.webp
-        } : null,
-        thumbnail: processedImages.thumbnail ? {
-          url: ImageService.getImageUrl(processedImages.thumbnail.replace(process.cwd(), ''), baseUrl),
-          path: processedImages.thumbnail
-        } : null,
+        url: imageUrl,
+        publicId: publicId,
         originalName: file.originalname,
-        size: file.size
+        size: file.size,
+        mimetype: file.mimetype
       };
 
       uploadedImages.push(imageData);
