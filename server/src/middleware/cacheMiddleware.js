@@ -111,7 +111,7 @@ export const cacheProductList = createCacheMiddleware({
   keyGenerator: (req) => {
     const params = {
       category: req.params.category,
-      section: req.query.section,
+      section: req.params.section || req.query.section,  // Check both params and query
       page: req.query.page || 1,
       limit: req.query.limit || 20,
       sort: req.query.sort,
@@ -119,13 +119,15 @@ export const cacheProductList = createCacheMiddleware({
       minPrice: req.query.minPrice,
       maxPrice: req.query.maxPrice,
       brand: req.query.brand,
-      inStock: req.query.inStock
+      inStock: req.query.inStock,
+      _t: req.query._t  // Include cache-busting timestamp
     };
     return generateCacheKey('products:list', params);
   },
   skipCache: (req) => {
     // Skip cache for admin users to ensure fresh data
-    return req.user && req.user.role === 'admin';
+    // Also skip if cache-busting timestamp is present
+    return (req.user && req.user.role === 'admin') || req.query._t;
   }
 });
 

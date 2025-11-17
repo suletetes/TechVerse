@@ -1284,8 +1284,13 @@ export const updateProductSections = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const { sections } = req.body;
 
+  console.log(`\n🔄 [BACKEND_UPDATE] ========== Update Product Sections ==========`);
+  console.log(`   Product ID: ${id}`);
+  console.log(`   New Sections: [${sections.join(', ')}]`);
+
   // Validate sections
   if (!Array.isArray(sections)) {
+    console.error(`❌ [BACKEND_UPDATE] Sections is not an array:`, sections);
     return next(new AppError('Sections must be an array', 400, 'INVALID_SECTIONS'));
   }
 
@@ -1293,14 +1298,20 @@ export const updateProductSections = asyncHandler(async (req, res, next) => {
   const invalidSections = sections.filter(s => !validSections.includes(s));
   
   if (invalidSections.length > 0) {
+    console.error(`❌ [BACKEND_UPDATE] Invalid sections: [${invalidSections.join(', ')}]`);
     return next(new AppError(`Invalid sections: ${invalidSections.join(', ')}`, 400, 'INVALID_SECTIONS'));
   }
 
   // Check if product exists
   const existingProduct = await Product.findById(id);
   if (!existingProduct) {
+    console.error(`❌ [BACKEND_UPDATE] Product not found: ${id}`);
     return next(new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND'));
   }
+
+  console.log(`📦 [BACKEND_UPDATE] Current product state:`);
+  console.log(`   Name: ${existingProduct.name}`);
+  console.log(`   Current Sections: [${(existingProduct.sections || []).join(', ')}]`);
 
   // Update the sections directly (no need to clear first)
   const product = await Product.findByIdAndUpdate(
@@ -1308,6 +1319,11 @@ export const updateProductSections = asyncHandler(async (req, res, next) => {
     { $set: { sections } },
     { new: true, runValidators: false } // Don't run full validation
   ).populate('category', 'name slug');
+
+  console.log(`✅ [BACKEND_UPDATE] Product updated successfully:`);
+  console.log(`   Name: ${product.name}`);
+  console.log(`   Updated Sections: [${(product.sections || []).join(', ')}]`);
+  console.log(`========================================\n`);
 
   logger.info('Product sections updated', {
     productId: id,
