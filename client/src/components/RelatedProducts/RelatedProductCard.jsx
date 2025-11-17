@@ -42,21 +42,8 @@ const RelatedProductCard = ({ product }) => {
             </Link>
 
             <div className="p-3">
-                <div className="d-flex align-items-center mb-2">
-                    <div className="d-flex me-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                            <svg key={star} width="14" height="14" viewBox="0 0 24 24"
-                                 className={star <= Math.floor(rating) ? 'text-warning' : 'text-muted'}>
-                                <path fill="currentColor"
-                                      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                            </svg>
-                        ))}
-                    </div>
-                    <span className="text-muted small">({reviews})</span>
-                </div>
-
                 <Link to={`/product/${id}`} className="text-decoration-none">
-                    <h6 className="tc-6533 fw-semibold mb-2">{name}</h6>
+                    <h6 className="tc-6533 fw-semibold mb-3">{name}</h6>
                 </Link>
 
                 <div className="d-flex align-items-center justify-content-between">

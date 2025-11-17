@@ -48,88 +48,77 @@ const Products = () => {
 
     // Use searchResults when there's a search query, otherwise use products
     const displayProducts = searchQuery && localFilters.search ? searchResults : products;
-    
-    console.log('📦 Products.jsx - Display state:', {
-        hasSearchQuery: !!searchQuery,
-        localSearch: localFilters.search,
-        productsCount: products.length,
-        searchResultsCount: searchResults.length,
-        displayingCount: displayProducts.length
-    });
 
     // Load categories on mount
     useEffect(() => {
         loadCategories();
     }, [loadCategories]);
 
-    // Load initial products on mount
-    useEffect(() => {
-        const initialFilters = {
-            page: 1,
-            limit: 12,
-            sort: 'newest',
-            order: 'desc'
-        };
-        loadProducts(initialFilters);
-    }, [loadProducts]); // Add loadProducts as dependency
-
     // Debounced search function
-    const debouncedLoadProducts = useCallback(
-        debounce((filters, isSearch = false) => {
-            if (isSearch && filters.search) {
-                console.log('🔍 Debounced search triggered:', filters.search);
-                searchProducts(filters.search, filters);
-            } else {
-                loadProducts(filters);
-            }
-        }, 300),
-        [loadProducts, searchProducts]
+    const debouncedSearch = useCallback(
+        debounce((query, filters) => {
+            searchProducts(query, filters);
+        }, 500),
+        [searchProducts]
     );
 
     // Main effect to handle all filter changes
     useEffect(() => {
         const categoryFromQuery = searchParams.get('category');
-        const effectiveCategory = categorySlug || categoryFromQuery;
+        const effectiveCategory = categorySlug || categoryFromQuery || localFilters.category;
 
         // Build filters object
         const filters = {
-            ...localFilters,
             page: 1,
-            limit: 12
+            limit: 12,
+            sort: localFilters.sort,
+            order: localFilters.order
         };
 
-        // Add category filter if specified
-        if (effectiveCategory) {
-            filters.category = effectiveCategory;
-        }
+        // Add optional filters only if they have values
+        if (effectiveCategory) filters.category = effectiveCategory;
+        if (localFilters.brand) filters.brand = localFilters.brand;
+        if (localFilters.minPrice) filters.minPrice = localFilters.minPrice;
+        if (localFilters.maxPrice) filters.maxPrice = localFilters.maxPrice;
+        if (localFilters.inStock !== null) filters.inStock = localFilters.inStock;
+        
 
-        // Update URL params without causing re-render
+
+        // Update URL params
         const params = new URLSearchParams();
         Object.entries(filters).forEach(([key, value]) => {
             if (value !== null && value !== '' && value !== undefined && key !== 'page' && key !== 'limit') {
                 params.set(key, value.toString());
             }
         });
+        if (localFilters.search) params.set('search', localFilters.search);
 
-        // Only update URL if it's different
-        const currentParams = searchParams.toString();
-        const newParams = params.toString();
-        if (currentParams !== newParams) {
-            setSearchParams(params, { replace: true });
-        }
+        setSearchParams(params, { replace: true });
 
         // Apply filters to context
         setFilters(filters);
 
         // Use searchProducts for search queries, loadProducts for browsing
         if (localFilters.search && localFilters.search.trim().length >= 2) {
-            console.log('🔍 Products.jsx - Calling searchProducts with:', localFilters.search, filters);
-            debouncedLoadProducts(filters, true); // Pass true to indicate it's a search
+            debouncedSearch(localFilters.search, filters);
+        } else if (localFilters.search && localFilters.search.trim().length > 0) {
+            // Search term too short, don't search
         } else {
-            console.log('📦 Products.jsx - Calling loadProducts with:', filters);
             loadProducts(filters);
         }
-    }, [localFilters, categorySlug]);
+    }, [
+        localFilters.search,
+        localFilters.sort,
+        localFilters.order,
+        localFilters.brand,
+        localFilters.category,
+        localFilters.minPrice,
+        localFilters.maxPrice,
+        localFilters.inStock,
+        categorySlug
+        // Removed searchParams, setSearchParams, setFilters, loadProducts, debouncedSearch from dependencies
+        // to prevent infinite loops - these are stable references
+    ]);
 
     // Get current category info
     const categoryFromQuery = searchParams.get('category');
@@ -145,12 +134,13 @@ const Products = () => {
         return uniqueBrands.sort();
     }, [displayProducts]);
 
-    // Get price range from current products
+    // Get price range - use filter values or defaults
     const priceRange = useMemo(() => {
-        if (!Array.isArray(displayProducts) || displayProducts.length === 0) return [0, 1000];
-        const prices = displayProducts.map(product => product.price || 0);
-        return [Math.min(...prices), Math.max(...prices)];
-    }, [displayProducts]);
+        return [
+            localFilters.minPrice || 0,
+            localFilters.maxPrice || 4000
+        ];
+    }, [localFilters.minPrice, localFilters.maxPrice]);
 
     const handleFilterChange = useCallback((filterName, value) => {
         setLocalFilters(prev => ({
@@ -177,7 +167,6 @@ const Products = () => {
 
         // Use searchProducts if there's a search term, otherwise loadProducts
         if (localFilters.search && localFilters.search.trim().length >= 2) {
-            console.log('🔍 Page change with search:', localFilters.search, page);
             searchProducts(localFilters.search, filters);
         } else {
             loadProducts(filters);
@@ -185,10 +174,6 @@ const Products = () => {
     }, [localFilters, categorySlug, searchParams, loadProducts]);
 
     const clearFilters = useCallback(() => {
-        // Clear URL parameters
-        const newParams = new URLSearchParams();
-        setSearchParams(newParams);
-
         // Reset local filters to defaults
         setLocalFilters({
             search: '',
@@ -197,11 +182,16 @@ const Products = () => {
             minPrice: null,
             maxPrice: null,
             brand: '',
-            category: categorySlug || '', // Keep category if from URL
+            category: '', // Clear category filter
             inStock: null
         });
+        
+        // Clear URL parameters
+        setSearchParams(new URLSearchParams(), { replace: true });
+        
+        // Clear context filters
         clearProductFilters();
-    }, [categorySlug, setSearchParams, clearProductFilters]);
+    }, [setSearchParams, clearProductFilters]);
 
     // Show loading state
     if (isLoading && (!Array.isArray(displayProducts) || displayProducts.length === 0)) {
