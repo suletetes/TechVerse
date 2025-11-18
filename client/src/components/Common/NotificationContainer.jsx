@@ -1,42 +1,25 @@
 import React from 'react';
-import { useNotification } from '../../context';
+import { useNotification } from '../../hooks/useNotification';
+import Notification from './Notification';
 import './NotificationContainer.css';
 
 const NotificationContainer = () => {
   const { notifications, removeNotification } = useNotification();
 
-  if (!notifications || notifications.length === 0) {
+  if (notifications.length === 0) {
     return null;
   }
 
   return (
-    <div className="notification-container">
+    <div className="notification-container" aria-live="polite" aria-atomic="true">
       {notifications.map((notification) => (
-        <div
+        <Notification
           key={notification.id}
-          className={`notification notification-${notification.type}`}
-          onClick={() => removeNotification(notification.id)}
-        >
-          <div className="notification-content">
-            <span className="notification-icon">
-              {notification.type === 'success' && '✓'}
-              {notification.type === 'error' && '✕'}
-              {notification.type === 'warning' && '⚠'}
-              {notification.type === 'info' && 'ℹ'}
-            </span>
-            <span className="notification-message">{notification.message}</span>
-          </div>
-          <button
-            className="notification-close"
-            onClick={(e) => {
-              e.stopPropagation();
-              removeNotification(notification.id);
-            }}
-            aria-label="Close notification"
-          >
-            ×
-          </button>
-        </div>
+          id={notification.id}
+          message={notification.message}
+          type={notification.type}
+          onClose={removeNotification}
+        />
       ))}
     </div>
   );

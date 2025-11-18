@@ -1,57 +1,67 @@
-import React from "react"
+import React, { lazy, Suspense } from "react"
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary, RouterErrorBoundary } from './components';
 import { AppProviders } from './context';
 import AuthGuard, { AdminGuard, UserGuard } from './components/Auth/AuthGuard.jsx';
 import { UserRoles } from './services/authService.js';
-import { NotificationContainer } from './components/Common';
-import {
-    Contact,
-    HomeLayout,
-    Categories,
-    Products,
-    Product,
-    OrderConfirmation,
-    PaymentPage,
-    PaymentFailed,
-    Wishlist,
-    Cart,
-    UserProfile,
-    AdminProfile,
-    Home,
-    NotFound,
-    OrderDetails,
-    OrderTracking,
-    OrderReview,
-    AdminOrderManagement,
-    AdminProductManagement
-} from "./pages"
-import ProductReviews from './pages/ProductReviews.jsx';
-import AdminReviewManagement from './pages/Admin/AdminReviewManagement.jsx';
-import { CategoryManagement } from "./pages/admin"
-import EditProfile from "./pages/EditProfile"
+import { NotificationContainer, LoadingSpinner } from './components/Common';
 import "./utils/uiUpdateSummary" // UI update summary and verification
 
+// Eager load critical components
+import HomeLayout from './pages/HomeLayout';
+import Home from './pages/Home';
+import NotFound from './pages/NotFound';
 
-import {
-    Privacy,
-    Delivery,
-    ReturnsPolicy,
-    ShippingPolicy,
-    Warranty,
-    Stores,
-    Faq
-} from "./pages/info"
+// Lazy load route components for code splitting
+const Contact = lazy(() => import('./pages/Contact'));
+const Categories = lazy(() => import('./pages/Categories'));
+const Products = lazy(() => import('./pages/Products'));
+const Product = lazy(() => import('./pages/Product'));
+const OrderConfirmation = lazy(() => import('./pages/OrderConfirmation'));
+const PaymentPage = lazy(() => import('./pages/PaymentPage'));
+const PaymentFailed = lazy(() => import('./pages/PaymentFailed'));
+const Wishlist = lazy(() => import('./pages/Wishlist'));
+const Cart = lazy(() => import('./pages/Cart'));
+const UserProfile = lazy(() => import('./pages/UserProfile'));
+const AdminProfile = lazy(() => import('./pages/Admin/AdminProfile'));
+const OrderDetails = lazy(() => import('./pages/OrderDetails'));
+const OrderTracking = lazy(() => import('./pages/OrderTracking'));
+const OrderReview = lazy(() => import('./pages/OrderReview'));
+const AdminOrderManagement = lazy(() => import('./pages/Admin/AdminOrderManagement'));
+const AdminProductManagement = lazy(() => import('./pages/Admin/AdminProductManagement'));
+const ProductReviews = lazy(() => import('./pages/ProductReviews'));
+const AdminReviewManagement = lazy(() => import('./pages/Admin/AdminReviewManagement'));
+const CategoryManagement = lazy(() => import('./pages/admin/CategoryManagement'));
+const EditProfile = lazy(() => import('./pages/EditProfile'));
 
+// Lazy load info pages
+const Privacy = lazy(() => import('./pages/info/Privacy'));
+const Delivery = lazy(() => import('./pages/info/Delivery'));
+const ReturnsPolicy = lazy(() => import('./pages/info/ReturnsPolicy'));
+const ShippingPolicy = lazy(() => import('./pages/info/ShippingPolicy'));
+const Warranty = lazy(() => import('./pages/info/Warranty'));
+const Stores = lazy(() => import('./pages/info/Stores'));
+const Faq = lazy(() => import('./pages/info/Faq'));
 
-import {
-    Signup,
-    Login
-} from "./pages/auth"
-import VerifyEmail from './pages/auth/VerifyEmail.jsx';
-import ForgotPassword from './pages/auth/ForgotPassword.jsx';
-import ResetPassword from './pages/auth/ResetPassword.jsx';
+// Lazy load auth pages
+const Signup = lazy(() => import('./pages/auth/Signup'));
+const Login = lazy(() => import('./pages/auth/Login'));
+const VerifyEmail = lazy(() => import('./pages/auth/VerifyEmail'));
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
+
+// Loading fallback component
+const PageLoader = () => (
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    minHeight: '60vh' 
+  }}>
+    <LoadingSpinner />
+  </div>
+);
 
 const router = createBrowserRouter([
     {
@@ -66,47 +76,47 @@ const router = createBrowserRouter([
             },
             {
                 path: 'categories',
-                element: <Categories />,
+                element: <Suspense fallback={<PageLoader />}><Categories /></Suspense>,
             },
             {
                 path: 'products',
-                element: <Products />,
+                element: <Suspense fallback={<PageLoader />}><Products /></Suspense>,
             },
             {
                 path: 'product/:id',
-                element: <Product />,
+                element: <Suspense fallback={<PageLoader />}><Product /></Suspense>,
             },
             {
                 path: 'product/:id/reviews',
-                element: <ProductReviews />,
+                element: <Suspense fallback={<PageLoader />}><ProductReviews /></Suspense>,
             },
             {
                 path: 'login',
-                element: <Login />,
+                element: <Suspense fallback={<PageLoader />}><Login /></Suspense>,
             },
             {
                 path: 'signup',
-                element: <Signup />,
+                element: <Suspense fallback={<PageLoader />}><Signup /></Suspense>,
             },
             {
                 path: 'auth/forgot-password',
-                element: <ForgotPassword />,
+                element: <Suspense fallback={<PageLoader />}><ForgotPassword /></Suspense>,
             },
             {
                 path: 'reset-password',
-                element: <ResetPassword />,
+                element: <Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>,
             },
             {
                 path: 'auth/verify-email',
-                element: <VerifyEmail />,
+                element: <Suspense fallback={<PageLoader />}><VerifyEmail /></Suspense>,
             },
             {
                 path: 'verify-email',
-                element: <VerifyEmail />,
+                element: <Suspense fallback={<PageLoader />}><VerifyEmail /></Suspense>,
             },
             {
                 path: 'contact',
-                element: <Contact />,
+                element: <Suspense fallback={<PageLoader />}><Contact /></Suspense>,
             },
             {
                 path: 'delivery',

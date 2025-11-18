@@ -1,8 +1,9 @@
 // src/components/AdminSidebar.jsx
 import React from "react";
+import './AdminSidebar.css';
 
 const AdminSidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, adminData }) => (
-    <div className="bg-white h-100 border-end">
+    <div className={`admin-sidebar-container bg-white h-100 border-end ${sidebarOpen ? 'show' : ''}`}>
         {/* Mobile Close Button */}
         <div className="d-flex justify-content-between align-items-center p-3 d-lg-none border-bottom">
             <div className="d-flex align-items-center">

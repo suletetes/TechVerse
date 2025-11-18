@@ -5,12 +5,13 @@
  */
 
 import HttpClient from './HttpClient.js';
-import { API_ENDPOINTS, API_CONFIG } from '../config.js';
+import { API_BASE_URL, API_ENDPOINTS } from '../../config/api.js';
+import { API_CONFIG } from '../config.js';
 import { transformResponse } from '../services/responseTransformer.js';
 
 class BaseApiService {
   constructor(config = {}) {
-    this.baseURL = config.baseURL || '';
+    this.baseURL = config.baseURL || API_BASE_URL;
     this.endpoints = config.endpoints || {};
     this.defaultOptions = config.defaultOptions || {};
     

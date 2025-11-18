@@ -46,30 +46,54 @@ export const createSearchIndexes = async () => {
     }
 
     // Compound index for advanced filtering
-    await Product.collection.createIndex(
-      {
-        category: 1,
-        brand: 1,
-        price: 1,
-        'rating.average': -1,
-        'stock.quantity': 1,
-        status: 1,
-        visibility: 1
-      },
-      { name: 'advanced_search_compound' }
-    );
+    try {
+      await Product.collection.createIndex(
+        {
+          category: 1,
+          brand: 1,
+          price: 1,
+          'rating.average': -1,
+          'stock.quantity': 1,
+          status: 1,
+          visibility: 1
+        },
+        { name: 'advanced_search_compound' }
+      );
+    } catch (error) {
+      if (error.code === 85 || error.message.includes('already exists')) {
+        // Index already exists, skip silently
+      } else {
+        throw error;
+      }
+    }
 
     // Specifications search index
-    await Product.collection.createIndex(
-      { 'specifications.category': 1, 'specifications.name': 1, 'specifications.value': 1 },
-      { name: 'specifications_search' }
-    );
+    try {
+      await Product.collection.createIndex(
+        { 'specifications.category': 1, 'specifications.name': 1, 'specifications.value': 1 },
+        { name: 'specifications_search' }
+      );
+    } catch (error) {
+      if (error.code === 85 || error.message.includes('already exists')) {
+        // Index already exists, skip silently
+      } else {
+        throw error;
+      }
+    }
 
     // Tags index for tag-based filtering
-    await Product.collection.createIndex(
-      { tags: 1, status: 1, visibility: 1 },
-      { name: 'tags_status_visibility' }
-    );
+    try {
+      await Product.collection.createIndex(
+        { tags: 1, status: 1, visibility: 1 },
+        { name: 'tags_status_visibility' }
+      );
+    } catch (error) {
+      if (error.code === 85 || error.message.includes('already exists')) {
+        // Index already exists, skip silently
+      } else {
+        throw error;
+      }
+    }
 
     // Category indexes
     // Note: Text index already created by fix script as 'category_search_index'
@@ -89,99 +113,123 @@ export const createSearchIndexes = async () => {
     }
 
     // User indexes for performance
-    await User.collection.createIndex(
-      { email: 1 },
-      { name: 'user_email_unique', unique: true }
-    );
+    try {
+      await User.collection.createIndex(
+        { email: 1 },
+        { name: 'user_email_unique', unique: true }
+      );
+    } catch (error) {
+      if (error.code === 85 || error.message.includes('already exists')) {
+        // Index already exists, skip silently
+      } else {
+        throw error;
+      }
+    }
 
-    await User.collection.createIndex(
-      { role: 1, isActive: 1 },
-      { name: 'user_role_status' }
-    );
+    try {
+      await User.collection.createIndex(
+        { role: 1, isActive: 1 },
+        { name: 'user_role_status' }
+      );
+    } catch (error) {
+      if (error.code === 85 || error.message.includes('already exists')) {
+        // Index already exists, skip silently
+      } else {
+        throw error;
+      }
+    }
 
-    await User.collection.createIndex(
-      { createdAt: -1 },
-      { name: 'user_created_desc' }
-    );
+    try {
+      await User.collection.createIndex(
+        { createdAt: -1 },
+        { name: 'user_created_desc' }
+      );
+    } catch (error) {
+      if (error.code === 85 || error.message.includes('already exists')) {
+        // Index already exists, skip silently
+      } else {
+        throw error;
+      }
+    }
 
     // Order indexes for performance
-    await Order.collection.createIndex(
-      { user: 1, createdAt: -1 },
-      { name: 'order_user_date' }
-    );
+    const orderIndexes = [
+      { fields: { user: 1, createdAt: -1 }, name: 'order_user_date' },
+      { fields: { orderNumber: 1 }, name: 'order_number_unique', options: { unique: true } },
+      { fields: { status: 1, createdAt: -1 }, name: 'order_status_date' },
+      { fields: { 'items.product': 1 }, name: 'order_items_product' }
+    ];
 
-    await Order.collection.createIndex(
-      { orderNumber: 1 },
-      { name: 'order_number_unique', unique: true }
-    );
-
-    await Order.collection.createIndex(
-      { status: 1, createdAt: -1 },
-      { name: 'order_status_date' }
-    );
-
-    await Order.collection.createIndex(
-      { 'items.product': 1 },
-      { name: 'order_items_product' }
-    );
+    for (const index of orderIndexes) {
+      try {
+        await Order.collection.createIndex(index.fields, { name: index.name, ...index.options });
+      } catch (error) {
+        if (error.code === 85 || error.message.includes('already exists')) {
+          // Index already exists, skip silently
+        } else {
+          throw error;
+        }
+      }
+    }
 
     // Cart indexes for performance
-    await Cart.collection.createIndex(
-      { user: 1 },
-      { name: 'cart_user_unique', unique: true }
-    );
+    const cartIndexes = [
+      { fields: { user: 1 }, name: 'cart_user_unique', options: { unique: true } },
+      { fields: { expiresAt: 1 }, name: 'cart_expires_ttl', options: { expireAfterSeconds: 0 } },
+      { fields: { 'items.product': 1 }, name: 'cart_items_product' }
+    ];
 
-    await Cart.collection.createIndex(
-      { expiresAt: 1 },
-      { name: 'cart_expires_ttl', expireAfterSeconds: 0 }
-    );
-
-    await Cart.collection.createIndex(
-      { 'items.product': 1 },
-      { name: 'cart_items_product' }
-    );
+    for (const index of cartIndexes) {
+      try {
+        await Cart.collection.createIndex(index.fields, { name: index.name, ...index.options });
+      } catch (error) {
+        if (error.code === 85 || error.message.includes('already exists')) {
+          // Index already exists, skip silently
+        } else {
+          throw error;
+        }
+      }
+    }
 
     // Wishlist indexes for performance
-    await Wishlist.collection.createIndex(
-      { user: 1 },
-      { name: 'wishlist_user_unique', unique: true }
-    );
+    const wishlistIndexes = [
+      { fields: { user: 1 }, name: 'wishlist_user_unique', options: { unique: true } },
+      { fields: { 'items.product': 1 }, name: 'wishlist_items_product' },
+      { fields: { 'items.addedAt': -1 }, name: 'wishlist_items_date' }
+    ];
 
-    await Wishlist.collection.createIndex(
-      { 'items.product': 1 },
-      { name: 'wishlist_items_product' }
-    );
-
-    await Wishlist.collection.createIndex(
-      { 'items.addedAt': -1 },
-      { name: 'wishlist_items_date' }
-    );
+    for (const index of wishlistIndexes) {
+      try {
+        await Wishlist.collection.createIndex(index.fields, { name: index.name, ...index.options });
+      } catch (error) {
+        if (error.code === 85 || error.message.includes('already exists')) {
+          // Index already exists, skip silently
+        } else {
+          throw error;
+        }
+      }
+    }
 
     // Review indexes for performance
-    await Review.collection.createIndex(
-      { product: 1, createdAt: -1 },
-      { name: 'review_product_date' }
-    );
+    const reviewIndexes = [
+      { fields: { product: 1, createdAt: -1 }, name: 'review_product_date' },
+      { fields: { user: 1, createdAt: -1 }, name: 'review_user_date' },
+      { fields: { rating: 1, product: 1 }, name: 'review_rating_product' },
+      { fields: { isVerifiedPurchase: 1, product: 1 }, name: 'review_verified_product' },
+      { fields: { status: 1, createdAt: -1 }, name: 'review_status_date' }
+    ];
 
-    await Review.collection.createIndex(
-      { user: 1, createdAt: -1 },
-      { name: 'review_user_date' }
-    );
-
-    await Review.collection.createIndex(
-      { rating: 1, product: 1 },
-      { name: 'review_rating_product' }
-    );
-
-    await Review.collection.createIndex(
-      { isVerifiedPurchase: 1, product: 1 },
-      { name: 'review_verified_product' }
-    );
-
-    await Review.collection.createIndex(
-      { status: 1, createdAt: -1 },
-      { name: 'review_status_date' }
-    );
+    for (const index of reviewIndexes) {
+      try {
+        await Review.collection.createIndex(index.fields, { name: index.name });
+      } catch (error) {
+        if (error.code === 85 || error.message.includes('already exists')) {
+          // Index already exists, skip silently
+        } else {
+          throw error;
+        }
+      }
+    }
 
     logger.info('All database indexes created successfully');
   } catch (error) {

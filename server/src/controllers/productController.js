@@ -4,6 +4,7 @@ import imageService from '../services/imageService.js';
 import logger from '../utils/logger.js';
 import { PAGINATION_DEFAULTS } from '../utils/constants.js';
 import { formatProductImages, getBaseUrl } from '../utils/imageUtils.js';
+import { cacheInvalidation } from '../middleware/cacheMiddleware.js';
 
 // @desc    Get all products with filtering, sorting, and pagination
 // @route   GET /api/products
@@ -370,6 +371,9 @@ export const createProduct = asyncHandler(async (req, res, next) => {
   // Populate the created product
   await product.populate('category', 'name slug');
 
+  // Invalidate product caches
+  await cacheInvalidation.invalidateProductCaches();
+
   logger.info('Product created successfully', {
     productId: product._id,
     name: product.name,
@@ -442,6 +446,9 @@ export const updateProduct = asyncHandler(async (req, res, next) => {
     runValidators: true
   }).populate('category', 'name slug');
 
+  // Invalidate product caches
+  await cacheInvalidation.invalidateProductCaches(id);
+
   logger.info('Product updated successfully', {
     productId: product._id,
     name: product.name,
@@ -490,6 +497,9 @@ export const deleteProduct = asyncHandler(async (req, res, next) => {
 
   // Remove product
   await Product.findByIdAndDelete(id);
+
+  // Invalidate product caches
+  await cacheInvalidation.invalidateProductCaches(id);
 
   logger.info('Product deleted successfully', {
     productId: id,

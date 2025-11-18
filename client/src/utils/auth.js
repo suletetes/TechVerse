@@ -487,33 +487,6 @@ export const requireAdmin = (component) => {
   };
 };
 
-// Form validation utilities
-export const validateEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
-
-export const validatePassword = (password) => {
-  // At least 6 characters, one uppercase, one lowercase, one number
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
-  return passwordRegex.test(password);
-};
-
-export const getPasswordStrength = (password) => {
-  let strength = 0;
-  
-  if (password.length >= 6) strength++;
-  if (password.length >= 8) strength++;
-  if (/[a-z]/.test(password)) strength++;
-  if (/[A-Z]/.test(password)) strength++;
-  if (/\d/.test(password)) strength++;
-  if (/[^a-zA-Z\d]/.test(password)) strength++;
-  
-  if (strength <= 2) return 'weak';
-  if (strength <= 4) return 'medium';
-  return 'strong';
-};
-
 // Error handling utilities
 export const getAuthErrorMessage = (error) => {
   const errorMessages = {

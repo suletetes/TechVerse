@@ -742,17 +742,6 @@ const PaymentPage = () => {
                                                 </StripeProvider>
                                             )}
                                         </div>
-                                    ) : (
-                                        <StripeProvider>
-                                            <StripeCheckout
-                                                clientSecret={clientSecret}
-                                                onSuccess={handlePaymentSuccess}
-                                                onError={handlePaymentError}
-                                                amount={total}
-                                                currency="gbp"
-                                                returnUrl={`${window.location.origin}/order-confirmation`}
-                                            />
-                                        </StripeProvider>
                                     )}
                                 </div>
 

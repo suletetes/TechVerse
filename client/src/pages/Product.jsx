@@ -4,6 +4,7 @@ import { useProduct, useCart, useAuth } from '../context';
 import { LoadingSpinner } from '../components/Common';
 import Toast from '../components/Common/Toast';
 import wishlistService from '../api/services/wishlistService';
+import { API_BASE_URL } from '../config/api.js';
 import {
     ProductMediaGallery,
     ProductThumbnails,
@@ -369,13 +370,18 @@ const Product = () => {
     // Load product reviews
     useEffect(() => {
         const fetchReviews = async () => {
-            if (!currentProduct?._id) return;
+            if (!currentProduct?._id) {
+                console.log('⭕ No product ID, skipping reviews fetch');
+                return;
+            }
             
+            console.log('🔵 Fetching reviews for product:', currentProduct._id);
             setReviewsLoading(true);
             try {
                 // Direct fetch to bypass caching issues
-                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-                const url = `${apiUrl}/products/${currentProduct._id}/reviews?page=1&limit=10&sort=newest`;
+                // API_BASE_URL already includes /api from .env
+                const url = `${API_BASE_URL}/products/${currentProduct._id}/reviews?page=1&limit=10&sort=newest`;
+                console.log('🔵 Reviews URL:', url);
                 
                 const response = await fetch(url, {
                     method: 'GET',
@@ -386,20 +392,27 @@ const Product = () => {
                     credentials: 'include'
                 });
                 
+                console.log('🔵 Reviews response status:', response.status);
+                
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 const data = await response.json();
+                console.log('🟢 Reviews data received:', data);
                 
                 if (data?.data?.reviews) {
+                    console.log('✅ Setting reviews from data.data.reviews:', data.data.reviews.length);
                     setReviews(data.data.reviews);
                 } else if (Array.isArray(data?.data)) {
+                    console.log('✅ Setting reviews from data.data:', data.data.length);
                     setReviews(data.data);
                 } else {
+                    console.log('⚠️ No reviews found in response');
                     setReviews([]);
                 }
             } catch (error) {
+                console.error('❌ Error fetching reviews:', error);
                 setReviews([]);
             } finally {
                 setReviewsLoading(false);
@@ -706,6 +719,10 @@ const Product = () => {
                     {/* Customer Reviews Section - Full Width Below */}
                     <div
                         className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
+                        {(() => {
+                            console.log('🔍 Reviews render check:', { reviewsLoading, reviewsCount: reviews.length, reviews });
+                            return null;
+                        })()}
                         {reviewsLoading ? (
                             <div className="text-center py-5">
                                 <LoadingSpinner size="md" />
@@ -733,7 +750,7 @@ const Product = () => {
                                 <div className="tc-6533">
                                     <i className="fa fa-star-o fa-3x mb-3 opacity-50"></i>
                                     <h4>No Reviews Yet</h4>
-                                    <p className="text-muted">Be the first to review this product!</p>
+                                 {/*    <p className="text-muted">Be the first to review this product!</p>
                                     {isAuthenticated && (
                                         <button 
                                             className="btn btn-primary btn-rd mt-3"
@@ -741,7 +758,7 @@ const Product = () => {
                                         >
                                             Write a Review
                                         </button>
-                                    )}
+                                    )} */}
                                 </div>
                             </div>
                         )}

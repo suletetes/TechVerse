@@ -1,39 +1,33 @@
-import { jest } from '@jest/globals';
-import dotenv from 'dotenv';
+/**
+ * Jest Test Setup
+ * Global setup and teardown for all tests
+ */
 
-// Load test environment variables
-dotenv.config({ path: '.env.test' });
+import { setupTestDb, teardownTestDb } from './setup/testDb.js';
 
-// Mock logger to avoid console output during tests
-jest.mock('../src/utils/logger.js', () => ({
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn()
-}));
+// Setup before all tests
+beforeAll(async () => {
+  await setupTestDb();
+});
 
-// Mock database connection
-jest.mock('mongoose', () => ({
-  connect: jest.fn().mockResolvedValue({}),
-  connection: {
-    dropDatabase: jest.fn().mockResolvedValue({}),
-    close: jest.fn().mockResolvedValue({})
-  },
-  Types: {
-    ObjectId: jest.fn().mockImplementation(() => 'mockObjectId')
-  }
-}));
+// Teardown after all tests
+afterAll(async () => {
+  await teardownTestDb();
+});
 
-// Global test timeout
-jest.setTimeout(30000);
+// Set test environment variables
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = 'test-secret-key';
+process.env.JWT_EXPIRES_IN = '1h';
 
-// Setup global test environment
-global.console = {
-  ...console,
-  // Suppress console.log during tests
-  log: jest.fn(),
-  debug: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn()
-};
+// Suppress console logs during tests (optional)
+if (process.env.SUPPRESS_LOGS === 'true') {
+  global.console = {
+    ...console,
+    log: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn()
+  };
+}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { adminService } from '../../api/services/index.js';
 import { adminDataStore } from '../../utils/AdminDataStore';
 import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL } from '../../config/api.js';
 
 const AdminOrdersNew = () => {
     const { user, isAuthenticated, isAdmin } = useAuth();
@@ -73,7 +74,7 @@ const AdminOrdersNew = () => {
             // Try direct API call as fallback
             try {
                 const token = localStorage.getItem('token');
-                const directResponse = await fetch('http://localhost:5000/api/admin/orders?limit=1000', {
+                const directResponse = await fetch(`${API_BASE_URL}/api/admin/orders?limit=1000`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
