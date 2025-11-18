@@ -720,7 +720,7 @@ const AdminProfile = () => {
     };
 
     return (
-        <div className="min-vh-100 bg-light">
+        <div className="admin-page min-vh-100 bg-light">
             {/* Toast Notification */}
             {toast && (
                 <Toast
