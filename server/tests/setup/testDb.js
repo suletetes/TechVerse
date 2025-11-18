@@ -3,8 +3,8 @@
  * Manages MongoDB test database lifecycle
  */
 
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 
 let mongoServer;
 
@@ -14,8 +14,12 @@ let mongoServer;
  */
 const setupTestDb = async () => {
   try {
-    // Create in-memory MongoDB instance
-    mongoServer = await MongoMemoryServer.create();
+    // Create in-memory MongoDB instance with increased timeout
+    mongoServer = await MongoMemoryServer.create({
+      instance: {
+        launchTimeout: 60000 // 60 second timeout for MongoDB to start
+      }
+    });
     const mongoUri = mongoServer.getUri();
 
     // Disconnect if already connected
@@ -25,8 +29,8 @@ const setupTestDb = async () => {
 
     // Connect to in-memory database
     await mongoose.connect(mongoUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
+      serverSelectionTimeoutMS: 60000, // 60 second timeout
+      socketTimeoutMS: 60000
     });
 
     console.log('✅ Test database connected');
@@ -85,7 +89,7 @@ const clearCollection = async (collectionName) => {
   }
 };
 
-module.exports = {
+export {
   setupTestDb,
   teardownTestDb,
   clearDatabase,

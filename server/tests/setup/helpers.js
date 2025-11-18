@@ -3,11 +3,10 @@
  * Utility functions for testing
  */
 
-const jwt = require('jsonwebtoken');
-const User = require('../../src/models/User');
-const Product = require('../../src/models/Product');
-const Order = require('../../src/models/Order');
-const { createUserFixture, createAdminFixture, hashPassword } = require('./fixtures');
+import { jest } from '@jest/globals';
+import jwt from 'jsonwebtoken';
+import { User, Product, Order } from '../../src/models/index.js';
+import { createUserFixture, createAdminFixture, hashPassword } from './fixtures.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key';
 
@@ -103,7 +102,7 @@ const createMultipleUsers = async (count = 5) => {
  * Create multiple test products
  */
 const createMultipleProducts = async (count = 5) => {
-  const { createProductFixture } = require('./fixtures');
+  const { createProductFixture } = await import('./fixtures.js');
   const products = [];
   
   for (let i = 0; i < count; i++) {
@@ -150,7 +149,7 @@ const mockResponse = () => {
  */
 const mockNext = () => jest.fn();
 
-module.exports = {
+export {
   createTestUser,
   createTestAdmin,
   generateAuthToken,

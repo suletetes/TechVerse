@@ -3,7 +3,7 @@
  * Global setup and teardown for all tests
  */
 
-const { setupTestDb, teardownTestDb } = require('./setup/testDb');
+import { setupTestDb, teardownTestDb } from './setup/testDb.js';
 
 // Setup before all tests
 beforeAll(async () => {

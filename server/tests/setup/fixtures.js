@@ -3,8 +3,8 @@
  * Factory functions for creating test data
  */
 
-const bcrypt = require('bcryptjs');
-const mongoose = require('mongoose');
+import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 
 /**
  * Create test user data
@@ -187,7 +187,7 @@ const hashPassword = async (password) => {
   return await bcrypt.hash(password, 10);
 };
 
-module.exports = {
+export {
   createUserFixture,
   createAdminFixture,
   createProductFixture,
