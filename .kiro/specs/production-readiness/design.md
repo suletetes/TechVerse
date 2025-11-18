@@ -500,13 +500,13 @@ import './styles.css';
 
 **Replacement Rules**:
 ```
-✅ → [✓] or remove
-❌ → [✗] or remove
-⚠️ → WARNING: or **Note:**
-🔒 → [Security] or **Security:**
-📦 → [Package] or remove
-🚀 → [Deploy] or remove
-💡 → [Tip] or **Tip:**
+[DONE] → [] or remove
+[ERROR] → [] or remove
+[WARNING] → WARNING: or **Note:**
+[SECURE] → [Security] or **Security:**
+[PACKAGE] → [Package] or remove
+[LAUNCH] → [Deploy] or remove
+[TIP] → [Tip] or **Tip:**
 ```
 
 **Automated Processing**:
