@@ -3,6 +3,7 @@ import { adminService } from '../../api/services/index.js';
 import { adminDataStore } from '../../utils/AdminDataStore';
 import { useAuth } from '../../context/AuthContext';
 import { useAdmin } from '../../context/AdminContext';
+import { API_BASE_URL } from '../../config/api.js';
 
 const AdminProductsNew = ({ setActiveTab }) => {
     const { user, isAuthenticated, isAdmin } = useAuth();
@@ -136,7 +137,7 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 
                 console.log('🔑 Trying direct API call with token:', token ? 'Found' : 'Not found');
                 
-                const directResponse = await fetch('http://localhost:5000/api/admin/products?limit=1000', {
+                const directResponse = await fetch(`${API_BASE_URL}/api/admin/products?limit=1000`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -175,7 +176,7 @@ const AdminProductsNew = ({ setActiveTab }) => {
             }
             
             // Try direct API call first (more reliable)
-            const directResponse = await fetch('http://localhost:5000/api/admin/categories', {
+            const directResponse = await fetch(`${API_BASE_URL}/api/admin/categories`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
