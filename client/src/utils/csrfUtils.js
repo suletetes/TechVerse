@@ -26,7 +26,8 @@ export const getCsrfTokenFromCookie = () => {
  * Fetch CSRF token from server
  */
 export const fetchCsrfToken = async () => {
-  const baseURL = `${API_BASE_URL}/api`;
+  // API_BASE_URL already includes /api from .env
+  const baseURL = API_BASE_URL;
   
   // Try authenticated endpoint first
   try {
