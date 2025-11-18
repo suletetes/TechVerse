@@ -348,7 +348,7 @@ const Signup = () => {
                                                 disabled={isLoading}
                                             />
                                             <label className="form-check-label tc-6533 sm-text" htmlFor="agreeToTerms">
-                                                I agree to the <Link to="/terms" className="tc-2101">Terms of Service</Link> and <Link to="/privacy" className="tc-2101">Privacy Policy</Link>
+                                                I agree to the <Link to="/terms" className="tc-2101 mx-1">Terms of Service</Link> and <Link to="/privacy" className="tc-2101 mx-1">Privacy Policy</Link>
                                             </label>
                                             {validationErrors.agreeToTerms && (
                                                 <div className="invalid-feedback d-block">
