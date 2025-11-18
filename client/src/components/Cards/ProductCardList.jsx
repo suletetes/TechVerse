@@ -1,69 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth, useNotification } from '../../context';
-import wishlistService from '../../api/services/wishlistService';
+import React from 'react';
+import { Link } from 'react-router-dom';
 
 const ProductCardList = ({ product }) => {
-    const navigate = useNavigate();
-    const { isAuthenticated } = useAuth();
-    const { showSuccess, showError, showInfo } = useNotification();
-    const [isInWishlist, setIsInWishlist] = useState(false);
-    const [wishlistLoading, setWishlistLoading] = useState(false);
-
-    // Check if product is in wishlist
-    useEffect(() => {
-        const checkWishlistStatus = async () => {
-            if (!product._id || !isAuthenticated) {
-                setIsInWishlist(false);
-                return;
-            }
-
-            try {
-                const response = await wishlistService.checkWishlistStatus(product._id);
-                setIsInWishlist(response.data?.isInWishlist || false);
-            } catch (error) {
-                setIsInWishlist(false);
-            }
-        };
-
-        checkWishlistStatus();
-    }, [product._id, isAuthenticated]);
-
-    // Handle wishlist toggle
-    const handleWishlistToggle = async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (!isAuthenticated) {
-            showInfo('Please login to add items to your wishlist');
-            navigate('/login', { 
-                state: { 
-                    from: { pathname: `/product/${product.slug || product._id}` },
-                    message: 'Please login to add items to your wishlist'
-                }
-            });
-            return;
-        }
-
-        try {
-            setWishlistLoading(true);
-            
-            if (isInWishlist) {
-                await wishlistService.removeFromWishlist(product._id);
-                setIsInWishlist(false);
-                showSuccess(`${product.name} removed from wishlist`);
-            } else {
-                await wishlistService.addToWishlist(product._id);
-                setIsInWishlist(true);
-                showSuccess(`${product.name} added to wishlist!`);
-            }
-        } catch (error) {
-            showError('Failed to update wishlist. Please try again.');
-        } finally {
-            setWishlistLoading(false);
-        }
-    };
-
     // Get rating value
     const getRating = () => {
         if (typeof product.rating === 'object' && product.rating?.average) {
@@ -105,25 +43,6 @@ const ProductCardList = ({ product }) => {
     return (
         <div className="col-12 mb-3">
             <div className="store-card fill-card d-flex flex-row position-relative">
-                {/* Wishlist Button */}
-                <button
-                    onClick={handleWishlistToggle}
-                    disabled={wishlistLoading}
-                    className="btn btn-sm position-absolute top-0 end-0 m-2 rounded-circle"
-                    style={{ 
-                        zIndex: 11,
-                        width: '36px',
-                        height: '36px',
-                        padding: 0,
-                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                        border: '1px solid #dee2e6',
-                        transition: 'all 0.2s ease'
-                    }}
-                    title={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
-                >
-                    <i className={`fa fa-heart ${isInWishlist ? 'text-danger' : 'text-muted'}`}></i>
-                </button>
-                
                 {/* Category Badge */}
                 <div className="position-absolute top-0 start-0 m-2">
                     <span className="badge bg-primary">
