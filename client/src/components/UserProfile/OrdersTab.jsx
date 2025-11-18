@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useOrder, useCart } from '../../context';
 import { LoadingSpinner, Toast } from '../Common';
+import { useDebounce } from '../../hooks/useDebounce';
 import { 
     ReorderModal, 
     OrderTrackingModal, 
@@ -25,6 +26,9 @@ const OrdersTab = () => {
         dateRange: 'all'
     });
 
+    // Debounce search term for better performance
+    const debouncedSearchTerm = useDebounce(orderFilters.searchTerm, 300);
+
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const ordersPerPage = 10;
@@ -42,8 +46,8 @@ const OrdersTab = () => {
     const getFilteredOrders = () => {
         const safeOrders = Array.isArray(orders) ? orders : [];
         return safeOrders.filter(order => {
-            const matchesSearch = orderFilters.searchTerm === '' || 
-                order.orderNumber?.toLowerCase().includes(orderFilters.searchTerm.toLowerCase());
+            const matchesSearch = debouncedSearchTerm === '' || 
+                order.orderNumber?.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
             const matchesStatus = orderFilters.status === 'all' || order.status === orderFilters.status;
             return matchesSearch && matchesStatus;
         });

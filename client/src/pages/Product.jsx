@@ -4,6 +4,7 @@ import { useProduct, useCart, useAuth } from '../context';
 import { LoadingSpinner } from '../components/Common';
 import Toast from '../components/Common/Toast';
 import wishlistService from '../api/services/wishlistService';
+import { API_BASE_URL } from '../config/api.js';
 import {
     ProductMediaGallery,
     ProductThumbnails,
@@ -374,8 +375,7 @@ const Product = () => {
             setReviewsLoading(true);
             try {
                 // Direct fetch to bypass caching issues
-                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-                const url = `${apiUrl}/products/${currentProduct._id}/reviews?page=1&limit=10&sort=newest`;
+                const url = `${API_BASE_URL}/api/products/${currentProduct._id}/reviews?page=1&limit=10&sort=newest`;
                 
                 const response = await fetch(url, {
                     method: 'GET',
