@@ -4,6 +4,7 @@
  */
 
 import { tokenManager } from './tokenManager.js';
+import { API_BASE_URL } from '../config/api.js';
 
 /**
  * Get CSRF token from cookie
@@ -25,7 +26,7 @@ export const getCsrfTokenFromCookie = () => {
  * Fetch CSRF token from server
  */
 export const fetchCsrfToken = async () => {
-  const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const baseURL = `${API_BASE_URL}/api`;
   
   // Try authenticated endpoint first
   try {
