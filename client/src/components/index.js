@@ -16,7 +16,9 @@ export * from './Reviews';
 export * from './RelatedProducts';
 export * from './FAQ';
 export * from './UserProfile';
-export * from './ErrorBoundary';
+
+// Export ErrorBoundary components explicitly
+export { ErrorBoundary, RouterErrorBoundary, SectionErrorBoundary, AsyncErrorBoundary, ErrorTestComponent } from './ErrorBoundary';
 
 // Export optimized components
 export { default as LazyImage } from './Common/LazyImage.jsx';

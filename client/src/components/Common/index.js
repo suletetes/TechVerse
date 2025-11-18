@@ -6,7 +6,11 @@ export { default as OptimizedProductCard } from './OptimizedProductCard.jsx';
 export { default as Toast } from './Toast.jsx';
 export { default as SkeletonCard } from './SkeletonCard.jsx';
 export { default as ErrorState } from './ErrorState.jsx';
+export { default as Notification } from './Notification.jsx';
 export { default as NotificationContainer } from './NotificationContainer.jsx';
+export { default as ErrorBoundary } from './ErrorBoundary.jsx';
+export { default as Modal, ConfirmationModal } from './Modal.jsx';
+export { default as OptimizedImage, generateSrcSet, generateSizes } from './OptimizedImage.jsx';
 export { ProgressBar, IndeterminateProgressBar, StepProgress } from './ProgressBar.jsx';
 export { 
   LoadingButton, 
