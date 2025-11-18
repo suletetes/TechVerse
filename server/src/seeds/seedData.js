@@ -620,27 +620,27 @@ const generateSampleJSON = async () => {
             latest: await Product.find({ sections: 'latest' })
                 .populate('category', 'name slug')
                 .limit(3)
-                .select('name price images rating sections category')
+                .select('name price images rating sections category stock status')
                 .lean(),
             topSeller: await Product.find({ sections: 'topSeller' })
                 .populate('category', 'name slug')
                 .limit(3)
-                .select('name price images rating sections category')
+                .select('name price images rating sections category stock status')
                 .lean(),
             quickPick: await Product.find({ sections: 'quickPick' })
                 .populate('category', 'name slug')
                 .limit(2)
-                .select('name price images rating sections category')
+                .select('name price images rating sections category stock status')
                 .lean(),
             weeklyDeal: await Product.find({ sections: 'weeklyDeal' })
                 .populate('category', 'name slug')
                 .limit(2)
-                .select('name price images rating sections category')
+                .select('name price images rating sections category stock status')
                 .lean(),
             featured: await Product.find({ sections: 'featured' })
                 .populate('category', 'name slug')
                 .limit(3)
-                .select('name price images rating sections category')
+                .select('name price images rating sections category stock status')
                 .lean()
         };
 
@@ -696,19 +696,28 @@ export const seedDatabase = async () => {
         console.log('👥 Creating users...');
         const users = [];
         for (const userData of seedData.users) {
-            const user = await User.create(userData);
+            // Use the same method that worked in our test
+            const user = await User.create({
+                firstName: userData.firstName,
+                lastName: userData.lastName,
+                email: userData.email,
+                password: userData.password,
+                role: userData.role,
+                isActive: userData.isActive,
+                isEmailVerified: userData.isEmailVerified
+                // Don't set accountStatus here - let the pre-save hook handle it
+            });
             
-            // Fix accountStatus for admin users (pre-save middleware sets it to 'pending')
+            // Only update account status if needed, using findByIdAndUpdate to avoid middleware issues
             if (userData.accountStatus === 'active' && user.accountStatus === 'pending') {
-                await User.updateOne(
-                    { _id: user._id },
-                    { 
-                        accountStatus: 'active',
-                        isEmailVerified: true 
-                    }
-                );
+                await User.findByIdAndUpdate(user._id, { 
+                    accountStatus: 'active',
+                    isEmailVerified: true 
+                }, { 
+                    new: false,  // Don't return the updated document
+                    runValidators: false  // Don't run validators to avoid middleware
+                });
                 user.accountStatus = 'active';
-                user.isEmailVerified = true;
             }
             
             users.push(user);
@@ -787,10 +796,10 @@ export const seedDatabase = async () => {
                         phone: '+44 7700 900123'
                     },
                     payment: {
-                        method: 'card',
+                        method: 'stripe',
                         status: 'completed',
                         amount: (sampleProducts[0].price * 2) * 1.2,
-                        currency: 'GBP'
+                        currency: 'USD'
                     },
                     createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago
                 },
@@ -821,10 +830,10 @@ export const seedDatabase = async () => {
                         phone: '+44 7700 900123'
                     },
                     payment: {
-                        method: 'card',
+                        method: 'stripe',
                         status: 'completed',
                         amount: sampleProducts[1].price * 1.2,
-                        currency: 'GBP'
+                        currency: 'USD'
                     },
                     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) // 2 days ago
                 }

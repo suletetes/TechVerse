@@ -1,5 +1,9 @@
+/**
+ * Performance Optimization Service
+ * Provides comprehensive performance monitoring and optimization features
+ */
+
 import os from 'os';
-import process from 'process';
 import logger from '../utils/logger.js';
 
 class PerformanceService {
@@ -69,24 +73,24 @@ class PerformanceService {
       this.metrics.cpu = this.metrics.cpu.slice(-100);
     }
 
-    // Log warnings for high resource usage
+    // Only log warnings for very high resource usage
     const memoryUsageMB = memoryUsage.heapUsed / 1024 / 1024;
-    if (memoryUsageMB > 500) { // 500MB threshold
-      logger.warn('High memory usage detected', {
+    if (memoryUsageMB > 1000) { // 1GB threshold
+      logger.warn('Very high memory usage detected', {
         heapUsed: `${memoryUsageMB.toFixed(2)}MB`,
         heapTotal: `${(memoryUsage.heapTotal / 1024 / 1024).toFixed(2)}MB`
       });
     }
 
-    if (loadAverage[0] > os.cpus().length) {
-      logger.warn('High CPU load detected', {
+    if (loadAverage[0] > os.cpus().length * 2) { // 2x CPU count threshold
+      logger.warn('Very high CPU load detected', {
         loadAverage: loadAverage[0],
         cpuCount: os.cpus().length
       });
     }
   }
 
-  // Track request performance
+  // Track request performance (reduced logging)
   trackRequest(req, res, startTime) {
     const endTime = Date.now();
     const duration = endTime - startTime;
@@ -129,9 +133,9 @@ class PerformanceService {
       this.errorCount++;
     }
 
-    // Log slow requests
-    if (duration > 1000) { // Slower than 1 second
-      logger.warn('Slow request detected', {
+    // Only log very slow requests (over 5 seconds)
+    if (duration > 5000) {
+      logger.warn('Very slow request detected', {
         method,
         path,
         duration: `${duration}ms`,
@@ -140,7 +144,7 @@ class PerformanceService {
       });
     }
 
-    // Log error requests
+    // Only log server errors
     if (statusCode >= 500) {
       logger.error('Server error request', {
         method,
@@ -152,7 +156,7 @@ class PerformanceService {
     }
   }
 
-  // Track database query performance
+  // Track database query performance (reduced logging)
   trackDatabaseQuery(operation, collection, duration, error = null) {
     const key = `${operation}:${collection}`;
     
@@ -178,9 +182,9 @@ class PerformanceService {
       dbMetrics.errors++;
     }
 
-    // Log slow queries
-    if (duration > 100) { // Slower than 100ms
-      logger.warn('Slow database query', {
+    // Only log very slow queries (over 2 seconds)
+    if (duration > 2000) {
+      logger.warn('Very slow database query', {
         operation,
         collection,
         duration: `${duration}ms`,
@@ -189,68 +193,10 @@ class PerformanceService {
     }
   }
 
-  // Track cache performance
-  trackCacheOperation(operation, key, hit = false, duration = 0) {
-    const cacheKey = `cache:${operation}`;
-    
-    if (!this.metrics.cache.has(cacheKey)) {
-      this.metrics.cache.set(cacheKey, {
-        count: 0,
-        hits: 0,
-        misses: 0,
-        hitRate: 0,
-        totalDuration: 0,
-        avgDuration: 0
-      });
-    }
-    
-    const cacheMetrics = this.metrics.cache.get(cacheKey);
-    cacheMetrics.count++;
-    cacheMetrics.totalDuration += duration;
-    cacheMetrics.avgDuration = cacheMetrics.totalDuration / cacheMetrics.count;
-    
-    if (hit) {
-      cacheMetrics.hits++;
-    } else {
-      cacheMetrics.misses++;
-    }
-    
-    cacheMetrics.hitRate = (cacheMetrics.hits / cacheMetrics.count) * 100;
-  }
-
-  // Track application errors
-  trackError(error, context = {}) {
-    const errorKey = error.name || 'UnknownError';
-    
-    if (!this.metrics.errors.has(errorKey)) {
-      this.metrics.errors.set(errorKey, {
-        count: 0,
-        lastOccurrence: null,
-        contexts: []
-      });
-    }
-    
-    const errorMetrics = this.metrics.errors.get(errorKey);
-    errorMetrics.count++;
-    errorMetrics.lastOccurrence = Date.now();
-    errorMetrics.contexts.push({
-      timestamp: Date.now(),
-      message: error.message,
-      stack: error.stack,
-      context
-    });
-    
-    // Keep only last 10 error contexts
-    if (errorMetrics.contexts.length > 10) {
-      errorMetrics.contexts = errorMetrics.contexts.slice(-10);
-    }
-  }
-
   // Get performance summary
   getPerformanceSummary() {
     const uptime = Date.now() - this.startTime;
     const memoryUsage = process.memoryUsage();
-    const cpuUsage = process.cpuUsage();
     
     // Calculate request statistics
     let totalRequests = 0;
@@ -289,17 +235,6 @@ class PerformanceService {
     }
     
     avgDbTime = totalDbQueries > 0 ? avgDbTime / totalDbQueries : 0;
-    
-    // Calculate cache statistics
-    let totalCacheOps = 0;
-    let totalCacheHits = 0;
-    
-    for (const [operation, metrics] of this.metrics.cache) {
-      totalCacheOps += metrics.count;
-      totalCacheHits += metrics.hits;
-    }
-    
-    const cacheHitRate = totalCacheOps > 0 ? (totalCacheHits / totalCacheOps) * 100 : 0;
 
     return {
       system: {
@@ -308,11 +243,6 @@ class PerformanceService {
           used: Math.round(memoryUsage.heapUsed / 1024 / 1024), // MB
           total: Math.round(memoryUsage.heapTotal / 1024 / 1024), // MB
           usage: Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100) // %
-        },
-        cpu: {
-          user: cpuUsage.user,
-          system: cpuUsage.system,
-          loadAverage: os.loadavg()[0]
         }
       },
       requests: {
@@ -328,76 +258,7 @@ class PerformanceService {
         avgQueryTime: Math.round(avgDbTime),
         slowestQuery,
         slowestQueryTime: Math.round(slowestQueryTime)
-      },
-      cache: {
-        totalOperations: totalCacheOps,
-        hitRate: Math.round(cacheHitRate * 100) / 100
-      },
-      errors: {
-        total: this.errorCount,
-        uniqueTypes: this.metrics.errors.size
       }
-    };
-  }
-
-  // Get detailed metrics
-  getDetailedMetrics() {
-    return {
-      requests: Object.fromEntries(this.metrics.requests),
-      database: Object.fromEntries(this.metrics.database),
-      cache: Object.fromEntries(this.metrics.cache),
-      errors: Object.fromEntries(this.metrics.errors),
-      memory: this.metrics.memory.slice(-20), // Last 20 entries
-      cpu: this.metrics.cpu.slice(-20) // Last 20 entries
-    };
-  }
-
-  // Get health status
-  getHealthStatus() {
-    const summary = this.getPerformanceSummary();
-    const issues = [];
-    
-    // Check memory usage
-    if (summary.system.memory.usage > 80) {
-      issues.push({
-        type: 'memory',
-        severity: 'warning',
-        message: `High memory usage: ${summary.system.memory.usage}%`
-      });
-    }
-    
-    // Check error rate
-    if (summary.requests.errorRate > 5) {
-      issues.push({
-        type: 'errors',
-        severity: 'error',
-        message: `High error rate: ${summary.requests.errorRate}%`
-      });
-    }
-    
-    // Check response time
-    if (summary.requests.avgResponseTime > 1000) {
-      issues.push({
-        type: 'performance',
-        severity: 'warning',
-        message: `Slow average response time: ${summary.requests.avgResponseTime}ms`
-      });
-    }
-    
-    // Check cache hit rate
-    if (summary.cache.hitRate < 70 && summary.cache.totalOperations > 100) {
-      issues.push({
-        type: 'cache',
-        severity: 'warning',
-        message: `Low cache hit rate: ${summary.cache.hitRate}%`
-      });
-    }
-
-    return {
-      status: issues.length === 0 ? 'healthy' : 
-              issues.some(i => i.severity === 'error') ? 'unhealthy' : 'warning',
-      issues,
-      summary
     };
   }
 
@@ -413,57 +274,28 @@ class PerformanceService {
     
     // Clean error contexts
     for (const [errorType, errorMetrics] of this.metrics.errors) {
-      errorMetrics.contexts = errorMetrics.contexts.filter(c => c.timestamp > cutoffTime);
-      
-      // Remove error types with no recent contexts
-      if (errorMetrics.contexts.length === 0 && errorMetrics.lastOccurrence < cutoffTime) {
-        this.metrics.errors.delete(errorType);
+      if (errorMetrics.contexts) {
+        errorMetrics.contexts = errorMetrics.contexts.filter(c => c.timestamp > cutoffTime);
+        
+        // Remove error types with no recent contexts
+        if (errorMetrics.contexts.length === 0 && errorMetrics.lastOccurrence < cutoffTime) {
+          this.metrics.errors.delete(errorType);
+        }
       }
     }
-    
-    logger.debug('Performance metrics cleaned', {
-      memoryEntries: this.metrics.memory.length,
-      cpuEntries: this.metrics.cpu.length,
-      errorTypes: this.metrics.errors.size
-    });
-  }
-
-  // Reset metrics
-  resetMetrics() {
-    this.metrics = {
-      requests: new Map(),
-      memory: [],
-      cpu: [],
-      database: new Map(),
-      cache: new Map(),
-      errors: new Map()
-    };
-    
-    this.startTime = Date.now();
-    this.requestCount = 0;
-    this.errorCount = 0;
-    
-    logger.info('Performance metrics reset');
-  }
-
-  // Export metrics for external monitoring
-  exportMetrics() {
-    const summary = this.getPerformanceSummary();
-    const detailed = this.getDetailedMetrics();
-    
-    return {
-      timestamp: Date.now(),
-      summary,
-      detailed
-    };
   }
 }
 
 // Create and export singleton instance
 const performanceService = new PerformanceService();
 
-// Middleware for tracking request performance
+// Middleware for tracking request performance (reduced logging)
 export const performanceMiddleware = (req, res, next) => {
+  // Skip performance tracking for static assets
+  if (req.originalUrl.match(/\.(jpg|jpeg|png|gif|webp|svg|ico|css|js|woff|woff2|ttf|eot)$/i)) {
+    return next();
+  }
+  
   const startTime = Date.now();
   
   res.on('finish', () => {
@@ -471,18 +303,6 @@ export const performanceMiddleware = (req, res, next) => {
   });
   
   next();
-};
-
-// Middleware for tracking errors
-export const errorTrackingMiddleware = (error, req, res, next) => {
-  performanceService.trackError(error, {
-    method: req.method,
-    path: req.path,
-    userAgent: req.headers['user-agent'],
-    ip: req.ip
-  });
-  
-  next(error);
 };
 
 export default performanceService;

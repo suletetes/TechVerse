@@ -213,7 +213,7 @@ const productSchema = new mongoose.Schema({
 });
 
 // Virtual for discount percentage
-productSchema.virtual('discountPercentage').get(function() {
+productSchema.virtual('discountPercentage').get(function () {
   if (this.comparePrice && this.comparePrice > this.price) {
     return Math.round(((this.comparePrice - this.price) / this.comparePrice) * 100);
   }
@@ -221,7 +221,7 @@ productSchema.virtual('discountPercentage').get(function() {
 });
 
 // Virtual for stock status
-productSchema.virtual('stockStatus').get(function() {
+productSchema.virtual('stockStatus').get(function () {
   if (!this.stock.trackQuantity) return 'in_stock';
   if (this.stock.quantity === 0) return 'out_of_stock';
   if (this.stock.quantity <= this.stock.lowStockThreshold) return 'low_stock';
@@ -229,27 +229,39 @@ productSchema.virtual('stockStatus').get(function() {
 });
 
 // Virtual for primary image
-productSchema.virtual('primaryImage').get(function() {
+productSchema.virtual('primaryImage').get(function () {
+  if (!this.images || this.images.length === 0) return null;
   const primary = this.images.find(img => img.isPrimary);
   return primary || this.images[0] || null;
 });
 
-// Pre-save middleware to generate slug
-productSchema.pre('save', function(next) {
+// Pre-save middleware to generate unique slug
+productSchema.pre('save', async function (next) {
   if (this.isModified('name') || this.isNew) {
-    this.slug = this.name
+    let baseSlug = this.name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
+    
+    let slug = baseSlug;
+    let counter = 1;
+    
+    // Check for existing slugs and make unique
+    while (await this.constructor.findOne({ slug, _id: { $ne: this._id } })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    
+    this.slug = slug;
   }
   next();
 });
 
 // Method to update rating (called when reviews change)
-productSchema.methods.updateRating = async function() {
+productSchema.methods.updateRating = async function () {
   const Review = mongoose.model('Review');
   const reviews = await Review.find({ product: this._id });
-  
+
   if (reviews.length === 0) {
     this.rating.average = 0;
     this.rating.count = 0;
@@ -258,105 +270,105 @@ productSchema.methods.updateRating = async function() {
     this.rating.average = Math.round((totalRating / reviews.length) * 10) / 10;
     this.rating.count = reviews.length;
   }
-  
+
   return this.save();
 };
 
 // Method to check if product is available
-productSchema.methods.isAvailable = function(quantity = 1) {
+productSchema.methods.isAvailable = function (quantity = 1) {
   if (this.status !== 'active' || this.visibility !== 'public') return false;
   if (!this.stock.trackQuantity) return true;
   return this.stock.quantity >= quantity;
 };
 
 // Method to reserve stock
-productSchema.methods.reserveStock = function(quantity) {
+productSchema.methods.reserveStock = function (quantity) {
   if (!this.stock.trackQuantity) return true;
-  
+
   if (this.stock.quantity < quantity) {
     throw new Error('Insufficient stock available');
   }
-  
+
   this.stock.quantity -= quantity;
   return this.save();
 };
 
 // Method to release stock (e.g., when order is cancelled)
-productSchema.methods.releaseStock = function(quantity) {
+productSchema.methods.releaseStock = function (quantity) {
   if (!this.stock.trackQuantity) return true;
-  
+
   this.stock.quantity += quantity;
   return this.save();
 };
 
 // Method to add variant
-productSchema.methods.addVariant = function(variantData) {
+productSchema.methods.addVariant = function (variantData) {
   this.variants.push(variantData);
   return this.save();
 };
 
 // Method to update variant
-productSchema.methods.updateVariant = function(variantId, updateData) {
+productSchema.methods.updateVariant = function (variantId, updateData) {
   const variant = this.variants.id(variantId);
   if (!variant) {
     throw new Error('Variant not found');
   }
-  
+
   Object.assign(variant, updateData);
   return this.save();
 };
 
 // Method to remove variant
-productSchema.methods.removeVariant = function(variantId) {
+productSchema.methods.removeVariant = function (variantId) {
   const variant = this.variants.id(variantId);
   if (!variant) {
     throw new Error('Variant not found');
   }
-  
+
   variant.remove();
   return this.save();
 };
 
 // Method to add specification
-productSchema.methods.addSpecification = function(specData) {
+productSchema.methods.addSpecification = function (specData) {
   this.specifications.push(specData);
   return this.save();
 };
 
 // Method to update sales data
-productSchema.methods.updateSales = function(quantity, revenue) {
+productSchema.methods.updateSales = function (quantity, revenue) {
   this.sales.totalSold += quantity;
   this.sales.revenue += revenue;
   return this.save();
 };
 
 // Method to set primary image
-productSchema.methods.setPrimaryImage = function(imageId) {
+productSchema.methods.setPrimaryImage = function (imageId) {
   // Reset all images to not primary
   this.images.forEach(img => img.isPrimary = false);
-  
+
   // Set specified image as primary
   const image = this.images.id(imageId);
   if (image) {
     image.isPrimary = true;
   }
-  
+
   return this.save();
 };
 
 // Method to add image
-productSchema.methods.addImage = function(imageData) {
+productSchema.methods.addImage = function (imageData) {
   // If this is the first image, make it primary
   if (this.images.length === 0) {
     imageData.isPrimary = true;
   }
-  
+
   this.images.push(imageData);
   return this.save();
 };
 
 // Method to add to section
-productSchema.methods.addToSection = function(section) {
+productSchema.methods.addToSection = function (section) {
   if (!this.sections.includes(section)) {
     this.sections.push(section);
   }
@@ -364,33 +376,33 @@ productSchema.methods.addToSection = function(section) {
 };
 
 // Method to remove from section
-productSchema.methods.removeFromSection = function(section) {
+productSchema.methods.removeFromSection = function (section) {
   this.sections = this.sections.filter(s => s !== section);
   return this.save();
 };
 
 // Method to remove image
-productSchema.methods.removeImage = function(imageId) {
+productSchema.methods.removeImage = function (imageId) {
   const image = this.images.id(imageId);
   if (!image) {
     throw new Error('Image not found');
   }
-  
+
   const wasPrimary = image.isPrimary;
   image.remove();
-  
+
   // If removed image was primary, make first remaining image primary
   if (wasPrimary && this.images.length > 0) {
     this.images[0].isPrimary = true;
   }
-  
+
   return this.save();
 };
 
 // Method to get variant price
-productSchema.methods.getVariantPrice = function(selectedVariants = []) {
+productSchema.methods.getVariantPrice = function (selectedVariants = []) {
   let totalModifier = 0;
-  
+
   selectedVariants.forEach(selected => {
     const variant = this.variants.find(v => v.name === selected.name);
     if (variant) {
@@ -400,22 +412,22 @@ productSchema.methods.getVariantPrice = function(selectedVariants = []) {
       }
     }
   });
-  
+
   return this.price + totalModifier;
 };
 
 // Method to check variant stock
-productSchema.methods.checkVariantStock = function(selectedVariants = [], quantity = 1) {
+productSchema.methods.checkVariantStock = function (selectedVariants = [], quantity = 1) {
   if (!this.stock.trackQuantity) return true;
-  
+
   // If no variants selected, check main stock
   if (selectedVariants.length === 0) {
     return this.stock.quantity >= quantity;
   }
-  
+
   // Check variant-specific stock
   let availableStock = this.stock.quantity;
-  
+
   selectedVariants.forEach(selected => {
     const variant = this.variants.find(v => v.name === selected.name);
     if (variant) {
@@ -425,75 +437,75 @@ productSchema.methods.checkVariantStock = function(selectedVariants = [], quanti
       }
     }
   });
-  
+
   return availableStock >= quantity;
 };
 
 // Static methods
-productSchema.statics.findBySlug = function(slug) {
+productSchema.statics.findBySlug = function (slug) {
   return this.findOne({ slug, status: 'active', visibility: 'public' });
 };
 
-productSchema.statics.findBySku = function(sku) {
+productSchema.statics.findBySku = function (sku) {
   return this.findOne({ sku });
 };
 
-productSchema.statics.findFeatured = function(limit = 10) {
-  return this.find({ 
-    featured: true, 
-    status: 'active', 
-    visibility: 'public' 
+productSchema.statics.findFeatured = function (limit = 10) {
+  return this.find({
+    featured: true,
+    status: 'active',
+    visibility: 'public'
   })
-  .limit(limit)
-  .sort({ createdAt: -1 });
+    .limit(limit)
+    .sort({ createdAt: -1 });
 };
 
-productSchema.statics.findBySection = function(section, limit = 10) {
+productSchema.statics.findBySection = function (section, limit = 10) {
   return this.find({
     sections: section,
     status: 'active',
     visibility: 'public'
   })
-  .populate('category', 'name slug')
-  .limit(limit)
-  .sort({ createdAt: -1 });
+    .populate('category', 'name slug')
+    .limit(limit)
+    .sort({ createdAt: -1 });
 };
 
-productSchema.statics.findLatest = function(limit = 10) {
+productSchema.statics.findLatest = function (limit = 10) {
   return this.find({
     status: 'active',
     visibility: 'public'
   })
-  .populate('category', 'name slug')
-  .limit(limit)
-  .sort({ createdAt: -1 });
+    .populate('category', 'name slug')
+    .limit(limit)
+    .sort({ createdAt: -1 });
 };
 
-productSchema.statics.findTopSellers = function(limit = 10) {
+productSchema.statics.findTopSellers = function (limit = 10) {
   return this.find({
     status: 'active',
     visibility: 'public'
   })
-  .populate('category', 'name slug')
-  .limit(limit)
-  .sort({ 'sales.totalSold': -1, 'rating.average': -1 });
+    .populate('category', 'name slug')
+    .limit(limit)
+    .sort({ 'sales.totalSold': -1, 'rating.average': -1 });
 };
 
-productSchema.statics.findByCategory = function(categoryId, options = {}) {
-  const query = { 
-    category: categoryId, 
-    status: 'active', 
-    visibility: 'public' 
+productSchema.statics.findByCategory = function (categoryId, options = {}) {
+  const query = {
+    category: categoryId,
+    status: 'active',
+    visibility: 'public'
   };
-  
+
   let queryBuilder = this.find(query);
-  
+
   // Apply filters
   if (options.minPrice) queryBuilder = queryBuilder.where('price').gte(options.minPrice);
   if (options.maxPrice) queryBuilder = queryBuilder.where('price').lte(options.maxPrice);
   if (options.brand) queryBuilder = queryBuilder.where('brand').in(options.brand);
   if (options.minRating) queryBuilder = queryBuilder.where('rating.average').gte(options.minRating);
-  
+
   // Apply sorting
   const sortOptions = {
     'price_asc': { price: 1 },
@@ -505,23 +517,23 @@ productSchema.statics.findByCategory = function(categoryId, options = {}) {
     'name_desc': { name: -1 },
     'popularity': { 'sales.totalSold': -1 }
   };
-  
+
   if (options.sort && sortOptions[options.sort]) {
     queryBuilder = queryBuilder.sort(sortOptions[options.sort]);
   } else {
     queryBuilder = queryBuilder.sort({ createdAt: -1 });
   }
-  
+
   // Apply pagination
   if (options.page && options.limit) {
     const skip = (options.page - 1) * options.limit;
     queryBuilder = queryBuilder.skip(skip).limit(options.limit);
   }
-  
+
   return queryBuilder;
 };
 
-productSchema.statics.searchProducts = function(searchTerm, options = {}) {
+productSchema.statics.searchProducts = function (searchTerm, options = {}) {
   const query = {
     $and: [
       { status: 'active', visibility: 'public' },
@@ -535,72 +547,91 @@ productSchema.statics.searchProducts = function(searchTerm, options = {}) {
       }
     ]
   };
-  
-  let queryBuilder = this.find(query);
-  
+
+  let queryBuilder = this.find(query).populate('category', 'name slug');
+
   // Apply same filters and sorting as findByCategory
   if (options.minPrice) queryBuilder = queryBuilder.where('price').gte(options.minPrice);
   if (options.maxPrice) queryBuilder = queryBuilder.where('price').lte(options.maxPrice);
   if (options.brand) queryBuilder = queryBuilder.where('brand').in(options.brand);
   if (options.category) queryBuilder = queryBuilder.where('category').in(options.category);
   if (options.minRating) queryBuilder = queryBuilder.where('rating.average').gte(options.minRating);
-  
+
   // Sorting
   const sortOptions = {
     'relevance': { score: { $meta: 'textScore' } },
+    'newest': { createdAt: -1 },
+    'name': { name: 1 },
+    'price-low': { price: 1 },
+    'price-high': { price: -1 },
+    'rating': { 'rating.average': -1 },
     'price_asc': { price: 1 },
     'price_desc': { price: -1 },
-    'rating': { 'rating.average': -1 },
-    'newest': { createdAt: -1 },
     'popularity': { 'sales.totalSold': -1 }
   };
-  
+
   if (options.sort && sortOptions[options.sort]) {
     queryBuilder = queryBuilder.sort(sortOptions[options.sort]);
   } else {
     queryBuilder = queryBuilder.sort({ createdAt: -1 });
   }
-  
+
   // Pagination
   if (options.page && options.limit) {
     const skip = (options.page - 1) * options.limit;
     queryBuilder = queryBuilder.skip(skip).limit(options.limit);
   }
-  
+
   return queryBuilder;
 };
 
-productSchema.statics.getLowStockProducts = function(threshold = null) {
+productSchema.statics.getLowStockProducts = function (threshold = null) {
   const query = {
     'stock.trackQuantity': true,
     status: 'active'
   };
-  
+
   if (threshold) {
     query['stock.quantity'] = { $lte: threshold };
   } else {
     query.$expr = { $lte: ['$stock.quantity', '$stock.lowStockThreshold'] };
   }
-  
+
   return this.find(query).sort({ 'stock.quantity': 1 });
 };
 
-productSchema.statics.getTopSelling = function(limit = 10, timeframe = null) {
+productSchema.statics.getTopSelling = function (limit = 10, timeframe = null) {
   let query = { status: 'active', visibility: 'public' };
-  
+
   if (timeframe) {
     const date = new Date();
     date.setDate(date.getDate() - timeframe);
     query.createdAt = { $gte: date };
   }
-  
+
   return this.find(query)
     .sort({ 'sales.totalSold': -1 })
     .limit(limit);
 };
 
-// Indexes
-productSchema.index({ name: 'text', description: 'text', tags: 'text', brand: 'text' });
+// Text search indexes
+productSchema.index({ 
+  name: 'text', 
+  description: 'text', 
+  shortDescription: 'text',
+  tags: 'text', 
+  brand: 'text' 
+}, {
+  name: 'product_search_index',
+  weights: {
+    name: 10,
+    brand: 5,
+    shortDescription: 3,
+    tags: 2,
+    description: 1
+  },
+  default_language: 'english'
+});
 productSchema.index({ category: 1, status: 1, visibility: 1 });
 productSchema.index({ brand: 1, status: 1 });
 productSchema.index({ price: 1 });
@@ -619,5 +650,67 @@ productSchema.index({ category: 1, 'rating.average': -1 });
 productSchema.index({ brand: 1, category: 1 });
 productSchema.index({ status: 1, visibility: 1, featured: 1 });
 productSchema.index({ 'stock.trackQuantity': 1, 'stock.quantity': 1 });
+
+// Clean expired reservations
+productSchema.methods.cleanExpiredReservations = function () {
+  if (!this.stock.reservations) return Promise.resolve(true);
+
+  const now = new Date();
+  const expiredReservations = this.stock.reservations.filter(r => r.expiresAt < now);
+
+  if (expiredReservations.length > 0) {
+    // Release expired reservations
+    const totalExpired = expiredReservations.reduce((sum, r) => sum + r.quantity, 0);
+    this.stock.quantity += totalExpired;
+    this.stock.reserved = Math.max(0, (this.stock.reserved || 0) - totalExpired);
+
+    // Remove expired reservations
+    this.stock.reservations = this.stock.reservations.filter(r => r.expiresAt >= now);
+
+    return this.save();
+  }
+
+  return Promise.resolve(true);
+};
+
+// Reserve stock
+productSchema.methods.reserveStock = function (quantity, reservationId) {
+  if (!this.stock.trackQuantity) return Promise.resolve(true);
+
+  if (this.stock.quantity < quantity) {
+    throw new Error('Insufficient stock available');
+  }
+
+  // Add to reserved stock
+  this.stock.reserved = (this.stock.reserved || 0) + quantity;
+  this.stock.quantity -= quantity;
+
+  // Track reservation with expiry (15 minutes)
+  if (!this.stock.reservations) this.stock.reservations = [];
+  this.stock.reservations.push({
+    id: reservationId,
+    quantity,
+    expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
+  });
+
+  return this.save();
+};
+
+// Release stock reservation
+productSchema.methods.releaseReservation = function (reservationId) {
+  if (!this.stock.reservations) return Promise.resolve(false);
+
+  const reservation = this.stock.reservations.find(r => r.id === reservationId);
+  if (!reservation) return Promise.resolve(false);
+
+  // Release reserved stock back to available
+  this.stock.quantity += reservation.quantity;
+  this.stock.reserved = Math.max(0, (this.stock.reserved || 0) - reservation.quantity);
+
+  // Remove reservation
+  this.stock.reservations = this.stock.reservations.filter(r => r.id !== reservationId);
+
+  return this.save();
+};
 
 export default mongoose.model('Product', productSchema);

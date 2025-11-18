@@ -105,9 +105,9 @@ export const VALIDATION_PATTERNS = {
 
 // Currency settings
 export const CURRENCY = {
-  CODE: 'GBP',
-  SYMBOL: '£',
-  LOCALE: 'en-GB'
+  CODE: 'USD',
+  SYMBOL: '$',
+  LOCALE: 'en-US'
 };
 
 // Date formats

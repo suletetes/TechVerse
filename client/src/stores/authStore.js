@@ -217,7 +217,7 @@ export const useAuthStore = create(
                 try {
                     const { token } = get();
 
-                    const response = await fetch('/api/auth/profile', {
+                    const response = await fetch('/api/auth/me', {
                         method: 'PUT',
                         headers: {
                             'Authorization': `Bearer ${token}`,

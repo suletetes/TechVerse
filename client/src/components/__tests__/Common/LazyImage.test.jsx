@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { renderWithProviders, screen, waitFor, fireEvent } from '../../test/testUtils.jsx';
 import LazyImage from '../../Common/LazyImage.jsx';
 
 // Mock intersection observer
@@ -7,16 +7,29 @@ const mockIntersectionObserver = vi.fn();
 const mockObserve = vi.fn();
 const mockUnobserve = vi.fn();
 const mockDisconnect = vi.fn();
+let mockCallback;
 
 beforeEach(() => {
-  mockIntersectionObserver.mockImplementation((callback) => ({
-    observe: mockObserve,
-    unobserve: mockUnobserve,
-    disconnect: mockDisconnect,
-    callback
-  }));
+  mockIntersectionObserver.mockImplementation((callback) => {
+    mockCallback = callback;
+    return {
+      observe: mockObserve,
+      unobserve: mockUnobserve,
+      disconnect: mockDisconnect
+    };
+  });
 
   global.IntersectionObserver = mockIntersectionObserver;
+  
+  // Mock Image constructor
+  global.Image = vi.fn().mockImplementation(() => ({
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    src: '',
+    onload: null,
+    onerror: null
+  }));
+  
   vi.clearAllMocks();
 });
 
@@ -34,7 +47,7 @@ describe('LazyImage', () => {
 
   describe('Basic Rendering', () => {
     it('should render with placeholder initially', () => {
-      render(<LazyImage {...defaultProps} />);
+      renderWithProviders(<LazyImage {...defaultProps} />);
       
       const img = screen.getByRole('img');
       expect(img).toHaveAttribute('src', '/img/lazyload-ph.png');
@@ -44,7 +57,7 @@ describe('LazyImage', () => {
 
     it('should render with custom placeholder', () => {
       const customPlaceholder = '/custom-placeholder.jpg';
-      render(<LazyImage {...defaultProps} placeholder={customPlaceholder} />);
+      renderWithProviders(<LazyImage {...defaultProps} placeholder={customPlaceholder} />);
       
       const img = screen.getByRole('img');
       expect(img).toHaveAttribute('src', customPlaceholder);

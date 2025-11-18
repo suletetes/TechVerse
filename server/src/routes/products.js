@@ -22,6 +22,12 @@ import {
 import { authenticate, requireAdmin, optionalAuth, apiRateLimit } from '../middleware/passportAuth.js';
 import { validate, commonValidations } from '../middleware/validation.js';
 import { Product } from '../models/index.js';
+import {
+  cacheProductList,
+  cacheProductDetail,
+  cacheCategoryList,
+  cacheSearchResults
+} from '../middleware/cacheMiddleware.js';
 
 const router = express.Router();
 
@@ -33,31 +39,37 @@ const productValidation = [
     .withMessage('Product name must be between 2 and 200 characters'),
   body('description')
     .trim()
-    .isLength({ min: 10, max: 2000 })
-    .withMessage('Description must be between 10 and 2000 characters'),
+    .isLength({ min: 5, max: 2000 })
+    .withMessage('Description must be between 5 and 2000 characters'),
   body('price')
     .isFloat({ min: 0 })
     .withMessage('Price must be a positive number'),
   body('category')
-    .isMongoId()
-    .withMessage('Invalid category ID'),
+    .custom((value) => {
+      // Accept both MongoDB ObjectIds and category slugs
+      if (typeof value === 'string' && (value.match(/^[0-9a-fA-F]{24}$/) || value.length >= 2)) {
+        return true;
+      }
+      throw new Error('Invalid category ID or slug');
+    })
+    .withMessage('Invalid category ID or slug'),
   body('brand')
     .optional()
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('Brand must be between 2 and 100 characters'),
-  body('stock')
+  body('stock.quantity')
     .optional()
     .isInt({ min: 0 })
-    .withMessage('Stock must be a non-negative integer'),
+    .withMessage('Stock quantity must be a non-negative integer'),
   body('sections')
     .optional()
     .isArray({ max: 4 })
     .withMessage('Sections must be an array with maximum 4 items'),
   body('sections.*')
     .optional()
-    .isIn(['latest', 'topSeller', 'quickPick', 'weeklyDeal'])
-    .withMessage('Each section must be latest, topSeller, quickPick, or weeklyDeal'),
+    .isIn(['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'])
+    .withMessage('Each section must be latest, topSeller, quickPick, weeklyDeal, or featured'),
   body('tags')
     .optional()
     .isArray({ max: 10 })
@@ -94,12 +106,20 @@ const reviewValidation = [
     .withMessage('Review comment must be between 10 and 1000 characters'),
   body('pros')
     .optional()
-    .isArray({ max: 5 })
+    .isArray()
+    .withMessage('Pros must be an array')
+    .custom((value) => value.length <= 5)
     .withMessage('Maximum 5 pros allowed'),
   body('cons')
     .optional()
-    .isArray({ max: 5 })
-    .withMessage('Maximum 5 cons allowed')
+    .isArray()
+    .withMessage('Cons must be an array')
+    .custom((value) => value.length <= 5)
+    .withMessage('Maximum 5 cons allowed'),
+  body('orderId')
+    .optional()
+    .isMongoId()
+    .withMessage('Order ID must be a valid MongoDB ObjectId')
 ];
 
 const searchValidation = [
@@ -110,8 +130,20 @@ const searchValidation = [
     .withMessage('Search query must be between 1 and 100 characters'),
   query('category')
     .optional()
-    .isMongoId()
-    .withMessage('Invalid category ID'),
+    .custom((value) => {
+      // Allow MongoDB ObjectId, category name, or slug
+      if (/^[0-9a-fA-F]{24}$/.test(value)) {
+        return true; // Valid ObjectId
+      }
+      if (typeof value === 'string' && value.length >= 2 && value.length <= 100) {
+        return true; // Valid name or slug
+      }
+      throw new Error('Category must be a valid ObjectId, name, or slug');
+    }),
+  query('brand')
+    .optional()
+    .isString()
+    .withMessage('Brand must be a string'),
   query('minPrice')
     .optional()
     .isFloat({ min: 0 })
@@ -122,8 +154,29 @@ const searchValidation = [
     .withMessage('Maximum price must be a positive number'),
   query('sort')
     .optional()
-    .isIn(['name', 'price', 'rating', 'createdAt', '-name', '-price', '-rating', '-createdAt'])
-    .withMessage('Invalid sort option'),
+    .custom((value) => {
+      const validSorts = ['newest', 'oldest', 'name', 'price-low', 'price-high', 'rating', 'price', 'createdAt', 'price_asc', 'price_desc', 'name_asc', 'name_desc', 'popularity'];
+      if (validSorts.includes(value)) {
+        return true;
+      }
+      throw new Error(`Invalid sort option: ${value}. Valid options are: ${validSorts.join(', ')}`);
+    }),
+  query('order')
+    .optional()
+    .isIn(['asc', 'desc'])
+    .withMessage('Order must be asc or desc'),
+  query('featured')
+    .optional()
+    .isIn(['true', 'false'])
+    .withMessage('Featured must be true or false'),
+  query('section')
+    .optional()
+    .isIn(['latest', 'topSeller', 'quickPick', 'weeklyDeal'])
+    .withMessage('Invalid section'),
+  query('status')
+    .optional()
+    .isIn(['active', 'inactive', 'draft'])
+    .withMessage('Invalid status'),
   ...commonValidations.pagination()
 ];
 
@@ -134,17 +187,48 @@ const sectionValidation = [
   ...commonValidations.pagination()
 ];
 
-// Public routes with rate limiting
-router.get('/', apiRateLimit, commonValidations.pagination(), validate, optionalAuth, getAllProducts);
-router.get('/search', apiRateLimit, searchValidation, validate, optionalAuth, searchProducts);
-router.get('/categories', apiRateLimit, getCategories);
-router.get('/featured', apiRateLimit, commonValidations.pagination(), validate, getFeaturedProducts);
-router.get('/top-sellers', apiRateLimit, commonValidations.pagination(), validate, getTopSellingProducts);
-router.get('/latest', apiRateLimit, commonValidations.pagination(), validate, getLatestProducts);
-router.get('/on-sale', apiRateLimit, commonValidations.pagination(), validate, getProductsOnSale);
-router.get('/weekly-deals', apiRateLimit, commonValidations.pagination(), validate, getWeeklyDeals);
-router.get('/quick-picks', apiRateLimit, commonValidations.pagination(), validate, getQuickPicks);
+// Public routes with rate limiting and caching
+router.get('/', apiRateLimit, cacheProductList, searchValidation, validate, optionalAuth, getAllProducts);
+router.get('/search', apiRateLimit, cacheSearchResults, searchValidation, validate, optionalAuth, searchProducts);
+router.get('/categories', apiRateLimit, cacheCategoryList, getCategories);
+
+// Slug validation route for admin
+router.get('/validate-slug/:slug', 
+  [
+    param('slug')
+      .isLength({ min: 2, max: 100 })
+      .matches(/^[a-z0-9-]+$/)
+      .withMessage('Slug must be lowercase letters, numbers, and hyphens only')
+  ],
+  validate,
+  authenticate,
+  requireAdmin,
+  async (req, res, next) => {
+    try {
+      const { slug } = req.params;
+      const existingProduct = await Product.findOne({ slug });
+      
+      res.json({
+        success: true,
+        data: {
+          available: !existingProduct,
+          slug: slug
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+// Section route MUST come before specific routes to avoid conflicts
+// Cache disabled for sections to prevent data collision between different sections
 router.get('/section/:section', sectionValidation, validate, getProductsBySection);
+router.get('/featured', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getFeaturedProducts);
+router.get('/top-sellers', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getTopSellingProducts);
+router.get('/latest', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getLatestProducts);
+router.get('/on-sale', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getProductsOnSale);
+router.get('/weekly-deals', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getWeeklyDeals);
+router.get('/quick-picks', apiRateLimit, cacheProductList, commonValidations.pagination(), validate, getQuickPicks);
 router.get('/category/:categoryId', 
   [commonValidations.mongoId('categoryId'), ...commonValidations.pagination()], 
   validate, 
@@ -167,7 +251,7 @@ const productIdOrSlugValidation = [
     })
 ];
 
-router.get('/:id', productIdOrSlugValidation, validate, optionalAuth, getProductById);
+router.get('/:id', cacheProductDetail, productIdOrSlugValidation, validate, optionalAuth, getProductById);
 router.get('/:id/reviews', 
   [productIdOrSlugValidation[0], ...commonValidations.pagination()], 
   validate, 

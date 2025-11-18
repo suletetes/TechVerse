@@ -5,6 +5,7 @@ export { default as AdminSidebar } from './AdminSidebar';
 export { default as AdminHeader } from './AdminHeader';
 export { default as AdminDashboard } from './AdminDashboard';
 export { default as AdminOrders } from './AdminOrders';
+export { default as AdminReviews } from './AdminReviews';
 export { default as AdminUsers } from './AdminUsers';
 export { default as AdminSettings } from './AdminSettings';
 export { default as AdminSpecificationManager } from './AdminSpecificationManager';
@@ -13,7 +14,7 @@ export { default as AdminCatalogManager } from './AdminCatalogManager';
 export { default as AdminLayout } from './AdminLayout';
 export { default as AdminNotifications } from './AdminNotifications';
 export { default as AdminAnalytics } from './AdminAnalytics';
-export { default as AdminActivityLog } from './AdminActivityLog';
+// export { default as AdminActivityLog } from './AdminActivityLog';
 export { default as AdminSecurity } from './AdminSecurity';
 export { default as AdminProfileSettings } from './AdminProfileSettings';
 // AdminCatalogPane doesn't exist - removed invalid export

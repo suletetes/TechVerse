@@ -81,6 +81,8 @@ export const corsOptions = {
     'Authorization',
     'X-API-Key',
     'X-Request-ID',
+    'X-CSRF-Token',
+    'csrf-token',
     'Cache-Control',
     'Pragma'
   ],

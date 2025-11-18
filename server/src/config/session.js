@@ -1,5 +1,5 @@
 import session from 'express-session';
-import { RedisStore } from 'connect-redis';
+import RedisStore from 'connect-redis';
 import Redis from 'ioredis';
 import logger from '../utils/logger.js';
 
@@ -27,12 +27,14 @@ class SessionConfig {
       this.redis = new Redis({
         ...redisConfig,
         retryDelayOnFailover: 100,
-        maxRetriesPerRequest: 3,
+        maxRetriesPerRequest: 2, // Reduced from 3
         lazyConnect: true,
         keepAlive: 30000,
         family: 4, // Force IPv4
         // Connection pool settings
-        maxLoadingTimeout: 5000,
+        maxLoadingTimeout: 2000, // Reduced from 5000ms to 2000ms
+        connectTimeout: 2000, // Add explicit connect timeout
+        commandTimeout: 2000, // Add command timeout
         // Reconnection settings
         reconnectOnError: (err) => {
           const targetError = 'READONLY';
@@ -186,10 +188,58 @@ class SessionConfig {
   }
 
   /**
+   * Create memory-based session configuration (fallback)
+   */
+  createMemorySessionConfig() {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const sessionSecret = process.env.SESSION_SECRET || process.env.JWT_SECRET;
+
+    if (!sessionSecret) {
+      throw new Error('SESSION_SECRET or JWT_SECRET environment variable is required');
+    }
+
+    this.sessionConfig = {
+      secret: sessionSecret,
+      name: 'techverse.sid',
+      resave: false,
+      saveUninitialized: false,
+      rolling: true,
+      cookie: {
+        secure: isProduction,
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        sameSite: isProduction ? 'strict' : 'lax'
+      },
+      genid: () => {
+        const timestamp = Date.now().toString(36);
+        const random = Math.random().toString(36).substring(2);
+        return `${timestamp}-${random}`;
+      }
+    };
+
+    logger.info('Memory session configuration created', {
+      secure: this.sessionConfig.cookie.secure,
+      httpOnly: this.sessionConfig.cookie.httpOnly,
+      maxAge: '24 hours',
+      sameSite: this.sessionConfig.cookie.sameSite,
+      store: 'Memory (development only)'
+    });
+
+    return this.sessionConfig;
+  }
+
+  /**
    * Initialize complete session setup
    */
   async initialize() {
     try {
+      // Skip Redis if disabled
+      if (process.env.DISABLE_REDIS_SESSIONS === 'true') {
+        logger.info('Redis sessions disabled, using memory store');
+        this.createMemorySessionConfig();
+        return session(this.sessionConfig);
+      }
+      
       await this.initializeRedis();
       this.createRedisStore();
       this.createSessionConfig();
@@ -201,11 +251,21 @@ class SessionConfig {
 
       return session(this.sessionConfig);
     } catch (error) {
-      logger.error('Failed to initialize session management', {
-        error: error.message,
-        stack: error.stack
+      logger.warn('Redis initialization failed, falling back to memory store', {
+        error: error.message
       });
-      throw error;
+      
+      // Fallback to memory store if Redis fails
+      try {
+        this.createMemorySessionConfig();
+        return session(this.sessionConfig);
+      } catch (fallbackError) {
+        logger.error('Failed to initialize session management with memory store', {
+          error: fallbackError.message,
+          stack: fallbackError.stack
+        });
+        throw fallbackError;
+      }
     }
   }
 

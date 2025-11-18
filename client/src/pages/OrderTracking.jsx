@@ -1,21 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useOrder, useCart } from '../context';
+import { LoadingSpinner, Toast } from '../components/Common';
 import { ReorderModal } from '../components/UserProfile/Modals';
 
 const OrderTracking = () => {
     const { orderId } = useParams();
+    const { loadOrder, currentOrder, isLoading, error } = useOrder();
+    const { addToCart } = useCart();
     const [showReorderModal, setShowReorderModal] = useState(false);
+    const [toast, setToast] = useState(null);
 
-    // Mock order data - in real app, fetch based on orderId
-    const order = {
-        id: orderId || 'TV-2024-001234',
-        date: '2024-01-15',
-        status: 'Delivered',
-        total: 3597.60,
-        items: 3,
-        image: '/img/tablet-product.jpg',
-        trackingNumber: 'TRK123456789'
-    };
+    useEffect(() => {
+        if (orderId) {
+            loadOrder(orderId);
+        }
+    }, [orderId, loadOrder]);
+
+    if (isLoading) {
+        return (
+            <div className="bloc bgc-5700 full-width-bloc l-bloc" style={{ minHeight: '60vh' }}>
+                <div className="container bloc-md">
+                    <LoadingSpinner />
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !currentOrder) {
+        return (
+            <div className="bloc bgc-5700 full-width-bloc l-bloc">
+                <div className="container bloc-md">
+                    <div className="alert alert-danger">
+                        <h4>Order Not Found</h4>
+                        <p>{error || 'Unable to load order details'}</p>
+                        <Link to="/profile?tab=orders" className="btn btn-primary">
+                            Back to Orders
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    const order = currentOrder;
 
     const getStatusColor = (status) => {
         switch (status.toLowerCase()) {
@@ -28,52 +56,45 @@ const OrderTracking = () => {
     };
 
     const getTrackingTimeline = () => {
+        const orderDate = new Date(order.createdAt);
         const timeline = [
             {
                 status: 'Order Placed',
-                date: order.date,
-                time: '14:30',
+                date: order.createdAt,
+                time: orderDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
                 completed: true,
                 current: false,
                 description: 'Your order has been confirmed and is being prepared'
             },
             {
                 status: 'Payment Confirmed',
-                date: order.date,
-                time: '14:32',
+                date: order.createdAt,
+                time: orderDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
                 completed: true,
                 current: false,
                 description: 'Payment has been successfully processed'
             },
             {
                 status: 'Processing',
-                date: order.date,
+                date: order.createdAt,
                 time: '15:45',
-                completed: order.status !== 'Processing',
-                current: order.status === 'Processing',
+                completed: order.status !== 'pending' && order.status !== 'confirmed',
+                current: order.status === 'processing',
                 description: 'Your items are being picked and packed'
             },
             {
                 status: 'Shipped',
-                date: new Date(new Date(order.date).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                date: order.shippedAt || new Date(orderDate.getTime() + 24 * 60 * 60 * 1000).toISOString(),
                 time: '09:15',
-                completed: order.status === 'Shipped' || order.status === 'Delivered',
-                current: order.status === 'Shipped',
-                description: `Package dispatched via courier. Tracking: ${order.trackingNumber}`
-            },
-            {
-                status: 'Out for Delivery',
-                date: new Date(new Date(order.date).getTime() + 48 * 60 * 60 * 1000).toISOString().split('T')[0],
-                time: '08:30',
-                completed: order.status === 'Delivered',
-                current: order.status === 'Out for Delivery',
-                description: 'Package is out for delivery in your area'
+                completed: order.status === 'shipped' || order.status === 'delivered',
+                current: order.status === 'shipped',
+                description: `Package dispatched via courier${order.tracking?.trackingNumber ? `. Tracking: ${order.tracking.trackingNumber}` : ''}`
             },
             {
                 status: 'Delivered',
-                date: new Date(new Date(order.date).getTime() + 48 * 60 * 60 * 1000).toISOString().split('T')[0],
+                date: order.deliveredAt || new Date(orderDate.getTime() + 48 * 60 * 60 * 1000).toISOString(),
                 time: '16:45',
-                completed: order.status === 'Delivered',
+                completed: order.status === 'delivered',
                 current: false,
                 description: 'Package delivered successfully'
             }
@@ -86,25 +107,6 @@ const OrderTracking = () => {
         <div className="bloc bgc-5700 full-width-bloc l-bloc" id="order-tracking-bloc">
             <div className="container bloc-md bloc-lg-md">
                 <div className="row">
-                    {/* Page Header */}
-                    <div className="col-12 mb-4">
-                        <nav aria-label="breadcrumb">
-                            <ol className="breadcrumb">
-                                <li className="breadcrumb-item">
-                                    <Link to="/user" title="Go to My Account">My Account</Link>
-                                </li>
-                                <li className="breadcrumb-item">
-                                    <Link to="/user?tab=orders" title="View all orders">Orders</Link>
-                                </li>
-                                <li className="breadcrumb-item">
-                                    <Link to={`/user/order/${order.id}`} title="View order details">Order Details</Link>
-                                </li>
-                                <li className="breadcrumb-item active" aria-current="page">Tracking</li>
-                            </ol>
-                        </nav>
-                        <h1 className="tc-6533 bold-text">Track Order #{order.id}</h1>
-                    </div>
-
                     <div className="row">
                         {/* Tracking Timeline */}
                         <div className="col-lg-8 mb-4">
@@ -116,20 +118,24 @@ const OrderTracking = () => {
                                             <h5 className="text-white mb-3">Order Details</h5>
                                             <div className="row">
                                                 <div className="col-sm-6">
-                                                    <p className="mb-2 text-white-50"><strong className="text-white">Order ID:</strong> {order.id}</p>
-                                                    <p className="mb-2 text-white-50"><strong className="text-white">Order Date:</strong> {new Date(order.date).toLocaleDateString()}</p>
-                                                    <p className="mb-2 text-white-50"><strong className="text-white">Total:</strong> £{order.total.toFixed(2)}</p>
+                                                    <p className="mb-2 text-white-50"><strong className="text-white">Order Number:</strong> {order.orderNumber}</p>
+                                                    <p className="mb-2 text-white-50"><strong className="text-white">Order Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
+                                                    <p className="mb-2 text-white-50"><strong className="text-white">Total:</strong> ${order.total.toFixed(2)}</p>
                                                 </div>
                                                 <div className="col-sm-6">
-                                                    <p className="mb-2 text-white-50"><strong className="text-white">Items:</strong> {order.items} item(s)</p>
-                                                    <p className="mb-2 text-white-50"><strong className="text-white">Tracking Number:</strong></p>
-                                                    <div className="tracking-number-display">{order.trackingNumber}</div>
+                                                    <p className="mb-2 text-white-50"><strong className="text-white">Items:</strong> {order.items?.length || 0} item(s)</p>
+                                                    {order.tracking?.trackingNumber && (
+                                                        <>
+                                                            <p className="mb-2 text-white-50"><strong className="text-white">Tracking Number:</strong></p>
+                                                            <div className="tracking-number-display">{order.tracking.trackingNumber}</div>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="col-md-4 text-center">
                                             <img
-                                                src={order.image}
+                                                src={order.items?.[0]?.image || '/img/placeholder.jpg'}
                                                 alt="Order"
                                                 className="img-fluid rounded mb-3 order-image"
                                                 style={{ maxHeight: '120px', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.2)' }}
@@ -184,7 +190,7 @@ const OrderTracking = () => {
                                 </div>
 
                                 {/* Estimated Delivery */}
-                                {order.status !== 'Delivered' && (
+                                {order.status !== 'delivered' && (
                                     <div className="delivery-estimate-card mt-4">
                                         <div className="d-flex align-items-center">
                                             <div className="delivery-estimate-icon">
@@ -198,17 +204,17 @@ const OrderTracking = () => {
                                             <div className="flex-grow-1">
                                                 <h6 className="delivery-estimate-title">Estimated Delivery</h6>
                                                 <p className="delivery-estimate-text mb-0">
-                                                    {order.status === 'Processing' ?
+                                                    {order.status === 'processing' ?
                                                         'Your order will be shipped within 1-2 business days' :
-                                                        order.status === 'Shipped' ?
+                                                        order.status === 'shipped' ?
                                                         'Expected delivery by tomorrow, 6:00 PM' :
                                                         'Your package is on the way!'
                                                     }
                                                 </p>
                                             </div>
                                             <div className="delivery-estimate-badge">
-                                                {order.status === 'Processing' ? '1-2 Days' : 
-                                                 order.status === 'Shipped' ? 'Tomorrow' : 'Today'}
+                                                {order.status === 'processing' ? '1-2 Days' : 
+                                                 order.status === 'shipped' ? 'Tomorrow' : 'Today'}
                                             </div>
                                         </div>
                                     </div>
@@ -223,7 +229,7 @@ const OrderTracking = () => {
                                 <h5 className="tc-6533 bold-text mb-3">Quick Actions</h5>
                                 <div className="d-grid gap-2">
                                     <Link
-                                        to={`/user/order/${order.id}`}
+                                        to={`/user/order/${order._id}`}
                                         className="btn btn-outline-primary btn-rd"
                                     >
                                         <svg width="16" height="16" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
@@ -232,15 +238,15 @@ const OrderTracking = () => {
                                         </svg>
                                         View Order Details
                                     </Link>
-                                    {order.status === 'Delivered' && (
+                                    {order.status === 'delivered' && (
                                         <Link
-                                            to={`/user/order/${order.id}/review`}
+                                            to={`/user/order/${order._id}/review`}
                                             className="btn btn-c-2101 btn-rd"
                                         >
                                             <svg width="16" height="16" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
                                                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                             </svg>
-                                            Write Review
+                                            {order.reviewedAt ? 'Edit Review' : 'Write Review'}
                                         </Link>
                                     )}
                                     <button 
@@ -268,10 +274,12 @@ const OrderTracking = () => {
                                     <small className="text-muted d-block">Service:</small>
                                     <span className="tc-6533">Next Day Delivery</span>
                                 </div>
-                                <div className="mb-3">
-                                    <small className="text-muted d-block">Tracking Number:</small>
-                                    <code className="bg-light p-1 rounded">{order.trackingNumber}</code>
-                                </div>
+                                {order.tracking?.trackingNumber && (
+                                    <div className="mb-3">
+                                        <small className="text-muted d-block">Tracking Number:</small>
+                                        <code className="bg-light p-1 rounded">{order.tracking.trackingNumber}</code>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Contact Support */}
@@ -306,11 +314,50 @@ const OrderTracking = () => {
                 <ReorderModal 
                     onClose={() => setShowReorderModal(false)}
                     order={order}
-                    onReorder={(selectedItems, quantities) => {
-                        console.log('Reorder completed:', selectedItems, quantities);
-                        alert('Items added to cart successfully!');
-                        setShowReorderModal(false);
+                    onReorder={async (selectedItems, itemQuantities) => {
+                        try {
+                            for (const item of selectedItems) {
+                                const quantity = itemQuantities[item.id]?.quantity || 1;
+                                const productId = item.id;
+                                
+                                const options = {};
+                                if (item.variants && Array.isArray(item.variants)) {
+                                    item.variants.forEach(variant => {
+                                        if (variant.name && variant.value) {
+                                            options[variant.name] = variant.value;
+                                        }
+                                    });
+                                }
+                                
+                                await addToCart(productId, quantity, options);
+                            }
+                            
+                            setToast({
+                                message: 'Items added to cart successfully!',
+                                type: 'success',
+                                action: {
+                                    label: 'View Cart',
+                                    path: '/cart'
+                                }
+                            });
+                            setShowReorderModal(false);
+                        } catch (error) {
+                            setToast({
+                                message: 'Failed to add items to cart. Please try again.',
+                                type: 'error'
+                            });
+                        }
                     }}
+                />
+            )}
+
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    action={toast.action}
+                    onClose={() => setToast(null)}
                 />
             )}
         </div>

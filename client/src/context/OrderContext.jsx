@@ -74,13 +74,13 @@ const orderReducer = (state, action) => {
     case ORDER_ACTIONS.LOAD_ORDERS_SUCCESS:
       return {
         ...state,
-        orders: action.payload.data || [],
+        orders: action.payload.data?.orders || action.payload.data || [],
         pagination: {
-          page: action.payload.page || 1,
-          limit: action.payload.limit || 10,
-          total: action.payload.total || 0,
-          totalPages: action.payload.totalPages || 0,
-          hasMore: action.payload.hasMore || false
+          page: action.payload.data?.pagination?.currentPage || action.payload.page || 1,
+          limit: action.payload.data?.pagination?.limit || action.payload.limit || 10,
+          total: action.payload.data?.pagination?.totalOrders || action.payload.total || 0,
+          totalPages: action.payload.data?.pagination?.totalPages || action.payload.totalPages || 0,
+          hasMore: action.payload.data?.pagination?.hasNextPage || action.payload.hasMore || false
         },
         isLoading: false,
         error: null
@@ -89,13 +89,13 @@ const orderReducer = (state, action) => {
     case ORDER_ACTIONS.LOAD_MORE_ORDERS_SUCCESS:
       return {
         ...state,
-        orders: [...state.orders, ...(action.payload.data || [])],
+        orders: [...state.orders, ...(action.payload.data?.orders || action.payload.data || [])],
         pagination: {
-          page: action.payload.page || state.pagination.page + 1,
-          limit: action.payload.limit || state.pagination.limit,
-          total: action.payload.total || state.pagination.total,
-          totalPages: action.payload.totalPages || state.pagination.totalPages,
-          hasMore: action.payload.hasMore || false
+          page: action.payload.data?.pagination?.currentPage || action.payload.page || state.pagination.page + 1,
+          limit: action.payload.data?.pagination?.limit || action.payload.limit || state.pagination.limit,
+          total: action.payload.data?.pagination?.totalOrders || action.payload.total || state.pagination.total,
+          totalPages: action.payload.data?.pagination?.totalPages || action.payload.totalPages || state.pagination.totalPages,
+          hasMore: action.payload.data?.pagination?.hasNextPage || action.payload.hasMore || false
         },
         isLoading: false,
         error: null
@@ -113,7 +113,7 @@ const orderReducer = (state, action) => {
     case ORDER_ACTIONS.LOAD_ORDER_SUCCESS:
       return {
         ...state,
-        currentOrder: action.payload.data || action.payload,
+        currentOrder: action.payload.data?.order || action.payload.data || action.payload,
         isLoading: false,
         error: null
       };

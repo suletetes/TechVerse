@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Toast } from '../Common';
 
 const AdminProducts = ({ 
     products = [], 
@@ -9,8 +11,11 @@ const AdminProducts = ({
     formatCurrency,
     onUpdateProduct,
     onDeleteProduct,
-    onDuplicateProduct 
+    onDuplicateProduct,
+    isLoading = false,
+    error = null 
 }) => {
+    const [toast, setToast] = useState(null);
     const [filteredProducts, setFilteredProducts] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
@@ -19,13 +24,14 @@ const AdminProducts = ({
     const [sortOrder, setSortOrder] = useState('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const [productsPerPage] = useState(10);
+    const [deleteConfirmation, setDeleteConfirmation] = useState(null);
 
     // Dynamic categories from catalog management system
     const categoryOptions = [
         { value: '', label: 'All Categories' },
-        ...(Array.isArray(categories) ? categories.map(cat => ({
-            value: cat.slug || cat.name.toLowerCase(),
-            label: cat.name,
+        ...(Array.isArray(categories) ? categories.map((cat, index) => ({
+            value: cat.slug || cat.name?.toLowerCase() || `category-${index}`,
+            label: cat.name || `Category ${index + 1}`,
             count: cat.productCount || 0,
             isActive: cat.isActive
         })) : [])
@@ -100,42 +106,155 @@ const AdminProducts = ({
     const currentProducts = Array.isArray(filteredProducts) ? filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct) : [];
     const totalPages = Math.ceil((Array.isArray(filteredProducts) ? filteredProducts.length : 0) / productsPerPage);
 
+    const handleView = (product) => {
+        console.log('🔍 View button clicked for product:', product);
+        
+        // Product slug or ID for viewing
+        const productSlug = product.slug || product._id || product.id;
+        const url = `/product/${productSlug}`;
+        
+        console.log('📍 Opening URL:', url);
+        window.open(url, '_blank');
+        
+        setToast({
+            message: 'Opening product page in new tab...',
+            type: 'info'
+        });
+    };
+
     const handleEdit = (productId) => {
-        console.log('Edit product:', productId);
-        // Navigate to edit form or open modal
-        setActiveTab('edit-product', productId);
+        console.log('✏️ Edit button clicked for product ID:', productId);
+        console.log('📋 setActiveTab function:', typeof setActiveTab);
+        
+        if (typeof setActiveTab === 'function') {
+            setActiveTab('edit-product', productId);
+            setToast({
+                message: 'Loading product editor...',
+                type: 'info'
+            });
+        } else {
+            console.error('❌ setActiveTab is not a function!');
+            setToast({
+                message: 'Error: Cannot switch to edit mode',
+                type: 'error'
+            });
+        }
     };
 
     const handleDelete = (productId) => {
-        if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+        console.log('🗑️ Delete button clicked for product ID:', productId);
+        
+        const product = Array.isArray(products) ? products.find(p => p.id === productId || p._id === productId) : null;
+        const productName = product?.name || 'this product';
+        
+        // Show confirmation modal
+        setDeleteConfirmation({
+            productId,
+            productName
+        });
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteConfirmation) return;
+        
+        const { productId, productName } = deleteConfirmation;
+        
+        try {
             if (onDeleteProduct) {
-                onDeleteProduct(productId);
+                console.log('🔄 Calling onDeleteProduct...');
+                await onDeleteProduct(productId);
+                setToast({
+                    message: `"${productName}" has been deleted successfully!`,
+                    type: 'success'
+                });
             } else {
-                console.log('Delete product:', productId);
-                alert('Product deleted successfully! (Demo mode)');
+                console.log('⚠️ No onDeleteProduct function provided (demo mode)');
+                setToast({
+                    message: 'Product deleted successfully! (Demo mode)',
+                    type: 'success'
+                });
             }
+        } catch (error) {
+            console.error('❌ Error deleting product:', error);
+            setToast({
+                message: error.message || `Failed to delete "${productName}". Please try again.`,
+                type: 'error'
+            });
+        } finally {
+            setDeleteConfirmation(null);
         }
     };
 
-    const handleDuplicate = (productId) => {
-        const productToDuplicate = Array.isArray(products) ? products.find(p => p.id === productId) : null;
+    const cancelDelete = () => {
+        console.log('❌ Delete cancelled by user');
+        setDeleteConfirmation(null);
+    };
+
+    const handleDuplicate = async (productId) => {
+        console.log('📋 Duplicate button clicked for product ID:', productId);
+        
+        const productToDuplicate = Array.isArray(products) ? products.find(p => p.id === productId || p._id === productId) : null;
+        console.log('🔍 Found product to duplicate:', productToDuplicate);
+        
+        const productName = productToDuplicate?.name || 'Product';
+        
         if (productToDuplicate && onDuplicateProduct) {
-            onDuplicateProduct(productToDuplicate);
+            try {
+                console.log('🔄 Calling onDuplicateProduct...');
+                await onDuplicateProduct(productToDuplicate);
+                setToast({
+                    message: `"${productName}" has been duplicated successfully! The copy is saved as a draft.`,
+                    type: 'success'
+                });
+            } catch (error) {
+                console.error('❌ Error duplicating product:', error);
+                setToast({
+                    message: error.message || `Failed to duplicate "${productName}". Please try again.`,
+                    type: 'error'
+                });
+            }
         } else {
-            console.log('Duplicate product:', productId);
-            alert('Product duplicated successfully! (Demo mode)');
+            console.log('⚠️ No onDuplicateProduct function provided (demo mode)');
+            setToast({
+                message: 'Product duplicated successfully! (Demo mode)',
+                type: 'success'
+            });
         }
     };
 
-    const handleToggleStatus = (productId, currentStatus) => {
-        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const handleToggleStatus = async (productId, currentStatus) => {
+        console.log('🔄 Toggle status button clicked for product ID:', productId);
+        console.log('📊 Current status:', currentStatus);
+        
+        const product = Array.isArray(products) ? products.find(p => p.id === productId || p._id === productId) : null;
+        const productName = product?.name || 'Product';
+        
+        // Valid statuses: 'draft', 'active', 'archived', 'out_of_stock'
+        // Toggle between 'active' and 'archived' (not 'inactive')
+        const newStatus = currentStatus === 'active' ? 'archived' : 'active';
         const updatedProduct = { status: newStatus };
         
-        if (onUpdateProduct) {
-            onUpdateProduct(productId, updatedProduct);
-        } else {
-            console.log('Toggle status:', productId, newStatus);
-            alert(`Product status changed to ${newStatus}! (Demo mode)`);
+        console.log('📝 New status:', newStatus);
+        
+        try {
+            if (onUpdateProduct) {
+                console.log('🔄 Calling onUpdateProduct...');
+                await onUpdateProduct(productId, updatedProduct);
+            } else {
+                console.log('⚠️ No onUpdateProduct function provided (demo mode)');
+            }
+            
+            const statusText = newStatus === 'active' ? 'activated' : 'archived';
+            setToast({
+                message: `"${productName}" has been ${statusText} successfully!`,
+                type: 'success'
+            });
+        } catch (error) {
+            console.error('❌ Error toggling status:', error);
+            setToast({
+                message: error.message || `Failed to update "${productName}" status. Please try again.`,
+                type: 'error'
+            });
         }
     };
 
@@ -216,8 +335,8 @@ const AdminProducts = ({
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
                     >
-                        {categoryOptions.map(cat => (
-                            <option key={cat.value} value={cat.value}>
+                        {categoryOptions.map((cat, index) => (
+                            <option key={cat.value || `category-${index}`} value={cat.value}>
                                 {cat.label} {cat.count > 0 && `(${cat.count})`}
                             </option>
                         ))}
@@ -229,8 +348,8 @@ const AdminProducts = ({
                         value={selectedStatus}
                         onChange={(e) => setSelectedStatus(e.target.value)}
                     >
-                        {statusOptions.map(status => (
-                            <option key={status.value} value={status.value}>{status.label}</option>
+                        {statusOptions.map((status, index) => (
+                            <option key={status.value || `status-${index}`} value={status.value}>{status.label}</option>
                         ))}
                     </select>
                 </div>
@@ -240,8 +359,8 @@ const AdminProducts = ({
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
                     >
-                        {sortOptions.map(sort => (
-                            <option key={sort.value} value={sort.value}>Sort by {sort.label}</option>
+                        {sortOptions.map((sort, index) => (
+                            <option key={sort.value || `sort-${index}`} value={sort.value}>Sort by {sort.label}</option>
                         ))}
                     </select>
                 </div>
@@ -286,10 +405,16 @@ const AdminProducts = ({
                                             {Array.isArray(products) ? products.filter(p => p.status === 'active').length : 0} Active
                                         </span>
                                         <span className="badge bg-warning bg-opacity-15 text-warning">
-                                            {Array.isArray(products) ? products.filter(p => p.stock < 10 && p.stock > 0).length : 0} Low Stock
+                                            {Array.isArray(products) ? products.filter(p => {
+                                                const stock = typeof p.stock === 'number' ? p.stock : p.stock?.quantity || 0;
+                                                return stock < 10 && stock > 0;
+                                            }).length : 0} Low Stock
                                         </span>
                                         <span className="badge bg-danger bg-opacity-15 text-danger">
-                                            {Array.isArray(products) ? products.filter(p => p.stock === 0).length : 0} Out of Stock
+                                            {Array.isArray(products) ? products.filter(p => {
+                                                const stock = typeof p.stock === 'number' ? p.stock : p.stock?.quantity || 0;
+                                                return stock === 0;
+                                            }).length : 0} Out of Stock
                                         </span>
                                         <span className="badge bg-info bg-opacity-15 text-info">
                                             {Array.isArray(categories) ? categories.length : 0} Categories
@@ -304,26 +429,51 @@ const AdminProducts = ({
 
             {/* Products Table */}
             <div className="table-responsive">
-                <table className="table table-hover align-middle">
-                    <thead className="table-light">
-                        <tr>
-                            <th className="border-0 fw-semibold">
-                                <input type="checkbox" className="form-check-input" />
-                            </th>
-                            <th className="border-0 fw-semibold">Product</th>
-                            <th className="border-0 fw-semibold d-none d-md-table-cell">Category</th>
-                            <th className="border-0 fw-semibold">Price</th>
-                            <th className="border-0 fw-semibold d-none d-lg-table-cell">Stock</th>
-                            <th className="border-0 fw-semibold d-none d-xl-table-cell">Sales</th>
-                            <th className="border-0 fw-semibold">Status</th>
-                            <th className="border-0 fw-semibold text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {currentProducts.map((product) => {
-                            const stockStatus = getStockStatus(product.stock);
+                {isLoading ? (
+                    <div className="text-center py-5">
+                        <div className="spinner-border text-primary" role="status">
+                            <span className="visually-hidden">Loading products...</span>
+                        </div>
+                        <p className="mt-2 text-muted">Loading products from database...</p>
+                    </div>
+                ) : error ? (
+                    <div className="text-center py-5">
+                        <div className="alert alert-danger mx-4">
+                            <h5 className="alert-heading">Error Loading Products</h5>
+                            <p className="mb-0">{error}</p>
+                            <hr />
+                            <button 
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() => window.location.reload()}
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <table className="table table-hover align-middle">
+                        <thead className="table-light">
+                            <tr>
+                                <th className="border-0 fw-semibold">
+                                    <input type="checkbox" className="form-check-input" />
+                                </th>
+                                <th className="border-0 fw-semibold">Product</th>
+                                <th className="border-0 fw-semibold d-none d-md-table-cell">Category</th>
+                                <th className="border-0 fw-semibold">Price</th>
+                                <th className="border-0 fw-semibold d-none d-lg-table-cell">Stock</th>
+                                <th className="border-0 fw-semibold d-none d-xl-table-cell">Sales</th>
+                                <th className="border-0 fw-semibold">Status</th>
+                                <th className="border-0 fw-semibold text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {currentProducts.map((product, index) => {
+                            const stockQuantity = typeof product.stock === 'number' 
+                                ? product.stock 
+                                : product.stock?.quantity || product.stockQuantity || 0;
+                            const stockStatus = getStockStatus(stockQuantity);
                             return (
-                                <tr key={product.id} className="border-bottom">
+                                <tr key={product.id || product._id || `product-${index}`} className="border-bottom">
                                     <td>
                                         <input type="checkbox" className="form-check-input" />
                                     </td>
@@ -331,12 +481,38 @@ const AdminProducts = ({
                                         <div className="d-flex align-items-center">
                                             <div className="position-relative me-3">
                                                 <img
-                                                    src={product.image || product.mediaGallery?.[0]?.src || '../img/placeholder.jpg'}
+                                                    src={(() => {
+                                                        // Try images array first
+                                                        if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+                                                            const primaryImg = product.images.find(img => img.isPrimary);
+                                                            if (primaryImg) return primaryImg.url || primaryImg;
+                                                            const firstImg = product.images[0];
+                                                            return firstImg?.url || firstImg;
+                                                        }
+                                                        // Try primaryImage field
+                                                        if (product.primaryImage) {
+                                                            return product.primaryImage.url || product.primaryImage;
+                                                        }
+                                                        // Try single image field
+                                                        if (product.image) {
+                                                            return product.image.url || product.image;
+                                                        }
+                                                        // Try mediaGallery
+                                                        if (product.mediaGallery && product.mediaGallery.length > 0) {
+                                                            return product.mediaGallery[0].src || product.mediaGallery[0].url;
+                                                        }
+                                                        // Fallback to placeholder
+                                                        return '/img/placeholder.jpg';
+                                                    })()}
                                                     alt={product.name}
                                                     className="rounded-3 shadow-sm"
                                                     width="60"
                                                     height="60"
                                                     style={{ objectFit: 'cover' }}
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src = '/img/placeholder.jpg';
+                                                    }}
                                                 />
                                                 {product.featured && (
                                                     <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning">
@@ -354,7 +530,10 @@ const AdminProducts = ({
                                                 </div>
                                                 <div className="d-block d-md-none mt-1">
                                                     <small className="badge bg-light text-dark border px-2 py-1 rounded-pill">
-                                                        {product.category}
+                                                        {typeof product.category === 'string' 
+                                                            ? product.category 
+                                                            : product.category?.name || 'Category'
+                                                        }
                                                     </small>
                                                 </div>
                                             </div>
@@ -363,7 +542,10 @@ const AdminProducts = ({
                                     <td className="d-none d-md-table-cell">
                                         <div className="d-flex flex-column">
                                             <span className="badge bg-light text-dark border px-3 py-2 rounded-pill mb-1">
-                                                {product.category}
+                                                {typeof product.category === 'string' 
+                                                    ? product.category 
+                                                    : product.category?.name || 'Category'
+                                                }
                                             </span>
                                             {getCategorySpecs(product.category) > 0 && (
                                                 <small className="text-muted">
@@ -385,7 +567,7 @@ const AdminProducts = ({
                                     <td className="d-none d-lg-table-cell">
                                         <div className="d-flex flex-column">
                                             <span className={`fw-medium text-${stockStatus.color}`}>
-                                                {product.stock}
+                                                {stockQuantity}
                                             </span>
                                             <small className={`text-${stockStatus.color}`}>
                                                 {stockStatus.text}
@@ -394,7 +576,12 @@ const AdminProducts = ({
                                     </td>
                                     <td className="d-none d-xl-table-cell">
                                         <div className="d-flex flex-column">
-                                            <span className="fw-medium">{product.sales || 0}</span>
+                                            <span className="fw-medium">
+                                                {typeof product.sales === 'number' 
+                                                    ? product.sales 
+                                                    : product.sales?.totalSold || product.totalSold || 0
+                                                }
+                                            </span>
                                             <small className="text-muted">units sold</small>
                                         </div>
                                     </td>
@@ -406,8 +593,17 @@ const AdminProducts = ({
                                     <td className="text-center">
                                         <div className="btn-group btn-group-sm">
                                             <button
+                                                className="btn btn-outline-info btn-sm"
+                                                onClick={() => handleView(product)}
+                                                title="View Product Page"
+                                            >
+                                                <svg width="14" height="14" viewBox="0 0 24 24">
+                                                    <path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
+                                                </svg>
+                                            </button>
+                                            <button
                                                 className="btn btn-outline-primary btn-sm"
-                                                onClick={() => handleEdit(product.id)}
+                                                onClick={() => handleEdit(product.id || product._id)}
                                                 title="Edit Product"
                                             >
                                                 <svg width="14" height="14" viewBox="0 0 24 24">
@@ -416,7 +612,7 @@ const AdminProducts = ({
                                             </button>
                                             <button
                                                 className="btn btn-outline-secondary btn-sm"
-                                                onClick={() => handleDuplicate(product.id)}
+                                                onClick={() => handleDuplicate(product.id || product._id)}
                                                 title="Duplicate Product"
                                             >
                                                 <svg width="14" height="14" viewBox="0 0 24 24">
@@ -425,7 +621,7 @@ const AdminProducts = ({
                                             </button>
                                             <button
                                                 className={`btn btn-outline-${product.status === 'active' ? 'warning' : 'success'} btn-sm`}
-                                                onClick={() => handleToggleStatus(product.id, product.status)}
+                                                onClick={() => handleToggleStatus(product.id || product._id, product.status)}
                                                 title={product.status === 'active' ? 'Deactivate' : 'Activate'}
                                             >
                                                 <svg width="14" height="14" viewBox="0 0 24 24">
@@ -434,7 +630,7 @@ const AdminProducts = ({
                                             </button>
                                             <button
                                                 className="btn btn-outline-danger btn-sm"
-                                                onClick={() => handleDelete(product.id)}
+                                                onClick={() => handleDelete(product.id || product._id)}
                                                 title="Delete Product"
                                             >
                                                 <svg width="14" height="14" viewBox="0 0 24 24">
@@ -445,9 +641,10 @@ const AdminProducts = ({
                                     </td>
                                 </tr>
                             );
-                        })}
-                    </tbody>
-                </table>
+                            })}
+                        </tbody>
+                    </table>
+                )}
             </div>
 
             {/* Pagination */}
@@ -559,6 +756,61 @@ const AdminProducts = ({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirmation && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header border-0">
+                                <h5 className="modal-title">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" className="text-danger me-2" style={{ verticalAlign: 'middle' }}>
+                                        <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                                    </svg>
+                                    Confirm Delete
+                                </h5>
+                                <button type="button" className="btn-close" onClick={cancelDelete}></button>
+                            </div>
+                            <div className="modal-body">
+                                <p className="mb-0">
+                                    Are you sure you want to delete <strong>"{deleteConfirmation.productName}"</strong>?
+                                </p>
+                                <p className="text-muted small mb-0 mt-2">
+                                    This action cannot be undone. The product and all its data will be permanently removed.
+                                </p>
+                            </div>
+                            <div className="modal-footer border-0">
+                                <button 
+                                    type="button" 
+                                    className="btn btn-secondary" 
+                                    onClick={cancelDelete}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className="btn btn-danger" 
+                                    onClick={confirmDelete}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-1" style={{ verticalAlign: 'middle' }}>
+                                        <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                    </svg>
+                                    Delete Product
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast Notifications */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
             )}
         </div>
     );

@@ -262,7 +262,7 @@ export const useAdminData = () => {
         }
     };
 
-    const formatCurrency = (amount) => `£${amount.toLocaleString('en-GB', {minimumFractionDigits: 2})}`;
+    const formatCurrency = (amount) => `$${amount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
 
     return {
         adminProfileData,

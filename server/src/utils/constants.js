@@ -57,7 +57,7 @@ export const UPLOAD_SETTINGS = {
 export const PAGINATION_DEFAULTS = {
   PAGE: 1,
   LIMIT: 20,
-  MAX_LIMIT: 100
+  MAX_LIMIT: 1000
 };
 
 // Cache TTL (Time To Live) in seconds

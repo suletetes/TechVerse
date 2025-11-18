@@ -13,6 +13,7 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
     page = PAGINATION_DEFAULTS.PAGE,
     limit = PAGINATION_DEFAULTS.LIMIT,
     sort = 'newest',
+    order, // Accept order parameter but don't use it for predefined sorts
     category,
     brand,
     minPrice,
@@ -29,7 +30,46 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
     visibility: 'public'
   };
 
-  if (category) filter.category = category;
+  if (category) {
+    // Handle category by name or ObjectId
+    if (typeof category === 'string' && !category.match(/^[0-9a-fA-F]{24}$/)) {
+      // If it's not an ObjectId, find the category by name or slug
+      try {
+        const categoryDoc = await Category.findOne({
+          $or: [
+            { name: { $regex: new RegExp(`^${category}$`, 'i') } },
+            { slug: { $regex: new RegExp(`^${category}$`, 'i') } }
+          ]
+        });
+        
+        if (categoryDoc) {
+          filter.category = categoryDoc._id;
+        } else {
+          // If category not found, return empty results
+          return res.status(200).json({
+            success: true,
+            message: 'No products found for this category',
+            data: {
+              products: [],
+              pagination: {
+                currentPage: parseInt(page),
+                totalPages: 0,
+                totalProducts: 0,
+                hasNextPage: false,
+                hasPrevPage: false,
+                limit: limitNum
+              }
+            }
+          });
+        }
+      } catch (error) {
+        logger.error('Error finding category:', error);
+        filter.category = category; // Fallback to original value
+      }
+    } else {
+      filter.category = category;
+    }
+  }
   if (brand) filter.brand = { $in: Array.isArray(brand) ? brand : [brand] };
   if (minPrice || maxPrice) {
     filter.price = {};
@@ -44,9 +84,12 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
   const sortOptions = {
     'newest': { createdAt: -1 },
     'oldest': { createdAt: 1 },
+    'name': { name: 1 },
+    'price-low': { price: 1 },
+    'price-high': { price: -1 },
+    'rating': { 'rating.average': -1 },
     'price_asc': { price: 1 },
     'price_desc': { price: -1 },
-    'rating': { 'rating.average': -1 },
     'name_asc': { name: 1 },
     'name_desc': { name: -1 },
     'popularity': { 'sales.totalSold': -1 }
@@ -69,9 +112,51 @@ export const getAllProducts = asyncHandler(async (req, res, next) => {
     Product.countDocuments(filter)
   ]);
 
+  // Transform products to include category name as string for frontend compatibility
+  const transformedProducts = products.map(product => {
+    // Ensure category is always a string, never an object
+    let categoryName = '';
+    if (product.category) {
+      if (typeof product.category === 'string') {
+        categoryName = product.category;
+      } else if (product.category.name) {
+        categoryName = product.category.name;
+      } else if (product.category._id) {
+        categoryName = product.category._id.toString();
+      }
+    }
+    
+    // Ensure stock is properly formatted for frontend
+    let stockQuantity = 0;
+    let stockStatus = 'out_of_stock';
+    if (product.stock) {
+      if (typeof product.stock === 'object') {
+        stockQuantity = product.stock.quantity || 0;
+        stockStatus = stockQuantity > 0 ? 'in_stock' : 'out_of_stock';
+      } else if (typeof product.stock === 'number') {
+        stockQuantity = product.stock;
+        stockStatus = stockQuantity > 0 ? 'in_stock' : 'out_of_stock';
+      }
+    }
+    
+    return {
+      ...product,
+      categoryName,
+      category: categoryName, // Always use string for category
+      stockQuantity,
+      stockStatus,
+      // Keep original stock object for admin use but ensure it's not rendered directly
+      stock: {
+        quantity: stockQuantity,
+        lowStockThreshold: product.stock?.lowStockThreshold || 5,
+        trackQuantity: product.stock?.trackQuantity || true
+      }
+    };
+  });
+
   // Format image URLs for all products
   const baseUrl = getBaseUrl(req);
-  const formattedProducts = products.map(product => ({
+  const formattedProducts = transformedProducts.map(product => ({
     ...product,
     images: formatProductImages(product.images, baseUrl)
   }));
@@ -147,11 +232,48 @@ export const getProductById = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Format image URLs
+  // Format image URLs and transform category
   const baseUrl = getBaseUrl(req);
+  const productObj = product.toObject();
+  
+  // Ensure category is always a string, never an object
+  let categoryName = '';
+  if (productObj.category) {
+    if (typeof productObj.category === 'string') {
+      categoryName = productObj.category;
+    } else if (productObj.category.name) {
+      categoryName = productObj.category.name;
+    } else if (productObj.category._id) {
+      categoryName = productObj.category._id.toString();
+    }
+  }
+  
+  // Ensure stock is properly formatted for frontend
+  let stockQuantity = 0;
+  let stockStatus = 'out_of_stock';
+  if (productObj.stock) {
+    if (typeof productObj.stock === 'object') {
+      stockQuantity = productObj.stock.quantity || 0;
+      stockStatus = stockQuantity > 0 ? 'in_stock' : 'out_of_stock';
+    } else if (typeof productObj.stock === 'number') {
+      stockQuantity = productObj.stock;
+      stockStatus = stockQuantity > 0 ? 'in_stock' : 'out_of_stock';
+    }
+  }
+  
   const formattedProduct = {
-    ...product.toObject(),
-    images: formatProductImages(product.images, baseUrl)
+    ...productObj,
+    categoryName,
+    category: categoryName, // Always use string for category
+    stockQuantity,
+    stockStatus,
+    // Keep original stock object for admin use but ensure it's not rendered directly
+    stock: {
+      quantity: stockQuantity,
+      lowStockThreshold: productObj.stock?.lowStockThreshold || 5,
+      trackQuantity: productObj.stock?.trackQuantity || true
+    },
+    images: formatProductImages(productObj.images, baseUrl)
   };
 
   res.status(200).json({
@@ -172,12 +294,64 @@ export const createProduct = asyncHandler(async (req, res, next) => {
     createdBy: req.user._id
   };
 
-  // Validate category exists
+  // Validate category exists and convert to ObjectId if needed
   if (productData.category) {
-    const category = await Category.findById(productData.category);
-    if (!category) {
-      return next(new AppError('Category not found', 400, 'CATEGORY_NOT_FOUND'));
+    let category;
+    
+    // Check if it's a valid MongoDB ObjectId
+    if (/^[0-9a-fA-F]{24}$/.test(productData.category)) {
+      category = await Category.findById(productData.category);
+    } else {
+      // Try to find by name or slug
+      category = await Category.findOne({
+        $or: [
+          { name: { $regex: new RegExp(`^${productData.category}`, 'i') } },
+          { slug: productData.category.toLowerCase() }
+        ]
+      });
     }
+    
+    if (!category) {
+      // For draft products, allow saving without valid category
+      // For active products, require valid category
+      if (productData.status === 'active') {
+        return next(new AppError(`Category '${productData.category}' not found. Please select a valid category before activating the product.`, 400, 'CATEGORY_NOT_FOUND'));
+      } else {
+        // For drafts, log warning but allow saving
+        logger.warn('Product saved with invalid category', {
+          productName: productData.name,
+          categoryId: productData.category,
+          status: productData.status,
+          userId: req.user._id
+        });
+        // Keep the category ID as is for now, will need to be fixed before activation
+      }
+    } else {
+      // Update productData to use the category ObjectId
+      productData.category = category._id;
+    }
+  }
+
+  // Validate slug uniqueness if provided
+  if (productData.slug) {
+    const existingProduct = await Product.findOne({ slug: productData.slug });
+    if (existingProduct) {
+      return next(new AppError('A product with this slug already exists', 400, 'SLUG_EXISTS'));
+    }
+  }
+
+  // Ensure specifications array is properly formatted
+  if (productData.specifications && Array.isArray(productData.specifications)) {
+    productData.specifications = productData.specifications.filter(spec => 
+      spec.name && spec.value && spec.category
+    );
+  }
+
+  // Ensure variants array is properly formatted
+  if (productData.variants && Array.isArray(productData.variants)) {
+    productData.variants = productData.variants.filter(variant => 
+      variant.name && variant.options && variant.options.length > 0
+    );
   }
 
   // Handle image uploads if any
@@ -199,6 +373,7 @@ export const createProduct = asyncHandler(async (req, res, next) => {
   logger.info('Product created successfully', {
     productId: product._id,
     name: product.name,
+    slug: product.slug,
     createdBy: req.user._id,
     ip: req.ip
   });
@@ -337,7 +512,7 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
     q: searchTerm,
     page = PAGINATION_DEFAULTS.PAGE,
     limit = PAGINATION_DEFAULTS.LIMIT,
-    sort = 'relevance',
+    sort = 'newest',
     category,
     brand,
     minPrice,
@@ -349,12 +524,55 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
     return next(new AppError('Search term is required', 400, 'SEARCH_TERM_REQUIRED'));
   }
 
+  // Handle category filtering
+  let categoryFilter = undefined;
+  if (category) {
+    if (typeof category === 'string' && !category.match(/^[0-9a-fA-F]{24}$/)) {
+      // If it's not an ObjectId, find the category by name or slug
+      try {
+        const categoryDoc = await Category.findOne({
+          $or: [
+            { name: { $regex: new RegExp(`^${category}$`, 'i') } },
+            { slug: { $regex: new RegExp(`^${category}$`, 'i') } }
+          ]
+        });
+        
+        if (categoryDoc) {
+          categoryFilter = [categoryDoc._id];
+        } else {
+          // If category not found, return empty results
+          return res.status(200).json({
+            success: true,
+            message: 'No products found for this category',
+            data: {
+              products: [],
+              searchTerm,
+              pagination: {
+                currentPage: parseInt(page),
+                totalPages: 0,
+                totalProducts: 0,
+                hasNextPage: false,
+                hasPrevPage: false,
+                limit: Math.min(parseInt(limit), PAGINATION_DEFAULTS.MAX_LIMIT)
+              }
+            }
+          });
+        }
+      } catch (error) {
+        logger.error('searchProducts - Error finding category:', error);
+        categoryFilter = Array.isArray(category) ? category : [category]; // Fallback
+      }
+    } else {
+      categoryFilter = Array.isArray(category) ? category : [category];
+    }
+  }
+
   // Build search options
   const searchOptions = {
     page: parseInt(page),
     limit: Math.min(parseInt(limit), PAGINATION_DEFAULTS.MAX_LIMIT),
     sort,
-    category: category ? (Array.isArray(category) ? category : [category]) : undefined,
+    category: categoryFilter,
     brand: brand ? (Array.isArray(brand) ? brand : [brand]) : undefined,
     minPrice: minPrice ? parseFloat(minPrice) : undefined,
     maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
@@ -362,8 +580,52 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
   };
 
   // Execute search
-  const products = await Product.searchProducts(searchTerm, searchOptions);
-  const totalProducts = await Product.countDocuments({
+  const rawProducts = await Product.searchProducts(searchTerm, searchOptions);
+  
+  // Transform products to include category name as string for frontend compatibility
+  const products = Array.isArray(rawProducts) ? rawProducts.map(product => {
+    // Ensure category is always a string, never an object
+    let categoryName = '';
+    if (product.category) {
+      if (typeof product.category === 'string') {
+        categoryName = product.category;
+      } else if (product.category.name) {
+        categoryName = product.category.name;
+      } else if (product.category._id) {
+        categoryName = product.category._id.toString();
+      }
+    }
+    
+    // Ensure stock is properly formatted for frontend
+    let stockQuantity = 0;
+    let stockStatus = 'out_of_stock';
+    if (product.stock) {
+      if (typeof product.stock === 'object') {
+        stockQuantity = product.stock.quantity || 0;
+        stockStatus = stockQuantity > 0 ? 'in_stock' : 'out_of_stock';
+      } else if (typeof product.stock === 'number') {
+        stockQuantity = product.stock;
+        stockStatus = stockQuantity > 0 ? 'in_stock' : 'out_of_stock';
+      }
+    }
+    
+    return {
+      ...product,
+      categoryName,
+      category: categoryName, // Always use string for category
+      stockQuantity,
+      stockStatus,
+      // Keep original stock object for admin use but ensure it's not rendered directly
+      stock: {
+        quantity: stockQuantity,
+        lowStockThreshold: product.stock?.lowStockThreshold || 5,
+        trackQuantity: product.stock?.trackQuantity || true
+      }
+    };
+  }) : [];
+  
+  // Build count query with same filters
+  const countFilter = {
     $and: [
       { status: 'active', visibility: 'public' },
       {
@@ -375,7 +637,14 @@ export const searchProducts = asyncHandler(async (req, res, next) => {
         ]
       }
     ]
-  });
+  };
+  
+  // Add category filter to count query if present
+  if (categoryFilter && categoryFilter.length > 0) {
+    countFilter.$and.push({ category: { $in: categoryFilter } });
+  }
+  
+  const totalProducts = await Product.countDocuments(countFilter);
 
   // Calculate pagination
   const totalPages = Math.ceil(totalProducts / searchOptions.limit);
@@ -485,7 +754,18 @@ export const getProductsByCategory = asyncHandler(async (req, res, next) => {
 // @access  Private
 export const addProductReview = asyncHandler(async (req, res, next) => {
   const { id: productId } = req.params;
-  const { rating, title, comment, pros, cons } = req.body;
+  const { rating, title, comment, pros, cons, orderId } = req.body;
+  
+  console.log('🔍 DEBUG addProductReview:', {
+    productId,
+    userId: req.user?._id,
+    rating,
+    title,
+    comment,
+    pros,
+    cons,
+    orderId
+  });
 
   // Check if product exists - try by ID first, then by slug
   let product = null;
@@ -503,9 +783,50 @@ export const addProductReview = asyncHandler(async (req, res, next) => {
   // Check if user already reviewed this product
   const existingReview = await Review.findOne({
     user: req.user._id,
-    product: productId
+    product: product._id
   });
 
+  console.log('🔍 DEBUG existingReview:', {
+    exists: !!existingReview,
+    hasOrder: !!existingReview?.order,
+    existingOrderId: existingReview?.order?.toString(),
+    newOrderId: orderId,
+    match: existingReview?.order?.toString() === orderId
+  });
+
+  // If review exists and orderId is provided, update it
+  if (existingReview && orderId) {
+    // Update the review regardless of whether it had an order before
+    existingReview.rating = rating;
+    existingReview.title = title;
+    existingReview.comment = comment;
+    existingReview.pros = pros || [];
+    existingReview.cons = cons || [];
+    existingReview.order = orderId; // Set/update the order reference
+    existingReview.verifiedPurchase = true;
+    
+    await existingReview.save();
+    await existingReview.populate('user', 'firstName lastName');
+
+    logger.info('Product review updated', {
+      reviewId: existingReview._id,
+      productId: product._id,
+      userId: req.user._id,
+      rating,
+      orderId,
+      ip: req.ip
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Review updated successfully',
+      data: {
+        review: existingReview
+      }
+    });
+  }
+
+  // If review exists but no orderId provided, don't allow duplicate
   if (existingReview) {
     return next(new AppError('You have already reviewed this product', 400, 'REVIEW_EXISTS'));
   }
@@ -521,6 +842,12 @@ export const addProductReview = asyncHandler(async (req, res, next) => {
     cons: cons || []
   };
 
+  // Add order reference if provided
+  if (orderId) {
+    reviewData.order = orderId;
+    reviewData.verifiedPurchase = true;
+  }
+
   // Handle image uploads if any
   if (req.files && req.files.images) {
     try {
@@ -535,11 +862,25 @@ export const addProductReview = asyncHandler(async (req, res, next) => {
   const review = await Review.create(reviewData);
   await review.populate('user', 'firstName lastName');
 
+  // If this review is for an order, mark the order as reviewed
+  if (orderId) {
+    try {
+      const Order = mongoose.model('Order');
+      await Order.findByIdAndUpdate(orderId, {
+        reviewedAt: new Date()
+      });
+    } catch (error) {
+      logger.error('Failed to update order reviewedAt', { orderId, error });
+      // Don't fail the review creation if order update fails
+    }
+  }
+
   logger.info('Product review added', {
     reviewId: review._id,
     productId: product._id,
     userId: req.user._id,
     rating,
+    orderId: orderId || null,
     ip: req.ip
   });
 
@@ -623,10 +964,8 @@ export const getProductReviews = asyncHandler(async (req, res, next) => {
 // @route   GET /api/products/categories
 // @access  Public
 export const getCategories = asyncHandler(async (req, res, next) => {
-  const categories = await Category.find({ isActive: true })
-    .select('name slug description image parent displayOrder productCount')
-    .populate('parent', 'name slug')
-    .sort({ displayOrder: 1, name: 1 });
+  // Use getWithProductCount to include product counts and isFeatured
+  const categories = await Category.getWithProductCount(false); // false = only active categories
 
   res.status(200).json({
     success: true,
@@ -814,13 +1153,34 @@ export const getProductsBySection = asyncHandler(async (req, res, next) => {
   const { section } = req.params;
   const { limit = 10 } = req.query;
 
+  console.log(`\n🔍 [BACKEND_SECTION] ========== Get Products By Section ==========`);
+  console.log(`   Section: ${section}`);
+  console.log(`   Limit: ${limit}`);
+
   // Validate section
   const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
   if (!validSections.includes(section)) {
+    console.error(`❌ [BACKEND_SECTION] Invalid section: ${section}`);
     return next(new AppError('Invalid section', 400, 'INVALID_SECTION'));
   }
 
+  console.log(`📊 [BACKEND_SECTION] Querying database...`);
   const products = await Product.findBySection(section, parseInt(limit));
+  
+  console.log(`📦 [BACKEND_SECTION] Found ${products.length} products`);
+  
+  // Verify each product actually has the section
+  products.forEach((product, index) => {
+    const hasSections = product.sections || [];
+    const hasSection = hasSections.includes(section);
+    console.log(`   ${index + 1}. ${product.name} (${product._id})`);
+    console.log(`      Sections: [${hasSections.join(', ')}]`);
+    console.log(`      Has "${section}": ${hasSection ? '✅' : '❌'}`);
+    
+    if (!hasSection) {
+      console.error(`      ⚠️ WARNING: Product returned but doesn't have section "${section}"!`);
+    }
+  });
 
   // Format image URLs
   const baseUrl = getBaseUrl(req);
@@ -828,6 +1188,9 @@ export const getProductsBySection = asyncHandler(async (req, res, next) => {
     ...product.toObject(),
     images: formatProductImages(product.images, baseUrl)
   }));
+
+  console.log(`✅ [BACKEND_SECTION] Returning ${formattedProducts.length} products`);
+  console.log(`========================================\n`);
 
   res.status(200).json({
     success: true,

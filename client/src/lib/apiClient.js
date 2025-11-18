@@ -1,7 +1,7 @@
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { useAuthStore } from '../stores/authStore.js';
-import { useNotifications } from '../stores/uiStore.js';
+import { useUIStore } from '../stores/uiStore.js';
 
 /**
  * Enhanced Axios API Client
@@ -34,8 +34,12 @@ axiosRetry(apiClient, {
   },
   onRetry: (retryCount, error, requestConfig) => {
     // Retrying request silently
-      error: error.message,
-    });
+    if (import.meta.env.DEV) {
+      console.log(`🔄 Retrying request (attempt ${retryCount}):`, {
+        url: requestConfig.url,
+        error: error.message,
+      });
+    }
   },
 });
 
@@ -45,6 +49,17 @@ apiClient.interceptors.request.use(
     // Add authentication token
     const authStore = useAuthStore.getState();
     const authHeader = authStore.getAuthHeader();
+    
+    // Debug logging
+    if (import.meta.env.DEV && config.url?.includes('payment')) {
+      console.log('🔑 Auth Debug:', {
+        hasAuthHeader: !!authHeader,
+        authHeader: authHeader ? authHeader.substring(0, 20) + '...' : null,
+        token: authStore.token ? authStore.token.substring(0, 20) + '...' : null,
+        isAuthenticated: authStore.isAuthenticated,
+        user: authStore.user?._id
+      });
+    }
     
     if (authHeader) {
       config.headers.Authorization = authHeader;
@@ -90,7 +105,9 @@ apiClient.interceptors.response.use(
     }
     
     // Track slow requests
-    // Slow API requests monitored silently
+    if (duration > 3000 && import.meta.env.DEV) {
+      console.warn(`⚠️ Slow API request detected:`, {
+        url: config.url,
         duration: `${duration}ms`,
       });
     }
@@ -134,7 +151,7 @@ apiClient.interceptors.response.use(
           authStore.logout();
           
           // Show notification
-          const { showError } = useNotifications.getState();
+          const { showError } = useUIStore.getState();
           showError('Session expired. Please login again.');
           
           // Redirect to login if not already there
@@ -153,22 +170,24 @@ apiClient.interceptors.response.use(
       }
     } else if (response?.status === 403) {
       // Forbidden
-      const { showError } = useNotifications.getState();
+      const { showError } = useUIStore.getState();
       showError('Access denied. You don\'t have permission for this action.');
     } else if (response?.status === 404) {
       // Not found - don't show notification for all 404s
-      // Resource not found logged silently
+      if (import.meta.env.DEV) {
+        console.log('Resource not found:', config?.url);
+      }
     } else if (response?.status >= 500) {
       // Server error
-      const { showError } = useNotifications.getState();
+      const { showError } = useUIStore.getState();
       showError('Server error. Please try again later.');
     } else if (error.code === 'ECONNABORTED') {
       // Timeout
-      const { showError } = useNotifications.getState();
+      const { showError } = useUIStore.getState();
       showError('Request timeout. Please check your connection.');
     } else if (error.code === 'ERR_NETWORK') {
       // Network error
-      const { showError } = useNotifications.getState();
+      const { showError } = useUIStore.getState();
       showError('Network error. Please check your connection.');
     }
     
@@ -375,7 +394,7 @@ export const endpoints = {
     register: '/auth/register',
     logout: '/auth/logout',
     me: '/auth/me',
-    profile: '/auth/profile',
+    profile: '/auth/me',
     changePassword: '/auth/change-password',
     forgotPassword: '/auth/forgot-password',
     resetPassword: '/auth/reset-password',

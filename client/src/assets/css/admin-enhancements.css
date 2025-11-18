@@ -346,8 +346,9 @@
 
 .status-indicator.out-of-stock {
     background-color: #dc3545;
-}/* Enhan
-ced Admin UI Fixes */
+}
+
+/* Enhanced Admin UI Fixes */
 
 /* Fix Dropdown Menu Issues */
 .dropdown-menu {
@@ -801,8 +802,9 @@ ced Admin UI Fixes */
     .table td, .table th {
         border: 1px solid #dee2e6 !important;
     }
-}/* Admin
- Table Specific Fixes */
+}
+
+/* Admin Table Specific Fixes */
 .admin-table-container {
     position: relative;
     overflow: visible;
@@ -922,8 +924,9 @@ ced Admin UI Fixes */
     background-color: rgba(220, 53, 69, 0.1);
     color: #721c24;
     border-color: rgba(220, 53, 69, 0.2);
-}/* Fin
-al dropdown positioning fixes */
+}
+
+/* Final dropdown positioning fixes */
 .admin-table-container .dropdown-menu {
     position: absolute !important;
     inset: 0px auto auto 0px !important;
@@ -1206,8 +1209,9 @@ td.text-center .btn-group-sm {
     .dropdown-menu {
         min-width: 160px;
     }
-}/* Clicka
-ble Stats Cards */
+}
+
+/* Clickable Stats Cards */
 a.text-decoration-none .dashboard-stats-card {
     cursor: pointer;
     transition: all 0.3s ease;
@@ -1339,8 +1343,9 @@ a.text-decoration-none:hover .stats-period {
     .admin-table-container .table tbody tr:hover {
         transform: none;
     }
-}/*
- Ensure consistent stats card alignment */
+}
+
+/* Ensure consistent stats card alignment */
 .dashboard-stats-card .stats-card-header {
     min-height: 80px;
     display: flex;

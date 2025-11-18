@@ -1,13 +1,29 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 
-// Initialize Stripe
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+const StripeProvider = ({ children, clientSecret }) => {
+  const [stripePromise, setStripePromise] = useState(null);
 
-const StripeProvider = ({ children }) => {
+  useEffect(() => {
+    // Load Stripe dynamically to ensure env vars are loaded
+    const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY 
+           
+    console.log('🔑 Stripe Key Loading:', {
+      fromEnv: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? 'YES' : 'NO',
+      keyPreview: stripeKey.substring(0, 25) + '...',
+      fullKey: stripeKey
+    });
+
+    if (!stripeKey || stripeKey === 'pk_test_your-development-key') {
+      console.error('❌ Invalid Stripe key detected!');
+    }
+
+    setStripePromise(loadStripe(stripeKey));
+  }, []);
+
   const options = {
-    // Stripe Elements options
+    clientSecret,
     appearance: {
       theme: 'stripe',
       variables: {
@@ -15,13 +31,16 @@ const StripeProvider = ({ children }) => {
         colorBackground: '#ffffff',
         colorText: '#30313d',
         colorDanger: '#df1b41',
-        fontFamily: 'Ideal Sans, system-ui, sans-serif',
-        spacingUnit: '2px',
+        fontFamily: 'system-ui, sans-serif',
+        spacingUnit: '4px',
         borderRadius: '4px',
       },
     },
-    loader: 'auto',
   };
+
+  if (!stripePromise) {
+    return <div>Loading payment form...</div>;
+  }
 
   return (
     <Elements stripe={stripePromise} options={options}>

@@ -1,101 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useUserProfile } from '../../context/UserProfileContext';
-import {
-    ProfileSidebar,
-    ProfileTab,
-    OrdersTab,
-    AddressesTab,
-    PaymentMethodsTab,
-    ActivityTab,
-    PreferencesTab,
-    PasswordChangeModal,
-    AddAddressModal,
-    AddPaymentMethodModal
-} from './';
+import { UserProfileProvider } from '../../context/UserProfileContext';
+import { useAuth } from '../../context';
+import { LoadingSpinner, Toast } from '../Common';
+import ProfileTab from './ProfileTab';
+import OrdersTab from './OrdersTab';
+import ActivityTab from './ActivityTab';
+import { PasswordChangeModal } from './Modals';
+import API_BASE_URL from '../../api/config.js';
+import { tokenManager } from '../../utils/tokenManager.js';
+import { ensureCsrfToken } from '../../utils/csrfUtils';
 
-const UserProfileLayout = ({ initialTab }) => {
-    const { deleteAddress, updateAddress, deletePaymentMethod, setDefaultAddress } = useUserProfile();
-    const navigate = useNavigate();
-    const location = useLocation();
-    
-    // Get active tab from URL path
-    const getActiveTabFromPath = () => {
-        const path = location.pathname;
-        if (path.includes('/profile/orders')) return 'orders';
-        if (path.includes('/profile/addresses')) return 'addresses';
-        if (path.includes('/profile/payments')) return 'payments';
-        if (path.includes('/profile/activity')) return 'activity';
-        if (path.includes('/profile/preferences')) return 'preferences';
-        return 'profile';
-    };
-
-    const [activeTab, setActiveTab] = useState(() => getActiveTabFromPath());
-    const [isEditing, setIsEditing] = useState(false);
-
-    // Update active tab when URL changes
-    useEffect(() => {
-        setActiveTab(getActiveTabFromPath());
-    }, [location.pathname]);
-
-    // Function to change tab and update URL
-    const changeTab = (tab) => {
-        const basePath = '/profile';
-        const tabPath = tab === 'profile' ? basePath : `${basePath}/${tab}`;
-        navigate(tabPath);
-    };
+const UserProfileLayout = ({ initialTab = 'profile' }) => {
+    const { user, isLoading } = useAuth();
+    const [activeTab, setActiveTab] = useState(initialTab);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
-    const [showAddressModal, setShowAddressModal] = useState(false);
-    // Payment methods are now managed by UserProfileContext
-    const [recentlyViewed, setRecentlyViewed] = useState([
-        {
-            id: 1,
-            name: 'Tablet Air',
-            price: 1999,
-            image: '/img/tablet-product.jpg',
-            viewedAt: '2024-01-15T10:30:00Z',
-            category: 'Tablets'
-        },
-        {
-            id: 2,
-            name: 'Phone Pro Max',
-            price: 1199,
-            image: '/img/phone-product.jpg',
-            viewedAt: '2024-01-14T15:45:00Z',
-            category: 'Phones'
-        },
-        {
-            id: 3,
-            name: 'Laptop Ultra',
-            price: 2499,
-            image: '/img/laptop-product.jpg',
-            viewedAt: '2024-01-13T09:20:00Z',
-            category: 'Laptops'
-        }
-    ]);
-    const [wishlistCategories, setWishlistCategories] = useState([
-        { id: 'default', name: 'My Wishlist', count: 5, isDefault: true },
-        { id: 'gifts', name: 'Gift Ideas', count: 3, isDefault: false },
-        { id: 'price-watch', name: 'Price Watch', count: 2, isDefault: false }
-    ]);
-    const [priceAlerts, setPriceAlerts] = useState([
-        {
-            id: 1,
-            productName: 'Tablet Air',
-            currentPrice: 1999,
-            targetPrice: 1800,
-            isActive: true,
-            createdAt: '2024-01-10'
-        },
-        {
-            id: 2,
-            productName: 'Watch Series 9',
-            currentPrice: 399,
-            targetPrice: 350,
-            isActive: true,
-            createdAt: '2024-01-08'
-        }
-    ]);
     const [passwordData, setPasswordData] = useState({
         currentPassword: '',
         newPassword: '',
@@ -107,116 +25,64 @@ const UserProfileLayout = ({ initialTab }) => {
         new: false,
         confirm: false
     });
-    const [profileData, setProfileData] = useState({
-        firstName: 'John',
-        lastName: 'Smith',
-        email: 'john.smith@email.com',
-        phone: '+44 7700 900123',
-        dateOfBirth: '1990-05-15',
-        gender: 'male',
-        avatar: null,
-        completeness: 85
-    });
+    const [toast, setToast] = useState(null);
 
-    // Addresses are now managed by UserProfileContext
+    // Update active tab when initialTab prop changes
+    useEffect(() => {
+        setActiveTab(initialTab);
+    }, [initialTab]);
 
+    if (isLoading) {
+        return (
+            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
+                <LoadingSpinner size="lg" />
+            </div>
+        );
+    }
 
+    if (!user) {
+        return (
+            <div className="bloc bgc-5700 full-width-bloc l-bloc" id="user-profile-bloc">
+                <div className="container bloc-md bloc-lg-md">
+                    <div className="row">
+                        <div className="col-12 text-center">
+                            <h2 className="tc-6533">Please log in to view your profile</h2>
+                            <a href="/login" className="btn btn-c-2101 btn-rd">Login</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
-
-    const [showAddAddressModal, setShowAddAddressModal] = useState(false);
-    const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
-    const [editingAddress, setEditingAddress] = useState(null);
-
-    // Handler functions
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setProfileData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleSaveProfile = () => {
-        // Profile saving handled by context
-        setIsEditing(false);
-    };
-
-    const handleAvatarChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                setProfileData(prev => ({
-                    ...prev,
-                    avatar: e.target.result
-                }));
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-
-
+    // Password validation
     const validatePassword = (password) => {
         const errors = [];
-        if (password.length < 8) errors.push('At least 8 characters');
-        if (!/[A-Z]/.test(password)) errors.push('One uppercase letter');
+        if (password.length < 6) errors.push('At least 6 characters');
         if (!/[a-z]/.test(password)) errors.push('One lowercase letter');
+        if (!/[A-Z]/.test(password)) errors.push('One uppercase letter');
         if (!/\d/.test(password)) errors.push('One number');
-        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) errors.push('One special character');
         return errors;
     };
 
-    const handlePasswordChange = (e) => {
-        const { name, value } = e.target;
-        setPasswordData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-
-        if (passwordErrors[name]) {
-            setPasswordErrors(prev => ({
-                ...prev,
-                [name]: ''
-            }));
-        }
+    // Get password strength
+    const getPasswordStrength = (password) => {
+        if (!password) return { strength: 0, label: 'None', color: 'secondary' };
+        
+        let strength = 0;
+        if (password.length >= 6) strength += 25;
+        if (password.length >= 10) strength += 25;
+        if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
+        if (/\d/.test(password)) strength += 15;
+        if (/[^a-zA-Z0-9]/.test(password)) strength += 10;
+        
+        if (strength < 40) return { strength, label: 'Weak', color: 'danger' };
+        if (strength < 70) return { strength, label: 'Fair', color: 'warning' };
+        if (strength < 90) return { strength, label: 'Good', color: 'info' };
+        return { strength: 100, label: 'Strong', color: 'success' };
     };
 
-    const handlePasswordSubmit = (e) => {
-        e.preventDefault();
-        const errors = {};
-
-        if (!passwordData.currentPassword) {
-            errors.currentPassword = 'Current password is required';
-        }
-
-        const newPasswordErrors = validatePassword(passwordData.newPassword);
-        if (newPasswordErrors.length > 0) {
-            errors.newPassword = newPasswordErrors.join(', ');
-        }
-
-        if (passwordData.newPassword !== passwordData.confirmPassword) {
-            errors.confirmPassword = 'Passwords do not match';
-        }
-
-        if (passwordData.currentPassword === passwordData.newPassword) {
-            errors.newPassword = 'New password must be different from current password';
-        }
-
-        setPasswordErrors(errors);
-
-        if (Object.keys(errors).length === 0) {
-            // Password change successful
-            alert('Password changed successfully!');
-            setShowPasswordModal(false);
-            setPasswordData({
-                currentPassword: '',
-                newPassword: '',
-                confirmPassword: ''
-            });
-        }
-    };
-
+    // Toggle password visibility
     const togglePasswordVisibility = (field) => {
         setShowPasswords(prev => ({
             ...prev,
@@ -224,220 +90,138 @@ const UserProfileLayout = ({ initialTab }) => {
         }));
     };
 
-    const getPasswordStrength = (password) => {
-        const errors = validatePassword(password);
-        if (password.length === 0) return { strength: 0, label: '', color: '' };
-        if (errors.length === 0) return { strength: 100, label: 'Strong', color: 'success' };
-        if (errors.length <= 2) return { strength: 75, label: 'Good', color: 'info' };
-        if (errors.length <= 3) return { strength: 50, label: 'Fair', color: 'warning' };
-        return { strength: 25, label: 'Weak', color: 'danger' };
+    // Handle password input change
+    const handlePasswordChange = (e) => {
+        const { name, value } = e.target;
+        setPasswordData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+        
+        // Clear error for this field
+        setPasswordErrors(prev => ({
+            ...prev,
+            [name]: ''
+        }));
     };
 
-    const calculateProfileCompleteness = () => {
-        const fields = ['firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'avatar'];
-        const completed = fields.filter(field => {
-            if (field === 'avatar') return profileData.avatar !== null;
-            return profileData[field] && profileData[field].trim() !== '';
-        }).length;
-        return Math.round((completed / fields.length) * 100);
-    };
-
-
-
-    const handleAddressAction = async (addressId, action) => {
-        switch (action) {
-            case 'add':
-                setEditingAddress(null);
-                setShowAddAddressModal(true);
-                break;
-            case 'edit':
-                // Edit address functionality
-                break;
-            case 'delete':
-                if (window.confirm('Are you sure you want to delete this address?')) {
-                    try {
-                        await deleteAddress(addressId);
-                    } catch (error) {
-                        console.error('Failed to delete address:', error);
-                    }
-                }
-                break;
-            case 'setDefault':
-                try {
-                    await setDefaultAddress(addressId);
-                } catch (error) {
-                    console.error('Failed to set default address:', error);
-                }
-                break;
-            default:
-                break;
+    // Handle password submit
+    const handlePasswordSubmit = async (e) => {
+        e.preventDefault();
+        
+        // Validate
+        const errors = {};
+        
+        if (!passwordData.currentPassword) {
+            errors.currentPassword = 'Current password is required';
+        }
+        
+        if (!passwordData.newPassword) {
+            errors.newPassword = 'New password is required';
+        } else {
+            const validationErrors = validatePassword(passwordData.newPassword);
+            if (validationErrors.length > 0) {
+                errors.newPassword = validationErrors.join(', ');
+            }
+        }
+        
+        if (!passwordData.confirmPassword) {
+            errors.confirmPassword = 'Please confirm your new password';
+        } else if (passwordData.newPassword !== passwordData.confirmPassword) {
+            errors.confirmPassword = 'Passwords do not match';
+        }
+        
+        if (passwordData.currentPassword === passwordData.newPassword) {
+            errors.newPassword = 'New password must be different from current password';
+        }
+        
+        if (Object.keys(errors).length > 0) {
+            setPasswordErrors(errors);
+            return;
+        }
+        
+        try {
+            // Get CSRF token
+            const csrfToken = await ensureCsrfToken();
+            
+            // Call API
+            const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${tokenManager.getToken()}`,
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({
+                    currentPassword: passwordData.currentPassword,
+                    newPassword: passwordData.newPassword
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to change password');
+            }
+            
+            // Success - close modal and show toast
+            setShowPasswordModal(false);
+            setPasswordData({
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: ''
+            });
+            setPasswordErrors({});
+            
+            setToast({
+                message: 'Password changed successfully! You will receive a confirmation email.',
+                type: 'success'
+            });
+            
+        } catch (error) {
+            console.error('Error changing password:', error);
+            setToast({
+                message: error.message || 'Failed to change password. Please try again.',
+                type: 'error'
+            });
         }
     };
 
-    const handleSaveAddress = (addressData) => {
-        // Address saving handled by UserProfileContext
-        setEditingAddress(null);
-    };
-
-    const handlePaymentMethodAction = async (methodId, action) => {
-        switch (action) {
-            case 'add':
-                setShowAddPaymentModal(true);
-                break;
-            case 'setDefault':
-                // Set default payment method functionality
-                break;
-            case 'delete':
-                if (window.confirm('Are you sure you want to remove this payment method?')) {
-                    try {
-                        await deletePaymentMethod(methodId);
-                    } catch (error) {
-                        console.error('Failed to delete payment method:', error);
-                    }
-                }
-                break;
-            default:
-                break;
-        }
-    };
-
-    const handleSavePaymentMethod = (paymentMethodData) => {
-        // Payment method saving handled by UserProfileContext
-    };
-
-    const handleRecentlyViewedAction = (productId, action) => {
-        switch (action) {
-            case 'remove':
-                setRecentlyViewed(recentlyViewed.filter(p => p.id !== productId));
-                break;
-            case 'addToWishlist':
-                alert('Added to wishlist!');
-                break;
-            case 'view':
-                alert(`Viewing product ${productId}`);
-                break;
-            default:
-                break;
-        }
-    };
-
-    const handleWishlistCategoryAction = (categoryId, action) => {
-        switch (action) {
-            case 'rename':
-                const newName = prompt('Enter new category name:');
-                if (newName) {
-                    setWishlistCategories(wishlistCategories.map(cat =>
-                        cat.id === categoryId ? { ...cat, name: newName } : cat
-                    ));
-                }
-                break;
-            case 'delete':
-                if (confirm('Are you sure you want to delete this category? Items will be moved to the default wishlist.')) {
-                    setWishlistCategories(wishlistCategories.filter(cat => cat.id !== categoryId));
-                }
-                break;
-            default:
-                break;
-        }
-    };
-
-    const handlePriceAlertAction = (alertId, action) => {
-        switch (action) {
-            case 'edit':
-                const newTarget = prompt('Enter new target price:');
-                if (newTarget && !isNaN(newTarget)) {
-                    setPriceAlerts(priceAlerts.map(alert =>
-                        alert.id === alertId ? { ...alert, targetPrice: parseFloat(newTarget) } : alert
-                    ));
-                }
-                break;
-            case 'toggle':
-                setPriceAlerts(priceAlerts.map(alert =>
-                    alert.id === alertId ? { ...alert, isActive: !alert.isActive } : alert
-                ));
-                break;
-            case 'delete':
-                if (confirm('Are you sure you want to delete this price alert?')) {
-                    setPriceAlerts(priceAlerts.filter(alert => alert.id !== alertId));
-                }
-                break;
-            default:
-                break;
-        }
-    };
-
-    const renderActiveTab = () => {
+    const renderTabContent = () => {
         switch (activeTab) {
             case 'profile':
-                return <ProfileTab 
-                    onPasswordChange={() => setShowPasswordModal(true)}
-                    handleAvatarChange={handleAvatarChange}
-                />;
+                return (
+                    <UserProfileProvider>
+                        <ProfileTab onPasswordChange={() => setShowPasswordModal(true)} />
+                    </UserProfileProvider>
+                );
             case 'orders':
                 return <OrdersTab />;
-            case 'addresses':
-                return (
-                    <AddressesTab 
-                        handleAddressAction={handleAddressAction}
-                    />
-                );
-            case 'payments':
-                return (
-                    <PaymentMethodsTab 
-                        handlePaymentMethodAction={handlePaymentMethodAction}
-                    />
-                );
             case 'activity':
-                return (
-                    <ActivityTab 
-                        recentlyViewed={recentlyViewed}
-                        setRecentlyViewed={setRecentlyViewed}
-                        wishlistCategories={wishlistCategories}
-                        priceAlerts={priceAlerts}
-                        setPriceAlerts={setPriceAlerts}
-                        handleRecentlyViewedAction={handleRecentlyViewedAction}
-                        handleWishlistCategoryAction={handleWishlistCategoryAction}
-                        handlePriceAlertAction={handlePriceAlertAction}
-                    />
-                );
-            case 'preferences':
-                return <PreferencesTab />;
+                return <ActivityTab />;
             default:
-                return <ProfileTab 
-                    onPasswordChange={() => setShowPasswordModal(true)}
-                    handleAvatarChange={handleAvatarChange}
-                />;
+                return (
+                    <UserProfileProvider>
+                        <ProfileTab onPasswordChange={() => setShowPasswordModal(true)} />
+                    </UserProfileProvider>
+                );
         }
     };
 
     return (
-        <div className="bloc bgc-5700 full-width-bloc l-bloc" id="profile-bloc">
-            <div className="container bloc-md bloc-lg-md">
-                <div className="row">
-                    {/* Page Header */}
-                    <div className="col-12 mb-4">
-                        <h1 className="tc-6533 bold-text">My Account</h1>
-                        <p className="tc-6533">Manage your profile, orders, and preferences</p>
-                    </div>
-
-                    <div className="row">
-
-                        {/* Sidebar Navigation */}
-                        <div className="col-lg-3 mb-4 mb-lg-0">
-                            <ProfileSidebar activeTab={activeTab} onTabChange={changeTab} />
-                        </div>
-
-                        {/* Main Content */}
-                        <div className="col-lg-9">
-                            {renderActiveTab()}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Modals */}
+        <div className="bloc bgc-5700 full-width-bloc l-bloc" id="user-profile-bloc">
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
+            
+            {/* Password Change Modal */}
             {showPasswordModal && (
-                <PasswordChangeModal 
+                <PasswordChangeModal
                     onClose={() => {
                         setShowPasswordModal(false);
                         setPasswordData({
@@ -458,23 +242,74 @@ const UserProfileLayout = ({ initialTab }) => {
                     validatePassword={validatePassword}
                 />
             )}
+            
+            <div className="container bloc-md bloc-lg-md">
+                <div className="row">
+                    <div className="col-12 mb-4">
+                        <h1 className="tc-6533 bold-text">My Account</h1>
+                        <p className="tc-6533">Manage your account settings and preferences</p>
+                    </div>
 
-            {showAddAddressModal && (
-                <AddAddressModal 
-                    onClose={() => {
-                        setShowAddAddressModal(false);
-                        setEditingAddress(null);
-                    }}
-                    onSave={handleSaveAddress}
-                    editingAddress={editingAddress}
-                />
-            )}
-            {showAddPaymentModal && (
-                <AddPaymentMethodModal 
-                    onClose={() => setShowAddPaymentModal(false)}
-                    onSave={handleSavePaymentMethod}
-                />
-            )}
+                    <div className="col-lg-3 col-md-4 mb-4">
+                        <div className="store-card fill-card">
+                            <div className="nav flex-column nav-pills" role="tablist">
+                                <button
+                                    className={`nav-link text-start ${activeTab === 'profile' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('profile')}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                                        <path fill="currentColor" d="M12 4a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4Z"/>
+                                    </svg>
+                                    Profile
+                                </button>
+                                <button
+                                    className={`nav-link text-start ${activeTab === 'orders' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('orders')}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                                        <path fill="currentColor" d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1zM10 6a2 2 0 0 1 4 0v1h-4V6zm8 13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V9h2v1a1 1 0 0 0 2 0V9h4v1a1 1 0 0 0 2 0V9h2v10z"/>
+                                    </svg>
+                                    Orders
+                                </button>
+                                {/* <button
+                                    className={`nav-link text-start ${activeTab === 'activity' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('activity')}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                                        <path fill="currentColor" d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/>
+                                    </svg>
+                                    Activity
+                                </button> */}
+                                
+                                {/* Quick Edit Links */}
+                                <hr className="my-3" />
+                                <div className="px-3">
+                                    <h6 className="tc-6533 mb-2">Quick Edit</h6>
+                                    <div className="d-grid gap-2">
+                                        <a 
+                                            href="/profile/edit?section=profile" 
+                                            className="btn btn-outline-primary btn-sm"
+                                        >
+                                             Personal Info
+                                        </a>
+                                        <a 
+                                            href="/profile/edit?section=address" 
+                                            className="btn btn-outline-primary btn-sm"
+                                        >
+                                             Addresses
+                                        </a>
+                                      
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="col-lg-9 col-md-8">
+                        {renderTabContent()}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };

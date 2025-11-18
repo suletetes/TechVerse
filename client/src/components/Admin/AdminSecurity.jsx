@@ -14,7 +14,7 @@ const AdminSecurity = ({
                 <p className="text-muted">Manage your security settings and active sessions</p>
             </div>
             
-            {/* Active Sessions */}
+            {/* Active Sessions
             <div className="col-12 mb-4">
                 <div className="card">
                     <div className="card-header d-flex justify-content-between align-items-center">
@@ -85,7 +85,7 @@ const AdminSecurity = ({
                     </div>
                 </div>
             </div>
-
+ */}
             {/* Security Settings */}
             <div className="col-md-6 mb-4">
                 <div className="card">
@@ -143,7 +143,12 @@ const AdminSecurity = ({
             <div className="col-md-6 mb-4">
                 <div className="card">
                     <div className="card-header">
-                        <h5 className="mb-0">Change Password</h5>
+                        <h5 className="mb-0 d-flex align-items-center">
+                            <svg width="20" height="20" viewBox="0 0 24 24" className="me-2 text-primary">
+                                <path fill="currentColor" d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1M10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z"/>
+                            </svg>
+                            Change Password
+                        </h5>
                     </div>
                     <div className="card-body">
                         <form onSubmit={handlePasswordChange}>
@@ -155,6 +160,7 @@ const AdminSecurity = ({
                                     name="currentPassword"
                                     value={passwordData.currentPassword}
                                     onChange={handlePasswordInputChange}
+                                    placeholder="Enter current password"
                                     required
                                 />
                             </div>
@@ -166,21 +172,59 @@ const AdminSecurity = ({
                                     name="newPassword"
                                     value={passwordData.newPassword}
                                     onChange={handlePasswordInputChange}
+                                    placeholder="Enter new password"
                                     required
                                 />
+                                <small className="text-muted d-block mt-1">
+                                    Must be at least 6 characters with uppercase, lowercase, and number
+                                </small>
                             </div>
                             <div className="mb-3">
                                 <label className="form-label">Confirm New Password</label>
                                 <input
                                     type="password"
-                                    className="form-control"
+                                    className={`form-control ${
+                                        passwordData.confirmPassword && 
+                                        passwordData.newPassword !== passwordData.confirmPassword
+                                            ? 'is-invalid'
+                                            : passwordData.confirmPassword && 
+                                              passwordData.newPassword === passwordData.confirmPassword
+                                            ? 'is-valid'
+                                            : ''
+                                    }`}
                                     name="confirmPassword"
                                     value={passwordData.confirmPassword}
                                     onChange={handlePasswordInputChange}
+                                    placeholder="Confirm new password"
                                     required
                                 />
+                                {passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword && (
+                                    <small className="text-danger d-block mt-1">
+                                        Passwords do not match
+                                    </small>
+                                )}
+                                {passwordData.confirmPassword && passwordData.newPassword === passwordData.confirmPassword && (
+                                    <small className="text-success d-block mt-1">
+                                        ✓ Passwords match
+                                    </small>
+                                )}
                             </div>
-                            <button type="submit" className="btn btn-primary">
+                            
+                            <div className="alert alert-info small mb-3">
+                                <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                                    <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                                </svg>
+                                You will receive a confirmation email after changing your password.
+                            </div>
+                            
+                            <button 
+                                type="submit" 
+                                className="btn btn-primary w-100"
+                                disabled={!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" className="me-2">
+                                    <path fill="currentColor" d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1M10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z"/>
+                                </svg>
                                 Update Password
                             </button>
                         </form>

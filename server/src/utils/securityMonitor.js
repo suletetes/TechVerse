@@ -18,6 +18,10 @@ class SecurityMonitor {
       rateLimitHits: {
         count: 10,
         window: 10 * 60 * 1000 // 10 minutes
+      },
+      validationFailures: {
+        count: 10,
+        window: 15 * 60 * 1000 // 15 minutes
       }
     };
 
@@ -242,6 +246,34 @@ class SecurityMonitor {
     this.trackEvent('suspiciousRequests', identifier, {
       ...metadata,
       type: 'unusual_access_pattern'
+    });
+  }
+
+  /**
+   * Get validation failures for an identifier
+   */
+  getValidationFailures(identifier) {
+    const key = `validationFailures:${identifier}`;
+    const events = this.securityEvents.get(key) || [];
+    const now = Date.now();
+    const windowMs = 15 * 60 * 1000; // 15 minutes
+    
+    const recentEvents = events.filter(event => now - event.timestamp < windowMs);
+    
+    return {
+      count: recentEvents.length,
+      events: recentEvents,
+      lastFailure: recentEvents.length > 0 ? recentEvents[recentEvents.length - 1] : null
+    };
+  }
+
+  /**
+   * Track validation failure
+   */
+  trackValidationFailure(identifier, metadata = {}) {
+    this.trackEvent('validationFailures', identifier, {
+      ...metadata,
+      type: 'validation_failure'
     });
   }
 

@@ -112,7 +112,10 @@ export const enhancedCors = cors({
 // CORS error response middleware
 export const corsErrorHandler = (err, req, res, next) => {
   // Check if this is a CORS-related error
-  if (err && (err.code?.startsWith('CORS_') || err.message?.includes('CORS'))) {
+  if (err && (
+    (typeof err.code === 'string' && err.code.startsWith('CORS_')) || 
+    (typeof err.message === 'string' && err.message.includes('CORS'))
+  )) {
     const corsError = {
       success: false,
       error: 'CORS_ERROR',

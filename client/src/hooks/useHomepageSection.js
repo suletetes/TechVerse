@@ -16,22 +16,26 @@ const SECTION_TYPES = {
 
 const SECTION_CONFIG = {
   [SECTION_TYPES.LATEST]: {
-    method: 'getLatestProducts',
+    method: 'getProductsBySection',
+    sectionName: 'latest',
     defaultLimit: 12,
     cacheKey: 'latest-products'
   },
   [SECTION_TYPES.TOP_SELLERS]: {
-    method: 'getTopSellingProducts', 
+    method: 'getProductsBySection',
+    sectionName: 'topSeller',
     defaultLimit: 12,
     cacheKey: 'top-sellers'
   },
   [SECTION_TYPES.QUICK_PICKS]: {
-    method: 'getQuickPicks',
+    method: 'getProductsBySection',
+    sectionName: 'quickPick',
     defaultLimit: 8,
     cacheKey: 'quick-picks'
   },
   [SECTION_TYPES.WEEKLY_DEALS]: {
-    method: 'getProductsOnSale',
+    method: 'getProductsBySection',
+    sectionName: 'weeklyDeal',
     defaultLimit: 10,
     cacheKey: 'weekly-deals'
   }
@@ -53,6 +57,9 @@ export const useHomepageSection = (sectionType, options = {}) => {
     maxRetries = 3
   } = options;
 
+  // Generate unique ID for this hook instance
+  const instanceId = useRef(`${sectionType}-${Math.random().toString(36).substr(2, 9)}`);
+
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -62,8 +69,16 @@ export const useHomepageSection = (sectionType, options = {}) => {
   const mountedRef = useRef(true);
   const retryTimeoutRef = useRef(null);
 
-  // Get section configuration
+  // Get section configuration and store in ref to ensure it's always current
   const sectionConfig = SECTION_CONFIG[sectionType];
+  const sectionConfigRef = useRef(sectionConfig);
+  
+  // Update ref when config changes
+  useEffect(() => {
+    sectionConfigRef.current = sectionConfig;
+  }, [sectionConfig]);
+  
+  console.log(`🆔 [HOOK_INSTANCE] Created/Rendered: ${instanceId.current}, sectionType: ${sectionType}, sectionName: ${sectionConfig?.sectionName}`);
   
   if (!sectionConfig) {
     throw new Error(`Invalid section type: ${sectionType}. Must be one of: ${Object.values(SECTION_TYPES).join(', ')}`);
@@ -81,9 +96,16 @@ export const useHomepageSection = (sectionType, options = {}) => {
     };
   }, []);
 
-  // Fetch data function
-  const fetchData = useCallback(async (isRetry = false) => {
+  // Fetch data function - DON'T use useCallback to avoid stale closures
+  const fetchData = async (isRetry = false) => {
     if (!mountedRef.current) return;
+
+    // Get current config directly, not from ref
+    const currentConfig = SECTION_CONFIG[sectionType];
+    if (!currentConfig) {
+      console.error(`❌ No config found for sectionType: ${sectionType}`);
+      return;
+    }
 
     try {
       if (!isRetry) {
@@ -91,25 +113,37 @@ export const useHomepageSection = (sectionType, options = {}) => {
         setError(null);
       }
 
+      console.log(`🔍 [HOMEPAGE_SECTION_${sectionType.toUpperCase()}] Instance: ${instanceId.current}`);
+      console.log(`🔍 [HOMEPAGE_SECTION_${sectionType.toUpperCase()}] Fetching section: ${currentConfig.sectionName}, limit: ${effectiveLimit}`);
+      console.log(`🔍 [HOMEPAGE_SECTION_${sectionType.toUpperCase()}] Config:`, currentConfig);
+
       // Call the appropriate service method
-      const serviceMethod = productService[sectionConfig.method];
+      const serviceMethod = productService[currentConfig.method];
       if (!serviceMethod) {
-        throw new Error(`Service method ${sectionConfig.method} not found`);
+        throw new Error(`Service method ${currentConfig.method} not found`);
       }
 
-      let response;
-      
-      // Handle different method signatures
-      if (sectionType === SECTION_TYPES.TOP_SELLERS) {
-        response = await serviceMethod.call(productService, effectiveLimit, null);
-      } else {
-        response = await serviceMethod.call(productService, effectiveLimit);
-      }
+      // All sections now use getProductsBySection with sectionName parameter
+      console.log(`📡 [HOMEPAGE_SECTION_${sectionType.toUpperCase()}] Calling: productService.${currentConfig.method}("${currentConfig.sectionName}", ${effectiveLimit})`);
+      const response = await serviceMethod.call(productService, currentConfig.sectionName, effectiveLimit);
 
       if (!mountedRef.current) return;
 
-      // Extract data from response
-      const products = response?.data || response || [];
+      console.log(`📦 [HOMEPAGE_SECTION_${sectionType.toUpperCase()}] Raw response:`, response);
+
+      // Extract data from response - handle different response structures
+      let products = [];
+      if (response?.data?.products) {
+        products = response.data.products;
+      } else if (Array.isArray(response?.data)) {
+        products = response.data;
+      } else if (response?.products) {
+        products = response.products;
+      } else if (Array.isArray(response)) {
+        products = response;
+      }
+      
+      console.log(`✅ [HOMEPAGE_SECTION_${sectionType.toUpperCase()}] Extracted ${products.length} products`);
       
       // Ensure we have an array
       const safeProducts = Array.isArray(products) ? products : [];
@@ -118,23 +152,13 @@ export const useHomepageSection = (sectionType, options = {}) => {
       setError(null);
       setRetryCount(0);
 
-      // Call success callback
-      if (onSuccess) {
-        onSuccess(safeProducts, sectionType);
-      }
-
     } catch (err) {
       if (!mountedRef.current) return;
 
-      console.error(`Error loading ${sectionType} products:`, err);
+      console.error(`❌ [HOMEPAGE_SECTION_${sectionType.toUpperCase()}] Error loading products:`, err);
       
       const errorMessage = err.message || `Failed to load ${sectionType} products`;
       setError(errorMessage);
-
-      // Call error callback
-      if (onError) {
-        onError(err, sectionType);
-      }
 
       // Auto-retry logic
       if (retryCount < maxRetries && !isRetry) {
@@ -151,35 +175,40 @@ export const useHomepageSection = (sectionType, options = {}) => {
         setLoading(false);
       }
     }
-  }, [
-    sectionType, 
-    sectionConfig.method, 
-    effectiveLimit, 
-    onSuccess, 
-    onError, 
-    retryCount, 
-    maxRetries, 
-    retryDelay
-  ]);
+  };
 
   // Manual retry function
-  const retry = useCallback(() => {
+  const retry = () => {
     setRetryCount(0);
     fetchData(false);
-  }, [fetchData]);
+  };
 
-  // Auto-load data on mount or when dependencies change
+  // Auto-load data on mount and when section type changes
   useEffect(() => {
+    console.log(`🔄 [HOOK_EFFECT] Running for ${instanceId.current}, autoLoad: ${autoLoad}, sectionType: ${sectionType}`);
     if (autoLoad) {
       fetchData(false);
     }
-  }, [autoLoad, fetchData]);
+  }, [autoLoad, sectionType, effectiveLimit]); // Include all dependencies
 
   // Refresh data function
-  const refresh = useCallback(() => {
+  const refresh = () => {
     setRetryCount(0);
     fetchData(false);
-  }, [fetchData]);
+  };
+
+  // Handle callbacks separately to avoid infinite loops
+  useEffect(() => {
+    if (data.length > 0 && onSuccess) {
+      onSuccess(data, sectionType);
+    }
+  }, [data.length]); // Only trigger when data length changes
+
+  useEffect(() => {
+    if (error && onError) {
+      onError(new Error(error), sectionType);
+    }
+  }, [error]);
 
   return {
     data,

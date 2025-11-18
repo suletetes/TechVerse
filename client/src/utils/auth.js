@@ -203,7 +203,7 @@ class AuthManager {
    */
   async getProfile() {
     try {
-      const response = await apiClient.get('/auth/profile');
+      const response = await apiClient.get('/auth/me');
       const data = await response.json();
       
       if (data.success && data.data.user) {
@@ -223,7 +223,7 @@ class AuthManager {
    */
   async updateProfile(profileData) {
     try {
-      const response = await apiClient.put('/auth/profile', profileData);
+      const response = await apiClient.put('/auth/me', profileData);
       const data = await response.json();
       
       if (data.success && data.data.user) {

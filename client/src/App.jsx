@@ -3,15 +3,18 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary, RouterErrorBoundary } from './components';
 import { AppProviders } from './context';
-import RouteGuard, { AdminRoute, UserRoute, AuthenticatedRoute } from './components/auth/RouteGuard.jsx';
+import AuthGuard, { AdminGuard, UserGuard } from './components/Auth/AuthGuard.jsx';
 import { UserRoles } from './services/authService.js';
+import { NotificationContainer } from './components/Common';
 import {
     Contact,
     HomeLayout,
-    Category,
+    Categories,
+    Products,
     Product,
     OrderConfirmation,
     PaymentPage,
+    PaymentFailed,
     Wishlist,
     Cart,
     UserProfile,
@@ -24,6 +27,11 @@ import {
     AdminOrderManagement,
     AdminProductManagement
 } from "./pages"
+import ProductReviews from './pages/ProductReviews.jsx';
+import AdminReviewManagement from './pages/Admin/AdminReviewManagement.jsx';
+import { CategoryManagement } from "./pages/admin"
+import EditProfile from "./pages/EditProfile"
+import "./utils/uiUpdateSummary" // UI update summary and verification
 
 
 import {
@@ -41,6 +49,9 @@ import {
     Signup,
     Login
 } from "./pages/auth"
+import VerifyEmail from './pages/auth/VerifyEmail.jsx';
+import ForgotPassword from './pages/auth/ForgotPassword.jsx';
+import ResetPassword from './pages/auth/ResetPassword.jsx';
 
 const router = createBrowserRouter([
     {
@@ -54,12 +65,20 @@ const router = createBrowserRouter([
                 element: <Home />,
             },
             {
-                path: 'category/:categorySlug?',
-                element: <Category />,
+                path: 'categories',
+                element: <Categories />,
+            },
+            {
+                path: 'products',
+                element: <Products />,
             },
             {
                 path: 'product/:id',
                 element: <Product />,
+            },
+            {
+                path: 'product/:id/reviews',
+                element: <ProductReviews />,
             },
             {
                 path: 'login',
@@ -68,6 +87,22 @@ const router = createBrowserRouter([
             {
                 path: 'signup',
                 element: <Signup />,
+            },
+            {
+                path: 'auth/forgot-password',
+                element: <ForgotPassword />,
+            },
+            {
+                path: 'reset-password',
+                element: <ResetPassword />,
+            },
+            {
+                path: 'auth/verify-email',
+                element: <VerifyEmail />,
+            },
+            {
+                path: 'verify-email',
+                element: <VerifyEmail />,
             },
             {
                 path: 'contact',
@@ -106,101 +141,141 @@ const router = createBrowserRouter([
             {
                 path: 'admin',
                 element: (
-                    <AdminRoute>
+                    <AdminGuard>
                         <AdminProfile />
-                    </AdminRoute>
+                    </AdminGuard>
                 ),
             },
             {
                 path: 'admin/orders',
                 element: (
-                    <AdminRoute requiredPermissions={['manage_orders', 'view_admin_panel']}>
+                    <AdminGuard>
                         <AdminOrderManagement />
-                    </AdminRoute>
+                    </AdminGuard>
                 ),
             },
             {
                 path: 'admin/products',
                 element: (
-                    <AdminRoute requiredPermissions={['manage_products', 'view_admin_panel']}>
+                    <AdminGuard>
                         <AdminProductManagement />
-                    </AdminRoute>
+                    </AdminGuard>
                 ),
             },
-
-            // User routes - protected with UserRoute guard
+            {
+                path: 'admin/categories',
+                element: (
+                    <AdminGuard>
+                        <CategoryManagement />
+                    </AdminGuard>
+                ),
+            },
+            {
+                path: 'admin/categories/:slug/specifications',
+                element: (
+                    <AdminGuard>
+                        <CategoryManagement />
+                    </AdminGuard>
+                ),
+            },
+            {
+                path: 'admin/reviews',
+                element: (
+                    <AdminGuard>
+                        <AdminReviewManagement />
+                    </AdminGuard>
+                ),
+            },
+            
+            // User routes - protected with UserGuard
             {
                 path: 'profile',
                 element: (
-                    <UserRoute>
+                    <UserGuard>
                         <UserProfile />
-                    </UserRoute>
+                    </UserGuard>
                 ),
             },
             {
                 path: 'profile/:tab',
                 element: (
-                    <UserRoute>
+                    <UserGuard>
                         <UserProfile />
-                    </UserRoute>
+                    </UserGuard>
+                ),
+            },
+            {
+                path: 'profile/edit',
+                element: (
+                    <UserGuard>
+                        <EditProfile />
+                    </UserGuard>
                 ),
             },
             {
                 path: 'user/order/:orderId',
                 element: (
-                    <UserRoute>
+                    <UserGuard>
                         <OrderDetails />
-                    </UserRoute>
+                    </UserGuard>
                 ),
             },
             {
                 path: 'user/order/:orderId/tracking',
                 element: (
-                    <UserRoute>
+                    <UserGuard>
                         <OrderTracking />
-                    </UserRoute>
+                    </UserGuard>
                 ),
             },
             {
                 path: 'user/order/:orderId/review',
                 element: (
-                    <UserRoute>
+                    <UserGuard>
                         <OrderReview />
-                    </UserRoute>
+                    </UserGuard>
                 ),
             },
 
             // Authenticated routes - require login but any role
             {
-                path: 'order-confirmation',
+                path: 'order-confirmation/:orderNumber?',
                 element: (
-                    <AuthenticatedRoute>
+                    <AuthGuard>
                         <OrderConfirmation />
-                    </AuthenticatedRoute>
+                    </AuthGuard>
+                ),
+            },
+            {
+                path: 'payment-failed',
+                element: (
+                    <AuthGuard>
+                        <PaymentFailed />
+                    </AuthGuard>
                 ),
             },
             {
                 path: 'payment',
                 element: (
-                    <AuthenticatedRoute>
+                    <AuthGuard>
                         <PaymentPage />
-                    </AuthenticatedRoute>
+                    </AuthGuard>
                 ),
             },
             {
                 path: 'wishlist',
                 element: (
-                    <AuthenticatedRoute>
+                    <AuthGuard>
                         <Wishlist />
-                    </AuthenticatedRoute>
+                    </AuthGuard>
                 ),
             },
             {
                 path: 'cart',
                 element: (
-                    <AuthenticatedRoute>
+                    <AuthGuard>
                         <Cart />
-                    </AuthenticatedRoute>
+                    </AuthGuard>
                 ),
             },
 
@@ -244,6 +319,7 @@ const App = () => {
         <ErrorBoundary>
             <QueryClientProvider client={queryClient}>
                 <AppProviders>
+                    <NotificationContainer />
                     <RouterProvider router={router} />
                 </AppProviders>
             </QueryClientProvider>

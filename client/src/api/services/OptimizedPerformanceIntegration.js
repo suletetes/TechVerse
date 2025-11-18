@@ -312,7 +312,7 @@ class OptimizedPerformanceIntegration {
     intelligentCache.addPrefetchStrategy('user', (key, options) => {
       const prefetchKeys = [];
       
-      if (key.includes('/auth/profile')) {
+      if (key.includes('/auth/me')) {
         prefetchKeys.push('/users/preferences');
         prefetchKeys.push('/users/addresses');
         prefetchKeys.push('/orders/recent');

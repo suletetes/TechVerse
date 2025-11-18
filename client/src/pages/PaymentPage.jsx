@@ -1,19 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth, useCart } from '../context';
+import userService from '../api/services/userService';
+import orderService from '../api/services/orderService';
+import stripeService from '../api/services/stripeService';
+import { LoadingSpinner, Toast } from '../components/Common';
 import StripeProvider from '../components/Payment/StripeProvider';
-import StripeCheckout from '../components/Payment/StripeCheckout';
-import stripePaymentService from '../api/services/stripePaymentService';
+import StripeCheckoutForm from '../components/Payment/StripeCheckoutForm';
+
+// Comprehensive world countries list
+const COUNTRIES = [
+    'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Argentina', 'Armenia', 'Australia',
+    'Austria', 'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium',
+    'Belize', 'Benin', 'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei',
+    'Bulgaria', 'Burkina Faso', 'Burundi', 'Cambodia', 'Cameroon', 'Canada', 'Cape Verde',
+    'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros', 'Congo', 'Costa Rica',
+    'Croatia', 'Cuba', 'Cyprus', 'Czech Republic', 'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic',
+    'Ecuador', 'Egypt', 'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia', 'Ethiopia', 'Fiji',
+    'Finland', 'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada',
+    'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana', 'Haiti', 'Honduras', 'Hungary', 'Iceland',
+    'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Jamaica', 'Japan', 'Jordan',
+    'Kazakhstan', 'Kenya', 'Kiribati', 'Kuwait', 'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon', 'Lesotho',
+    'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malawi', 'Malaysia',
+    'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico', 'Micronesia',
+    'Moldova', 'Monaco', 'Mongolia', 'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia',
+    'Nauru', 'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'North Korea',
+    'North Macedonia', 'Norway', 'Oman', 'Pakistan', 'Palau', 'Palestine', 'Panama', 'Papua New Guinea',
+    'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania', 'Russia', 'Rwanda',
+    'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino',
+    'Sao Tome and Principe', 'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone',
+    'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 'Somalia', 'South Africa', 'South Korea',
+    'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria',
+    'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago',
+    'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates',
+    'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 'Vatican City', 'Venezuela',
+    'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe'
+];
 
 const PaymentPage = () => {
     const navigate = useNavigate();
-    const [paymentMethod, setPaymentMethod] = useState('stripe');
+    const { isAuthenticated, user } = useAuth();
+    const { items: cartItems, total: cartTotal, itemCount, clearCart } = useCart();
+    
     const [showImportOptions, setShowImportOptions] = useState(false);
     const [selectedAddress, setSelectedAddress] = useState('');
-    const [notification, setNotification] = useState({ show: false, message: '', type: '' });
-    const [clientSecret, setClientSecret] = useState('');
-    const [isCreatingIntent, setIsCreatingIntent] = useState(false);
-    const [paymentIntentId, setPaymentIntentId] = useState('');
+    const [toast, setToast] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [clientSecret, setClientSecret] = useState(null);
     const [showStripeForm, setShowStripeForm] = useState(false);
+    const [orderCompleted, setOrderCompleted] = useState(false);
+    
+    // User data from database
+    const [userData, setUserData] = useState({
+        profile: null,
+        addresses: []
+    });
+    
     const [formData, setFormData] = useState({
         // Billing Info
         firstName: '',
@@ -27,151 +70,150 @@ const PaymentPage = () => {
         postcode: '',
         country: 'United Kingdom',
         
-        // Payment Info
-        cardNumber: '',
-        expiryDate: '',
-        cvv: '',
-        cardName: '',
-        
         // Options
         sameAsBilling: true,
-        savePayment: false,
         newsletter: false
     });
 
-    // Mock user data (in real app, this would come from user context/API)
-    const userData = {
-        profile: {
-            firstName: 'John',
-            lastName: 'Smith',
-            email: 'john.smith@email.com',
-            phone: '+44 7700 900123'
-        },
-        addresses: [
-            {
-                id: 1,
-                type: 'Home',
-                name: 'John Smith',
-                address: '123 Tech Street',
-                city: 'London',
-                postcode: 'SW1A 1AA',
-                country: 'United Kingdom',
-                isDefault: true
-            },
-            {
-                id: 2,
-                type: 'Work',
-                name: 'John Smith',
-                address: '456 Business Ave',
-                city: 'Manchester',
-                postcode: 'M1 1AA',
-                country: 'United Kingdom',
-                isDefault: false
+    // Load user data from database
+    useEffect(() => {
+        const loadUserData = async () => {
+            console.log('🔐 PaymentPage Auth Check:', {
+                isAuthenticated,
+                user,
+                hasUser: !!user,
+                userId: user?._id
+            });
+            
+            if (!isAuthenticated) {
+                console.error('❌ Not authenticated - REDIRECT DISABLED FOR DEBUGGING');
+                console.error('Auth state:', { isAuthenticated, user });
+                navigate('/login', {
+                    state: {
+                        from: { pathname: '/payment' },
+                        message: 'Please login to proceed with checkout'
+                    }
+                });
+                return;
             }
-        ],
-        paymentMethods: [
-            {
-                id: 1,
-                type: 'card',
-                brand: 'visa',
-                last4: '4242',
-                expiryMonth: 12,
-                expiryYear: 2025,
-                isDefault: true,
-                holderName: 'John Smith'
-            },
-            {
-                id: 2,
-                type: 'card',
-                brand: 'mastercard',
-                last4: '8888',
-                expiryMonth: 8,
-                expiryYear: 2026,
-                isDefault: false,
-                holderName: 'John Smith'
+
+            // Check if cart is empty (but not if order was just completed)
+            if (!cartItems || cartItems.length === 0) {
+                if (orderCompleted) {
+                    console.log('✅ Order completed, skipping cart empty check');
+                    return;
+                }
+                console.log('⚠️ Cart is empty, redirecting to /cart');
+                console.log('Cart items:', cartItems);
+                setToast({
+                    message: 'Your cart is empty',
+                    type: 'warning'
+                });
+                setTimeout(() => {
+                    console.log('🔄 Executing redirect to /cart');
+                    navigate('/cart');
+                }, 2000);
+                return;
             }
-        ]
-    };
 
-    // Mock cart data
-    const cartItems = [
-        {
-            id: 1,
-            name: 'Tablet Air',
-            color: 'Silver',
-            storage: '128GB',
-            price: 1999,
-            quantity: 1,
-            image: 'img/tablet-product.jpg'
-        },
-        {
-            id: 2,
-            name: 'Phone Pro',
-            color: 'Black',
-            storage: '256GB',
-            price: 999,
-            quantity: 1,
-            image: 'img/phone-product.jpg'
-        }
-    ];
+            try {
+                setIsLoading(true);
+                
+                // Load user profile and addresses
+                const [profileResponse, addressesResponse] = await Promise.all([
+                    userService.getProfile(),
+                    userService.getAddresses()
+                ]);
 
-    const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                console.log('Profile response:', profileResponse);
+                console.log('Addresses response:', addressesResponse);
+
+                // Extract data from responses (handle nested data structure)
+                // Profile: {success: true, data: {user: {...}}}
+                // Addresses: {success: true, data: {addresses: [...]}}
+                const profile = profileResponse?.data?.user || profileResponse?.data;
+                const addresses = addressesResponse?.data?.addresses || [];
+
+                console.log('Extracted profile:', profile);
+                console.log('Extracted addresses:', addresses);
+
+                setUserData({
+                    profile: profile,
+                    addresses: Array.isArray(addresses) ? addresses : []
+                });
+
+                // Show import options if user has saved data
+                if (Array.isArray(addresses) && addresses.length > 0) {
+                    setShowImportOptions(true);
+                }
+
+                // Don't auto-fill - let user click import button
+                console.log('User data loaded. Click import to fill fields.');
+
+            } catch (error) {
+                console.error('❌ Error loading user data:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    response: error.response,
+                    status: error.response?.status,
+                    data: error.response?.data
+                });
+                setToast({
+                    message: 'Failed to load user data. Please try again.',
+                    type: 'error'
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadUserData();
+    }, [isAuthenticated, navigate, cartItems]);
+
+    // Calculate totals from cart
+    const subtotal = cartTotal || 0;
     const shipping = 0; // Free shipping
     const tax = subtotal * 0.2; // 20% VAT
     const total = subtotal + shipping + tax;
 
-    // Show notification
-    const showNotification = (message, type = 'success') => {
-        setNotification({ show: true, message, type });
-        setTimeout(() => {
-            setNotification({ show: false, message: '', type: '' });
-        }, 3000);
-    };
-
     // Import user profile data
     const importProfileData = () => {
-        setFormData(prev => ({
-            ...prev,
-            firstName: userData.profile.firstName,
-            lastName: userData.profile.lastName,
-            email: userData.profile.email,
-            phone: userData.profile.phone
-        }));
-        showNotification('Profile information imported successfully!');
-        setShowImportOptions(false);
+        if (userData.profile) {
+            setFormData(prev => ({
+                ...prev,
+                firstName: userData.profile.firstName || '',
+                lastName: userData.profile.lastName || '',
+                email: userData.profile.email || '',
+                phone: userData.profile.phone || ''
+            }));
+            setToast({
+                message: 'Profile information imported successfully!',
+                type: 'success'
+            });
+            setShowImportOptions(false);
+        }
     };
 
     // Import selected address
     const importAddress = (addressId) => {
-        const address = userData.addresses.find(addr => addr.id === parseInt(addressId));
+        const address = userData.addresses.find(addr => addr._id === addressId);
         if (address) {
             setFormData(prev => ({
                 ...prev,
-                address: address.address,
-                city: address.city,
-                postcode: address.postcode,
-                country: address.country
+                address: address.address || '',
+                city: address.city || '',
+                postcode: address.postcode || '',
+                country: address.country || 'United Kingdom'
             }));
-            showNotification(`${address.type} address imported successfully!`);
+            setToast({
+                message: `${address.type} address imported successfully!`,
+                type: 'success'
+            });
         }
         setSelectedAddress('');
     };
 
-    // Import selected payment method
-    const importPaymentMethod = (methodId) => {
-        const method = userData.paymentMethods.find(pm => pm.id === parseInt(methodId));
-        if (method) {
-            setFormData(prev => ({
-                ...prev,
-                cardNumber: `•••• •••• •••• ${method.last4}`,
-                expiryDate: `${method.expiryMonth.toString().padStart(2, '0')}/${method.expiryYear.toString().slice(-2)}`,
-                cardName: method.holderName,
-                cvv: '' // CVV should always be re-entered for security
-            }));
-            showNotification(`${method.brand.toUpperCase()} card imported successfully! Please re-enter CVV for security.`, 'info');
-        }
-        setSelectedPaymentMethod('');
-    };
+
 
     // Clear all form data
     const clearFormData = () => {
@@ -184,15 +226,13 @@ const PaymentPage = () => {
             city: '',
             postcode: '',
             country: 'United Kingdom',
-            cardNumber: '',
-            expiryDate: '',
-            cvv: '',
-            cardName: '',
             sameAsBilling: true,
-            savePayment: false,
             newsletter: false
         });
-        showNotification('All form data cleared!', 'info');
+        setToast({
+            message: 'All form data cleared!',
+            type: 'info'
+        });
     };
 
     const handleInputChange = (e) => {
@@ -203,176 +243,231 @@ const PaymentPage = () => {
         }));
     };
 
-    // Create payment intent when ready to pay
-    const createPaymentIntent = async () => {
-        setIsCreatingIntent(true);
-        try {
-            const response = await stripePaymentService.createPaymentIntent({
-                amount: total,
-                currency: 'gbp',
-                metadata: {
-                    orderType: 'product_purchase',
-                    itemCount: cartItems.length
-                }
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        // Validate form
+        if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone) {
+            setToast({
+                message: 'Please fill in all contact information',
+                type: 'error'
             });
-            
-            setClientSecret(response.data.clientSecret);
-            setPaymentIntentId(response.data.paymentIntentId);
-            setShowStripeForm(true);
-            console.log('✅ Payment intent created:', response.data.paymentIntentId);
-            showNotification('Payment form ready!', 'success');
+            return;
+        }
+
+        if (!formData.address || !formData.city || !formData.postcode || !formData.country) {
+            setToast({
+                message: 'Please fill in all shipping address fields',
+                type: 'error'
+            });
+            return;
+        }
+
+        try {
+            setIsProcessing(true);
+
+            // Create payment intent with Stripe
+            const paymentIntentData = {
+                amount: total,
+                currency: 'usd',
+                metadata: {
+                    customerEmail: formData.email,
+                    customerName: `${formData.firstName} ${formData.lastName}`,
+                }
+            };
+
+            const response = await stripeService.createPaymentIntent(paymentIntentData);
+
+            if (response.success && response.data.clientSecret) {
+                setClientSecret(response.data.clientSecret);
+                setShowStripeForm(true);
+                setToast({
+                    message: 'Please complete payment below',
+                    type: 'info'
+                });
+            }
         } catch (error) {
-            console.error('❌ Failed to create payment intent:', error);
-            showNotification('Failed to initialize payment. Please try again.', 'error');
+            console.error('Error creating payment intent:', error);
+            setToast({
+                message: error.message || 'Failed to initialize payment. Please try again.',
+                type: 'error'
+            });
         } finally {
-            setIsCreatingIntent(false);
+            setIsProcessing(false);
         }
     };
 
     const handlePaymentSuccess = async (paymentIntent) => {
-        console.log('✅ Payment succeeded:', paymentIntent);
+        console.log('🎉 ===== PAYMENT SUCCESS HANDLER STARTED =====');
+        console.log('💳 Payment Intent:', paymentIntent);
         
         try {
-            // Create order after successful payment
+            setIsProcessing(true);
+            console.log('⏳ Processing set to true');
+
+            // Prepare order data
             const orderData = {
-                paymentIntentId: paymentIntent.id,
-                items: cartItems,
+                items: cartItems.map(item => ({
+                    product: item.product?._id || item._id,
+                    name: item.product?.name || item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                    variants: item.options ? Object.entries(item.options).map(([name, value]) => ({ name, value })) : [],
+                    image: item.product?.primaryImage?.url || item.product?.images?.[0]?.url || item.image
+                })),
                 shippingAddress: {
                     firstName: formData.firstName,
                     lastName: formData.lastName,
                     address: formData.address,
                     city: formData.city,
                     postcode: formData.postcode,
-                    country: formData.country
-                },
-                contactInfo: {
-                    email: formData.email,
+                    country: formData.country,
                     phone: formData.phone
                 },
-                totals: {
-                    subtotal,
-                    shipping,
-                    tax,
-                    total
-                }
+                paymentMethod: 'stripe',
+                paymentDetails: {
+                    paymentIntentId: paymentIntent.id,
+                    amount: total,
+                    status: 'completed'
+                },
+                subtotal,
+                tax,
+                shipping: {
+                    cost: shipping,
+                    method: 'Standard Delivery'
+                },
+                total
             };
-            
-            const orderResponse = await stripePaymentService.processOrder(orderData);
-            console.log('✅ Order created:', orderResponse);
-            
-            showNotification('Order placed successfully!', 'success');
-            
-            // Redirect to success page
-            setTimeout(() => {
-                navigate(`/order-confirmation/${orderResponse.data.orderId || 'success'}`);
-            }, 1500);
+
+            console.log('📦 Order Data Prepared:', orderData);
+            console.log('🚀 Calling orderService.createOrder...');
+
+            // Create order
+            const response = await orderService.createOrder(orderData);
+            console.log('✅ Order Service Response:', response);
+            console.log('📊 Response Structure:', {
+                success: response.success,
+                hasData: !!response.data,
+                hasOrder: !!response.data?.order,
+                orderNumber: response.data?.order?.orderNumber
+            });
+
+            if (response.success && response.data?.order) {
+                const orderNumber = response.data.order.orderNumber;
+                console.log('🎫 Order Number Extracted:', orderNumber);
+
+                if (!orderNumber) {
+                    console.error('❌ No order number in response:', response);
+                    throw new Error('Order created but no order number received');
+                }
+
+                console.log('🧹 Clearing cart...');
+                
+                // Mark order as completed BEFORE clearing cart to prevent redirect
+                setOrderCompleted(true);
+                console.log('✅ Order marked as completed');
+                
+                await clearCart();
+                console.log('✅ Cart cleared successfully');
+
+                setToast({
+                    message: 'Order placed successfully!',
+                    type: 'success'
+                });
+                console.log('📢 Success toast displayed');
+
+                console.log(`🔄 Redirecting to: /order-confirmation/${orderNumber}`);
+                console.log('⏱️ Redirect will happen in 1.5 seconds...');
+                
+                // Redirect to order confirmation
+                setTimeout(() => {
+                    console.log('🚀 EXECUTING NAVIGATION NOW');
+                    console.log('Target URL:', `/order-confirmation/${orderNumber}`);
+                    navigate(`/order-confirmation/${orderNumber}`);
+                    console.log('✅ Navigate function called');
+                }, 1500);
+            } else {
+                console.error('❌ Order creation failed - Invalid response structure');
+                console.error('Response:', response);
+                throw new Error('Order creation failed');
+            }
         } catch (error) {
-            console.error('❌ Failed to create order:', error);
-            showNotification('Payment succeeded but failed to create order. Please contact support.', 'error');
+            console.error('💥 ===== ERROR IN PAYMENT SUCCESS HANDLER =====');
+            console.error('Error object:', error);
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+            
+            setToast({
+                message: error.message || 'Payment successful but order creation failed. Please contact support.',
+                type: 'error'
+            });
+        } finally {
+            console.log('🏁 Payment success handler finished, setting processing to false');
+            setIsProcessing(false);
         }
     };
 
     const handlePaymentError = (error) => {
-        console.error('❌ Payment failed:', error);
-        showNotification(`Payment failed: ${error.message}`, 'error');
+        console.error('Payment error:', error);
+        
+        // Redirect to payment failed page with error details
+        setTimeout(() => {
+            navigate('/payment-failed', {
+                state: {
+                    error: error.message || 'Payment could not be processed',
+                    orderData: {
+                        total,
+                        subtotal,
+                        tax,
+                        shipping
+                    }
+                }
+            });
+        }, 1000);
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        
-        // Validate form data
-        if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone) {
-            showNotification('Please fill in all contact information', 'error');
-            return;
-        }
-        
-        if (!formData.address || !formData.city || !formData.postcode) {
-            showNotification('Please fill in all shipping address fields', 'error');
-            return;
-        }
-        
-        // Create payment intent and show Stripe form
-        createPaymentIntent();
-    };
 
-    const formatCardNumber = (value) => {
-        const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-        const matches = v.match(/\d{4,16}/g);
-        const match = matches && matches[0] || '';
-        const parts = [];
-        for (let i = 0, len = match.length; i < len; i += 4) {
-            parts.push(match.substring(i, i + 4));
-        }
-        if (parts.length) {
-            return parts.join(' ');
-        } else {
-            return v;
-        }
-    };
+
+    // Loading state
+    if (isLoading) {
+        return (
+            <div className="bloc bgc-5700 full-width-bloc l-bloc" id="payment-loading">
+                <div className="container bloc-md bloc-lg-md">
+                    <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                        <LoadingSpinner size="lg" />
+                        <div className="ms-3">
+                            <p className="tc-6533">Loading checkout...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bloc bgc-5700 full-width-bloc l-bloc" id="payment-bloc">
-            {/* Notification Toast */}
-            {notification.show && (
-                <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 1050 }}>
-                    <div className={`alert alert-${notification.type === 'success' ? 'success' : notification.type === 'info' ? 'info' : 'warning'} alert-dismissible fade show`} role="alert">
-                        <div className="d-flex align-items-center">
-                            <svg width="16" height="16" viewBox="0 0 24 24" className="me-2" fill="currentColor">
-                                {notification.type === 'success' ? (
-                                    <path d="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" />
-                                ) : (
-                                    <path d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
-                                )}
-                            </svg>
-                            {notification.message}
-                        </div>
-                        <button
-                            type="button"
-                            className="btn-close"
-                            onClick={() => setNotification({ show: false, message: '', type: '' })}
-                        ></button>
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    action={toast.action}
+                    onClose={() => setToast(null)}
+                />
+            )}
+
+            {/* Processing Overlay */}
+            {isProcessing && (
+                <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50" style={{ zIndex: 2000 }}>
+                    <div className="bg-white rounded p-4 text-center">
+                        <LoadingSpinner size="lg" />
+                        <p className="tc-6533 mt-3 mb-0">Processing your order...</p>
                     </div>
                 </div>
             )}
 
             <div className="container bloc-md bloc-lg-md">
                 <div className="row">
-                    {/* Page Header */}
-                    <div className="col-12 mb-4">
-                        <nav aria-label="breadcrumb">
-                            <ol className="breadcrumb">
-                                <li className="breadcrumb-item"><Link to="/cart">Cart</Link></li>
-                                <li className="breadcrumb-item active" aria-current="page">Checkout</li>
-                            </ol>
-                        </nav>
-                        <div className="d-flex justify-content-between align-items-center">
-                            <h1 className="tc-6533 bold-text mb-0">Secure Checkout</h1>
-                            <div className="d-flex gap-2">
-                                <button
-                                    type="button"
-                                    className="btn btn-outline-primary btn-sm"
-                                    onClick={() => setShowImportOptions(!showImportOptions)}
-                                >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    Import Data
-                                </button>
-                                <button
-                                    type="button"
-                                    className="btn btn-outline-secondary btn-sm"
-                                    onClick={clearFormData}
-                                >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" className="me-1" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <polyline points="3 6 5 6 21 6" />
-                                        <path d="m19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                    </svg>
-                                    Clear All
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
                     {/* Import Options Panel */}
                     {showImportOptions && (
                         <div className="col-12 mb-4">
@@ -387,7 +482,7 @@ const PaymentPage = () => {
                                 
                                 <div className="row">
                                     {/* Import Profile */}
-                                    <div className="col-md-4 mb-3">
+                                    <div className="col-md-6 mb-3">
                                         <div className="border rounded p-3 h-100">
                                             <h6 className="tc-6533 mb-2">Profile Information</h6>
                                             <p className="small text-muted mb-3">
@@ -411,7 +506,7 @@ const PaymentPage = () => {
                                     </div>
 
                                     {/* Import Address */}
-                                    <div className="col-md-4 mb-3">
+                                    <div className="col-md-6 mb-3">
                                         <div className="border rounded p-3 h-100">
                                             <h6 className="tc-6533 mb-2">Saved Addresses</h6>
                                             <p className="small text-muted mb-3">
@@ -424,7 +519,7 @@ const PaymentPage = () => {
                                             >
                                                 <option value="">Select an address...</option>
                                                 {userData.addresses.map((address) => (
-                                                    <option key={address.id} value={address.id}>
+                                                    <option key={address._id} value={address._id}>
                                                         {address.type} - {address.city}
                                                     </option>
                                                 ))}
@@ -440,35 +535,7 @@ const PaymentPage = () => {
                                         </div>
                                     </div>
 
-                                    {/* Import Payment Method */}
-                                    <div className="col-md-4 mb-3">
-                                        <div className="border rounded p-3 h-100">
-                                            <h6 className="tc-6533 mb-2">Saved Payment Methods</h6>
-                                            <p className="small text-muted mb-3">
-                                                Use a saved payment method
-                                            </p>
-                                            <select
-                                                className="form-select form-select-sm mb-3"
-                                                value={selectedPaymentMethod}
-                                                onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                                            >
-                                                <option value="">Select a payment method...</option>
-                                                {userData.paymentMethods.map((method) => (
-                                                    <option key={method.id} value={method.id}>
-                                                        {method.brand.toUpperCase()} •••• {method.last4}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <button
-                                                type="button"
-                                                className="btn btn-primary btn-sm w-100"
-                                                onClick={() => importPaymentMethod(selectedPaymentMethod)}
-                                                disabled={!selectedPaymentMethod}
-                                            >
-                                                Import Payment
-                                            </button>
-                                        </div>
-                                    </div>
+
                                 </div>
 
                                 <div className="text-center mt-3">
@@ -487,7 +554,25 @@ const PaymentPage = () => {
                     <div className="row">
                         {/* Checkout Form */}
                         <div className="col-lg-8 mb-4 mb-lg-0">
-                            <form onSubmit={handleSubmit}>
+                            {/* Quick Import Button */}
+                            {userData.addresses.length > 0 && (
+                                <div className="mb-4">
+                                    <button
+                                        type="button"
+                                        className={`btn ${showImportOptions ? 'btn-outline-primary' : 'btn-primary'} btn-rd w-100`}
+                                        onClick={() => setShowImportOptions(!showImportOptions)}
+                                    >
+                                        <svg width="20" height="20" viewBox="0 0 24 24" className="me-2" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                                        </svg>
+                                        {showImportOptions ? 'Hide' : 'Use'} Saved Information
+                                        {userData.addresses.length > 0 && ` (${userData.addresses.length} address${userData.addresses.length > 1 ? 'es' : ''})`}
+                                    </button>
+                                </div>
+                            )}
+                            
+                            <div>
                                 {/* Contact Information */}
                                 <div className="store-card fill-card mb-4">
                                     <div className="d-flex justify-content-between align-items-center mb-4">
@@ -568,7 +653,7 @@ const PaymentPage = () => {
                                             >
                                                 <option value="">Use saved address...</option>
                                                 {userData.addresses.map((address) => (
-                                                    <option key={address.id} value={address.id}>
+                                                    <option key={address._id} value={address._id}>
                                                         {address.type} - {address.city}
                                                     </option>
                                                 ))}
@@ -619,11 +704,10 @@ const PaymentPage = () => {
                                                 onChange={handleInputChange}
                                                 required
                                             >
-                                                <option value="United Kingdom">United Kingdom</option>
-                                                <option value="Ireland">Ireland</option>
-                                                <option value="France">France</option>
-                                                <option value="Germany">Germany</option>
-                                                <option value="Spain">Spain</option>
+                                                <option value="">Select Country</option>
+                                                {COUNTRIES.map(country => (
+                                                    <option key={country} value={country}>{country}</option>
+                                                ))}
                                             </select>
                                         </div>
                                     </div>
@@ -634,19 +718,29 @@ const PaymentPage = () => {
                                     <h3 className="tc-6533 bold-text mb-4">Payment Method</h3>
                                     
                                     {!showStripeForm ? (
-                                        <div className="text-center py-4">
-                                            <p className="tc-6533 mb-3">
-                                                Complete your shipping information above, then proceed to payment.
-                                            </p>
-                                            <div className="d-flex align-items-center justify-content-center mb-3">
-                                                <svg width="24" height="24" viewBox="0 0 24 24" className="me-2" fill="currentColor">
-                                                    <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
-                                                </svg>
-                                                <span className="tc-6533">Secured by Stripe</span>
+                                        <div className="alert alert-info border-0 d-flex align-items-start">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="me-2 mt-1">
+                                                <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
+                                            </svg>
+                                            <div>
+                                                <strong>Secure Payment with Stripe</strong>
+                                                <p className="mb-0 small">
+                                                    Click "Proceed to Payment" below to securely enter your payment details. We accept all major credit and debit cards.
+                                                </p>
                                             </div>
-                                            <small className="text-muted">
-                                                We accept all major credit and debit cards
-                                            </small>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            {clientSecret && (
+                                                <StripeProvider clientSecret={clientSecret}>
+                                                    <StripeCheckoutForm
+                                                        amount={total}
+                                                        currency="usd"
+                                                        onSuccess={handlePaymentSuccess}
+                                                        onError={handlePaymentError}
+                                                    />
+                                                </StripeProvider>
+                                            )}
                                         </div>
                                     ) : (
                                         <StripeProvider>
@@ -662,7 +756,7 @@ const PaymentPage = () => {
                                     )}
                                 </div>
 
-                                {/* Order Options */}
+                                {/* Order Options 
                                 <div className="store-card fill-card mb-4">
                                     <div className="form-check">
                                         <input
@@ -678,7 +772,8 @@ const PaymentPage = () => {
                                         </label>
                                     </div>
                                 </div>
-                            </form>
+                                */}
+                            </div>
                         </div>
 
                         {/* Order Summary */}
@@ -688,29 +783,36 @@ const PaymentPage = () => {
                                 
                                 {/* Order Items */}
                                 <div className="mb-4">
-                                    {cartItems.map((item) => (
-                                        <div key={item.id} className="d-flex align-items-center mb-3">
-                                            <img
-                                                src={item.image}
-                                                className="rounded me-3"
-                                                alt={item.name}
-                                                width="50"
-                                                height="50"
-                                            />
-                                            <div className="flex-grow-1">
-                                                <h6 className="tc-6533 mb-1">{item.name}</h6>
-                                                <small className="tc-6533">{item.color}, {item.storage}</small>
+                                    {cartItems.map((item) => {
+                                        const product = item.product || {};
+                                        const options = item.options || {};
+                                        const optionsText = Object.entries(options).map(([key, value]) => value).join(', ');
+                                        
+                                        return (
+                                            <div key={item._id} className="d-flex align-items-center mb-3">
+                                                <img
+                                                    src={product.primaryImage?.url || product.images?.[0]?.url || 'img/placeholder.jpg'}
+                                                    className="rounded me-3"
+                                                    alt={product.name || 'Product'}
+                                                    width="50"
+                                                    height="50"
+                                                />
+                                                <div className="flex-grow-1">
+                                                    <h6 className="tc-6533 mb-1">{product.name}</h6>
+                                                    {optionsText && <small className="tc-6533">{optionsText}</small>}
+                                                    <small className="tc-6533 d-block">Qty: {item.quantity}</small>
+                                                </div>
+                                                <span className="tc-6533 bold-text">${(item.price * item.quantity).toFixed(2)}</span>
                                             </div>
-                                            <span className="tc-6533 bold-text">£{item.price}</span>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
 
                                 {/* Pricing */}
                                 <div className="mb-4">
                                     <div className="d-flex justify-content-between mb-2">
                                         <span className="tc-6533">Subtotal:</span>
-                                        <span className="tc-6533">£{subtotal.toFixed(2)}</span>
+                                        <span className="tc-6533">${subtotal.toFixed(2)}</span>
                                     </div>
                                     <div className="d-flex justify-content-between mb-2">
                                         <span className="tc-6533">Shipping:</span>
@@ -718,38 +820,25 @@ const PaymentPage = () => {
                                     </div>
                                     <div className="d-flex justify-content-between mb-3">
                                         <span className="tc-6533">Tax (VAT):</span>
-                                        <span className="tc-6533">£{tax.toFixed(2)}</span>
+                                        <span className="tc-6533">${tax.toFixed(2)}</span>
                                     </div>
                                     <hr />
                                     <div className="d-flex justify-content-between mb-4">
                                         <span className="tc-6533 bold-text h5">Total:</span>
-                                        <span className="tc-2101 bold-text h5">£{total.toFixed(2)}</span>
+                                        <span className="tc-2101 bold-text h5">${total.toFixed(2)}</span>
                                     </div>
                                 </div>
 
-                                {/* Complete Order Button */}
-                                {!showStripeForm ? (
+                                {/* Proceed to Payment Button (only show if Stripe form not visible) */}
+                                {!showStripeForm && (
                                     <button
                                         type="submit"
                                         className="btn btn-c-2101 btn-rd btn-lg w-100 mb-3"
                                         onClick={handleSubmit}
-                                        disabled={isCreatingIntent}
+                                        disabled={isProcessing || cartItems.length === 0}
                                     >
-                                        {isCreatingIntent ? (
-                                            <div className="d-flex align-items-center justify-content-center">
-                                                <div className="spinner-border spinner-border-sm me-2" role="status">
-                                                    <span className="visually-hidden">Loading...</span>
-                                                </div>
-                                                Preparing Payment...
-                                            </div>
-                                        ) : (
-                                            'Proceed to Payment'
-                                        )}
+                                        {isProcessing ? 'Initializing Payment...' : `Proceed to Payment - $${total.toFixed(2)}`}
                                     </button>
-                                ) : (
-                                    <div className="alert alert-info">
-                                        <small>Complete payment using the form above</small>
-                                    </div>
                                 )}
 
                                 {/* Security Notice */}
@@ -774,3 +863,4 @@ const PaymentPage = () => {
 };
 
 export default PaymentPage;
+

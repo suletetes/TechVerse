@@ -5,18 +5,19 @@
 
 import BaseApiService from '../core/BaseApiService.js';
 import { API_ENDPOINTS } from '../config.js';
+import { tokenManager } from '../../utils/tokenManager.js';
 
 class UploadService extends BaseApiService {
   constructor() {
     super({
       serviceName: 'UploadService',
       baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-      endpoints: API_ENDPOINTS.UPLOAD || {
-        BASE: '/api/upload',
-        SINGLE: '/api/upload/image',
-        MULTIPLE: '/api/upload/images',
-        DELETE: '/api/upload/image',
-        INFO: '/api/upload/image/info'
+      endpoints: {
+        SINGLE: API_ENDPOINTS.UPLOAD?.IMAGE || '/upload/image',
+        MULTIPLE: API_ENDPOINTS.UPLOAD?.IMAGES || '/upload/images',
+        DELETE: API_ENDPOINTS.UPLOAD?.IMAGE || '/upload/image',
+        INFO: '/upload/image/info',
+        PRODUCT_IMAGES: API_ENDPOINTS.UPLOAD?.PRODUCT_IMAGES || '/upload/product-images'
       },
       defaultOptions: {
         timeout: 30000 // Longer timeout for file uploads
@@ -38,11 +39,64 @@ class UploadService extends BaseApiService {
     if (options.category) formData.append('category', options.category);
     if (options.isPrimary) formData.append('isPrimary', options.isPrimary);
 
-    return this.httpClient.post(this.endpoints.SINGLE, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      },
-      onUploadProgress: options.onProgress
+    // Use XMLHttpRequest for upload progress support
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      
+      // Get token for auth
+      const token = tokenManager.getToken();
+      
+      // Setup progress tracking
+      if (options.onProgress) {
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            options.onProgress({
+              loaded: e.loaded,
+              total: e.total
+            });
+          }
+        });
+      }
+      
+      // Handle completion
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            resolve(response);
+          } catch (e) {
+            reject(new Error('Invalid JSON response'));
+          }
+        } else {
+          try {
+            const error = JSON.parse(xhr.responseText);
+            reject(new Error(error.message || 'Upload failed'));
+          } catch (e) {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        }
+      });
+      
+      // Handle errors
+      xhr.addEventListener('error', () => {
+        reject(new Error('Network error during upload'));
+      });
+      
+      xhr.addEventListener('abort', () => {
+        reject(new Error('Upload cancelled'));
+      });
+      
+      // Open and send request
+      const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      xhr.open('POST', `${baseURL}${this.endpoints.SINGLE}`);
+      
+      // Set headers
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
+      
+      // Don't set Content-Type - browser will set it with boundary for FormData
+      xhr.send(formData);
     });
   }
 
@@ -66,11 +120,64 @@ class UploadService extends BaseApiService {
     // Add optional metadata
     if (options.category) formData.append('category', options.category);
 
-    return this.httpClient.post(this.endpoints.MULTIPLE, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      },
-      onUploadProgress: options.onProgress
+    // Use XMLHttpRequest for upload progress support
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      
+      // Get token for auth
+      const token = tokenManager.getToken();
+      
+      // Setup progress tracking
+      if (options.onProgress) {
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            options.onProgress({
+              loaded: e.loaded,
+              total: e.total
+            });
+          }
+        });
+      }
+      
+      // Handle completion
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            resolve(response);
+          } catch (e) {
+            reject(new Error('Invalid JSON response'));
+          }
+        } else {
+          try {
+            const error = JSON.parse(xhr.responseText);
+            reject(new Error(error.message || 'Upload failed'));
+          } catch (e) {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        }
+      });
+      
+      // Handle errors
+      xhr.addEventListener('error', () => {
+        reject(new Error('Network error during upload'));
+      });
+      
+      xhr.addEventListener('abort', () => {
+        reject(new Error('Upload cancelled'));
+      });
+      
+      // Open and send request
+      const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      xhr.open('POST', `${baseURL}${this.endpoints.MULTIPLE}`);
+      
+      // Set headers
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
+      
+      // Don't set Content-Type - browser will set it with boundary for FormData
+      xhr.send(formData);
     });
   }
 

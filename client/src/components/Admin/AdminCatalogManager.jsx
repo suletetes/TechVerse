@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminCategoryManager from './AdminCategoryManager';
 import AdminSpecificationManager from './AdminSpecificationManager';
 import productService from '../../api/services/productService';
+import adminService from '../../api/services/adminService';
 
 const AdminCatalogManager = ({ 
     onSaveCategory,
@@ -23,26 +24,51 @@ const AdminCatalogManager = ({
 
     const loadCatalogData = async () => {
         try {
+            console.log('📥 Loading catalog data...');
             setIsLoading(true);
             setError(null);
 
             // Load categories and products in parallel
+            // Use adminService.getCategories() to get categories with product counts
             const [categoriesResponse, productsResponse] = await Promise.all([
-                productService.getCategories(),
+                adminService.getCategories(), // This calls /admin/categories which includes productCount
                 productService.getProducts({ limit: 1000 }) // Get all products for accurate counts
             ]);
 
-            // Process categories
-            const backendCategories = categoriesResponse.data || categoriesResponse || [];
+            console.log('📦 Categories response:', categoriesResponse);
+            console.log('📦 Products response:', productsResponse);
+
+            // Process categories - handle different response structures
+            let backendCategories = [];
+            if (categoriesResponse.data?.categories) {
+                backendCategories = categoriesResponse.data.categories;
+            } else if (Array.isArray(categoriesResponse.data)) {
+                backendCategories = categoriesResponse.data;
+            } else if (categoriesResponse.categories) {
+                backendCategories = categoriesResponse.categories;
+            } else if (Array.isArray(categoriesResponse)) {
+                backendCategories = categoriesResponse;
+            }
+            
+            console.log('📋 Backend categories count:', backendCategories.length);
+            console.log('📋 First category raw data:', JSON.stringify(backendCategories[0], null, 2));
+            
+            if (!Array.isArray(backendCategories)) {
+                console.error('❌ backendCategories is not an array:', typeof backendCategories, backendCategories);
+                throw new Error('Categories data is not in expected format');
+            }
+            
             const processedCategories = backendCategories.map(category => ({
                 id: category._id,
+                _id: category._id, // Keep both for compatibility
                 name: category.name,
                 slug: category.slug,
                 description: category.description || '',
                 image: category.image || `/img/category-${category.slug}.jpg`,
                 isActive: category.isActive !== false,
+                isFeatured: category.isFeatured || false, // Add isFeatured field
                 sortOrder: category.displayOrder || 0,
-                productCount: 0, // Will be calculated below
+                productCount: category.productCount || 0, // Use backend productCount
                 parentId: category.parent?._id || null,
                 seoTitle: category.seo?.title || `${category.name} - Shop Now`,
                 seoDescription: category.seo?.description || `Discover our ${category.name} collection`,
@@ -53,6 +79,14 @@ const AdminCatalogManager = ({
                     returnPolicy: '30-day return policy'
                 }
             }));
+            
+            console.log('📊 Processed categories summary:');
+            processedCategories.forEach(c => {
+                console.log(`  - ${c.name}: ${c.productCount} products, featured: ${c.isFeatured}`);
+            });
+            
+            const featuredCount = processedCategories.filter(c => c.isFeatured).length;
+            console.log(`📊 Total featured categories: ${featuredCount}`);
 
             // Process products
             const backendProducts = productsResponse.data?.products || productsResponse.products || [];
@@ -69,21 +103,15 @@ const AdminCatalogManager = ({
                 updatedAt: product.updatedAt
             }));
 
-            // Calculate product counts for categories
-            const categoriesWithCounts = processedCategories.map(category => ({
-                ...category,
-                productCount: processedProducts.filter(product => 
-                    product.categoryId === category.id || 
-                    product.category === category.name
-                ).length
-            }));
-
-            setCategories(categoriesWithCounts);
+            console.log('✅ Processed categories:', processedCategories.length);
+            console.log('✅ Processed products:', processedProducts.length);
+            
+            setCategories(processedCategories);
             setProducts(processedProducts);
             setLastUpdated(new Date());
 
         } catch (err) {
-            console.error('Failed to load catalog data:', err);
+            console.error('❌ Failed to load catalog data:', err);
             setError('Failed to load catalog data. Please try again.');
         } finally {
             setIsLoading(false);
@@ -106,14 +134,18 @@ const AdminCatalogManager = ({
     // Wrapper functions to handle real-time updates
     const handleSaveCategoryWrapper = async (categoryData) => {
         try {
+            console.log('💾 Saving category:', categoryData);
             if (onSaveCategory) {
-                await onSaveCategory(categoryData);
+                const result = await onSaveCategory(categoryData);
+                console.log('✅ Category saved:', result);
             }
             // Refresh data to reflect changes
+            console.log('🔄 Refreshing category list...');
             await loadCatalogData();
+            console.log('✅ Category list refreshed');
         } catch (error) {
-            console.error('Failed to save category:', error);
-            alert('Failed to save category. Please try again.');
+            console.error('❌ Failed to save category:', error);
+            alert(`Failed to save category: ${error.message}`);
         }
     };
 
@@ -176,77 +208,7 @@ const AdminCatalogManager = ({
             </div>
         );
     }
-    const sampleCategories = [
-        {
-            id: 1,
-            name: 'Tablets',
-            slug: 'tablets',
-            description: 'High-performance tablets for work and entertainment',
-            image: '/img/category-tablets.jpg',
-            isActive: true,
-            sortOrder: 1,
-            productCount: getProductCountForCategory('Tablets'),
-            parentId: null,
-            seoTitle: 'Tablets - Latest iPad, Android & Windows Tablets',
-            seoDescription: 'Shop the latest tablets from top brands. Find iPad, Android, and Windows tablets with fast shipping.',
-            relatedCategories: [
-                { name: 'iPad Pro', path: '/category/tablets/ipad-pro', count: 12 },
-                { name: 'iPad Air', path: '/category/tablets/ipad-air', count: 8 },
-                { name: 'Android Tablets', path: '/category/tablets/android', count: 15 }
-            ],
-            categoryFeatures: {
-                freeShipping: true,
-                warranty: '2 Year Warranty',
-                returnPolicy: '30-day return policy'
-            }
-        },
-        {
-            id: 2,
-            name: 'Phones',
-            slug: 'phones',
-            description: 'Latest smartphones with cutting-edge technology',
-            image: '/img/category-phones.jpg',
-            isActive: true,
-            sortOrder: 2,
-            productCount: getProductCountForCategory('Phones'),
-            parentId: null,
-            seoTitle: 'Smartphones - iPhone, Samsung, Google Pixel',
-            seoDescription: 'Discover the latest smartphones with advanced features and competitive prices.',
-            relatedCategories: [
-                { name: 'iPhone', path: '/category/phones/iphone', count: 18 },
-                { name: 'Samsung Galaxy', path: '/category/phones/samsung', count: 22 },
-                { name: 'Google Pixel', path: '/category/phones/pixel', count: 5 }
-            ],
-            categoryFeatures: {
-                freeShipping: true,
-                warranty: '1 Year Warranty',
-                returnPolicy: '14-day return policy'
-            }
-        },
-        {
-            id: 3,
-            name: 'Laptops',
-            slug: 'laptops',
-            description: 'Professional laptops for work and gaming',
-            image: '/img/category-laptops.jpg',
-            isActive: true,
-            sortOrder: 3,
-            productCount: getProductCountForCategory('Laptops'),
-            parentId: null,
-            seoTitle: 'Laptops - MacBook, Windows, Gaming Laptops',
-            seoDescription: 'Find the perfect laptop for work, study, or gaming. Top brands and competitive prices.',
-            relatedCategories: [
-                { name: 'MacBook', path: '/category/laptops/macbook', count: 8 },
-                { name: 'Gaming Laptops', path: '/category/laptops/gaming', count: 12 },
-                { name: 'Business Laptops', path: '/category/laptops/business', count: 12 }
-            ],
-            categoryFeatures: {
-                freeShipping: true,
-                warranty: '3 Year Warranty',
-                returnPolicy: '30-day return policy'
-            }
-        }
-    ];
+
 
     // Sample specifications data
     const sampleSpecifications = {
@@ -311,7 +273,7 @@ const AdminCatalogManager = ({
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h3 className="tc-6533 fw-bold mb-0">Catalog Management</h3>
                 <div className="d-flex gap-2">
-                    <span className="badge bg-primary">{(categories.length || sampleCategories.length)} Categories</span>
+                    <span className="badge bg-primary">{categories.length} Categories</span>
                     <span className="badge bg-info">{Object.keys(specifications).length || Object.keys(sampleSpecifications).length} Spec Templates</span>
                 </div>
             </div>
@@ -327,7 +289,7 @@ const AdminCatalogManager = ({
                             <path fill="currentColor" d="M10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6H12L10,4Z"/>
                         </svg>
                         Categories
-                        <span className="badge bg-primary ms-2">{categories.length || sampleCategories.length}</span>
+                        <span className="badge bg-primary ms-2">{categories.length}</span>
                     </button>
                 </li>
                 <li className="nav-item">
@@ -348,21 +310,40 @@ const AdminCatalogManager = ({
             <div className="tab-content">
                 {activeTab === 'categories' && (
                     <div className="tab-pane active">
-                        <AdminCategoryManager
-                            categories={categories.length > 0 ? categories : sampleCategories}
-                            onSaveCategory={handleSaveCategoryWrapper}
-                            onDeleteCategory={handleDeleteCategoryWrapper}
-                        />
+                        {categories.length > 0 ? (
+                            <AdminCategoryManager
+                                categories={categories}
+                                onSaveCategory={handleSaveCategoryWrapper}
+                                onDeleteCategory={handleDeleteCategoryWrapper}
+                            />
+                        ) : (
+                            <div className="alert alert-info">
+                                <h5><i className="fas fa-info-circle me-2"></i>No Categories Yet</h5>
+                                <p className="mb-3">You haven't created any categories yet. Categories help organize your products.</p>
+                                <AdminCategoryManager
+                                    categories={[]}
+                                    onSaveCategory={handleSaveCategoryWrapper}
+                                    onDeleteCategory={handleDeleteCategoryWrapper}
+                                />
+                            </div>
+                        )}
                     </div>
                 )}
 
                 {activeTab === 'specifications' && (
                     <div className="tab-pane active">
-                        <AdminSpecificationManager
-                            categories={categories.length > 0 ? categories : sampleCategories}
-                            specifications={Object.keys(specifications).length > 0 ? specifications : sampleSpecifications}
-                            onSaveSpecifications={handleSaveSpecificationsWrapper}
-                        />
+                        {categories.length > 0 ? (
+                            <AdminSpecificationManager
+                                categories={categories}
+                                specifications={Object.keys(specifications).length > 0 ? specifications : sampleSpecifications}
+                                onSaveSpecifications={handleSaveSpecificationsWrapper}
+                            />
+                        ) : (
+                            <div className="alert alert-warning">
+                                <h5><i className="fas fa-exclamation-triangle me-2"></i>No Categories Available</h5>
+                                <p className="mb-0">Please create categories first before managing specifications.</p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -372,7 +353,7 @@ const AdminCatalogManager = ({
                 <div className="col-md-3">
                     <div className="card text-center">
                         <div className="card-body">
-                            <h5 className="card-title text-primary">{categories.length || sampleCategories.length}</h5>
+                            <h5 className="card-title text-primary">{categories.length}</h5>
                             <p className="card-text">Total Categories</p>
                         </div>
                     </div>
@@ -381,7 +362,7 @@ const AdminCatalogManager = ({
                     <div className="card text-center">
                         <div className="card-body">
                             <h5 className="card-title text-success">
-                                {(categories.length > 0 ? categories : sampleCategories).filter(cat => cat.isActive).length}
+                                {categories.filter(cat => cat.isActive).length}
                             </h5>
                             <p className="card-text">Active Categories</p>
                         </div>

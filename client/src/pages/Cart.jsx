@@ -21,6 +21,16 @@ const Cart = () => {
     const [promoCode, setPromoCode] = useState('');
     const [isUpdating, setIsUpdating] = useState(false);
 
+    // Debug logging
+    console.log('🛒 Cart Page State:', {
+        items,
+        itemsLength: items?.length,
+        total,
+        itemCount,
+        isLoading,
+        error
+    });
+
     // Redirect to login if not authenticated
     useEffect(() => {
         if (!isAuthenticated) {
@@ -172,11 +182,16 @@ const Cart = () => {
                                         {/* Product Image */}
                                         <div className="col-md-2 col-3 mb-3 mb-md-0">
                                             <img
-                                                src={item.product?.images?.[0] || item.product?.thumbnail || '/img/placeholder.jpg'}
+                                                src={
+                                                    item.product?.images && item.product.images.length > 0
+                                                        ? (item.product.images.find(img => img.isPrimary)?.url || item.product.images[0]?.url || item.product.images[0])
+                                                        : item.product?.image?.url || item.product?.image || item.product?.thumbnail || '/img/placeholder.jpg'
+                                                }
                                                 className="img-fluid rounded"
                                                 alt={item.product?.name || 'Product'}
                                                 width="80"
                                                 height="80"
+                                                style={{ objectFit: 'cover' }}
                                             />
                                         </div>
 
@@ -216,7 +231,7 @@ const Cart = () => {
 
                                         {/* Price */}
                                         <div className="col-md-2 col-4 mb-3 mb-md-0">
-                                            <p className="tc-6533 bold-text mb-0">£{item.price?.toFixed(2)}</p>
+                                            <p className="tc-6533 bold-text mb-0">${item.price?.toFixed(2)}</p>
                                         </div>
 
                                         {/* Remove Button */}
@@ -252,29 +267,29 @@ const Cart = () => {
                             <div className="mb-3">
                                 <div className="d-flex justify-content-between mb-2">
                                     <span className="tc-6533">Subtotal:</span>
-                                    <span className="tc-6533">£{subtotal.toFixed(2)}</span>
+                                    <span className="tc-6533">${subtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="d-flex justify-content-between mb-2">
                                     <span className="tc-6533">Shipping:</span>
                                     <span className="tc-6533">
-                                        {shipping === 0 ? 'FREE' : `£${shipping.toFixed(2)}`}
+                                        {shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}
                                     </span>
                                 </div>
                                 <div className="d-flex justify-content-between mb-3">
                                     <span className="tc-6533">Tax (VAT):</span>
-                                    <span className="tc-6533">£{tax.toFixed(2)}</span>
+                                    <span className="tc-6533">${tax.toFixed(2)}</span>
                                 </div>
                                 <hr />
                                 <div className="d-flex justify-content-between mb-4">
                                     <span className="tc-6533 bold-text h5">Total:</span>
-                                    <span className="tc-2101 bold-text h5">£{finalTotal.toFixed(2)}</span>
+                                    <span className="tc-2101 bold-text h5">${finalTotal.toFixed(2)}</span>
                                 </div>
                             </div>
 
                             {/* Shipping Notice */}
                             {shipping === 0 && (
                                 <div className="alert alert-success mb-4" style={{ backgroundColor: '#d4edda', border: '1px solid #c3e6cb' }}>
-                                    <small className="tc-6533">🚚 Free shipping on orders over £50!</small>
+                                    <small className="tc-6533">✓ Free shipping on orders over $50!</small>
                                 </div>
                             )}
 
@@ -310,12 +325,18 @@ const Cart = () => {
 
                             {/* Payment Methods */}
                             <div className="text-center">
-                                <p className="tc-6533 sm-text mb-2">We accept:</p>
-                                <div className="d-flex justify-content-center gap-2">
+                                <p className="tc-6533 sm-text mb-2">Secure payment powered by:</p>
+                                <div className="d-flex justify-content-center align-items-center gap-2 mb-2">
+                                    <svg width="60" height="25" viewBox="0 0 60 25" fill="none">
+                                        <rect width="60" height="25" rx="4" fill="#635BFF"/>
+                                        <text x="30" y="17" fontFamily="Arial" fontSize="12" fill="white" textAnchor="middle" fontWeight="bold">stripe</text>
+                                    </svg>
+                                </div>
+                                <div className="d-flex justify-content-center gap-2 flex-wrap">
                                     <span className="badge bg-light text-dark">Visa</span>
                                     <span className="badge bg-light text-dark">Mastercard</span>
-                                    <span className="badge bg-light text-dark">PayPal</span>
-                                    <span className="badge bg-light text-dark">Apple Pay</span>
+                                    <span className="badge bg-light text-dark">Amex</span>
+                                    <span className="badge bg-light text-dark">Discover</span>
                                 </div>
                             </div>
                         </div>

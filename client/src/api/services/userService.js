@@ -15,6 +15,7 @@ class UserService {
     if (this.cache.has(cacheKey)) {
       const cached = this.cache.get(cacheKey);
       if (Date.now() - cached.timestamp < this.cacheTimeout) {
+        // Return cached data directly (already processed)
         return cached.data;
       }
       this.cache.delete(cacheKey);
@@ -22,9 +23,18 @@ class UserService {
 
     try {
       const response = await apiClient.get(API_ENDPOINTS.USERS.PROFILE);
-      const data = await handleApiResponse(response);
       
-      // Cache the result
+      // Check if response is already processed
+      let data;
+      if (response && typeof response === 'object' && response.data !== undefined && !response.headers) {
+        // Response is already processed data
+        data = response;
+      } else {
+        // Response needs processing
+        data = await handleApiResponse(response);
+      }
+      
+      // Cache the processed result
       this.cache.set(cacheKey, {
         data,
         timestamp: Date.now()
@@ -79,7 +89,14 @@ class UserService {
 
     try {
       const response = await apiClient.get(API_ENDPOINTS.USERS.ADDRESSES);
-      const data = await handleApiResponse(response);
+      
+      // Check if response is already processed
+      let data;
+      if (response && typeof response === 'object' && response.data !== undefined && !response.headers) {
+        data = response;
+      } else {
+        data = await handleApiResponse(response);
+      }
       
       // Cache the result
       this.cache.set(cacheKey, {
@@ -168,7 +185,14 @@ class UserService {
 
     try {
       const response = await apiClient.get(API_ENDPOINTS.USERS.PAYMENT_METHODS);
-      const data = await handleApiResponse(response);
+      
+      // Check if response is already processed
+      let data;
+      if (response && typeof response === 'object' && response.data !== undefined && !response.headers) {
+        data = response;
+      } else {
+        data = await handleApiResponse(response);
+      }
       
       // Cache the result
       this.cache.set(cacheKey, {

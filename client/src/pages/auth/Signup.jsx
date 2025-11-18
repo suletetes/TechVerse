@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context';
+import { useAuth, useNotification } from '../../context';
 import { LoadingSpinner } from '../../components/Common';
 
 const Signup = () => {
     const navigate = useNavigate();
     const { register, isLoading, error, isAuthenticated, clearError } = useAuth();
+    const { addNotification, showSuccess, showError } = useNotification();
     
     const [formData, setFormData] = useState({
         firstName: '',
@@ -103,21 +104,23 @@ const Signup = () => {
                 lastName: formData.lastName.trim(),
                 email: formData.email.trim().toLowerCase(),
                 password: formData.password,
-                subscribeNewsletter: formData.subscribeNewsletter
+                confirmPassword: formData.confirmPassword
             };
 
             const result = await register(userData);
 
+            // Show success notification with email verification reminder
+            showSuccess(
+                `Welcome! A verification link has been sent to ${userData.email}. Please check your email to unlock all features.`,
+                8000 // Show for 8 seconds
+            );
+
             if (result.requiresVerification) {
-                // Redirect to verification page or show message
-                navigate('/login', { 
-                    state: { 
-                        message: 'Registration successful! Please check your email to verify your account.',
-                        email: userData.email
-                    }
-                });
+                // User needs to verify email but can still log in
+                // Redirect to home page where they'll see limited functionality
+                navigate('/');
             } else {
-                // Registration successful, user is logged in
+                // Registration successful, user is logged in and verified
                 navigate('/');
             }
         } catch (err) {
@@ -154,11 +157,11 @@ const Signup = () => {
                                     <div className="mb-4">
                                         <h5 className="tc-2175 mb-3">Member Benefits</h5>
                                         <ul className="tc-654" style={{listStyle: 'none', padding: 0}}>
-                                            <li className="mb-2">🎯 Exclusive member-only deals</li>
-                                            <li className="mb-2">🚚 Free shipping on orders over £50</li>
-                                            <li className="mb-2">📱 Early access to new products</li>
-                                            <li className="mb-2">🔄 Easy returns and exchanges</li>
-                                            <li className="mb-2">💬 Priority customer support</li>
+                                            <li className="mb-2"> Exclusive member-only deals</li>
+                                            {/* <li className="mb-2"> Free shipping on orders over $50</li> */}
+                                            <li className="mb-2"> Early access to new products</li>
+                                            <li className="mb-2"> Easy returns and exchanges</li>
+                                            <li className="mb-2"> Priority customer support</li>
                                         </ul>
                                     </div>
                                     <p className="tc-654 sm-text">
@@ -345,7 +348,7 @@ const Signup = () => {
                                                 disabled={isLoading}
                                             />
                                             <label className="form-check-label tc-6533 sm-text" htmlFor="agreeToTerms">
-                                                I agree to the <Link to="/terms" className="tc-2101">Terms of Service</Link> and <Link to="/privacy" className="tc-2101">Privacy Policy</Link>
+                                                I agree to the <Link to="/terms" className="tc-2101 mx-1">Terms of Service</Link> and <Link to="/privacy" className="tc-2101 mx-1">Privacy Policy</Link>
                                             </label>
                                             {validationErrors.agreeToTerms && (
                                                 <div className="invalid-feedback d-block">
@@ -354,6 +357,7 @@ const Signup = () => {
                                             )}
                                         </div>
 
+                                        {/* 
                                         <div className="form-check mb-4">
                                             <input 
                                                 className="form-check-input" 
@@ -368,6 +372,7 @@ const Signup = () => {
                                                 Subscribe to our newsletter for exclusive deals and updates
                                             </label>
                                         </div>
+                                         */}
 
                                         <button 
                                             className="bloc-button btn btn-lg w-100 btn-c-2101 btn-rd mb-3" 

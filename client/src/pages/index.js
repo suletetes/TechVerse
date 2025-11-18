@@ -4,9 +4,11 @@ export { default as Contact } from './Contact';
 
 // Product related pages
 export { default as Product } from './Product';
-export { default as Category } from './Category';
+export { default as Categories } from './Categories';
+export { default as Products } from './Products';
 export { default as Wishlist } from './Wishlist';
 export { default as PaymentPage } from './PaymentPage';
+export { default as PaymentFailed } from './PaymentFailed';
 export { default as Cart } from './Cart';
 
 // Error Page

@@ -1,0 +1,244 @@
+/* Text Visibility Fixes - Ensure all text is clearly visible */
+
+/* Table text visibility */
+.data-table-container .table,
+.data-table-container .table th,
+.data-table-container .table td,
+.table,
+.table th,
+.table td {
+  color: #212529 !important;
+  opacity: 1 !important;
+}
+
+/* Product page text visibility */
+.product-details,
+.product-info,
+.product-description,
+.product-specifications,
+.product-title,
+.product-price,
+.product-meta,
+.product-highlights,
+.product-options,
+.key-features,
+.technical-specs {
+  color: #212529 !important;
+  opacity: 1 !important;
+}
+
+/* Product page headings */
+.product-details h1,
+.product-details h2,
+.product-details h3,
+.product-details h4,
+.product-details h5,
+.product-details h6 {
+  color: #212529 !important;
+  opacity: 1 !important;
+  font-weight: 600 !important;
+}
+
+/* Product page paragraphs and text */
+.product-details p,
+.product-details span,
+.product-details div,
+.product-details li,
+.product-details label {
+  color: #212529 !important;
+  opacity: 1 !important;
+}
+
+/* Product sections */
+.product-section,
+.product-section h3,
+.product-section h4,
+.product-section p,
+.product-section li {
+  color: #212529 !important;
+  opacity: 1 !important;
+}
+
+/* General text elements */
+p, span, div, label, h1, h2, h3, h4, h5, h6 {
+  opacity: 1;
+}
+
+/* Ensure icons in tables are visible */
+.data-table-container svg,
+.table svg {
+  opacity: 0.9 !important;
+}
+
+/* Sort indicators */
+.sort-indicator,
+.sort-arrow {
+  opacity: 0.9 !important;
+}
+
+/* Category and status badges */
+.category-badge,
+.status-badge {
+  opacity: 1 !important;
+}
+
+/* List group items */
+.list-group-item {
+  color: #212529 !important;
+}
+
+.list-group-item svg {
+  opacity: 0.9 !important;
+}
+
+/* Admin panel text */
+.admin-panel,
+.admin-dashboard,
+.admin-content {
+  color: #212529 !important;
+}
+
+/* Ensure dropdown items are visible */
+.dropdown-item {
+  color: #212529 !important;
+  opacity: 1 !important;
+}
+
+/* Stats and meta information */
+.stats-card,
+.order-meta,
+.product-meta {
+  opacity: 1 !important;
+}
+
+.stats-card p,
+.order-meta p {
+  opacity: 1 !important;
+}
+
+/* Override any faded text */
+.text-muted {
+  color: #6c757d !important;
+  opacity: 1 !important;
+}
+
+.text-secondary {
+  color: #6c757d !important;
+  opacity: 1 !important;
+}
+
+/* Ensure all text colors are visible */
+.text-primary {
+  color: #0d6efd !important;
+  opacity: 1 !important;
+}
+
+.text-success {
+  color: #198754 !important;
+  opacity: 1 !important;
+}
+
+.text-danger {
+  color: #dc3545 !important;
+  opacity: 1 !important;
+}
+
+.text-warning {
+  color: #ffc107 !important;
+  opacity: 1 !important;
+}
+
+.text-info {
+  color: #0dcaf0 !important;
+  opacity: 1 !important;
+}
+
+.text-dark {
+  color: #212529 !important;
+  opacity: 1 !important;
+}
+
+/* Card text visibility */
+.card,
+.card-body,
+.card-title,
+.card-text,
+.card-header,
+.card-footer {
+  color: #212529 !important;
+  opacity: 1 !important;
+}
+
+/* Store card text */
+.store-card,
+.store-card p,
+.store-card h1,
+.store-card h2,
+.store-card h3,
+.store-card h4,
+.store-card h5,
+.store-card h6 {
+  color: #212529 !important;
+  opacity: 1 !important;
+}
+
+/* Ensure all button text is visible */
+.btn {
+  opacity: 1 !important;
+}
+
+.btn:disabled {
+  opacity: 0.65 !important;
+}
+
+/* Fix Bootstrap badge text visibility and colors */
+.badge {
+  opacity: 1 !important;
+  font-weight: 500 !important;
+}
+
+.badge.bg-secondary {
+  background-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+.badge.bg-primary {
+  background-color: #0d6efd !important;
+  color: #ffffff !important;
+}
+
+.badge.bg-success {
+  background-color: #198754 !important;
+  color: #ffffff !important;
+}
+
+.badge.bg-danger {
+  background-color: #dc3545 !important;
+  color: #ffffff !important;
+}
+
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #000000 !important;
+}
+
+.badge.bg-info {
+  background-color: #0dcaf0 !important;
+  color: #000000 !important;
+}
+
+.badge.bg-light {
+  background-color: #f8f9fa !important;
+  color: #212529 !important;
+  border: 1px solid #dee2e6 !important;
+}
+
+.badge.bg-dark {
+  background-color: #212529 !important;
+  color: #ffffff !important;
+}
+
+/* Ensure rounded pill badges are also visible */
+.badge.rounded-pill {
+  opacity: 1 !important;
+}

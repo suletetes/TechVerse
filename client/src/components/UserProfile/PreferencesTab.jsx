@@ -36,9 +36,9 @@ const PreferencesTab = () => {
                 <div className="col-md-6 mb-3">
                     <label className="form-label tc-6533 bold-text">Currency</label>
                     <select className="form-select">
-                        <option value="GBP">GBP (£)</option>
-                        <option value="EUR">EUR (€)</option>
                         <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
                     </select>
                 </div>
             </div>

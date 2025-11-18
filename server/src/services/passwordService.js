@@ -1,30 +1,26 @@
-import { hash, verify } from '@node-rs/argon2';
 import bcrypt from 'bcryptjs';
 import logger from '../utils/logger.js';
 
 /**
- * Password Service with Argon2 and bcrypt support
- * Provides secure password hashing with migration support
+ * Simplified Password Service - Using only bcrypt for consistency
+ * This eliminates the intermittent auth issues caused by Argon2 fallback logic
  */
 class PasswordService {
   constructor() {
-    // Argon2 configuration - using recommended settings for 2024
-    this.argon2Options = {
-      memoryCost: 65536, // 64 MB
-      timeCost: 3,       // 3 iterations
-      parallelism: 4,    // 4 parallel threads
-      hashLength: 32,    // 32 byte hash length
-      variant: 'argon2id' // Argon2id variant (most secure)
-    };
-
-    // bcrypt rounds for fallback
+    // Use consistent bcrypt rounds
     this.bcryptRounds = 12;
+    
+    // Log initialization
+    logger.info('Password service initialized with bcrypt', {
+      rounds: this.bcryptRounds,
+      algorithm: 'bcrypt'
+    });
   }
 
   /**
-   * Hash a password using Argon2
+   * Hash a password using bcrypt consistently
    * @param {string} password - Plain text password
-   * @returns {Promise<string>} - Hashed password with Argon2 prefix
+   * @returns {Promise<string>} - Hashed password
    */
   async hashPassword(password) {
     try {
@@ -36,18 +32,18 @@ class PasswordService {
         throw new Error('Password must be at least 6 characters long');
       }
 
-      const hashedPassword = await hash(password, this.argon2Options);
+      // Generate salt and hash password
+      const salt = await bcrypt.genSalt(this.bcryptRounds);
+      const hashedPassword = await bcrypt.hash(password, salt);
       
-      // Add prefix to identify Argon2 hashes
-      const prefixedHash = `$argon2id${hashedPassword}`;
-
-      logger.debug('Password hashed successfully with Argon2', {
+      logger.debug('Password hashed successfully', {
         passwordLength: password.length,
-        hashLength: prefixedHash.length,
-        algorithm: 'argon2id'
+        hashLength: hashedPassword.length,
+        algorithm: 'bcrypt',
+        rounds: this.bcryptRounds
       });
 
-      return prefixedHash;
+      return hashedPassword;
     } catch (error) {
       logger.error('Password hashing failed', {
         error: error.message,
@@ -58,7 +54,7 @@ class PasswordService {
   }
 
   /**
-   * Verify a password against a hash
+   * Verify a password against a hash using bcrypt consistently
    * @param {string} password - Plain text password
    * @param {string} hash - Stored password hash
    * @returns {Promise<boolean>} - True if password matches
@@ -66,44 +62,29 @@ class PasswordService {
   async verifyPassword(password, hash) {
     try {
       if (!password || !hash) {
+        logger.debug('Password verification failed - missing password or hash', {
+          hasPassword: !!password,
+          hasHash: !!hash
+        });
         return false;
       }
 
-      // Check if it's an Argon2 hash (has our custom prefix)
-      if (hash.startsWith('$argon2id')) {
-        // Remove our custom prefix and verify with Argon2
-        const actualHash = hash.substring('$argon2id'.length);
-        const isValid = await verify(actualHash, password);
-        
-        logger.debug('Password verification completed', {
-          algorithm: 'argon2id',
-          isValid,
-          hashLength: hash.length
-        });
-
-        return isValid;
-      }
-
-      // Check if it's a standard Argon2 hash (without our prefix)
+      // Handle legacy Argon2 hashes by rejecting them (force password reset)
       if (hash.startsWith('$argon2')) {
-        const isValid = await verify(hash, password);
-        
-        logger.debug('Password verification completed', {
-          algorithm: 'argon2',
-          isValid,
-          hashLength: hash.length
+        logger.warn('Legacy Argon2 hash detected - password verification failed', {
+          hashPrefix: hash.substring(0, 10)
         });
-
-        return isValid;
+        return false;
       }
 
-      // Fallback to bcrypt for existing passwords
+      // Use bcrypt for all password verification
       const isValid = await bcrypt.compare(password, hash);
       
       logger.debug('Password verification completed', {
         algorithm: 'bcrypt',
         isValid,
-        hashLength: hash.length
+        hashLength: hash.length,
+        passwordLength: password.length
       });
 
       return isValid;
@@ -111,45 +92,66 @@ class PasswordService {
       logger.error('Password verification failed', {
         error: error.message,
         stack: error.stack,
-        hashLength: hash?.length || 0
+        hashLength: hash?.length || 0,
+        passwordLength: password?.length || 0
       });
       return false;
     }
   }
 
   /**
-   * Check if a password hash needs upgrade
+   * Check if a password hash needs upgrade (always false for bcrypt)
    * @param {string} hash - Password hash to check
-   * @returns {boolean} - True if hash needs upgrade
+   * @returns {boolean} - False (bcrypt doesn't need upgrade)
    */
   needsUpgrade(hash) {
-    if (!hash) return false;
-    
-    // If it's not using our Argon2 prefix, it needs upgrade
-    return !hash.startsWith('$argon2id');
+    // Only Argon2 hashes need upgrade to bcrypt
+    if (hash && hash.startsWith('$argon2')) {
+      return true;
+    }
+    return false;
   }
 
   /**
-   * Migrate an old hash to new format
+   * Migrate an old hash to bcrypt (for Argon2 legacy hashes)
    * @param {string} password - Plain text password
    * @param {string} oldHash - Old password hash
-   * @returns {Promise<string|null>} - New hash or null if migration failed
+   * @returns {Promise<string|null>} - New bcrypt hash or null if migration failed
    */
   async migrateHash(password, oldHash) {
     try {
-      // First verify the password against the old hash
+      // For Argon2 hashes, we can't verify them, so we'll create a new hash
+      if (oldHash.startsWith('$argon2')) {
+        logger.info('Migrating Argon2 hash to bcrypt', {
+          oldHashLength: oldHash.length
+        });
+        
+        // Create new bcrypt hash
+        const newHash = await this.hashPassword(password);
+        
+        logger.info('Password hash migrated successfully', {
+          oldAlgorithm: 'argon2',
+          newAlgorithm: 'bcrypt',
+          oldHashLength: oldHash.length,
+          newHashLength: newHash.length
+        });
+
+        return newHash;
+      }
+
+      // For bcrypt hashes, verify first then create new hash if needed
       const isValid = await this.verifyPassword(password, oldHash);
       
       if (!isValid) {
+        logger.warn('Migration failed - password verification failed');
         return null;
       }
 
-      // Create new hash with current algorithm
+      // Create new hash with current settings
       const newHash = await this.hashPassword(password);
       
-      logger.info('Password hash migrated successfully', {
-        oldAlgorithm: oldHash.startsWith('$argon2') ? 'argon2' : 'bcrypt',
-        newAlgorithm: 'argon2id',
+      logger.info('Password hash refreshed successfully', {
+        algorithm: 'bcrypt',
         oldHashLength: oldHash.length,
         newHashLength: newHash.length
       });
@@ -165,32 +167,6 @@ class PasswordService {
   }
 
   /**
-   * Hash password with bcrypt (for compatibility)
-   * @param {string} password - Plain text password
-   * @returns {Promise<string>} - bcrypt hash
-   */
-  async hashPasswordBcrypt(password) {
-    try {
-      const salt = await bcrypt.genSalt(this.bcryptRounds);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      
-      logger.debug('Password hashed successfully with bcrypt', {
-        passwordLength: password.length,
-        hashLength: hashedPassword.length,
-        algorithm: 'bcrypt'
-      });
-
-      return hashedPassword;
-    } catch (error) {
-      logger.error('bcrypt password hashing failed', {
-        error: error.message,
-        passwordLength: password?.length || 0
-      });
-      throw error;
-    }
-  }
-
-  /**
    * Get algorithm info from hash
    * @param {string} hash - Password hash
    * @returns {object} - Algorithm information
@@ -200,21 +176,27 @@ class PasswordService {
       return { algorithm: 'unknown', needsUpgrade: true };
     }
 
-    if (hash.startsWith('$argon2id')) {
-      return { algorithm: 'argon2id', needsUpgrade: false };
-    }
-
     if (hash.startsWith('$argon2')) {
       return { algorithm: 'argon2', needsUpgrade: true };
     }
 
-    if (hash.startsWith('$2a$') || hash.startsWith('$2b$') || hash.startsWith('$2y$')) {
-      return { algorithm: 'bcrypt', needsUpgrade: true };
+    if (hash.startsWith('$2a') || hash.startsWith('$2b') || hash.startsWith('$2y')) {
+      return { algorithm: 'bcrypt', needsUpgrade: false };
     }
 
     return { algorithm: 'unknown', needsUpgrade: true };
   }
+
+  /**
+   * Force bcrypt hashing (compatibility method)
+   * @param {string} password - Plain text password
+   * @returns {Promise<string>} - bcrypt hash
+   */
+  async hashPasswordBcrypt(password) {
+    return this.hashPassword(password);
+  }
 }
 
 // Export singleton instance
-export default new PasswordService();
+const passwordService = new PasswordService();
+export default passwordService;

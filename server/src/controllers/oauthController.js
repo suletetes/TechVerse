@@ -7,6 +7,9 @@ import logger from '../utils/logger.js';
  * Helper function to generate tokens with enhanced security
  */
 const generateTokens = (user, req = null) => {
+  const sessionId = crypto.randomBytes(32).toString('hex');
+  const jti = crypto.randomBytes(16).toString('hex');
+  
   // Enhanced payload with security context
   const tokenPayload = {
     id: user._id,
@@ -14,42 +17,40 @@ const generateTokens = (user, req = null) => {
     role: user.role,
     isEmailVerified: user.isEmailVerified,
     accountStatus: user.accountStatus,
-    // Security context
-    iat: Math.floor(Date.now() / 1000),
-    jti: crypto.randomBytes(16).toString('hex'), // JWT ID for token tracking
-    iss: process.env.JWT_ISSUER || 'techverse-api', // Issuer
-    aud: process.env.JWT_AUDIENCE || 'techverse-client', // Audience
     // Session context
-    sessionId: crypto.randomBytes(32).toString('hex'),
+    sessionId: sessionId,
     ipAddress: req?.ip,
     userAgent: req?.get('User-Agent')?.substring(0, 200) // Limit length
   };
 
   const accessToken = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || '7d',
-    algorithm: 'HS256'
+    algorithm: 'HS256',
+    issuer: process.env.JWT_ISSUER || 'techverse-api',
+    audience: process.env.JWT_AUDIENCE || 'techverse-client',
+    jwtid: jti
   });
 
   const refreshTokenPayload = {
     id: user._id,
     type: 'refresh',
-    sessionId: tokenPayload.sessionId,
-    jti: crypto.randomBytes(16).toString('hex')
+    sessionId: sessionId
   };
 
   const refreshToken = jwt.sign(refreshTokenPayload, process.env.JWT_REFRESH_SECRET, {
     expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d',
     algorithm: 'HS256',
     issuer: process.env.JWT_ISSUER || 'techverse-api',
-    audience: process.env.JWT_AUDIENCE || 'techverse-client'
+    audience: process.env.JWT_AUDIENCE || 'techverse-client',
+    jwtid: crypto.randomBytes(16).toString('hex')
   });
 
   // Log token generation for security monitoring
   logger.info('OAuth tokens generated', {
     userId: user._id,
     email: user.email,
-    sessionId: tokenPayload.sessionId,
-    jti: tokenPayload.jti,
+    sessionId: sessionId,
+    jti: jti,
     ip: req?.ip,
     userAgent: req?.get('User-Agent'),
     timestamp: new Date().toISOString()

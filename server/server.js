@@ -3,17 +3,23 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
+
 // Load environment variables first
 dotenv.config();
-// Initialize Sentry as early as possible
-sentryConfig.initialize();
+
+// Import other modules after environment is loaded
 import connectDB from './src/config/database.js';
+import { createSearchIndexes } from './src/utils/searchIndexes.js';
 import logger from './src/utils/logger.js';
 import enhancedLogger from './src/utils/enhancedLogger.js';
 import sentryConfig from './src/config/sentry.js';
 import securityMonitor from './src/utils/securityMonitor.js';
 import passport, { initializePassport } from './src/config/passport.js';
 import sessionConfig from './src/config/session.js';
+
+// Initialize Sentry after imports
+// sentryConfig.initialize();
 // Import middleware
 import {
   errorHandler,
@@ -34,10 +40,47 @@ import {
   apiRateLimit,
   securityHeaders,
   inputSanitization,
+  blobUrlHandler,
+  staticAsset404Handler,
   suspiciousActivityDetector,
   trackFailedAuth,
   securityAuditLogger
 } from './src/middleware/securityMiddleware.js';
+// Import performance optimization middleware
+import {
+  createDatabaseIndexes,
+  queryPerformanceMonitor,
+  performanceMonitor as perfMonitor
+} from './src/utils/performanceOptimizer.js';
+import {
+  initializeCacheManager,
+  cacheStats
+} from './src/middleware/cacheMiddleware.js';
+import { lazyLoadingMiddleware as imageOptimizer } from './src/utils/imageOptimizer.js';
+// Import enhanced security middleware
+import {
+  secureErrorHandler,
+  secureNotFoundHandler,
+  setupGlobalErrorHandlers,
+  sanitizeRequest,
+  enhancedSecurityHeaders
+} from './src/middleware/secureErrorHandler.js';
+
+// Setup global error handlers for uncaught exceptions
+setupGlobalErrorHandlers();
+
+// Import CSRF protection
+import {
+  conditionalCSRF,
+  adminCSRFProtection,
+  csrfErrorHandler
+} from './src/middleware/csrfProtection.js';
+// Import enhanced validation
+import {
+  handleValidationErrors,
+  validationRateLimit
+} from './src/middleware/enhancedValidation.js';
+// Import performance monitoring (imported from middleware/index.js)
 // Import enhanced CORS handling
 import {
   corsErrorDetector,
@@ -53,13 +96,27 @@ import orderRoutes from './src/routes/orders.js';
 import userRoutes from './src/routes/users.js';
 import adminRoutes from './src/routes/admin.js';
 import uploadRoutes from './src/routes/upload.js';
+import emailRoutes from './src/routes/email.js';
 import notificationRoutes from './src/routes/notifications.js';
-import userProfileRoutes from './src/routes/userProfile.js';
 import paymentRoutes from './src/routes/payments.js';
+import userProfileRoutes from './src/routes/userProfile.js';
+import searchRoutes from './src/routes/search.js';
+import securityRoutes from './src/routes/security.js';
+import performanceRoutes from './src/routes/performance.js';
+import cartRoutes from './src/routes/cart.js';
+import wishlistRoutes from './src/routes/wishlist.js';
+import reviewRoutes from './src/routes/reviews.js';
+import specificationRoutes from './src/routes/specifications.js';
+import stockRoutes from './src/routes/stock.js';
 // Initialize Passport strategies
 initializePassport();
 // Connect to MongoDB
 connectDB();
+
+// Initialize search indexes for better performance
+createSearchIndexes().catch(error => {
+  logger.warn('Failed to create search indexes:', error.message);
+});
 const app = express();
 const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -73,7 +130,26 @@ app.use(requestId);
 // Security middleware
 app.use(helmet(helmetConfig));
 app.use(securityHeaders);
+app.use(enhancedSecurityHeaders); // Additional security headers
 app.use(compression());
+
+// Request sanitization (before parsing)
+app.use(sanitizeRequest);
+
+// Performance monitoring middleware
+app.use(perfMonitor.trackResponseTime);
+app.use(queryPerformanceMonitor);
+app.use(cacheStats);
+
+// Image optimization middleware for static files
+app.use(imageOptimizer);
+
+// Handle blob URLs and problematic requests first (eliminates log spam)
+app.use(blobUrlHandler);
+
+// Handle static asset 404s early to reduce noise
+app.use(staticAsset404Handler);
+
 // Security monitoring middleware
 app.use(securityAuditLogger);
 app.use(trackFailedAuth);
@@ -96,9 +172,19 @@ app.use(express.urlencoded({
   extended: true,
   limit: '10mb'
 }));
+
+// Cookie parsing middleware
+app.use(cookieParser());
+
 // Enhanced input sanitization and security checks
 // app.use(inputSanitization); // Temporarily disabled - causing validation issues
 app.use(suspiciousActivityDetector);
+
+// Validation rate limiting
+app.use(validationRateLimit);
+
+// CSRF protection for state-changing operations
+app.use(conditionalCSRF);
 // Session and Passport will be initialized in async startup function
 // Logging middleware
 if (NODE_ENV === 'development') {
@@ -108,7 +194,7 @@ if (NODE_ENV === 'development') {
   app.use(productionLogger);
 }
 // Performance monitoring
-app.use(performanceMonitor);
+app.use(performanceMonitor.monitorRequest());
 // Static file serving configuration
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -165,9 +251,18 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/email', emailRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/profile', userProfileRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/profile', userProfileRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/security', securityRoutes);
+app.use('/api/performance', performanceRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/specifications', specificationRoutes);
+app.use('/api/stock', stockRoutes);
 // Health check endpoints
 import healthCheck from './src/utils/healthCheck.js';
 import healthMonitor from './src/utils/healthMonitor.js';
@@ -283,13 +378,17 @@ app.post('/api/health/monitor/stop', (req, res) => {
   }
 });
 // 404 handler for undefined routes
-app.use(notFound);
+app.use(secureNotFoundHandler);
 // CORS error handling (before global error handler)
 app.use(corsErrorHandler);
+
+// CSRF error handling (before global error handler)
+app.use(csrfErrorHandler);
+
 // Sentry error handler (before global error handler)
 app.use(sentryConfig.getErrorHandler());
-// Global error handling middleware (must be last)
-app.use(errorHandler);
+// Enhanced secure error handling middleware (must be last)
+app.use(secureErrorHandler);
 // Graceful shutdown handling
 const gracefulShutdown = async (signal) => {
   enhancedLogger.info(`Received ${signal}. Starting graceful shutdown...`);
@@ -376,9 +475,69 @@ async function initializeServer() {
 async function startServer() {
   try {
     await initializeServer();
+    
+    // Initialize performance optimizations
+    try {
+      enhancedLogger.info('Initializing performance optimizations...');
+      
+      // Create database indexes for better query performance
+      const indexResult = await createDatabaseIndexes();
+      if (indexResult.success) {
+        enhancedLogger.info('Database indexes created successfully');
+      } else {
+        enhancedLogger.warn('Some database indexes failed to create', { error: indexResult.error });
+      }
+      
+      // Initialize cache manager (Redis optional)
+      let redisClient = null;
+      try {
+        if (process.env.REDIS_URL && process.env.ENABLE_REDIS_CACHE !== 'false') {
+          const Redis = (await import('ioredis')).default;
+          redisClient = new Redis(process.env.REDIS_URL, {
+            retryDelayOnFailover: 100,
+            maxRetriesPerRequest: 2,
+            lazyConnect: true,
+            connectTimeout: 2000,
+            commandTimeout: 2000,
+            maxLoadingTimeout: 2000
+          });
+          
+          await redisClient.ping();
+          enhancedLogger.info('Redis cache connected successfully');
+        } else {
+          enhancedLogger.info('Redis cache disabled or not configured, using memory cache');
+        }
+      } catch (error) {
+        enhancedLogger.warn('Redis cache connection failed, falling back to memory cache', {
+          error: error.message
+        });
+        redisClient = null;
+      }
+      
+      // Initialize cache manager with optional Redis
+      initializeCacheManager(redisClient);
+      
+    } catch (error) {
+      enhancedLogger.error('Performance optimization initialization failed', {
+        error: error.message
+      });
+      // Continue without performance optimizations
+    }
+    
     const server = app.listen(PORT, async () => {
       // Log server startup information
       healthCheck.logServerStartup(PORT, NODE_ENV);
+      
+      // Initialize email service
+      try {
+        const emailService = (await import('./src/services/emailService.js')).default;
+        await emailService.initialize();
+      } catch (error) {
+        logger.warn('Email service initialization failed, continuing without email', {
+          error: error.message
+        });
+      }
+      
       // Perform startup health checks
       try {
         const healthCheckResult = await healthCheck.performStartupHealthCheck();

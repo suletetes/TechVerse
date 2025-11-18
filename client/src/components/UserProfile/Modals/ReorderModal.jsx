@@ -1,64 +1,51 @@
 import React, { useState, useEffect } from 'react';
+import { Toast } from '../../Common';
 
 const ReorderModal = ({ onClose, order, onReorder }) => {
     const [orderItems, setOrderItems] = useState([]);
     const [selectedItems, setSelectedItems] = useState({});
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
+    const [toast, setToast] = useState(null);
 
     useEffect(() => {
-        // Mock fetching order items (in real app, this would be an API call)
         const fetchOrderItems = async () => {
             setLoading(true);
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 500));
             
-            const mockItems = [
-                { 
-                    id: 1, 
-                    name: 'Tablet Air', 
-                    price: 1999, 
-                    quantity: 1, 
-                    image: '/img/tablet-product.jpg', 
-                    available: true,
-                    currentPrice: 1999,
-                    priceChanged: false
-                },
-                { 
-                    id: 2, 
-                    name: 'Tablet Case', 
-                    price: 49.99, 
-                    quantity: 1, 
-                    image: '/img/phone-product.jpg', 
-                    available: true,
-                    currentPrice: 39.99,
-                    priceChanged: true
-                },
-                { 
-                    id: 3, 
-                    name: 'Screen Protector', 
-                    price: 19.99, 
-                    quantity: 2, 
-                    image: '/img/laptop-product.jpg', 
-                    available: false,
-                    currentPrice: 19.99,
-                    priceChanged: false
-                }
-            ];
-
-            setOrderItems(mockItems);
-            
-            // Pre-select available items
-            const initialSelection = {};
-            mockItems.forEach(item => {
-                if (item.available) {
-                    initialSelection[item.id] = {
-                        selected: true,
-                        quantity: item.quantity
+            // Use real order items from the database
+            if (order && order.items) {
+                const items = order.items.map(item => {
+                    // Try to get product ID from different possible locations
+                    const productId = item.product?._id || item.product || item._id;
+                    
+                    return {
+                        id: productId,
+                        name: item.name,
+                        price: item.price,
+                        quantity: item.quantity,
+                        image: item.image || '/img/placeholder.jpg',
+                        available: true,
+                        currentPrice: item.price,
+                        priceChanged: false,
+                        variants: item.variants || []
                     };
-                }
-            });
-            setSelectedItems(initialSelection);
+                });
+
+                setOrderItems(items);
+                
+                // Pre-select all available items
+                const initialSelection = {};
+                items.forEach(item => {
+                    if (item.available) {
+                        initialSelection[item.id] = {
+                            selected: true,
+                            quantity: item.quantity
+                        };
+                    }
+                });
+                setSelectedItems(initialSelection);
+            }
+            
             setLoading(false);
         };
 
@@ -100,7 +87,10 @@ const ReorderModal = ({ onClose, order, onReorder }) => {
     const handleReorder = async () => {
         const selected = getSelectedItems();
         if (selected.length === 0) {
-            alert('Please select at least one item to reorder.');
+            setToast({
+                message: 'Please select at least one item to reorder.',
+                type: 'warning'
+            });
             return;
         }
 
@@ -112,10 +102,24 @@ const ReorderModal = ({ onClose, order, onReorder }) => {
             const totalItems = selected.reduce((sum, item) => sum + (selectedItems[item.id]?.quantity || 0), 0);
             onReorder(selected, selectedItems);
             
-            alert(`✅ Successfully added ${totalItems} item${totalItems > 1 ? 's' : ''} to your cart!`);
-            onClose();
+            setToast({
+                message: `Successfully added ${totalItems} item${totalItems > 1 ? 's' : ''} to your cart!`,
+                type: 'success',
+                action: {
+                    label: 'View Cart',
+                    path: '/cart'
+                }
+            });
+            
+            // Close modal after showing toast
+            setTimeout(() => {
+                onClose();
+            }, 1000);
         } catch (error) {
-            alert('Sorry, there was an error processing your reorder. Please try again.');
+            setToast({
+                message: 'Sorry, there was an error processing your reorder. Please try again.',
+                type: 'error'
+            });
         } finally {
             setProcessing(false);
         }
@@ -128,7 +132,7 @@ const ReorderModal = ({ onClose, order, onReorder }) => {
                     <div className="modal-header border-0 pb-0">
                         <div>
                             <h5 className="modal-title fw-bold">Reorder Items</h5>
-                            <p className="text-muted mb-0">From Order #{order.id}</p>
+                            <p className="text-muted mb-0">From Order #{order.orderNumber || order._id}</p>
                         </div>
                         <button type="button" className="btn-close" onClick={onClose}></button>
                     </div>
@@ -173,11 +177,16 @@ const ReorderModal = ({ onClose, order, onReorder }) => {
                                                     </div>
                                                     <div className="col">
                                                         <h6 className="mb-1">{item.name}</h6>
+                                                        {item.variants && item.variants.length > 0 && (
+                                                            <p className="text-muted small mb-1">
+                                                                {item.variants.map(v => `${v.name}: ${v.value}`).join(', ')}
+                                                            </p>
+                                                        )}
                                                         <div className="d-flex align-items-center gap-2">
-                                                            <span className="fw-bold text-success">£{item.currentPrice.toFixed(2)}</span>
+                                                            <span className="fw-bold text-success">${item.currentPrice.toFixed(2)}</span>
                                                             {item.priceChanged && (
                                                                 <>
-                                                                    <span className="text-decoration-line-through text-muted small">£{item.price.toFixed(2)}</span>
+                                                                    <span className="text-decoration-line-through text-muted small">${item.price.toFixed(2)}</span>
                                                                     <span className="badge bg-success small">Price Drop!</span>
                                                                 </>
                                                             )}
@@ -222,7 +231,7 @@ const ReorderModal = ({ onClose, order, onReorder }) => {
                                                 </p>
                                             </div>
                                             <div className="text-end">
-                                                <h5 className="mb-0 fw-bold text-success">£{getTotalAmount().toFixed(2)}</h5>
+                                                <h5 className="mb-0 fw-bold text-success">${getTotalAmount().toFixed(2)}</h5>
                                             </div>
                                         </div>
                                     </div>
@@ -253,13 +262,23 @@ const ReorderModal = ({ onClose, order, onReorder }) => {
                                         <circle cx="20" cy="21" r="1" />
                                         <path d="m1 1 4 4 2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                                     </svg>
-                                    Add to Cart (£{getTotalAmount().toFixed(2)})
+                                    Add to Cart (${getTotalAmount().toFixed(2)})
                                 </>
                             )}
                         </button>
                     </div>
                 </div>
             </div>
+            
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    action={toast.action}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </div>
     );
 };

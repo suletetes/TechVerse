@@ -317,8 +317,7 @@ const OptimizedProduct = () => {
 
             <Suspense fallback={<div className="section-loading">Loading related products...</div>}>
               <RelatedProducts 
-                categoryId={product?.category}
-                currentProductId={product?._id}
+                productId={product?._id}
               />
             </Suspense>
           </div>

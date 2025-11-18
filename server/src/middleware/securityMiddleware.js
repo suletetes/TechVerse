@@ -15,8 +15,11 @@ try {
   const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
   redisClient = new Redis(redisUrl, {
     retryDelayOnFailover: 100,
-    maxRetriesPerRequest: 3,
-    lazyConnect: true
+    maxRetriesPerRequest: 2,
+    lazyConnect: true,
+    connectTimeout: 2000,
+    commandTimeout: 2000,
+    maxLoadingTimeout: 2000
   });
 
   redisClient.on('error', (error) => {
@@ -36,6 +39,11 @@ try {
  * Enhanced rate limiting with security monitoring
  */
 export const createSecureRateLimit = (options = {}) => {
+  // Return a no-op middleware if rate limiting is disabled
+  if (process.env.DISABLE_RATE_LIMITING === 'true') {
+    return (req, res, next) => next();
+  }
+  
   const defaultOptions = {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100,
@@ -161,17 +169,8 @@ export const sensitiveRateLimit = createSecureRateLimit({
     return `sensitive:${baseKey}`;
   },
   skip: (req) => {
-    // Skip for admin users but still log
-    if (req.user && req.user.role === 'admin') {
-      enhancedLogger.info('Admin bypassed sensitive rate limit', {
-        userId: req.user._id,
-        ip: req.ip,
-        endpoint: req.originalUrl,
-        requestId: req.id
-      });
-      return true;
-    }
-    return false;
+    // Skip for admin users (no logging to reduce noise)
+    return req.user && req.user.role === 'admin';
   }
 });
 
@@ -226,16 +225,15 @@ export const inputSanitization = (req, res, next) => {
           const patternType = pattern.toString().includes('union|select') ? 'SQL_INJECTION' :
             pattern.toString().includes('script') ? 'XSS' : 'SUSPICIOUS_INPUT';
 
-          enhancedLogger.security(`${patternType} attempt detected`, {
-            ip: identifier,
-            userAgent: req.get('User-Agent'),
-            endpoint: req.originalUrl,
-            path,
-            pattern: pattern.toString(),
-            content: obj.substring(0, 100),
-            userId: req.user?._id,
-            requestId: req.id
-          });
+          // Only log high-severity attacks
+          if (patternType === 'SQL_INJECTION' || patternType === 'XSS') {
+            enhancedLogger.security(`${patternType} attempt detected`, {
+              ip: identifier,
+              endpoint: req.originalUrl,
+              pattern: pattern.toString().substring(0, 50),
+              requestId: req.id
+            });
+          }
 
           // Track specific attack types
           if (patternType === 'SQL_INJECTION') {
@@ -290,41 +288,105 @@ export const inputSanitization = (req, res, next) => {
 };
 
 /**
- * Suspicious activity detection middleware
+ * Blob URL and problematic request handler - ELIMINATES LOG SPAM
+ */
+export const blobUrlHandler = (req, res, next) => {
+  const url = req.originalUrl;
+  
+  // Handle blob URLs and other problematic requests that cause log spam
+  if (url.includes('blob:') || 
+      url.includes('chrome-extension:') || 
+      url.includes('moz-extension:') ||
+      url.includes('webkit-fake-url:') ||
+      url.includes('capacitor://')) {
+    
+    // Return 404 immediately without any logging
+    return res.status(404).json({
+      success: false,
+      message: 'Resource not found',
+      code: 'NOT_FOUND'
+    });
+  }
+  
+  next();
+};
+
+/**
+ * Static asset 404 handler - reduces noise from missing images/assets
+ */
+export const staticAsset404Handler = (req, res, next) => {
+  // Check if this is a request for a static asset
+  const isStaticAsset = /\.(jpg|jpeg|png|gif|webp|svg|ico|css|js|woff|woff2|ttf|eot)$/i.test(req.originalUrl);
+  
+  if (isStaticAsset) {
+    // Simple in-memory cache to avoid spam logging (with size limit)
+    if (!staticAsset404Handler._loggedAssets) {
+      staticAsset404Handler._loggedAssets = new Set();
+    }
+    
+    const assetPath = req.originalUrl;
+    const cacheKey = `missing_asset_${assetPath}`;
+    
+    // Only log first occurrence and limit cache size
+    if (!staticAsset404Handler._loggedAssets.has(cacheKey)) {
+      // Clear cache if it gets too large (prevent memory leak)
+      if (staticAsset404Handler._loggedAssets.size > 100) {
+        staticAsset404Handler._loggedAssets.clear();
+      }
+      
+      staticAsset404Handler._loggedAssets.add(cacheKey);
+      enhancedLogger.warn('Static asset not found', {
+        url: assetPath,
+        category: 'static_assets'
+      });
+    }
+    
+    // Return 404 for static assets without further processing
+    return res.status(404).json({
+      success: false,
+      message: 'Asset not found',
+      code: 'ASSET_NOT_FOUND'
+    });
+  }
+  
+  next();
+};
+
+/**
+ * Suspicious activity detection middleware - REDUCED LOGGING
  */
 export const suspiciousActivityDetector = (req, res, next) => {
   const identifier = req.ip;
   const userAgent = req.get('User-Agent');
   const endpoint = req.originalUrl;
 
-  // Check for suspicious patterns
+  // Skip suspicious activity detection for static assets and common endpoints
+  const skipDetection = /\.(jpg|jpeg|png|gif|webp|svg|ico|css|js|woff|woff2|ttf|eot)$/i.test(endpoint) ||
+                       endpoint.includes('/health') ||
+                       endpoint.includes('/ping') ||
+                       endpoint.includes('/api/admin/dashboard');
+  
+  if (skipDetection) {
+    return next();
+  }
+
+  // Check for suspicious patterns (only serious ones)
   const suspiciousIndicators = [];
 
-  // Missing or suspicious User-Agent
-  if (!userAgent || userAgent.length < 10 ||
-    /bot|crawler|spider|scraper/i.test(userAgent)) {
-    suspiciousIndicators.push('suspicious_user_agent');
+  // Only flag truly suspicious User-Agents
+  if (!userAgent) {
+    suspiciousIndicators.push('missing_user_agent');
+  } else if (/sqlmap|nikto|nmap|masscan|zap|burp/i.test(userAgent)) {
+    suspiciousIndicators.push('attack_tool_user_agent');
   }
 
-  // Unusual request patterns
-  if (req.method === 'POST' && !req.body) {
-    suspiciousIndicators.push('empty_post_body');
-  }
-
-  // Suspicious headers
-  const suspiciousHeaders = ['x-forwarded-for', 'x-real-ip', 'x-originating-ip'];
-  const headerCount = suspiciousHeaders.filter(header => req.get(header)).length;
-  if (headerCount > 2) {
-    suspiciousIndicators.push('multiple_proxy_headers');
-  }
-
-  // Check for admin endpoint access without authentication
-  if (endpoint.includes('/admin') && !req.user) {
+  // Check for admin endpoint access without authentication (high priority)
+  if (endpoint.includes('/admin') && !req.user && req.method !== 'OPTIONS') {
     suspiciousIndicators.push('unauthenticated_admin_access');
   }
 
-  // Track suspicious activity
-  if (suspiciousIndicators.length > 0) {
+  // Only track and log if we have serious indicators (reduced threshold)
+  if (suspiciousIndicators.length > 0 && suspiciousIndicators.includes('attack_tool_user_agent')) {
     securityMonitor.trackSuspiciousRequest(identifier, {
       endpoint,
       userAgent,
@@ -333,13 +395,11 @@ export const suspiciousActivityDetector = (req, res, next) => {
       userId: req.user?._id
     });
 
-    enhancedLogger.security('Suspicious activity detected', {
+    enhancedLogger.security('High-risk suspicious activity detected', {
       ip: identifier,
       endpoint,
-      userAgent,
       indicators: suspiciousIndicators,
       method: req.method,
-      userId: req.user?._id,
       requestId: req.id
     });
   }
@@ -348,31 +408,30 @@ export const suspiciousActivityDetector = (req, res, next) => {
 };
 
 /**
- * Failed authentication tracking middleware
+ * Failed authentication tracking middleware - REDUCED LOGGING
  */
 export const trackFailedAuth = (req, res, next) => {
   const originalSend = res.send;
 
   res.send = function (data) {
-    // Check if this is a failed authentication response
-    if (res.statusCode === 401 || res.statusCode === 403) {
+    // Only track actual authentication failures (not general 401s)
+    if ((res.statusCode === 401 || res.statusCode === 403) && 
+        (req.originalUrl.includes('/auth') || req.originalUrl.includes('/login'))) {
+      
       const identifier = req.body?.email || req.ip;
 
       securityMonitor.trackFailedLogin(identifier, {
         endpoint: req.originalUrl,
-        userAgent: req.get('User-Agent'),
         ip: req.ip,
-        method: req.method,
         statusCode: res.statusCode
       });
 
-      enhancedLogger.auth('warn', 'Authentication failed', {
+      // Only log failed login attempts, not all 401s
+      enhancedLogger.auth('warn', 'Login attempt failed', {
         identifier: typeof identifier === 'string' && identifier.includes('@') ?
           identifier.replace(/(.{3}).*(@.*)/, '$1***$2') : identifier,
         endpoint: req.originalUrl,
-        userAgent: req.get('User-Agent'),
         ip: req.ip,
-        statusCode: res.statusCode,
         requestId: req.id
       });
     }
@@ -384,56 +443,98 @@ export const trackFailedAuth = (req, res, next) => {
 };
 
 /**
- * Security audit logging middleware
+ * Security audit logging middleware - REDUCED LOGGING
  */
 export const securityAuditLogger = (req, res, next) => {
   const startTime = Date.now();
+  
+  // Skip logging for static assets and common non-critical requests
+  const skipLogging = (url) => {
+    // Skip static assets
+    if (/\.(jpg|jpeg|png|gif|webp|svg|ico|css|js|woff|woff2|ttf|eot)$/i.test(url)) {
+      return true;
+    }
+    
+    // Skip problematic URLs that cause log spam
+    if (url.includes('blob:') || 
+        url.includes('chrome-extension:') || 
+        url.includes('moz-extension:')) {
+      return true;
+    }
+    
+    // Skip health checks and monitoring endpoints
+    if (url.includes('/health') || url.includes('/ping') || url.includes('/status')) {
+      return true;
+    }
+    
+    // Skip favicon and common browser requests
+    if (url.includes('favicon') || 
+        url.includes('apple-touch-icon') || 
+        url.includes('manifest.json') ||
+        url.includes('robots.txt') ||
+        url.includes('sitemap.xml')) {
+      return true;
+    }
+    
+    // Skip dashboard polling and categories polling (reduces spam)
+    if (url.includes('/api/admin/dashboard') || url.includes('/api/admin/categories')) {
+      return true;
+    }
+    
+    return false;
+  };
 
-  // Log request start
-  enhancedLogger.audit('Request started', {
-    method: req.method,
-    url: req.originalUrl,
-    ip: req.ip,
-    userAgent: req.get('User-Agent'),
-    userId: req.user?._id,
-    requestId: req.id,
-    timestamp: new Date().toISOString()
-  });
+  const shouldLog = !skipLogging(req.originalUrl);
+
+  // Only log request start for critical endpoints (auth, admin actions)
+  const isCritical = req.originalUrl.includes('/auth') || 
+                    req.originalUrl.includes('/admin') || 
+                    req.method !== 'GET';
+
+  if (shouldLog && isCritical) {
+    enhancedLogger.audit('Request started', {
+      method: req.method,
+      url: req.originalUrl,
+      ip: req.ip,
+      userId: req.user?._id,
+      requestId: req.id
+    });
+  }
 
   // Override res.end to log response
   const originalEnd = res.end;
   res.end = function (...args) {
     const duration = Date.now() - startTime;
 
-    enhancedLogger.audit('Request completed', {
-      method: req.method,
-      url: req.originalUrl,
-      statusCode: res.statusCode,
-      duration,
-      ip: req.ip,
-      userId: req.user?._id,
-      requestId: req.id,
-      timestamp: new Date().toISOString()
-    });
+    // Only log completed requests for errors or critical endpoints
+    if ((shouldLog && isCritical) || res.statusCode >= 400) {
+      enhancedLogger.audit('Request completed', {
+        method: req.method,
+        url: req.originalUrl,
+        statusCode: res.statusCode,
+        duration,
+        ip: req.ip,
+        userId: req.user?._id,
+        requestId: req.id
+      });
+    }
 
-    // Track performance issues
-    if (duration > 5000) { // 5 seconds threshold
+    // Track performance issues only for slow requests (10+ seconds)
+    if (duration > 10000) {
       enhancedLogger.performance('Slow request detected', {
         method: req.method,
         url: req.originalUrl,
         duration,
-        threshold: 5000,
         requestId: req.id
       });
 
       sentryConfig.capturePerformanceIssue(
         `${req.method} ${req.originalUrl}`,
         duration,
-        5000,
+        10000,
         {
           ip: req.ip,
-          userId: req.user?._id,
-          userAgent: req.get('User-Agent')
+          userId: req.user?._id
         }
       );
     }
@@ -451,6 +552,8 @@ export default {
   sensitiveRateLimit,
   securityHeaders,
   inputSanitization,
+  blobUrlHandler,
+  staticAsset404Handler,
   suspiciousActivityDetector,
   trackFailedAuth,
   securityAuditLogger

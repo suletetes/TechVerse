@@ -158,8 +158,6 @@ export const checkoutSchema = z.object({
     .array(orderItemSchema)
     .min(1, 'At least one item is required to checkout'),
   shippingAddress: addressSchema,
-  billingAddress: addressSchema.optional(),
-  useSameAddress: z.boolean().default(true),
   shippingMethod: shippingMethodSchema,
   paymentMethod: paymentMethodSchema,
   couponCode: z
@@ -174,15 +172,6 @@ export const checkoutSchema = z.object({
     message: 'You must agree to the terms and conditions',
   }),
   subscribeNewsletter: z.boolean().optional().default(false),
-}).refine((data) => {
-  // If not using same address, billing address is required
-  if (!data.useSameAddress && !data.billingAddress) {
-    return false;
-  }
-  return true;
-}, {
-  message: 'Billing address is required when different from shipping address',
-  path: ['billingAddress'],
 });
 
 // Order status update schema (admin)

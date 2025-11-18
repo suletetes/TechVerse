@@ -1,0 +1,138 @@
+/* Dynamic Product Variant Color Classes */
+
+/* Color dots for variant selection */
+.color-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  vertical-align: middle;
+}
+
+/* Apple-style colors */
+.color-midnight { background: linear-gradient(135deg, #1d1d1f, #2d2d30); }
+.color-starlight { background: linear-gradient(135deg, #faf0e6, #f5f5dc); }
+.color-space-gray { background: linear-gradient(135deg, #5e5e5e, #4a4a4a); }
+.color-space-black { background: linear-gradient(135deg, #1c1c1e, #000000); }
+.color-deep-purple { background: linear-gradient(135deg, #5856d6, #4b49c7); }
+
+/* Standard colors */
+.color-black { background: linear-gradient(135deg, #1c1c1e, #000000); }
+.color-white { background: linear-gradient(135deg, #ffffff, #f8f8f8); border-color: #ddd; }
+.color-silver { background: linear-gradient(135deg, #e8e8ed, #d1d1d6); }
+.color-gold { background: linear-gradient(135deg, #fad5a5, #f4c430); }
+
+/* Vibrant colors */
+.color-blue { background: linear-gradient(135deg, #007aff, #0051d5); }
+.color-purple { background: linear-gradient(135deg, #af52de, #9542c4); }
+.color-pink { background: linear-gradient(135deg, #ff2d92, #e91e63); }
+.color-red { background: linear-gradient(135deg, #ff3b30, #d70015); }
+.color-green { background: linear-gradient(135deg, #30d158, #28a745); }
+.color-yellow { background: linear-gradient(135deg, #ffcc02, #ffc107); }
+
+/* Samsung colors */
+.color-phantom-black { background: linear-gradient(135deg, #2c2c2e, #1c1c1e); }
+.color-cream { background: linear-gradient(135deg, #f7f3e9, #f0ead6); }
+.color-lavender { background: linear-gradient(135deg, #e6e6fa, #dda0dd); }
+
+/* OnePlus colors */
+.color-silky-black { background: linear-gradient(135deg, #1a1a1a, #000000); }
+.color-flowy-emerald { background: linear-gradient(135deg, #50c878, #228b22); }
+.color-pale-blue { background: linear-gradient(135deg, #b0e0e6, #87ceeb); }
+
+/* Google Pixel colors */
+.color-obsidian { background: linear-gradient(135deg, #36454f, #2f4f4f); }
+.color-porcelain { background: linear-gradient(135deg, #f8f8ff, #f0f8ff); }
+.color-bay { background: linear-gradient(135deg, #4682b4, #5f9ea0); }
+
+/* Material variants for accessories and watches */
+.material-aluminum { background: linear-gradient(135deg, #c0c0c0, #a8a8a8); }
+.material-stainless-steel { background: linear-gradient(135deg, #e8e8e8, #d3d3d3); }
+.material-titanium { background: linear-gradient(135deg, #878681, #6a6a5f); }
+.material-ceramic { background: linear-gradient(135deg, #ffffff, #f5f5f5); }
+.material-silicone { background: linear-gradient(135deg, #ff6b6b, #ee5a52); }
+.material-leather { background: linear-gradient(135deg, #8b4513, #a0522d); }
+.material-fabric { background: linear-gradient(135deg, #708090, #778899); }
+.material-metal { background: linear-gradient(135deg, #c0c0c0, #a9a9a9); }
+.material-plastic { background: linear-gradient(135deg, #f0f0f0, #e0e0e0); }
+
+/* Hover effects for variant options */
+.model-option:hover .color-dot {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+.model-option.primary-outline .color-dot {
+  border: 2px solid #007aff;
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+}
+
+/* Size indicators for different screen sizes */
+.size-indicator {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #f0f0f0;
+  font-size: 0.8em;
+  margin-left: 8px;
+}
+
+/* Storage capacity indicators */
+.storage-indicator {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: #e3f2fd;
+  color: #1976d2;
+  font-size: 0.75em;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+/* Price modifier indicators */
+.price-modifier {
+  font-weight: 600;
+  color: #28a745;
+}
+
+.price-modifier.negative {
+  color: #dc3545;
+}
+
+/* Out of stock styling */
+.variant-option.out-of-stock {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+}
+
+.variant-option.out-of-stock .color-dot {
+  filter: grayscale(100%);
+}
+
+.variant-option.out-of-stock::after {
+  content: "Out of Stock";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.7em;
+  color: #dc3545;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .color-dot {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .variant-option {
+    margin-bottom: 8px;
+  }
+}

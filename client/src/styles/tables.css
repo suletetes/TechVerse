@@ -21,7 +21,7 @@
   background-color: #f8f9fa;
   border-bottom: 2px solid var(--table-border-color);
   font-weight: 600;
-  color: #495057;
+  color: #212529;
   padding: 0.75rem;
   vertical-align: middle;
   user-select: none;
@@ -35,7 +35,7 @@
 .sort-indicator {
   display: inline-flex;
   align-items: center;
-  opacity: 0.6;
+  opacity: 0.8;
   transition: opacity 0.2s ease;
 }
 
@@ -65,6 +65,7 @@
   padding: 0.75rem;
   vertical-align: middle;
   border-top: 1px solid var(--table-border-color);
+  color: #212529;
 }
 
 /* Product Image in Table */
@@ -342,4 +343,29 @@
     color: #f8f9fa;
     border-color: #6c757d;
   }
+}/*
+ Utility Classes */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.cursor-pointer:hover {
+  opacity: 0.8;
+}
+
+/* Sortable Header Styles */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.sortable-header:hover {
+  background-color: #e9ecef !important;
+}
+
+.sort-arrow {
+  margin-left: 0.25rem;
+  font-size: 0.75rem;
+  opacity: 0.9;
 }

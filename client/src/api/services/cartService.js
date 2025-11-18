@@ -1,62 +1,45 @@
-import apiClient from '../config.js';
+import BaseApiService from '../core/BaseApiService.js';
 
-class CartService {
-  async getCart() {
-    try {
-      const response = await apiClient.get('/users/cart');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching cart:', error);
-      throw error;
+class CartService extends BaseApiService {
+    constructor() {
+        super({
+            serviceName: 'CartService',
+            baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+            endpoints: {
+                cart: '/cart'
+            },
+            cacheEnabled: false, // Cart data should always be fresh
+            retryEnabled: true,
+            defaultOptions: {
+                timeout: 10000
+            }
+        });
     }
-  }
 
-  async addToCart(productId, quantity = 1, options = {}) {
-    try {
-      const response = await apiClient.post('/users/cart', {
-        productId,
-        quantity,
-        options
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      throw error;
+    async getCart() {
+        return this.read('/cart');
     }
-  }
 
-  async updateCartItem(itemId, quantity) {
-    try {
-      const response = await apiClient.put(`/users/cart/${itemId}`, {
-        quantity
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error updating cart item:', error);
-      throw error;
+    async addToCart(productId, quantity = 1, options = {}) {
+        return this.create('/cart/add', { productId, quantity, options });
     }
-  }
 
-  async removeFromCart(itemId) {
-    try {
-      const response = await apiClient.delete(`/users/cart/${itemId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error removing from cart:', error);
-      throw error;
+    async updateCartItem(itemId, quantity) {
+        return this.update(`/cart/update/${itemId}`, { quantity });
     }
-  }
 
-  async clearCart() {
-    try {
-      const response = await apiClient.delete('/users/cart');
-      return response.data;
-    } catch (error) {
-      console.error('Error clearing cart:', error);
-      throw error;
+    async removeFromCart(itemId) {
+        return this.delete(`/cart/remove/${itemId}`);
     }
-  }
+
+    async clearCart() {
+        return this.delete('/cart/clear');
+    }
+
+    async validateCart() {
+        return this.create('/cart/validate', {});
+    }
 }
 
-const cartService = new CartService();
+export const cartService = new CartService();
 export default cartService;

@@ -158,9 +158,9 @@ export const VALIDATION_PATTERNS = {
 
 // Currency and localization
 export const CURRENCY = {
-  CODE: 'GBP',
-  SYMBOL: '£',
-  LOCALE: 'en-GB',
+  CODE: 'USD',
+  SYMBOL: '$',
+  LOCALE: 'en-US',
   DECIMAL_PLACES: 2
 };
 

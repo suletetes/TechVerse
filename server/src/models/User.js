@@ -67,8 +67,8 @@ const addressSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Payment method schema removed - using Stripe for payment processing
-// Stripe handles all payment method storage securely
+// Payment methods removed - now handled by Stripe
+// Only store Stripe customer ID for payment processing
 
 const userSchema = new mongoose.Schema({
   firstName: {
@@ -100,10 +100,24 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  gender: {
+    type: String,
+    enum: ['male', 'female', 'other', 'prefer-not-to-say'],
+    default: 'prefer-not-to-say'
+  },
   dateOfBirth: Date,
   role: {
     type: String,
-    enum: ['user', 'admin'],
+    enum: [
+      'user', 
+      'customer_support', 
+      'content_moderator', 
+      'inventory_manager', 
+      'marketing_manager', 
+      'sales_manager', 
+      'admin', 
+      'super_admin'
+    ],
     default: 'user'
   },
   isActive: {
@@ -118,10 +132,10 @@ const userSchema = new mongoose.Schema({
   passwordResetToken: String,
   passwordResetExpires: Date,
   addresses: [addressSchema],
-  // Stripe integration - store only customer ID
+  // Stripe integration
   stripeCustomerId: {
     type: String,
-    sparse: true, // Allow null values, but ensure uniqueness when present
+    sparse: true,
     index: true
   },
   wishlist: [{
@@ -161,7 +175,7 @@ const userSchema = new mongoose.Schema({
     smsMarketing: { type: Boolean, default: false },
     theme: { type: String, enum: ['light', 'dark', 'auto'], default: 'light' },
     language: { type: String, default: 'en' },
-    currency: { type: String, default: 'GBP' }
+    currency: { type: String, default: 'USD' }
   },
   // Activity tracking
   lastLogin: Date,
@@ -301,7 +315,9 @@ userSchema.methods.generateAuthToken = function() {
   };
   
   return jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '7d'
+    expiresIn: process.env.JWT_EXPIRE || '7d',
+    issuer: process.env.JWT_ISSUER || 'techverse-api',
+    audience: process.env.JWT_AUDIENCE || 'techverse-client'
   });
 };
 
@@ -313,7 +329,9 @@ userSchema.methods.generateRefreshToken = function() {
   };
   
   return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d'
+    expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d',
+    issuer: process.env.JWT_ISSUER || 'techverse-api',
+    audience: process.env.JWT_AUDIENCE || 'techverse-client'
   });
 };
 
@@ -487,7 +505,7 @@ userSchema.methods.updateOrderStats = function(orderTotal) {
   return this.save();
 };
 
-// Payment method methods removed - using Stripe for payment processing
+// Payment methods now handled by Stripe - no local storage needed
 
 // Method to add active session
 userSchema.methods.addSession = function(sessionId, ipAddress, userAgent) {
@@ -564,7 +582,8 @@ userSchema.pre('save', function(next) {
 
 // Pre-save middleware for email verification
 userSchema.pre('save', function(next) {
-  if (this.isNew) {
+  // Only set to pending if accountStatus hasn't been explicitly set
+  if (this.isNew && !this.accountStatus) {
     this.accountStatus = 'pending';
   }
   next();

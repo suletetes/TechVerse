@@ -6,55 +6,137 @@
 import BaseApiService from '../core/BaseApiService.js';
 import { API_ENDPOINTS } from '../config.js';
 
+// VERIFICATION LOG - If you see this, the new code is loaded
+console.log('🔥🔥🔥 [PRODUCT_SERVICE_INIT] ProductService module loaded - NEW VERSION with section fix! 🔥🔥🔥');
+
 class ProductService extends BaseApiService {
   constructor() {
     super({
       serviceName: 'ProductService',
       baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
       endpoints: API_ENDPOINTS.PRODUCTS,
-      cacheEnabled: true,
+      cacheEnabled: false, // Disable caching for now to avoid issues
       retryEnabled: true,
       defaultOptions: {
-        timeout: 15000 // Products can have larger payloads
+        timeout: 15000
       }
     });
+    
+    console.log('🔥 [PRODUCT_SERVICE_INIT] ProductService instance created');
+    console.log('🔥 [PRODUCT_SERVICE_INIT] Endpoints:', this.endpoints);
+    
+    // Simple cache for categories to reduce API calls
+    this.categoriesCache = null;
+    this.categoriesCacheTime = null;
+    this.CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   }
 
   // Get all products with filters, sorting, and pagination
   async getProducts(params = {}) {
-    const {
-      page = 1,
-      limit = 20,
-      sort = 'createdAt',
-      order = 'desc',
-      category,
-      minPrice,
-      maxPrice,
-      inStock,
-      featured,
-      search,
-      ...otherParams
-    } = params;
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        sort = 'newest',
+        order = 'desc',
+        category,
+        minPrice,
+        maxPrice,
+        inStock,
+        featured,
+        search,
+        brand,
+        ...otherParams
+      } = params;
 
-    const queryParams = {
-      page,
-      limit,
-      sort,
-      order,
-      ...otherParams
-    };
+      // Handle search queries
+      if (search !== undefined && search !== null) {
+        const trimmedSearch = search.toString().trim();
+        
+        if (trimmedSearch.length >= 2) {
+          // Use search endpoint for valid search queries
+          try {
+            return this.searchProducts(trimmedSearch, {
+              page,
+              limit,
+              sort,
+              category,
+              minPrice,
+              maxPrice,
+              brand,
+              ...otherParams
+            });
+          } catch (error) {
+            console.warn('Search failed, falling back to regular products:', error.message);
+            // Fall through to regular product loading
+          }
+        } else if (trimmedSearch.length > 0) {
+          // Return empty results for short search queries
+          return {
+            success: true,
+            data: {
+              products: [],
+              pagination: {
+                currentPage: page,
+                totalPages: 0,
+                totalProducts: 0,
+                hasNextPage: false,
+                hasPrevPage: false,
+                limit
+              }
+            }
+          };
+        }
+      }
 
-    // Add optional filters
-    if (category) queryParams.category = category;
-    if (minPrice !== undefined) queryParams.minPrice = minPrice;
-    if (maxPrice !== undefined) queryParams.maxPrice = maxPrice;
-    if (inStock !== undefined) queryParams.inStock = inStock;
-    if (featured !== undefined) queryParams.featured = featured;
-    if (search) queryParams.search = search;
+      const queryParams = {
+        page,
+        limit,
+        sort,
+        order,
+        ...otherParams
+      };
 
-    return this.getPaginated(this.endpoints.BASE, page, limit, {
-      params: queryParams
-    });
+      // Add optional filters
+      if (category) queryParams.category = category;
+      if (minPrice !== undefined) queryParams.minPrice = minPrice;
+      if (maxPrice !== undefined) queryParams.maxPrice = maxPrice;
+      if (inStock !== undefined) queryParams.inStock = inStock;
+      if (featured !== undefined) queryParams.featured = featured;
+      if (brand) queryParams.brand = brand;
+
+      // Make direct API call instead of using complex service layer
+      const baseURL = this.baseURL || 'http://localhost:5000/api';
+      const endpoint = '/products';
+      
+      const searchParams = new URLSearchParams();
+      Object.entries(queryParams).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, value.toString());
+        }
+      });
+      
+      const url = `${baseURL}${endpoint}?${searchParams.toString()}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+      
+    } catch (error) {
+      console.error('❌ getProducts error:', error);
+      throw error; // Don't return empty results, let the error bubble up
+    }
   }
 
   // Get single product by ID
@@ -68,8 +150,28 @@ class ProductService extends BaseApiService {
 
   // Search products
   async searchProducts(query, filters = {}) {
-    if (!query || query.trim().length < 2) {
-      throw new Error('Search query must be at least 2 characters');
+    // Handle empty or short queries gracefully
+    const trimmedQuery = query ? query.trim() : '';
+    
+    console.log('searchProducts called with:', { query, trimmedQuery, length: trimmedQuery.length });
+    
+    if (!trimmedQuery || trimmedQuery.length < 2) {
+      console.log('Returning empty results for short query');
+      // Return empty results for short queries
+      return {
+        success: true,
+        data: {
+          products: [],
+          pagination: {
+            currentPage: filters.page || 1,
+            totalPages: 0,
+            totalProducts: 0,
+            hasNextPage: false,
+            hasPrevPage: false,
+            limit: filters.limit || 20
+          }
+        }
+      };
     }
 
     const {
@@ -78,12 +180,12 @@ class ProductService extends BaseApiService {
       category,
       minPrice,
       maxPrice,
-      sort = 'relevance',
+      sort = 'newest',
       ...otherFilters
     } = filters;
 
     const params = {
-      q: query.trim(),
+      q: trimmedQuery,
       page,
       limit,
       sort,
@@ -91,11 +193,44 @@ class ProductService extends BaseApiService {
     };
 
     // Add optional filters
-    if (category) params.category = category;
+    if (category) {
+      params.category = category;
+    }
     if (minPrice !== undefined) params.minPrice = minPrice;
     if (maxPrice !== undefined) params.maxPrice = maxPrice;
 
-    return this.search(this.endpoints.SEARCH, query, params);
+    try {
+      const result = await this.search(this.endpoints.SEARCH, trimmedQuery, params);
+      
+      // Check both possible response structures
+      const products = Array.isArray(result?.data) ? result.data : result?.data?.products || [];
+      const pagination = result?.pagination || result?.data?.pagination || {};
+      
+      console.log('✅ Search results received:', {
+        productsCount: products.length,
+        totalProducts: pagination.totalProducts || pagination.total || 0,
+        query: trimmedQuery,
+        responseStructure: Array.isArray(result?.data) ? 'array' : 'object'
+      });
+      return result;
+    } catch (error) {
+      // If search fails, return empty results instead of throwing
+      console.warn('Search failed:', error.message);
+      return {
+        success: true,
+        data: {
+          products: [],
+          pagination: {
+            currentPage: page,
+            totalPages: 0,
+            totalProducts: 0,
+            hasNextPage: false,
+            hasPrevPage: false,
+            limit
+          }
+        }
+      };
+    }
   }
 
   // Get featured products
@@ -175,7 +310,7 @@ class ProductService extends BaseApiService {
       throw new Error('Product ID is required');
     }
 
-    const { rating, comment, title } = reviewData;
+    const { rating, comment, title, pros, cons, orderId } = reviewData;
 
     // Validate review data
     if (!rating || rating < 1 || rating > 5) {
@@ -186,29 +321,46 @@ class ProductService extends BaseApiService {
       throw new Error('Review comment must be at least 10 characters');
     }
 
-    return this.create(this.endpoints.REVIEWS(productId), {
+    const payload = {
       rating: parseInt(rating),
       comment: comment.trim(),
-      title: title?.trim() || ''
-    });
+      title: title?.trim() || '',
+      pros: pros || [],
+      cons: cons || []
+    };
+
+    // Add orderId if provided
+    if (orderId) {
+      payload.orderId = orderId;
+    }
+
+    return this.create(this.endpoints.REVIEWS(productId), payload);
   }
 
   // Admin: Create product
   async createProduct(productData) {
+    console.log('🛠️ ProductService.createProduct called with:', productData);
+    console.log('📍 Endpoint:', this.endpoints.BASE);
+    
     // Validate required fields
     const requiredFields = ['name', 'description', 'price', 'category'];
     for (const field of requiredFields) {
       if (!productData[field]) {
+        console.error(`❌ Missing required field: ${field}`);
         throw new Error(`${field} is required`);
       }
     }
 
     // Validate price
     if (productData.price <= 0) {
+      console.error('❌ Invalid price:', productData.price);
       throw new Error('Price must be greater than 0');
     }
 
-    return this.create(this.endpoints.BASE, productData);
+    console.log('✅ Validation passed, making API call...');
+    const result = await this.create(this.endpoints.BASE, productData);
+    console.log('📡 API Response:', result);
+    return result;
   }
 
   // Admin: Update product
@@ -257,9 +409,22 @@ class ProductService extends BaseApiService {
     return this.read(this.endpoints.QUICK_PICKS, { limit });
   }
 
-  // Get product categories
+  // Get product categories with caching
   async getCategories() {
-    return this.read(this.endpoints.CATEGORIES);
+    // Check if we have cached categories that are still valid
+    const now = Date.now();
+    if (this.categoriesCache && this.categoriesCacheTime && (now - this.categoriesCacheTime) < this.CACHE_DURATION) {
+      return this.categoriesCache;
+    }
+    
+    // Fetch fresh categories
+    const result = await this.read(this.endpoints.CATEGORIES);
+    
+    // Cache the result
+    this.categoriesCache = result;
+    this.categoriesCacheTime = now;
+    
+    return result;
   }
 
   // Get related products
@@ -302,7 +467,21 @@ class ProductService extends BaseApiService {
     } = searchParams;
 
     if (!query || query.trim().length < 2) {
-      throw new Error('Search query must be at least 2 characters');
+      // Return empty results instead of throwing error for short queries
+      return {
+        success: true,
+        data: {
+          products: [],
+          pagination: {
+            currentPage: 1,
+            totalPages: 0,
+            totalProducts: 0,
+            hasNextPage: false,
+            hasPrevPage: false,
+            limit
+          }
+        }
+      };
     }
 
     return this.search(this.endpoints.SEARCH, query, {
@@ -353,7 +532,17 @@ class ProductService extends BaseApiService {
       throw new Error('Invalid section name');
     }
 
-    return this.read(`${this.endpoints.BASE}/section/${section}`, { limit });
+    // Add cache-busting timestamp to ensure fresh data
+    const timestamp = Date.now();
+    const url = `${this.endpoints.BASE}/section/${section}`;
+    console.log(`🌐 [PRODUCT_SERVICE] getProductsBySection called:`);
+    console.log(`   Section: ${section}`);
+    console.log(`   URL: ${url}`);
+    console.log(`   Limit: ${limit}`);
+    console.log(`   Timestamp: ${timestamp}`);
+    
+    // Disable deduplication for section requests to prevent collision
+    return this.read(url, { limit, _t: timestamp }, { dedupe: false, forceNew: true });
   }
 
   // Add product to section
@@ -402,9 +591,11 @@ class ProductService extends BaseApiService {
       throw new Error(`Invalid section names: ${invalidSections.join(', ')}`);
     }
 
-    return this.update(`${this.endpoints.BASE}/${productId}/sections`, {
-      action: 'replace',
-      sections
+    // Use PATCH for partial updates (sections only)
+    return this.request({
+      url: `/admin/products/${productId}/sections`,
+      method: 'PATCH',
+      body: { sections }
     });
   }
 

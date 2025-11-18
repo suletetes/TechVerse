@@ -99,7 +99,7 @@ class BaseApiService {
       try {
         const transformedResponse = transformResponse(standardizedResponse, this.transformationType);
         
-        if (this.debugMode && this.enableLogging) {
+        if (this.debugMode && this.enableLogging && import.meta.env?.DEV) {
           console.log(`🔄 Response transformed (${this.serviceName}):`, {
             original: standardizedResponse,
             transformed: transformedResponse,
@@ -229,6 +229,8 @@ class BaseApiService {
    * Read/fetch a resource
    */
   async read(endpoint, params = {}, options = {}) {
+    console.log(`🔍 [BASE_API_READ] Called with:`, { endpoint, params, serviceName: this.serviceName });
+    
     const config = {
       method: 'GET',
       url: endpoint,
@@ -238,14 +240,23 @@ class BaseApiService {
     // Add query parameters
     if (Object.keys(params).length > 0) {
       const url = new URL(endpoint, 'http://localhost');
+      console.log(`🔗 [BASE_API_READ] URL object created:`, { 
+        href: url.href, 
+        pathname: url.pathname, 
+        search: url.search 
+      });
+      
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           url.searchParams.append(key, value);
         }
       });
+      
       config.url = url.pathname + url.search;
+      console.log(`📍 [BASE_API_READ] Final URL:`, config.url);
     }
 
+    console.log(`🚀 [BASE_API_READ] Making request to:`, config.url);
     return this.request(config);
   }
 

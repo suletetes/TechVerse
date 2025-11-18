@@ -89,17 +89,26 @@ const ProductsTable = ({
       cell: ({ getValue, row }) => {
         const stock = getValue();
         const product = row.original;
+        
+        // Safely extract numeric stock value
+        let stockValue = 0;
+        if (typeof stock === 'number') {
+          stockValue = stock;
+        } else if (stock && typeof stock === 'object') {
+          stockValue = stock.quantity || stock.stockQuantity || 0;
+        }
+        
         return (
           <div className="d-flex align-items-center">
             <span 
               className={`badge me-2 ${
-                stock === 0 ? 'bg-danger' : 
-                stock <= 15 ? 'bg-warning' : 
+                stockValue === 0 ? 'bg-danger' : 
+                stockValue <= 15 ? 'bg-warning' : 
                 'bg-success'
               }`}
               style={{ width: '8px', height: '8px', padding: 0 }}
             ></span>
-            <span>{stock}</span>
+            <span>{stockValue}</span>
           </div>
         );
       },
@@ -129,9 +138,13 @@ const ProductsTable = ({
     {
       accessorKey: 'sales',
       header: 'Sales',
-      cell: ({ getValue }) => (
-        <span className="fw-semibold">{getValue()}</span>
-      ),
+      cell: ({ getValue }) => {
+        const sales = getValue();
+        const salesValue = typeof sales === 'number' 
+          ? sales 
+          : sales?.totalSold || 0;
+        return <span className="fw-semibold">{salesValue}</span>;
+      },
       size: 80,
     },
     {

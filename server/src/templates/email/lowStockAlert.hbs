@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Low Stock Alert - {{productName}}</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #ffc107; color: #212529; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { padding: 30px 20px; background: white; }
+        .alert-box { background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; margin: 20px 0; border-radius: 5px; border-left: 4px solid #ffc107; }
+        .critical-alert { background: #f8d7da; border-color: #dc3545; border-left-color: #dc3545; }
+        .product-info { background: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 5px; }
+        .stock-meter { background: #e9ecef; height: 20px; border-radius: 10px; margin: 15px 0; overflow: hidden; }
+        .stock-fill { background: #dc3545; height: 100%; border-radius: 10px; transition: width 0.3s ease; }
+        .stock-fill.warning { background: #ffc107; }
+        .stock-fill.ok { background: #28a745; }
+        .button { display: inline-block; padding: 15px 30px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        .footer { padding: 20px; text-align: center; color: #666; font-size: 12px; background: #e9ecef; border-radius: 0 0 8px 8px; }
+        .alert-icon { font-size: 48px; margin-bottom: 15px; }
+        .actions { background: #e3f2fd; padding: 20px; margin: 20px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="alert-icon">⚠️</div>
+            <h1>Low Stock Alert</h1>
+            <p>Inventory Management System</p>
+        </div>
+        <div class="content">
+            <h2>Inventory Alert: Action Required</h2>
+            <p>The following product has reached or fallen below the low stock threshold and requires immediate attention.</p>
+            
+            <div class="product-info">
+                <h3> Product Details</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">Product Name:</td>
+                        <td style="padding: 8px 0;">{{productName}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">SKU:</td>
+                        <td style="padding: 8px 0;">{{productSku}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">Current Stock:</td>
+                        <td style="padding: 8px 0; color: #dc3545; font-weight: bold;">{{currentStock}} units</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">Low Stock Threshold:</td>
+                        <td style="padding: 8px 0;">{{lowStockThreshold}} units</td>
+                    </tr>
+                </table>
+                
+                <div style="margin: 20px 0;">
+                    <strong>Stock Level:</strong>
+                    <div class="stock-meter">
+                        <div class="stock-fill" style="width: {{#if (lt currentStock 5)}}15%{{else if (lt currentStock 10)}}30%{{else}}50%{{/if}};"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666;">
+                        <span>0</span>
+                        <span>{{lowStockThreshold}} (Threshold)</span>
+                        <span>{{multiply lowStockThreshold 2}}+</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="alert-box {{#if (eq currentStock 0)}}critical-alert{{/if}}">
+                <h4>
+                    {{#if (eq currentStock 0)}}
+                      CRITICAL: Out of Stock
+                    {{else if (lt currentStock 5)}}
+                       URGENT: Very Low Stock
+                    {{else}}
+                      WARNING: Low Stock Level
+                    {{/if}}
+                </h4>
+                <p>
+                    {{#if (eq currentStock 0)}}
+                    This product is completely out of stock and unavailable for purchase. Immediate restocking is required to prevent lost sales.
+                    {{else if (lt currentStock 5)}}
+                    This product has critically low stock levels. Consider expediting the reorder process to avoid stockouts.
+                    {{else}}
+                    This product has fallen below the recommended stock threshold. Plan for restocking to maintain adequate inventory levels.
+                    {{/if}}
+                </p>
+            </div>
+            
+            <div class="actions">
+                <h4> Recommended Actions</h4>
+                <ul>
+                    <li> <strong>Review Sales Velocity:</strong> Check recent sales data to determine reorder quantity</li>
+                    <li> <strong>Contact Supplier:</strong> Place reorder with your supplier immediately</li>
+                    <li> <strong>Update Forecasting:</strong> Adjust future inventory planning based on demand</li>
+                    <li> <strong>Consider Alternatives:</strong> Promote similar products if restocking will take time</li>
+                    {{#if (eq currentStock 0)}}
+                    <li> <strong>Update Product Status:</strong> Mark as out of stock on the website</li>
+                    {{/if}}
+                </ul>
+            </div>
+            
+            <p style="text-align: center; margin: 30px 0;">
+                <a href="{{productUrl}}" class="button">Manage Product Inventory</a>
+            </p>
+            
+            <p><strong>Need Help?</strong><br>
+            Contact the inventory management team or check the admin dashboard for detailed analytics and reorder suggestions.</p>
+        </div>
+        <div class="footer">
+            <p>&copy; {{year}} {{companyName}} - Inventory Management System</p>
+            <p>This alert was generated automatically based on your inventory thresholds.</p>
+        </div>
+    </div>
+</body>
+</html>

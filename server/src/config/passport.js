@@ -252,17 +252,8 @@ export const initializePassport = () => {
         });
       }
 
-      if (user.accountStatus === 'pending') {
-        logger.warn('Local authentication failed: Email not verified', {
-          userId: user._id,
-          ip: req.ip
-        });
-        return done(null, false, { 
-          message: 'Please verify your email address to activate your account',
-          code: 'EMAIL_NOT_VERIFIED'
-        });
-      }
-
+      // Allow login for pending accounts (email not verified yet)
+      // They will have limited functionality until email is verified
       if (user.accountStatus === 'closed') {
         logger.warn('Local authentication failed: Account closed', {
           userId: user._id,

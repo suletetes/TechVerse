@@ -1,37 +1,40 @@
-// Payment Controller
-// Handles Stripe payment operations
-
 import stripeService from '../services/stripeService.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import logger from '../utils/logger.js';
 
 /**
- * Create payment intent
- * @route POST /api/payments/create-intent
- * @access Private
+ * @desc    Create payment intent
+ * @route   POST /api/payments/create-intent
+ * @access  Private
  */
 export const createPaymentIntent = asyncHandler(async (req, res) => {
-  const { amount, currency, metadata } = req.body;
+  const { amount, currency = 'usd', metadata = {} } = req.body;
   const userId = req.user._id;
 
-  const paymentIntent = await stripeService.createPaymentIntent({
+  if (!amount || amount <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid amount'
+    });
+  }
+
+  const result = await stripeService.createPaymentIntent({
     userId,
     amount,
-    currency: currency || 'gbp',
-    metadata: metadata || {}
+    currency,
+    metadata
   });
 
   res.status(200).json({
     success: true,
-    message: 'Payment intent created successfully',
-    data: paymentIntent
+    data: result
   });
 });
 
 /**
- * Get payment intent
- * @route GET /api/payments/intent/:id
- * @access Private
+ * @desc    Get payment intent
+ * @route   GET /api/payments/intent/:id
+ * @access  Private
  */
 export const getPaymentIntent = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -45,9 +48,9 @@ export const getPaymentIntent = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get customer's saved payment methods
- * @route GET /api/payments/methods
- * @access Private
+ * @desc    Get customer payment methods
+ * @route   GET /api/payments/methods
+ * @access  Private
  */
 export const getPaymentMethods = asyncHandler(async (req, res) => {
   const userId = req.user._id;
@@ -56,36 +59,41 @@ export const getPaymentMethods = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: {
-      paymentMethods,
-      count: paymentMethods.length
-    }
+    data: paymentMethods
   });
 });
 
 /**
- * Detach payment method
- * @route DELETE /api/payments/methods/:id
- * @access Private
+ * @desc    Detach payment method
+ * @route   DELETE /api/payments/methods/:id
+ * @access  Private
  */
 export const detachPaymentMethod = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  await stripeService.detachPaymentMethod(id);
+  const paymentMethod = await stripeService.detachPaymentMethod(id);
 
   res.status(200).json({
     success: true,
-    message: 'Payment method removed successfully'
+    message: 'Payment method removed successfully',
+    data: paymentMethod
   });
 });
 
 /**
- * Create refund
- * @route POST /api/payments/refund
- * @access Private (Admin only)
+ * @desc    Create refund
+ * @route   POST /api/payments/refund
+ * @access  Private/Admin
  */
 export const createRefund = asyncHandler(async (req, res) => {
   const { paymentIntentId, amount } = req.body;
+
+  if (!paymentIntentId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Payment intent ID is required'
+    });
+  }
 
   const refund = await stripeService.createRefund(paymentIntentId, amount);
 
@@ -97,19 +105,16 @@ export const createRefund = asyncHandler(async (req, res) => {
 });
 
 /**
- * Handle Stripe webhook
- * @route POST /api/payments/webhook
- * @access Public (but verified by Stripe signature)
+ * @desc    Handle Stripe webhook
+ * @route   POST /api/payments/webhook
+ * @access  Public (but verified by Stripe signature)
  */
 export const handleWebhook = asyncHandler(async (req, res) => {
   const signature = req.headers['stripe-signature'];
   const payload = req.body;
 
   try {
-    // Construct and verify webhook event
     const event = stripeService.constructWebhookEvent(payload, signature);
-    
-    // Handle the event
     await stripeService.handleWebhookEvent(event);
 
     res.status(200).json({ received: true });
@@ -117,8 +122,7 @@ export const handleWebhook = asyncHandler(async (req, res) => {
     logger.error('Webhook error', { error: error.message });
     res.status(400).json({
       success: false,
-      message: 'Webhook error',
-      error: error.message
+      message: error.message
     });
   }
 });

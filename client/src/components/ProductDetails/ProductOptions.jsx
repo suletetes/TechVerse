@@ -1,4 +1,10 @@
 import React from 'react';
+import { 
+    getVariantOptionDisplayName, 
+    getColorVariantClass, 
+    isVariantOptionAvailable,
+    formatPriceModifier 
+} from '../../utils/variantUtils.js';
 
 const ProductOptions = ({
     product,
@@ -12,6 +18,13 @@ const ProductOptions = ({
     // Handle backend variant structure
     const variants = product?.variants || [];
     
+    console.log('🔍 ProductOptions Debug:', {
+        hasProduct: !!product,
+        variantsCount: variants.length,
+        variants: variants,
+        productName: product?.name
+    });
+    
     // Find color and storage variants from backend data
     const colorVariant = variants.find(v => v.name.toLowerCase().includes('color') || v.name.toLowerCase().includes('colour'));
     const storageVariant = variants.find(v => v.name.toLowerCase().includes('storage') || v.name.toLowerCase().includes('memory'));
@@ -19,24 +32,11 @@ const ProductOptions = ({
     // Use backend variants if available, otherwise fall back to props
     const colors = colorVariant?.options || colorOptions || [];
     const storages = storageVariant?.options || storageOptions || [];
+    
+    console.log('🎨 Color options:', colors.length, colors);
+    console.log('💾 Storage options:', storages.length, storages);
 
-    // Helper function to get color class for display
-    const getColorClass = (colorValue) => {
-        const colorMap = {
-            'silver': 'color-silver',
-            'gold': 'color-gold',
-            'black': 'color-black',
-            'white': 'color-white',
-            'blue': 'color-blue',
-            'red': 'color-red',
-            'green': 'color-green',
-            'pink': 'color-pink',
-            'purple': 'color-purple',
-            'starlight': 'color-starlight'
-        };
-        return colorMap[colorValue.toLowerCase()] || 'color-default';
-    };
-
+    // Helper function to calculate price with modifier
     // Helper function to calculate price with modifier
     const calculatePrice = (basePrice, priceModifier) => {
         return basePrice + (priceModifier || 0);
@@ -59,7 +59,7 @@ const ProductOptions = ({
                             const colorValue = color.value || color.name || color;
                             const colorId = color._id || color.id || colorValue || index;
                             const isSelected = selectedColor === colorId || selectedColor === colorValue;
-                            const isOutOfStock = color.stock !== undefined && color.stock <= 0;
+                            const isOutOfStock = !isVariantOptionAvailable(color);
                             
                             return (
                                 <div
@@ -72,8 +72,8 @@ const ProductOptions = ({
                                     }}
                                 >
                                     <p className="mb-0">
-                                        <span className={`color-dot ${getColorClass(colorValue)}`}>•</span> 
-                                        {colorValue}
+                                        <span className={`color-dot ${getColorVariantClass(color)}`}>•</span> 
+                                        {getVariantOptionDisplayName(color)}
                                         {isOutOfStock && (
                                             <span className="text-muted small ms-1">(Out of Stock)</span>
                                         )}
@@ -97,7 +97,7 @@ const ProductOptions = ({
                             const storageValue = storage.value || storage.name || storage;
                             const storageId = storage._id || storage.id || storageValue || index;
                             const isSelected = selectedStorage === storageId || selectedStorage === storageValue;
-                            const isOutOfStock = storage.stock !== undefined && storage.stock <= 0;
+                            const isOutOfStock = !isVariantOptionAvailable(storage);
                             const priceModifier = storage.priceModifier || 0;
                             const basePrice = product?.price || 0;
                             const totalPrice = calculatePrice(basePrice, priceModifier);
@@ -114,13 +114,13 @@ const ProductOptions = ({
                                     >
                                         <p className="mb-0 float-lg-none d-flex justify-content-between align-items-center">
                                             <span>
-                                                {storageValue}
+                                                {getVariantOptionDisplayName(storage)}
                                                 {isOutOfStock && (
                                                     <span className="text-muted small ms-1">(Out of Stock)</span>
                                                 )}
                                             </span>
                                             <span className={`price-right token ${isSelected ? 'primary-gradient-bg' : ''}`}>
-                                                {priceModifier > 0 ? '+' : ''}£{priceModifier > 0 ? priceModifier.toLocaleString() : totalPrice.toLocaleString()}
+                                                {priceModifier > 0 ? formatPriceModifier(priceModifier) : `£${totalPrice.toLocaleString()}`}
                                             </span>
                                         </p>
                                     </div>

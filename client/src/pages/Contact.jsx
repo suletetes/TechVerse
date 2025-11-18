@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Toast } from "../components/Common";
 
 const Contact = () => {
     const [formData, setFormData] = useState({
@@ -7,6 +8,7 @@ const Contact = () => {
         message: "",
         optin: false,
     });
+    const [toast, setToast] = useState(null);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -21,12 +23,24 @@ const Contact = () => {
         console.log("Form submitted:", formData);
 
         // In real-world apps, send this to backend API
-        alert("Your message has been sent!");
+        setToast({
+            message: "Your message has been sent!",
+            type: "success"
+        });
         setFormData({ name: "", email: "", message: "", optin: false });
     };
 
     return (
         <div className="bloc bgc-5700 full-width-bloc l-bloc" id="bloc-7">
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
+            
             <div className="container bloc-md bloc-lg-md">
                 <div className="row">
                     <div className="text-start mb-4 mb-lg-0 d-flex col-lg-5 offset-lg-1 col-sm-10 offset-sm-1">

@@ -12,7 +12,6 @@ export const createOrder = asyncHandler(async (req, res, next) => {
   const {
     items,
     shippingAddress,
-    billingAddress,
     shippingMethod = 'standard',
     paymentMethod,
     discountCode,
@@ -77,7 +76,6 @@ export const createOrder = asyncHandler(async (req, res, next) => {
     user: req.user._id,
     items: processedItems,
     shippingAddress,
-    billingAddress: billingAddress || shippingAddress,
     shipping: {
       cost: shippingCost,
       method: shippingMethod,
@@ -196,6 +194,34 @@ export const getOrderById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
   const order = await Order.findById(id)
+    .populate('user', 'firstName lastName email')
+    .populate('items.product', 'name images slug');
+
+  if (!order) {
+    return next(new AppError('Order not found', 404, 'ORDER_NOT_FOUND'));
+  }
+
+  // Check if user can access this order
+  if (req.user.role !== 'admin' && order.user._id.toString() !== req.user._id.toString()) {
+    return next(new AppError('Access denied', 403, 'ACCESS_DENIED'));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Order retrieved successfully',
+    data: {
+      order
+    }
+  });
+});
+
+// @desc    Get order by order number
+// @route   GET /api/orders/number/:orderNumber
+// @access  Private
+export const getOrderByNumber = asyncHandler(async (req, res, next) => {
+  const { orderNumber } = req.params;
+
+  const order = await Order.findOne({ orderNumber })
     .populate('user', 'firstName lastName email')
     .populate('items.product', 'name images slug');
 

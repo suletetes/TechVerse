@@ -6,9 +6,6 @@ import {
   addAddress,
   updateAddress,
   deleteAddress,
-  addPaymentMethod,
-  updatePaymentMethod,
-  deletePaymentMethod,
   getWishlist,
   addToWishlist,
   removeFromWishlist,
@@ -16,10 +13,16 @@ import {
   addToCart,
   updateCartItem,
   removeFromCart,
-  clearCart
+  clearCart,
+  addPaymentMethod,
+  updatePaymentMethod,
+  deletePaymentMethod
 } from '../controllers/userController.js';
+import paymentService from '../services/paymentService.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
 import { authenticate } from '../middleware/passportAuth.js';
 import { validate, commonValidations } from '../middleware/validation.js';
+// import { activityTrackers } from '../middleware/activityTracker.js';
 import { User } from '../models/index.js';
 
 const router = express.Router();
@@ -43,7 +46,11 @@ const profileValidation = [
   body('dateOfBirth')
     .optional()
     .isISO8601()
-    .withMessage('Please provide a valid date of birth')
+    .withMessage('Please provide a valid date of birth'),
+  body('gender')
+    .optional()
+    .isIn(['male', 'female', 'other', 'prefer-not-to-say'])
+    .withMessage('Gender must be one of: male, female, other, prefer-not-to-say')
 ];
 
 const addressValidation = [
@@ -186,42 +193,7 @@ router.patch('/addresses/:id/default', commonValidations.mongoId('id'), validate
     }
 });
 
-// Payment method routes
-router.get('/payment-methods', authenticate, async (req, res) => {
-    try {
-        const user = await User.findById(req.user._id).select('paymentMethods');
-        
-        // Don't expose sensitive payment data
-        const sanitizedMethods = user?.paymentMethods?.map(method => ({
-            _id: method._id,
-            type: method.type,
-            brand: method.brand,
-            last4: method.last4,
-            expiryMonth: method.expiryMonth,
-            expiryYear: method.expiryYear,
-            holderName: method.holderName,
-            isDefault: method.isDefault,
-            createdAt: method.createdAt
-        })) || [];
-        
-        res.json({
-            success: true,
-            data: { paymentMethods: sanitizedMethods }
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch payment methods'
-        });
-    }
-});
-router.post('/payment-methods', paymentMethodValidation, validate, addPaymentMethod);
-router.put('/payment-methods/:id', 
-  [commonValidations.mongoId('id'), ...paymentMethodValidation], 
-  validate, 
-  updatePaymentMethod
-);
-router.delete('/payment-methods/:id', commonValidations.mongoId('id'), validate, deletePaymentMethod);
+// Payment method routes - removed duplicate definitions, using the ones below
 
 // Wishlist routes
 router.get('/wishlist', getWishlist);
@@ -234,5 +206,105 @@ router.post('/cart', cartItemValidation, validate, addToCart);
 router.put('/cart/:itemId', cartUpdateValidation, validate, updateCartItem);
 router.delete('/cart/:itemId', commonValidations.mongoId('itemId'), validate, removeFromCart);
 router.delete('/cart', clearCart);
+
+// Payment method routes
+// @desc    Get user's payment methods
+// @route   GET /api/users/payment-methods
+// @access  Private
+router.get('/payment-methods', authenticate, asyncHandler(async (req, res, next) => {
+  const paymentMethods = await paymentService.getPaymentMethods(req.user._id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Payment methods retrieved successfully',
+    data: {
+      paymentMethods,
+      count: paymentMethods.length
+    }
+  });
+}));
+
+// @desc    Add payment method
+// @route   POST /api/users/payment-methods
+// @access  Private
+router.post('/payment-methods', authenticate, [
+  body('type').isIn(['card', 'paypal', 'apple_pay', 'google_pay']).withMessage('Invalid payment method type'),
+  body('cardLast4').if(body('type').equals('card')).optional().isLength({ min: 4, max: 4 }).withMessage('Card last 4 digits must be 4 characters'),
+  body('cardBrand').if(body('type').equals('card')).optional().isIn(['visa', 'mastercard', 'amex', 'discover', 'diners', 'jcb']).withMessage('Invalid card brand'),
+  body('expiryMonth').if(body('type').equals('card')).isInt({ min: 1, max: 12 }).withMessage('Valid expiry month is required'),
+  body('expiryYear').if(body('type').equals('card')).isInt({ min: new Date().getFullYear() }).withMessage('Valid expiry year is required'),
+  body('cardholderName').if(body('type').equals('card')).trim().isLength({ min: 2, max: 100 }).withMessage('Cardholder name is required'),
+  body('isDefault').optional().isBoolean().withMessage('isDefault must be boolean'),
+  body('email').if(body('type').equals('paypal')).isEmail().withMessage('Valid email is required for PayPal'),
+  body('accountId').if(body('type').isIn(['apple_pay', 'google_pay'])).optional().isString().withMessage('Account ID must be string')
+], validate, addPaymentMethod);
+
+// @desc    Update payment method
+// @route   PUT /api/users/payment-methods/:id
+// @access  Private
+router.put('/payment-methods/:id', authenticate, [
+  param('id').isMongoId().withMessage('Invalid payment method ID format'),
+  body('isDefault').optional().isBoolean().withMessage('isDefault must be boolean'),
+  body('cardholderName').optional().trim().isLength({ min: 2, max: 100 }).withMessage('Cardholder name must be 2-100 characters')
+], validate, asyncHandler(async (req, res, next) => {
+  const paymentMethod = await paymentService.updatePaymentMethod(req.user._id, req.params.id, req.body);
+
+  res.status(200).json({
+    success: true,
+    message: 'Payment method updated successfully',
+    data: { paymentMethod }
+  });
+}));
+
+// @desc    Delete payment method
+// @route   DELETE /api/users/payment-methods/:id
+// @access  Private
+router.delete('/payment-methods/:id', authenticate, [
+  param('id').isMongoId().withMessage('Invalid payment method ID format')
+], validate, asyncHandler(async (req, res, next) => {
+  const result = await paymentService.deletePaymentMethod(req.user._id, req.params.id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Payment method deleted successfully',
+    data: result
+  });
+}));
+
+// @desc    Set default payment method
+// @route   PUT /api/users/payment-methods/:id/default
+// @access  Private
+router.put('/payment-methods/:id/default', authenticate, [
+  param('id').isMongoId().withMessage('Invalid payment method ID format')
+], validate, asyncHandler(async (req, res, next) => {
+  const paymentMethod = await paymentService.setDefaultPaymentMethod(req.user._id, req.params.id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Default payment method updated successfully',
+    data: { paymentMethod }
+  });
+}));
+
+// @desc    Process payment
+// @route   POST /api/users/payment-methods/process
+// @access  Private
+router.post('/payment-methods/process', authenticate, [
+  body('paymentMethodId').isString().withMessage('Payment method ID is required'),
+  body('amount').isFloat({ min: 0.01 }).withMessage('Amount must be positive'),
+  body('currency').optional().isString().withMessage('Currency must be string'),
+  body('orderId').isMongoId().withMessage('Valid order ID is required')
+], validate, asyncHandler(async (req, res, next) => {
+  const paymentResult = await paymentService.processPayment({
+    ...req.body,
+    userId: req.user._id
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Payment processed successfully',
+    data: paymentResult
+  });
+}));
 
 export default router;

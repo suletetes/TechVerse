@@ -71,6 +71,15 @@ class OrderService extends BaseApiService {
     return this.read(`/orders/${id}`);
   }
 
+  // Get order by order number
+  async getOrderByNumber(orderNumber) {
+    if (!orderNumber) {
+      throw new Error('Order number is required');
+    }
+
+    return this.read(`/orders/number/${orderNumber}`);
+  }
+
   // Cancel order
   async cancelOrder(id, reason = '') {
     if (!id) {
@@ -250,7 +259,7 @@ class OrderService extends BaseApiService {
 
     // Validate each item
     items.forEach((item, index) => {
-      if (!item.productId) {
+      if (!item.product && !item.productId) {
         throw new Error(`Item ${index + 1}: Product ID is required`);
       }
       if (!item.quantity || item.quantity <= 0) {
@@ -266,12 +275,20 @@ class OrderService extends BaseApiService {
       throw new Error('Shipping address is required');
     }
 
-    const requiredAddressFields = ['street', 'city', 'postalCode', 'country'];
-    requiredAddressFields.forEach(field => {
-      if (!shippingAddress[field] || !shippingAddress[field].trim()) {
-        throw new Error(`Shipping address ${field} is required`);
-      }
-    });
+    // Check for address field (can be 'address' or 'street')
+    if (!shippingAddress.address && !shippingAddress.street) {
+      throw new Error('Shipping address is required');
+    }
+    if (!shippingAddress.city || !shippingAddress.city.trim()) {
+      throw new Error('Shipping address city is required');
+    }
+    // Check for postal code (can be 'postcode' or 'postalCode')
+    if (!shippingAddress.postcode && !shippingAddress.postalCode) {
+      throw new Error('Shipping address postal code is required');
+    }
+    if (!shippingAddress.country || !shippingAddress.country.trim()) {
+      throw new Error('Shipping address country is required');
+    }
 
     // Validate payment method
     if (!paymentMethod) {

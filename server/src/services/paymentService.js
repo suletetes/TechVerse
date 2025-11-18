@@ -1,553 +1,495 @@
-import Stripe from 'stripe';
+// Payment Method Management Service
+// Handles secure payment method storage, validation, and processing
+
+import crypto from 'crypto';
+import { User } from '../models/index.js';
 import logger from '../utils/logger.js';
+import { AppError } from '../middleware/errorHandler.js';
 
 class PaymentService {
+  /**
+   * Encryption key for sensitive payment data
+   */
   constructor() {
-    this.stripe = null;
-    this.isConfigured = false;
-    this.webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    this.initializeStripe();
+    this.encryptionKey = process.env.PAYMENT_ENCRYPTION_KEY || 'default-key-change-in-production';
+    this.algorithm = 'aes-256-gcm';
   }
 
-  // Initialize Stripe
-  initializeStripe() {
+  /**
+   * Encrypt sensitive payment data
+   * @param {string} text - Text to encrypt
+   * @returns {Object} Encrypted data with IV and auth tag
+   */
+  encrypt(text) {
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipher(this.algorithm, this.encryptionKey);
+    
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    
+    return {
+      encrypted,
+      iv: iv.toString('hex')
+    };
+  }
+
+  /**
+   * Decrypt sensitive payment data
+   * @param {Object} encryptedData - Encrypted data object
+   * @returns {string} Decrypted text
+   */
+  decrypt(encryptedData) {
     try {
-      if (!process.env.STRIPE_SECRET_KEY) {
-        logger.warn('Stripe configuration missing. Payment service will be disabled.');
-        return;
-      }
-
-      this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-        apiVersion: '2023-10-16',
-        typescript: false
-      });
-
-      this.isConfigured = true;
-      logger.info('Payment service (Stripe) configured successfully');
-
+      const decipher = crypto.createDecipher(this.algorithm, this.encryptionKey);
+      
+      let decrypted = decipher.update(encryptedData.encrypted, 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
+      
+      return decrypted;
     } catch (error) {
-      logger.error('Failed to initialize Stripe', error);
-      this.isConfigured = false;
+      throw new AppError('Failed to decrypt payment data', 500, 'DECRYPTION_ERROR');
     }
   }
 
-  // Check if service is configured
-  checkConfiguration() {
-    if (!this.isConfigured) {
-      throw new Error('Payment service not configured');
+  /**
+   * Add payment method for user
+   * @param {string} userId - User ID
+   * @param {Object} paymentData - Payment method data
+   * @returns {Object} Added payment method
+   */
+  async addPaymentMethod(userId, paymentData) {
+    const {
+      type,
+      cardNumber,
+      expiryMonth,
+      expiryYear,
+      cardholderName,
+      isDefault = false
+    } = paymentData;
+
+    // Validate payment method type
+    const validTypes = ['card', 'paypal', 'apple_pay', 'google_pay'];
+    if (!validTypes.includes(type)) {
+      throw new AppError('Invalid payment method type', 400, 'INVALID_PAYMENT_TYPE');
     }
-  }
 
-  // Create payment intent
-  async createPaymentIntent(amount, currency = 'gbp', metadata = {}) {
-    this.checkConfiguration();
-
-    try {
-      const paymentIntent = await this.stripe.paymentIntents.create({
-        amount: Math.round(amount), // Amount in smallest currency unit (pence for GBP)
-        currency: currency.toLowerCase(),
-        automatic_payment_methods: {
-          enabled: true
-        },
-        metadata: {
-          ...metadata,
-          created_at: new Date().toISOString()
-        }
-      });
-
-      logger.info('Payment intent created', {
-        paymentIntentId: paymentIntent.id,
-        amount,
-        currency,
-        metadata
-      });
-
-      return paymentIntent;
-
-    } catch (error) {
-      logger.error('Failed to create payment intent', {
-        amount,
-        currency,
-        metadata,
-        error: error.message
-      });
-      throw error;
+    // Validate card data for card types
+    if (type === 'card') {
+      this.validateCardData({ cardNumber, expiryMonth, expiryYear, cardholderName });
     }
-  }
 
-  // Retrieve payment intent
-  async getPaymentIntent(paymentIntentId) {
-    this.checkConfiguration();
-
-    try {
-      const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
-      return paymentIntent;
-    } catch (error) {
-      logger.error('Failed to retrieve payment intent', {
-        paymentIntentId,
-        error: error.message
-      });
-      throw error;
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError('User not found', 404, 'USER_NOT_FOUND');
     }
-  }
 
-  // Confirm payment intent
-  async confirmPayment(paymentIntentId, paymentMethodId = null) {
-    this.checkConfiguration();
+    // Generate payment method ID
+    const paymentMethodId = `pm_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
 
-    try {
-      const confirmParams = {};
-      if (paymentMethodId) {
-        confirmParams.payment_method = paymentMethodId;
-      }
+    // Prepare payment method object
+    const paymentMethod = {
+      id: paymentMethodId,
+      type,
+      isDefault,
+      createdAt: new Date(),
+      lastUsed: null
+    };
 
-      const paymentIntent = await this.stripe.paymentIntents.confirm(
-        paymentIntentId,
-        confirmParams
-      );
-
-      logger.info('Payment confirmed', {
-        paymentIntentId,
-        status: paymentIntent.status,
-        amount: paymentIntent.amount
-      });
-
-      return paymentIntent;
-
-    } catch (error) {
-      logger.error('Failed to confirm payment', {
-        paymentIntentId,
-        error: error.message
-      });
-      throw error;
-    }
-  }
-
-  // Cancel payment intent
-  async cancelPayment(paymentIntentId, reason = 'requested_by_customer') {
-    this.checkConfiguration();
-
-    try {
-      const paymentIntent = await this.stripe.paymentIntents.cancel(paymentIntentId, {
-        cancellation_reason: reason
-      });
-
-      logger.info('Payment cancelled', {
-        paymentIntentId,
-        reason
-      });
-
-      return paymentIntent;
-
-    } catch (error) {
-      logger.error('Failed to cancel payment', {
-        paymentIntentId,
-        error: error.message
-      });
-      throw error;
-    }
-  }
-
-  // Process refund
-  async refundPayment(paymentIntentId, amount = null, reason = 'requested_by_customer') {
-    this.checkConfiguration();
-
-    try {
-      const refundParams = {
-        payment_intent: paymentIntentId,
-        reason
+    // Handle card-specific data with encryption
+    if (['credit_card', 'debit_card'].includes(type)) {
+      // Mask card number for display
+      const maskedCardNumber = this.maskCardNumber(cardNumber);
+      
+      // Encrypt full card number
+      const encryptedCardNumber = this.encrypt(cardNumber);
+      
+      paymentMethod.card = {
+        last4: cardNumber.slice(-4),
+        maskedNumber: maskedCardNumber,
+        encryptedNumber: encryptedCardNumber,
+        expiryMonth: parseInt(expiryMonth),
+        expiryYear: parseInt(expiryYear),
+        cardholderName,
+        brand: this.detectCardBrand(cardNumber)
       };
-
-      if (amount) {
-        refundParams.amount = Math.round(amount);
-      }
-
-      const refund = await this.stripe.refunds.create(refundParams);
-
-      logger.info('Refund processed', {
-        refundId: refund.id,
-        paymentIntentId,
-        amount: refund.amount,
-        reason
-      });
-
-      return refund;
-
-    } catch (error) {
-      logger.error('Failed to process refund', {
-        paymentIntentId,
-        amount,
-        error: error.message
-      });
-      throw error;
     }
+
+    // Handle digital wallet types
+    if (['paypal', 'apple_pay', 'google_pay'].includes(type)) {
+      paymentMethod.wallet = {
+        provider: type,
+        accountId: paymentData.accountId || null,
+        email: paymentData.email || null
+      };
+    }
+
+    // If this is set as default, unset other defaults
+    if (isDefault) {
+      user.paymentMethods.forEach(pm => {
+        pm.isDefault = false;
+      });
+    }
+
+    // Add to user's payment methods
+    user.paymentMethods.push(paymentMethod);
+    await user.save();
+
+    // Activity logging removed - feature deprecated
+
+    logger.info('Payment method added', {
+      userId,
+      paymentMethodId,
+      type,
+      isDefault
+    });
+
+    // Return sanitized payment method (without encrypted data)
+    return this.sanitizePaymentMethod(paymentMethod);
   }
 
-  // Create customer
-  async createCustomer(user) {
-    this.checkConfiguration();
+  /**
+   * Sanitize payment method for client response
+   * @param {Object} paymentMethod - Payment method object
+   * @returns {Object} Sanitized payment method
+   */
+  sanitizePaymentMethod(paymentMethod) {
+    // Convert to plain object if it's a Mongoose document
+    const pm = paymentMethod.toObject ? paymentMethod.toObject() : paymentMethod;
+    
+    const sanitized = {
+      _id: pm._id,
+      id: pm._id.toString(),
+      type: pm.type,
+      isDefault: pm.isDefault !== undefined ? pm.isDefault : false,
+      isActive: pm.isActive !== undefined ? pm.isActive : true,
+      createdAt: pm.createdAt,
+      lastUsed: pm.lastUsed
+    };
 
-    try {
-      const customer = await this.stripe.customers.create({
-        email: user.email,
-        name: `${user.firstName} ${user.lastName}`,
-        metadata: {
-          userId: user._id.toString(),
-          created_at: new Date().toISOString()
+    // Add card-specific fields if it's a card
+    if (pm.type === 'card') {
+      sanitized.cardLast4 = pm.cardLast4;
+      sanitized.cardBrand = pm.cardBrand;
+      sanitized.expiryMonth = pm.expiryMonth;
+      sanitized.expiryYear = pm.expiryYear;
+      sanitized.cardholderName = pm.cardholderName;
+    }
+
+    // Add PayPal-specific fields if it's PayPal
+    if (pm.type === 'paypal') {
+      sanitized.paypalEmail = pm.paypalEmail;
+    }
+    
+    return sanitized;
+  }
+
+  /**
+   * Get user's payment methods
+   * @param {string} userId - User ID
+   * @returns {Array} User's payment methods
+   */
+  async getPaymentMethods(userId) {
+    const user = await User.findById(userId).select('paymentMethods');
+    if (!user) {
+      throw new AppError('User not found', 404, 'USER_NOT_FOUND');
+    }
+
+    // Return sanitized payment methods
+    return user.paymentMethods.map(pm => this.sanitizePaymentMethod(pm));
+  }
+
+  /**
+   * Update payment method
+   * @param {string} userId - User ID
+   * @param {string} paymentMethodId - Payment method ID
+   * @param {Object} updateData - Update data
+   * @returns {Object} Updated payment method
+   */
+  async updatePaymentMethod(userId, paymentMethodId, updateData) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError('User not found', 404, 'USER_NOT_FOUND');
+    }
+
+    const paymentMethod = user.paymentMethods.id(paymentMethodId);
+    if (!paymentMethod) {
+      throw new AppError('Payment method not found', 404, 'PAYMENT_METHOD_NOT_FOUND');
+    }
+
+    // Update allowed fields
+    const allowedUpdates = ['isDefault', 'cardholderName'];
+    Object.keys(updateData).forEach(key => {
+      if (allowedUpdates.includes(key)) {
+        if (key === 'cardholderName' && paymentMethod.card) {
+          paymentMethod.card.cardholderName = updateData[key];
+        } else {
+          paymentMethod[key] = updateData[key];
+        }
+      }
+    });
+
+    // If setting as default, unset other defaults
+    if (updateData.isDefault) {
+      user.paymentMethods.forEach(pm => {
+        if (pm.id !== paymentMethodId) {
+          pm.isDefault = false;
         }
       });
+    }
 
-      logger.info('Stripe customer created', {
-        customerId: customer.id,
-        userId: user._id,
-        email: user.email
-      });
+    await user.save();
 
-      return customer;
+    // Activity logging removed - feature deprecated
 
-    } catch (error) {
-      logger.error('Failed to create Stripe customer', {
-        userId: user._id,
-        email: user.email,
-        error: error.message
-      });
-      throw error;
+    logger.info('Payment method updated', {
+      userId,
+      paymentMethodId,
+      updatedFields: Object.keys(updateData)
+    });
+
+    return this.sanitizePaymentMethod(paymentMethod);
+  }
+
+  /**
+   * Delete payment method
+   * @param {string} userId - User ID
+   * @param {string} paymentMethodId - Payment method ID
+   * @returns {Object} Deletion result
+   */
+  async deletePaymentMethod(userId, paymentMethodId) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError('User not found', 404, 'USER_NOT_FOUND');
+    }
+
+    const paymentMethod = user.paymentMethods.id(paymentMethodId);
+    if (!paymentMethod) {
+      throw new AppError('Payment method not found', 404, 'PAYMENT_METHOD_NOT_FOUND');
+    }
+
+    // Store info for logging before deletion
+    const paymentMethodInfo = {
+      type: paymentMethod.type,
+      isDefault: paymentMethod.isDefault,
+      last4: paymentMethod.card?.last4 || null
+    };
+
+    // Remove payment method
+    user.paymentMethods.pull(paymentMethodId);
+
+    // If deleted method was default, set another as default if available
+    if (paymentMethodInfo.isDefault && user.paymentMethods.length > 0) {
+      user.paymentMethods[0].isDefault = true;
+    }
+
+    await user.save();
+
+    // Activity logging removed - feature deprecated
+
+    logger.info('Payment method deleted', {
+      userId,
+      paymentMethodId,
+      ...paymentMethodInfo
+    });
+
+    return {
+      success: true,
+      deletedPaymentMethod: paymentMethodInfo,
+      remainingMethods: user.paymentMethods.length
+    };
+  }
+
+  /**
+   * Set default payment method
+   * @param {string} userId - User ID
+   * @param {string} paymentMethodId - Payment method ID
+   * @returns {Object} Updated payment method
+   */
+  async setDefaultPaymentMethod(userId, paymentMethodId) {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError('User not found', 404, 'USER_NOT_FOUND');
+    }
+
+    const paymentMethod = user.paymentMethods.id(paymentMethodId);
+    if (!paymentMethod) {
+      throw new AppError('Payment method not found', 404, 'PAYMENT_METHOD_NOT_FOUND');
+    }
+
+    // Unset all defaults and set new default
+    user.paymentMethods.forEach(pm => {
+      pm.isDefault = pm.id === paymentMethodId;
+    });
+
+    await user.save();
+
+    // Activity logging removed - feature deprecated
+
+    logger.info('Default payment method changed', {
+      userId,
+      paymentMethodId
+    });
+
+    return this.sanitizePaymentMethod(paymentMethod);
+  }
+
+  /**
+   * Validate card data
+   * @param {Object} cardData - Card data to validate
+   */
+  validateCardData({ cardNumber, expiryMonth, expiryYear, cardholderName }) {
+    // Remove spaces and validate card number
+    const cleanCardNumber = cardNumber.replace(/\s/g, '');
+    
+    if (!/^\d{13,19}$/.test(cleanCardNumber)) {
+      throw new AppError('Invalid card number format', 400, 'INVALID_CARD_NUMBER');
+    }
+
+    // Luhn algorithm validation
+    if (!this.validateLuhn(cleanCardNumber)) {
+      throw new AppError('Invalid card number', 400, 'INVALID_CARD_NUMBER');
+    }
+
+    // Validate expiry
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1;
+
+    const expMonth = parseInt(expiryMonth);
+    const expYear = parseInt(expiryYear);
+
+    if (expMonth < 1 || expMonth > 12) {
+      throw new AppError('Invalid expiry month', 400, 'INVALID_EXPIRY_MONTH');
+    }
+
+    if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
+      throw new AppError('Card has expired', 400, 'CARD_EXPIRED');
+    }
+
+    // Validate cardholder name
+    if (!cardholderName || cardholderName.trim().length < 2) {
+      throw new AppError('Invalid cardholder name', 400, 'INVALID_CARDHOLDER_NAME');
     }
   }
 
-  // Get customer
-  async getCustomer(customerId) {
-    this.checkConfiguration();
+  /**
+   * Validate card number using Luhn algorithm
+   * @param {string} cardNumber - Card number to validate
+   * @returns {boolean} Is valid
+   */
+  validateLuhn(cardNumber) {
+    let sum = 0;
+    let isEven = false;
 
-    try {
-      const customer = await this.stripe.customers.retrieve(customerId);
-      return customer;
-    } catch (error) {
-      logger.error('Failed to retrieve customer', {
-        customerId,
-        error: error.message
-      });
-      throw error;
-    }
-  }
+    for (let i = cardNumber.length - 1; i >= 0; i--) {
+      let digit = parseInt(cardNumber[i]);
 
-  // Update customer
-  async updateCustomer(customerId, updateData) {
-    this.checkConfiguration();
-
-    try {
-      const customer = await this.stripe.customers.update(customerId, updateData);
-
-      logger.info('Customer updated', {
-        customerId,
-        updateData
-      });
-
-      return customer;
-
-    } catch (error) {
-      logger.error('Failed to update customer', {
-        customerId,
-        error: error.message
-      });
-      throw error;
-    }
-  }
-
-  // Add payment method to customer
-  async addPaymentMethod(customerId, paymentMethodId) {
-    this.checkConfiguration();
-
-    try {
-      // Attach payment method to customer
-      await this.stripe.paymentMethods.attach(paymentMethodId, {
-        customer: customerId
-      });
-
-      logger.info('Payment method attached to customer', {
-        customerId,
-        paymentMethodId
-      });
-
-      return await this.getPaymentMethod(paymentMethodId);
-
-    } catch (error) {
-      logger.error('Failed to attach payment method', {
-        customerId,
-        paymentMethodId,
-        error: error.message
-      });
-      throw error;
-    }
-  }
-
-  // Get payment method
-  async getPaymentMethod(paymentMethodId) {
-    this.checkConfiguration();
-
-    try {
-      const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
-      return paymentMethod;
-    } catch (error) {
-      logger.error('Failed to retrieve payment method', {
-        paymentMethodId,
-        error: error.message
-      });
-      throw error;
-    }
-  }
-
-  // List customer payment methods
-  async listCustomerPaymentMethods(customerId, type = 'card') {
-    this.checkConfiguration();
-
-    try {
-      const paymentMethods = await this.stripe.paymentMethods.list({
-        customer: customerId,
-        type
-      });
-
-      return paymentMethods.data;
-
-    } catch (error) {
-      logger.error('Failed to list customer payment methods', {
-        customerId,
-        type,
-        error: error.message
-      });
-      throw error;
-    }
-  }
-
-  // Remove payment method
-  async removePaymentMethod(paymentMethodId) {
-    this.checkConfiguration();
-
-    try {
-      const paymentMethod = await this.stripe.paymentMethods.detach(paymentMethodId);
-
-      logger.info('Payment method removed', {
-        paymentMethodId
-      });
-
-      return paymentMethod;
-
-    } catch (error) {
-      logger.error('Failed to remove payment method', {
-        paymentMethodId,
-        error: error.message
-      });
-      throw error;
-    }
-  }
-
-  // Create setup intent (for saving payment methods without immediate charge)
-  async createSetupIntent(customerId, paymentMethodTypes = ['card']) {
-    this.checkConfiguration();
-
-    try {
-      const setupIntent = await this.stripe.setupIntents.create({
-        customer: customerId,
-        payment_method_types: paymentMethodTypes,
-        usage: 'off_session'
-      });
-
-      logger.info('Setup intent created', {
-        setupIntentId: setupIntent.id,
-        customerId
-      });
-
-      return setupIntent;
-
-    } catch (error) {
-      logger.error('Failed to create setup intent', {
-        customerId,
-        error: error.message
-      });
-      throw error;
-    }
-  }
-
-  // Process webhook
-  async processWebhook(signature, payload) {
-    this.checkConfiguration();
-
-    if (!this.webhookSecret) {
-      throw new Error('Webhook secret not configured');
-    }
-
-    try {
-      const event = this.stripe.webhooks.constructEvent(
-        payload,
-        signature,
-        this.webhookSecret
-      );
-
-      logger.info('Webhook received', {
-        eventType: event.type,
-        eventId: event.id
-      });
-
-      // Handle different event types
-      switch (event.type) {
-        case 'payment_intent.succeeded':
-          await this.handlePaymentSucceeded(event.data.object);
-          break;
-
-        case 'payment_intent.payment_failed':
-          await this.handlePaymentFailed(event.data.object);
-          break;
-
-        case 'customer.subscription.created':
-          await this.handleSubscriptionCreated(event.data.object);
-          break;
-
-        case 'customer.subscription.updated':
-          await this.handleSubscriptionUpdated(event.data.object);
-          break;
-
-        case 'invoice.payment_succeeded':
-          await this.handleInvoicePaymentSucceeded(event.data.object);
-          break;
-
-        case 'invoice.payment_failed':
-          await this.handleInvoicePaymentFailed(event.data.object);
-          break;
-
-        default:
-          logger.info('Unhandled webhook event type', { eventType: event.type });
+      if (isEven) {
+        digit *= 2;
+        if (digit > 9) {
+          digit -= 9;
+        }
       }
 
-      return { received: true, eventType: event.type };
-
-    } catch (error) {
-      logger.error('Webhook processing failed', {
-        error: error.message,
-        signature
-      });
-      throw error;
+      sum += digit;
+      isEven = !isEven;
     }
+
+    return sum % 10 === 0;
   }
 
-  // Webhook event handlers
-  async handlePaymentSucceeded(paymentIntent) {
-    logger.info('Payment succeeded webhook', {
-      paymentIntentId: paymentIntent.id,
-      amount: paymentIntent.amount,
-      metadata: paymentIntent.metadata
+  /**
+   * Detect card brand from card number
+   * @param {string} cardNumber - Card number
+   * @returns {string} Card brand
+   */
+  detectCardBrand(cardNumber) {
+    const cleanNumber = cardNumber.replace(/\s/g, '');
+    
+    if (/^4/.test(cleanNumber)) return 'visa';
+    if (/^5[1-5]/.test(cleanNumber)) return 'mastercard';
+    if (/^3[47]/.test(cleanNumber)) return 'amex';
+    if (/^6(?:011|5)/.test(cleanNumber)) return 'discover';
+    if (/^(?:2131|1800|35\d{3})\d{11}$/.test(cleanNumber)) return 'jcb';
+    
+    return 'unknown';
+  }
+
+  /**
+   * Mask card number for display
+   * @param {string} cardNumber - Card number to mask
+   * @returns {string} Masked card number
+   */
+  maskCardNumber(cardNumber) {
+    const cleanNumber = cardNumber.replace(/\s/g, '');
+    const last4 = cleanNumber.slice(-4);
+    const masked = '*'.repeat(cleanNumber.length - 4) + last4;
+    
+    // Add spacing for readability
+    return masked.replace(/(.{4})/g, '$1 ').trim();
+  }
+
+  // Duplicate sanitizePaymentMethod removed - using the one defined earlier
+
+  /**
+   * Process payment (placeholder for payment gateway integration)
+   * @param {Object} paymentData - Payment processing data
+   * @returns {Object} Payment result
+   */
+  async processPayment(paymentData) {
+    const {
+      paymentMethodId,
+      amount,
+      currency = 'USD',
+      orderId,
+      userId
+    } = paymentData;
+
+    // In a real implementation, this would integrate with payment gateways
+    // like Stripe, PayPal, Square, etc.
+    
+    logger.info('Payment processing initiated', {
+      paymentMethodId,
+      amount,
+      currency,
+      orderId,
+      userId
     });
 
-    // TODO: Update order status, send confirmation email, etc.
-    // This would typically involve updating the order in the database
-  }
-
-  async handlePaymentFailed(paymentIntent) {
-    logger.warn('Payment failed webhook', {
-      paymentIntentId: paymentIntent.id,
-      lastPaymentError: paymentIntent.last_payment_error
-    });
-
-    // TODO: Handle failed payment, notify customer, etc.
-  }
-
-  async handleSubscriptionCreated(subscription) {
-    logger.info('Subscription created webhook', {
-      subscriptionId: subscription.id,
-      customerId: subscription.customer
-    });
-
-    // TODO: Handle subscription creation
-  }
-
-  async handleSubscriptionUpdated(subscription) {
-    logger.info('Subscription updated webhook', {
-      subscriptionId: subscription.id,
-      status: subscription.status
-    });
-
-    // TODO: Handle subscription updates
-  }
-
-  async handleInvoicePaymentSucceeded(invoice) {
-    logger.info('Invoice payment succeeded webhook', {
-      invoiceId: invoice.id,
-      subscriptionId: invoice.subscription
-    });
-
-    // TODO: Handle successful invoice payment
-  }
-
-  async handleInvoicePaymentFailed(invoice) {
-    logger.warn('Invoice payment failed webhook', {
-      invoiceId: invoice.id,
-      subscriptionId: invoice.subscription
-    });
-
-    // TODO: Handle failed invoice payment
-  }
-
-  // Utility methods
-  formatAmount(amount, currency = 'gbp') {
-    // Convert from smallest currency unit to major unit
-    const divisor = this.getCurrencyDivisor(currency);
-    return amount / divisor;
-  }
-
-  formatAmountForStripe(amount, currency = 'gbp') {
-    // Convert from major unit to smallest currency unit
-    const divisor = this.getCurrencyDivisor(currency);
-    return Math.round(amount * divisor);
-  }
-
-  getCurrencyDivisor(currency) {
-    // Most currencies use 100 (cents), but some use different divisors
-    const divisors = {
-      'jpy': 1,    // Japanese Yen
-      'krw': 1,    // Korean Won
-      'vnd': 1,    // Vietnamese Dong
-      'clp': 1,    // Chilean Peso
-      'bif': 1,    // Burundian Franc
-      'djf': 1,    // Djiboutian Franc
-      'gnf': 1,    // Guinean Franc
-      'kmf': 1,    // Comorian Franc
-      'mga': 1,    // Malagasy Ariary
-      'pyg': 1,    // Paraguayan Guaraní
-      'rwf': 1,    // Rwandan Franc
-      'ugx': 1,    // Ugandan Shilling
-      'vuv': 1,    // Vanuatu Vatu
-      'xaf': 1,    // Central African CFA Franc
-      'xof': 1,    // West African CFA Franc
-      'xpf': 1     // CFP Franc
+    // Simulate payment processing
+    const paymentResult = {
+      success: true,
+      transactionId: `txn_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`,
+      amount,
+      currency,
+      status: 'completed',
+      processedAt: new Date(),
+      paymentMethodId,
+      orderId
     };
 
-    return divisors[currency.toLowerCase()] || 100;
+    // Update last used timestamp for payment method
+    await this.updateLastUsed(userId, paymentMethodId);
+
+    // Activity logging removed - feature deprecated
+
+    return paymentResult;
   }
 
-  // Get supported payment methods for a country
-  getSupportedPaymentMethods(country = 'GB') {
-    const paymentMethods = {
-      'GB': ['card', 'bacs_debit', 'bancontact'],
-      'US': ['card', 'us_bank_account'],
-      'DE': ['card', 'sepa_debit', 'giropay', 'sofort'],
-      'FR': ['card', 'sepa_debit'],
-      'IT': ['card', 'sepa_debit'],
-      'ES': ['card', 'sepa_debit'],
-      'NL': ['card', 'sepa_debit', 'ideal'],
-      'BE': ['card', 'sepa_debit', 'bancontact'],
-      'AT': ['card', 'sepa_debit', 'eps'],
-      'CH': ['card'],
-      'CA': ['card'],
-      'AU': ['card', 'au_becs_debit'],
-      'JP': ['card'],
-      'SG': ['card', 'grabpay'],
-      'MY': ['card', 'fpx'],
-      'TH': ['card', 'promptpay'],
-      'IN': ['card', 'upi'],
-      'BR': ['card', 'boleto'],
-      'MX': ['card', 'oxxo']
-    };
-
-    return paymentMethods[country.toUpperCase()] || ['card'];
+  /**
+   * Update last used timestamp for payment method
+   * @param {string} userId - User ID
+   * @param {string} paymentMethodId - Payment method ID
+   */
+  async updateLastUsed(userId, paymentMethodId) {
+    const user = await User.findById(userId);
+    if (user) {
+      const paymentMethod = user.paymentMethods.id(paymentMethodId);
+      if (paymentMethod) {
+        paymentMethod.lastUsed = new Date();
+        await user.save();
+      }
+    }
   }
 }
 

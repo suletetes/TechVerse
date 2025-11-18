@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Verify Your Email Address</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #007bff; color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { padding: 30px 20px; background: white; }
+        .verification-box { background: #e3f2fd; border: 1px solid #2196f3; padding: 20px; margin: 20px 0; border-radius: 5px; text-align: center; }
+        .button { display: inline-block; padding: 15px 30px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        .footer { padding: 20px; text-align: center; color: #666; font-size: 12px; background: #e9ecef; border-radius: 0 0 8px 8px; }
+        .benefits { background: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 5px; }
+        .verification-icon { font-size: 48px; margin-bottom: 15px; }
+        .url-box { background: #f8f9fa; padding: 15px; border-radius: 5px; word-break: break-all; font-family: monospace; font-size: 12px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="verification-icon">📧</div>
+            <h1>Verify Your Email</h1>
+            <p>One more step to get started</p>
+        </div>
+        <div class="content">
+            <h2>Hello {{firstName}},</h2>
+            <p>Thanks for signing up with TechVerse! To complete your account setup and ensure you receive important updates, please verify your email address.</p>
+            
+            <div class="verification-box">
+                <h3> Click to Verify</h3>
+                <p style="margin: 20px 0;">
+                    <a href="{{verificationUrl}}" class="button">Verify Email Address</a>
+                </p>
+                <p><small>This verification link is secure and unique to your account</small></p>
+            </div>
+            
+            <div class="benefits">
+                <h4> Why verify your email?</h4>
+                <ul>
+                    <li> <strong>Account Security:</strong> Protect your account from unauthorized access</li>
+                    <li> <strong>Order Updates:</strong> Receive shipping and delivery notifications</li>
+                    <li> <strong>Exclusive Offers:</strong> Get notified about special deals and promotions</li>
+                    <li> <strong>Password Recovery:</strong> Reset your password if you ever forget it</li>
+                    <li> <strong>Product Updates:</strong> Stay informed about new arrivals and restocks</li>
+                </ul>
+            </div>
+            
+            <p><strong>Having trouble with the button?</strong><br>
+            Copy and paste this URL into your browser:</p>
+            <div class="url-box">{{verificationUrl}}</div>
+            
+            <p><strong>Need help?</strong><br>
+            If you're having trouble verifying your email, our support team is here to help at <a href="mailto:{{supportEmail}}">{{supportEmail}}</a></p>
+            
+            <p><strong>Didn't create an account?</strong><br>
+            If you received this email but didn't create a TechVerse account, you can safely ignore this message. No account has been created with your email address.</p>
+        </div>
+        <div class="footer">
+            <p>&copy; {{year}} {{companyName}}. All rights reserved.</p>
+            <p>This verification email was sent to {{email}}</p>
+        </div>
+    </div>
+</body>
+</html>

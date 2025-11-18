@@ -13,15 +13,23 @@ const AdminDashboard = ({ dashboardStats, dateRange, setDateRange, recentOrders,
         usersGrowth: 0,
         totalProducts: 0,
         productsGrowth: 0,
+        newUsers: 0,
+        newOrders: 0,
+        pendingOrders: 0,
+        lowStockProducts: 0,
         ...stats
     };
 
-    // Calculate growth percentages (placeholder logic - you can enhance this)
+    // Calculate growth percentages and overview metrics
     const growthStats = {
         revenueGrowth: defaultStats.revenueGrowth || 12.5,
         ordersGrowth: defaultStats.ordersGrowth || 8.3,
         usersGrowth: defaultStats.usersGrowth || 15.2,
-        productsGrowth: defaultStats.productsGrowth || 5.7
+        productsGrowth: defaultStats.productsGrowth || 5.7,
+        newUsers: defaultStats.newUsers || 0,
+        newOrders: defaultStats.newOrders || 0,
+        pendingOrders: defaultStats.pendingOrders || 0,
+        lowStockProducts: defaultStats.lowStockProducts || 0
     };
 
     const finalStats = { ...defaultStats, ...growthStats };
@@ -173,32 +181,63 @@ const AdminDashboard = ({ dashboardStats, dateRange, setDateRange, recentOrders,
             </div>
             <div className="col-lg-4">
                 <div className="store-card fill-card h-100">
-                    <h5 className="tc-6533 fw-bold mb-4">Quick Actions</h5>
-                    <div className="d-grid gap-3">
-                        <button className="btn btn-success btn-rd py-3 d-flex align-items-center justify-content-center" onClick={() => setActiveTab('add-product')}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" className="me-2" fill="white">
-                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                            </svg>
-                            <span className="fw-medium">Add New Product</span>
-                        </button>
-                        <button className="btn btn-outline-primary btn-rd py-3 d-flex align-items-center justify-content-center" onClick={() => setActiveTab('orders')}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
-                                <path fill="currentColor" d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1z" />
-                            </svg>
-                            <span className="fw-medium">Manage Orders</span>
-                        </button>
-                        <button className="btn btn-outline-secondary btn-rd py-3 d-flex align-items-center justify-content-center" onClick={() => setActiveTab('users')}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
-                                <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                            </svg>
-                            <span className="fw-medium">View Users</span>
-                        </button>
-                        <button className="btn btn-outline-info btn-rd py-3 d-flex align-items-center justify-content-center" onClick={() => setActiveTab('settings')}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" className="me-2">
-                                <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-                            </svg>
-                            <span className="fw-medium">Site Settings</span>
-                        </button>
+                    <h5 className="tc-6533 fw-bold mb-4">Quick Overview</h5>
+                    <div className="d-flex flex-column gap-3">
+                        <div className="d-flex align-items-center justify-content-between p-3 bg-light rounded-3">
+                            <div className="d-flex align-items-center">
+                                <div className="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-primary">
+                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p className="mb-0 small text-muted">New Users</p>
+                                    <h6 className="mb-0 fw-bold">{finalStats.newUsers || 0}</h6>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="d-flex align-items-center justify-content-between p-3 bg-light rounded-3">
+                            <div className="d-flex align-items-center">
+                                <div className="bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-success">
+                                        <path d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p className="mb-0 small text-muted">New Orders</p>
+                                    <h6 className="mb-0 fw-bold">{finalStats.newOrders || 0}</h6>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="d-flex align-items-center justify-content-between p-3 bg-light rounded-3">
+                            <div className="d-flex align-items-center">
+                                <div className="bg-warning bg-opacity-10 rounded-circle p-2 me-3">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-warning">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p className="mb-0 small text-muted">Pending Orders</p>
+                                    <h6 className="mb-0 fw-bold">{finalStats.pendingOrders || 0}</h6>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="d-flex align-items-center justify-content-between p-3 bg-light rounded-3">
+                            <div className="d-flex align-items-center">
+                                <div className="bg-danger bg-opacity-10 rounded-circle p-2 me-3">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-danger">
+                                        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p className="mb-0 small text-muted">Low Stock</p>
+                                    <h6 className="mb-0 fw-bold">{finalStats.lowStockProducts || 0}</h6>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

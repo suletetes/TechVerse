@@ -71,18 +71,16 @@ const ProductMediaGallery = ({
                 <picture>
                     <source
                         type="image/webp"
-                        srcSet="/img/lazyload-ph.png"
-                        data-srcset={currentMedia.webp || currentMedia.src}
+                        srcSet={currentMedia.webp || currentMedia.src}
                     />
                     <img
-                        src="/img/lazyload-ph.png"
-                        data-src={currentMedia.src}
-                        className="img-fluid mx-auto d-block img-rd-lg img-fluid-up lazyload"
+                        src={currentMedia.src}
+                        className="img-fluid mx-auto d-block img-rd-lg img-fluid-up"
                         alt={currentMedia.alt}
                         width="1014"
                         height="1014"
+                        style={{ maxHeight: '600px', objectFit: 'contain' }}
                         onError={(e) => {
-                            // Fallback to placeholder if image fails to load
                             e.target.src = '/img/lazyload-ph.png';
                         }}
                     />

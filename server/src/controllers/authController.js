@@ -8,48 +8,49 @@ import logger from '../utils/logger.js';
 // Helper function to generate tokens with enhanced security
 const generateTokens = (user, req = null) => {
   // Enhanced payload with security context
+  const sessionId = crypto.randomBytes(32).toString('hex');
+  const jti = crypto.randomBytes(16).toString('hex');
+  
   const tokenPayload = {
     id: user._id,
     email: user.email,
     role: user.role,
     isEmailVerified: user.isEmailVerified,
     accountStatus: user.accountStatus,
-    // Security context
-    iat: Math.floor(Date.now() / 1000),
-    jti: crypto.randomBytes(16).toString('hex'), // JWT ID for token tracking
-    iss: 'techverse-api', // Issuer
-    aud: 'techverse-client', // Audience
     // Session context
-    sessionId: crypto.randomBytes(32).toString('hex'),
+    sessionId: sessionId,
     ipAddress: req?.ip,
     userAgent: req?.get('User-Agent')?.substring(0, 200) // Limit length
   };
 
   const accessToken = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || '7d',
-    algorithm: 'HS256'
+    algorithm: 'HS256',
+    issuer: process.env.JWT_ISSUER || 'techverse-api',
+    audience: process.env.JWT_AUDIENCE || 'techverse-client',
+    jwtid: jti
   });
 
   const refreshTokenPayload = {
     id: user._id,
     type: 'refresh',
-    sessionId: tokenPayload.sessionId,
-    jti: crypto.randomBytes(16).toString('hex')
+    sessionId: sessionId
   };
 
   const refreshToken = jwt.sign(refreshTokenPayload, process.env.JWT_REFRESH_SECRET, {
     expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d',
     algorithm: 'HS256',
-    issuer: 'techverse-api',
-    audience: 'techverse-client'
+    issuer: process.env.JWT_ISSUER || 'techverse-api',
+    audience: process.env.JWT_AUDIENCE || 'techverse-client',
+    jwtid: crypto.randomBytes(16).toString('hex')
   });
 
   // Log token generation for security monitoring
   logger.info('Tokens generated', {
     userId: user._id,
     email: user.email,
-    sessionId: tokenPayload.sessionId,
-    jti: tokenPayload.jti,
+    sessionId: sessionId,
+    jti: jti,
     ip: req?.ip,
     userAgent: req?.get('User-Agent'),
     timestamp: new Date().toISOString()
@@ -58,7 +59,7 @@ const generateTokens = (user, req = null) => {
   return {
     accessToken,
     refreshToken,
-    sessionId: tokenPayload.sessionId,
+    sessionId: sessionId,
     expiresIn: process.env.JWT_EXPIRE || '7d'
   };
 };
@@ -179,7 +180,7 @@ export const register = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Create user
+  // Create user with active status (email verification is optional for login)
   const user = await User.create({
     firstName,
     lastName,
@@ -187,6 +188,7 @@ export const register = asyncHandler(async (req, res, next) => {
     password,
     phone,
     referredBy,
+    accountStatus: 'active', // Set to active immediately
     ipAddress: req.ip,
     userAgent: req.get('User-Agent')
   });
@@ -485,6 +487,14 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
 
   await user.save();
 
+  // Send password changed confirmation email
+  try {
+    await emailService.sendPasswordChangedEmail(user);
+  } catch (error) {
+    logger.error('Failed to send password changed email', error);
+    // Don't fail the password reset if email fails
+  }
+
   logger.info('Password reset successfully', {
     userId: user._id,
     email: user.email,
@@ -595,6 +605,14 @@ export const changePassword = asyncHandler(async (req, res, next) => {
   user.password = newPassword;
   await user.save();
 
+  // Send password changed confirmation email
+  try {
+    await emailService.sendPasswordChangedEmail(user);
+  } catch (error) {
+    logger.error('Failed to send password changed email', error);
+    // Don't fail the password change if email fails
+  }
+
   logger.info('Password changed successfully', {
     userId: user._id,
     email: user.email,
@@ -657,7 +675,7 @@ export const getProfile = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/auth/profile
 // @access  Private
 export const updateProfile = asyncHandler(async (req, res, next) => {
-  const allowedFields = ['firstName', 'lastName', 'phone', 'dateOfBirth', 'preferences'];
+  const allowedFields = ['firstName', 'lastName', 'phone', 'dateOfBirth', 'gender', 'preferences'];
   const updates = {};
 
   // Only allow specific fields to be updated

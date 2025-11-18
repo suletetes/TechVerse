@@ -4,16 +4,16 @@ import { HorizontalScroll } from '../Common';
 
 const CategoryScroll = () => {
     const categories = [
-        { title: 'Phones', imgSrc: 'img/phone.svg', link: './category/' },
-        { title: 'Tablets', imgSrc: 'img/tablet.svg', link: './category/' },
-        { title: 'Computers', imgSrc: 'img/computer.svg', link: './category/' },
-        { title: 'TVs', imgSrc: 'img/tv.svg', link: './category/' },
-        { title: 'Gaming', imgSrc: 'img/gaming.svg', link: './category/' },
-        { title: 'Watches', imgSrc: 'img/watch.svg', link: './category/' },
-        { title: 'Audio', imgSrc: 'img/headphones.svg', link: './category/' },
-        { title: 'Cameras', imgSrc: 'img/camera.svg', link: './category/' },
-        { title: 'Accessories', imgSrc: 'img/accessories.svg', link: './category/' },
-        { title: 'Gift Card', imgSrc: 'img/gift-card.svg', link: './category/' }
+        { title: 'Phones', imgSrc: 'img/phone.svg', link: '/products?category=phones' },
+        { title: 'Tablets', imgSrc: 'img/tablet.svg', link: '/products?category=tablets' },
+        { title: 'Computers', imgSrc: 'img/computer.svg', link: '/products?category=computers' },
+        { title: 'TVs', imgSrc: 'img/tv.svg', link: '/products?category=tvs' },
+        { title: 'Gaming', imgSrc: 'img/gaming.svg', link: '/products?category=gaming' },
+        { title: 'Watches', imgSrc: 'img/watch.svg', link: '/products?category=watches' },
+        { title: 'Audio', imgSrc: 'img/headphones.svg', link: '/products?category=audio' },
+        { title: 'Cameras', imgSrc: 'img/camera.svg', link: '/products?category=cameras' },
+        { title: 'Accessories', imgSrc: 'img/accessories.svg', link: '/products?category=accessories' },
+        // { title: 'Gift Card', imgSrc: 'img/gift-card.svg', link: '/products?category=gift-cards' }
     ];
 
     return (

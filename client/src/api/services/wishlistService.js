@@ -1,114 +1,89 @@
 import BaseApiService from '../core/BaseApiService.js';
-import { API_ENDPOINTS } from '../config.js';
 
 class WishlistService extends BaseApiService {
-  constructor() {
-    super({
-      serviceName: 'WishlistService',
-      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-      endpoints: API_ENDPOINTS.USERS,
-      cacheEnabled: false,
-      retryEnabled: true
-    });
-  }
-
-  async getWishlist(page = 1, limit = 20) {
-    try {
-      const response = await this.read('/users/wishlist', { page, limit });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching wishlist:', error);
-      throw error;
+    constructor() {
+        super({
+            serviceName: 'WishlistService',
+            baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+            endpoints: {
+                wishlist: '/wishlist'
+            },
+            cacheEnabled: false, // Wishlist data should always be fresh
+            retryEnabled: true,
+            defaultOptions: {
+                timeout: 10000
+            }
+        });
     }
-  }
 
-  async addToWishlist(productId) {
-    try {
-      const response = await this.create(`/users/wishlist/${productId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error adding to wishlist:', error);
-      throw error;
+    async getWishlist() {
+        return this.read('/wishlist');
     }
-  }
 
-  async removeFromWishlist(productId) {
-    try {
-      const response = await this.delete(`/users/wishlist/${productId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error removing from wishlist:', error);
-      throw error;
+    async addToWishlist(productId, notes = '', options = {}) {
+        return this.create(`/wishlist/add/${productId}`, { notes, options });
     }
-  }
 
-  async isInWishlist(productId) {
-    try {
-      const wishlist = await this.getWishlist();
-      return wishlist.data?.items?.some(item => 
-        item.product._id === productId || item.product === productId
-      ) || false;
-    } catch (error) {
-      console.error('Error checking wishlist status:', error);
-      return false;
+    async removeFromWishlist(productId) {
+        return this.delete(`/wishlist/remove/${productId}`);
     }
-  }
 
-  async toggleWishlist(productId) {
-    try {
-      const isInWishlist = await this.isInWishlist(productId);
-      if (isInWishlist) {
-        return await this.removeFromWishlist(productId);
-      } else {
-        return await this.addToWishlist(productId);
-      }
-    } catch (error) {
-      console.error('Error toggling wishlist:', error);
-      throw error;
+    async fetchWishlistCount() {
+        try {
+            const response = await this.read('/wishlist/summary');
+            return {
+                success: true,
+                count: response.data?.totalItems || 0
+            };
+        } catch (error) {
+            console.error('Error getting wishlist count:', error);
+            return {
+                success: false,
+                count: 0,
+                error: error.response?.data?.message || 'Failed to get wishlist count'
+            };
+        }
     }
-  }
 
-  async getWishlistWithDetails(page = 1, limit = 20) {
-    try {
-      const response = await this.read('/users/wishlist', { page, limit });
-      return response.data?.data?.items || [];
-    } catch (error) {
-      console.error('Error fetching wishlist with details:', error);
-      throw error;
+    // Utility functions for local state (no API calls)
+    getWishlistCount(items = []) {
+        return Array.isArray(items) ? items.length : 0;
     }
-  }
 
-  // Check if product is in wishlist (local check)
-  isInWishlist(productId, wishlistItems = []) {
-    if (!productId || !Array.isArray(wishlistItems)) return false;
-    return wishlistItems.some(item => 
-      (item.product?._id === productId) || 
-      (item.product === productId) ||
-      (item._id === productId)
-    );
-  }
-
-  // Get wishlist count (local check)
-  getWishlistCount(wishlistItems = []) {
-    return Array.isArray(wishlistItems) ? wishlistItems.length : 0;
-  }
-
-  async syncWishlist(productIds = []) {
-    try {
-      if (!Array.isArray(productIds) || productIds.length === 0) {
-        return { success: true, message: 'No items to sync' };
-      }
-
-      const response = await this.create('/users/wishlist/sync', {
-        productIds
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error syncing wishlist:', error);
-      throw error;
+    isInWishlist(productId, items = []) {
+        if (!productId || !Array.isArray(items)) return false;
+        return items.some(item => 
+            item.product?._id === productId || 
+            item.product === productId || 
+            item._id === productId
+        );
     }
-  }
+
+    async syncWishlist(productIds = []) {
+        if (!Array.isArray(productIds) || productIds.length === 0) {
+            return { success: true, message: 'No items to sync' };
+        }
+        
+        try {
+            return this.create('/wishlist/sync', { productIds });
+        } catch (error) {
+            console.error('Error syncing wishlist:', error);
+            throw error;
+        }
+    }
+
+    async checkWishlistStatus(productId) {
+        return this.read(`/wishlist/check/${productId}`);
+    }
+
+    async moveToCart(productId, quantity = 1, options = {}) {
+        return this.create(`/wishlist/move-to-cart/${productId}`, { quantity, options });
+    }
+
+    async clearWishlist() {
+        return this.delete('/wishlist/clear');
+    }
 }
 
-const wishlistService = new WishlistService();
+export const wishlistService = new WishlistService();
 export default wishlistService;

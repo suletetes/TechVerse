@@ -2,33 +2,25 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
 // Performance monitoring hook
 export const usePerformanceMonitor = () => {
-  const [metrics, setMetrics] = useState({
-    renderTime: 0,
-    memoryUsage: 0,
-    componentCount: 0,
-    rerenderCount: 0
-  });
-
   const renderStartTime = useRef(Date.now());
   const rerenderCount = useRef(0);
+  const mountTime = useRef(Date.now());
 
-  useEffect(() => {
-    const renderTime = Date.now() - renderStartTime.current;
-    rerenderCount.current += 1;
+  // Update rerender count on each render
+  rerenderCount.current += 1;
 
-    setMetrics(prev => ({
-      ...prev,
-      renderTime,
-      rerenderCount: rerenderCount.current,
-      memoryUsage: performance.memory ? performance.memory.usedJSHeapSize : 0
-    }));
-  });
+  const getMetrics = useCallback(() => ({
+    renderTime: Date.now() - renderStartTime.current,
+    rerenderCount: rerenderCount.current,
+    memoryUsage: performance.memory ? performance.memory.usedJSHeapSize : 0,
+    mountTime: mountTime.current
+  }), []);
 
   const logPerformance = useCallback((componentName) => {
-    console.log(`Performance metrics for ${componentName}:`, metrics);
-  }, [metrics]);
+    console.log(`Performance metrics for ${componentName}:`, getMetrics());
+  }, [getMetrics]);
 
-  return { metrics, logPerformance };
+  return { metrics: getMetrics(), logPerformance };
 };
 
 // Enhanced performance monitoring hook with system-wide metrics

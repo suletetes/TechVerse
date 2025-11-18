@@ -16,11 +16,43 @@ class AuthService extends BaseApiService {
   async register(userData) {
     const result = await this.create(this.endpoints.REGISTER, userData);
 
-    if (result.success && result.data?.token) {
-      tokenManager.setToken(result.data.token);
-      if (result.data.refreshToken) {
-        tokenManager.setRefreshToken(result.data.refreshToken);
+    if (result.success && result.data?.tokens) {
+      const { tokens, user, security } = result.data;
+
+      // Store tokens with enhanced security (same as login)
+      tokenManager.setToken(
+        tokens.accessToken,
+        tokens.expiresIn,
+        tokens.sessionId
+      );
+
+      if (tokens.refreshToken) {
+        tokenManager.setRefreshToken(tokens.refreshToken);
       }
+
+      // Store user data and permissions
+      localStorage.setItem('techverse_user', JSON.stringify(user));
+      if (user.permissions) {
+        localStorage.setItem('techverse_permissions', JSON.stringify(user.permissions));
+      }
+
+      // Store security context
+      if (security) {
+        localStorage.setItem('techverse_security_context', JSON.stringify(security));
+      }
+
+      // Store session expiry
+      if (tokens.expiresAt) {
+        localStorage.setItem('session_expiry', new Date(tokens.expiresAt).getTime().toString());
+      }
+
+      console.log('Registration successful', {
+        userId: user._id,
+        role: user.role,
+        sessionId: tokens.sessionId?.substring(0, 8) + '...',
+        expiresAt: tokens.expiresAt,
+        requiresVerification: security?.requiresEmailVerification
+      });
     }
 
     return result;

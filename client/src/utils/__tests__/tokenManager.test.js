@@ -23,14 +23,22 @@ const windowMock = {
 };
 
 const documentMock = {
-  createElement: vi.fn(() => ({
-    getContext: vi.fn(() => ({
-      textBaseline: '',
-      font: '',
-      fillText: vi.fn(),
-      toDataURL: vi.fn(() => 'mock-canvas-data')
-    }))
-  })),
+  createElement: vi.fn((tagName) => {
+    if (tagName === 'canvas') {
+      return {
+        getContext: vi.fn(() => ({
+          textBaseline: '',
+          font: '',
+          fillText: vi.fn(),
+          getImageData: vi.fn(() => ({ data: new Uint8Array(16) }))
+        })),
+        toDataURL: vi.fn(() => 'mock-canvas-data'),
+        width: 200,
+        height: 50
+      };
+    }
+    return {};
+  }),
   addEventListener: vi.fn()
 };
 
@@ -59,6 +67,9 @@ describe('TokenManager', () => {
     // Reset mocks
     vi.clearAllMocks();
     
+    // Reset tokenManager state
+    tokenManager.fingerprintMismatches = 0;
+    
     // Setup global mocks
     global.localStorage = localStorageMock;
     global.window = windowMock;
@@ -84,15 +95,23 @@ describe('TokenManager', () => {
     it('should validate JWT token format correctly', () => {
       const validToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyMyIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsImV4cCI6OTk5OTk5OTk5OSwiaWF0IjoxNjAwMDAwMDAwfQ.signature';
       
+      // Mock Date.now to return current time
+      const mockNow = Date.now();
+      const currentTimeSeconds = Math.floor(mockNow / 1000);
+      vi.spyOn(Date, 'now').mockReturnValue(mockNow);
+      
       // Mock atob to return valid JSON
       global.atob = vi.fn()
         .mockReturnValueOnce('{"alg":"HS256","typ":"JWT"}') // header
-        .mockReturnValueOnce('{"id":"123","email":"test@example.com","exp":9999999999,"iat":1600000000}'); // payload
+        .mockReturnValueOnce(`{"id":"123","email":"test@example.com","exp":9999999999,"iat":${currentTimeSeconds}}`); // payload
       
       const validation = tokenManager.validateTokenFormat(validToken);
       expect(validation.valid).toBe(true);
       expect(validation.payload).toBeDefined();
       expect(validation.payload.id).toBe('123');
+      
+      // Restore Date.now
+      vi.restoreAllMocks();
     });
 
     it('should reject invalid token format', () => {
@@ -118,11 +137,12 @@ describe('TokenManager', () => {
 
   describe('Token Storage', () => {
     it('should store token with security metadata', () => {
+      const currentTime = Math.floor(Date.now() / 1000);
       const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyMyIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsImV4cCI6OTk5OTk5OTk5OSwiaWF0IjoxNjAwMDAwMDAwfQ.signature';
       
       global.atob = vi.fn()
         .mockReturnValueOnce('{"alg":"HS256","typ":"JWT"}')
-        .mockReturnValueOnce('{"id":"123","email":"test@example.com","exp":9999999999,"iat":1600000000}');
+        .mockReturnValueOnce(`{"id":"123","email":"test@example.com","exp":9999999999,"iat":${currentTime}}`);
       
       tokenManager.setToken(token, '1h', 'session123');
       
@@ -166,9 +186,10 @@ describe('TokenManager', () => {
         .mockReturnValueOnce(futureExpiry) // expiry
         .mockReturnValueOnce('fingerprint123'); // fingerprint
       
+      const currentTime = Math.floor(Date.now() / 1000);
       global.atob = vi.fn()
         .mockReturnValueOnce('{"alg":"HS256","typ":"JWT"}')
-        .mockReturnValueOnce('{"id":"123","email":"test@example.com","exp":9999999999,"iat":1600000000}');
+        .mockReturnValueOnce(`{"id":"123","email":"test@example.com","exp":9999999999,"iat":${currentTime}}`);
       
       const token = tokenManager.getToken();
       expect(token).toBe(validToken);
@@ -182,9 +203,10 @@ describe('TokenManager', () => {
         .mockReturnValueOnce(validToken) // token
         .mockReturnValueOnce(pastExpiry); // expired
       
+      const currentTime = Math.floor(Date.now() / 1000);
       global.atob = vi.fn()
         .mockReturnValueOnce('{"alg":"HS256","typ":"JWT"}')
-        .mockReturnValueOnce('{"id":"123","email":"test@example.com","exp":9999999999,"iat":1600000000}');
+        .mockReturnValueOnce(`{"id":"123","email":"test@example.com","exp":9999999999,"iat":${currentTime}}`);
       
       const token = tokenManager.getToken();
       expect(token).toBeNull();
@@ -209,9 +231,10 @@ describe('TokenManager', () => {
         .mockReturnValueOnce(futureExpiry) // expiry
         .mockReturnValueOnce(oldFingerprint); // old fingerprint
       
+      const currentTime = Math.floor(Date.now() / 1000);
       global.atob = vi.fn()
         .mockReturnValueOnce('{"alg":"HS256","typ":"JWT"}')
-        .mockReturnValueOnce('{"id":"123","email":"test@example.com","exp":9999999999,"iat":1600000000}');
+        .mockReturnValueOnce(`{"id":"123","email":"test@example.com","exp":9999999999,"iat":${currentTime}}`);
       
       // Mock fingerprint generation to return different value
       vi.spyOn(tokenManager, 'generateBrowserFingerprint').mockReturnValue('new-fingerprint');
@@ -225,7 +248,7 @@ describe('TokenManager', () => {
     it('should clear tokens on security breach', () => {
       tokenManager.handleSuspiciousActivity();
       
-      expect(localStorageMock.removeItem).toHaveBeenCalledTimes(expect.any(Number));
+      expect(localStorageMock.removeItem).toHaveBeenCalled();
       expect(windowMock.dispatchEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'securityBreach'
@@ -257,7 +280,7 @@ describe('TokenManager', () => {
       tokenManager.clearTokens();
       
       // Should remove multiple keys
-      expect(localStorageMock.removeItem).toHaveBeenCalledTimes(expect.any(Number));
+      expect(localStorageMock.removeItem).toHaveBeenCalled();
       expect(windowMock.dispatchEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'authTokensCleared'

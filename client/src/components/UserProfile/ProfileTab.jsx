@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context';
+import { useUserProfile } from '../../context/UserProfileContext';
 import { LoadingSpinner } from '../Common';
 
 const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
-    const { user, updateProfile, isLoading } = useAuth();
-    const [isEditing, setIsEditing] = useState(false);
+    const { user } = useAuth();
+    const { profile, loading } = useUserProfile();
+
     const [profileData, setProfileData] = useState({
         firstName: '',
         lastName: '',
@@ -17,73 +19,49 @@ const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
 
     // Load user data when component mounts
     useEffect(() => {
-        if (user) {
+        const userData = profile || user;
+        if (userData) {
             // Convert ISO date to yyyy-MM-dd format for HTML date input
             let formattedDate = '';
-            if (user.dateOfBirth) {
+            if (userData.dateOfBirth) {
                 try {
-                    const date = new Date(user.dateOfBirth);
+                    const date = new Date(userData.dateOfBirth);
                     formattedDate = date.toISOString().split('T')[0];
                 } catch (error) {
-                    console.warn('Invalid date format:', user.dateOfBirth);
+                    console.warn('Invalid date format:', userData.dateOfBirth);
                 }
             }
-            
+
             setProfileData({
-                firstName: user.firstName || '',
-                lastName: user.lastName || '',
-                email: user.email || '',
-                phone: user.phone || '',
+                firstName: userData.firstName || '',
+                lastName: userData.lastName || '',
+                email: userData.email || '',
+                phone: userData.phone || '',
                 dateOfBirth: formattedDate,
-                gender: user.gender || '',
-                avatar: user.avatar || ''
+                gender: userData.gender || '',
+                avatar: userData.avatar || ''
             });
         }
-    }, [user]);
+    }, [user, profile]);
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setProfileData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleSaveProfile = async () => {
-        try {
-            // Only send fields that the backend accepts
-            const allowedFields = ['firstName', 'lastName', 'phone', 'dateOfBirth', 'preferences'];
-            const updateData = {};
-            
-            allowedFields.forEach(field => {
-                if (profileData[field] !== undefined && profileData[field] !== '') {
-                    updateData[field] = profileData[field];
-                }
-            });
-
-            // Ensure we have at least one field to update
-            if (Object.keys(updateData).length === 0) {
-                console.warn('No valid fields to update');
-                return;
-            }
-
-            await updateProfile(updateData);
-            setIsEditing(false);
-        } catch (error) {
-            console.error('Error updating profile:', error);
+    const profileCompleteness = useMemo(() => {
+        // Safety check to ensure profileData exists
+        if (!profileData || typeof profileData !== 'object') {
+            return 0;
         }
-    };
 
-    const calculateProfileCompleteness = () => {
         const fields = ['firstName', 'lastName', 'email', 'phone', 'dateOfBirth'];
         const completedFields = fields.filter(field => profileData[field]?.trim());
         return Math.round((completedFields.length / fields.length) * 100);
-    };
+    }, [profileData]);
 
-    if (isLoading) {
+    if (loading || !profileData) {
         return (
             <div className="store-card fill-card d-flex justify-content-center align-items-center" style={{ minHeight: '300px' }}>
                 <LoadingSpinner size="lg" />
+                <div className="ms-3">
+                    <p className="tc-6533 mb-0">Loading profile...</p>
+                </div>
             </div>
         );
     }
@@ -94,15 +72,15 @@ const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
             <div className="mb-4 p-3 bg-light rounded">
                 <div className="d-flex justify-content-between align-items-center mb-2">
                     <h6 className="tc-6533 mb-0">Profile Completeness</h6>
-                    <span className="badge bg-primary">{calculateProfileCompleteness()}%</span>
+                    <span className="badge bg-primary">{profileCompleteness}%</span>
                 </div>
                 <div className="progress" style={{ height: '8px' }}>
                     <div
                         className="progress-bar bg-primary"
-                        style={{ width: `${calculateProfileCompleteness()}%` }}
+                        style={{ width: `${profileCompleteness}%` }}
                     ></div>
                 </div>
-                {calculateProfileCompleteness() < 100 && (
+                {profileCompleteness < 100 && (
                     <small className="text-muted mt-1 d-block">
                         Complete your profile to unlock personalized recommendations and exclusive offers!
                     </small>
@@ -111,29 +89,26 @@ const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
 
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h3 className="tc-6533 bold-text mb-0">Personal Information</h3>
-                {!isEditing ? (
+                <div className="btn-group">
                     <button
                         className="btn btn-outline-primary btn-rd"
-                        onClick={() => setIsEditing(true)}
+                        onClick={() => window.location.href = '/profile/edit?section=profile'}
                     >
                         Edit Profile
                     </button>
-                ) : (
-                    <div>
-                        <button
-                            className="btn btn-outline-secondary btn-rd me-2"
-                            onClick={() => setIsEditing(false)}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            className="btn btn-c-2101 btn-rd"
-                            onClick={handleSaveProfile}
-                        >
-                            Save Changes
-                        </button>
-                    </div>
-                )}
+                    <button
+                        type="button"
+                        className="btn btn-outline-primary dropdown-toggle dropdown-toggle-split btn-rd"
+                        data-bs-toggle="dropdown"
+                    >
+                        <span className="visually-hidden">Toggle Dropdown</span>
+                    </button>
+                    <ul className="dropdown-menu">
+                        <li><a className="dropdown-item" href="/profile/edit?section=profile">👤 Personal Info</a></li>
+                        <li><a className="dropdown-item" href="/profile/edit?section=address">📍 Addresses</a></li>
+                        <li><a className="dropdown-item" href="/profile/edit?section=payment">💳 Payment Methods</a></li>
+                    </ul>
+                </div>
             </div>
 
             {/* Avatar Section */}
@@ -155,32 +130,17 @@ const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
                                 style={{ width: '120px', height: '120px' }}
                             >
                                 <span className="text-white h2 mb-0">
-                                    {profileData.firstName?.[0]}{profileData.lastName?.[0]}
+                                    {(profileData?.firstName || 'U')?.[0]}{(profileData?.lastName || 'U')?.[0]}
                                 </span>
                             </div>
                         )}
                     </div>
-                    {isEditing && (
-                        <div className="position-absolute bottom-0 end-0">
-                            <label className="btn btn-sm btn-primary rounded-circle" style={{ width: '36px', height: '36px' }}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-                                </svg>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleAvatarChange}
-                                    className="d-none"
-                                />
-                            </label>
-                        </div>
-                    )}
                 </div>
-                <h4 className="tc-6533 mt-3 mb-1">{profileData.firstName} {profileData.lastName}</h4>
+                <h4 className="tc-6533 mt-3 mb-1">{profileData?.firstName || 'User'} {profileData?.lastName || ''}</h4>
                 <p className="tc-6533 mb-0">TechVerse Member since 2023</p>
             </div>
 
-            {/* Profile Form */}
+            {/* Profile Form - Read Only */}
             <div className="row">
                 <div className="col-md-6 mb-3">
                     <label className="form-label tc-6533 bold-text">First Name</label>
@@ -189,8 +149,7 @@ const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
                         name="firstName"
                         className="form-control"
                         value={profileData.firstName || ''}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
+                        disabled={true}
                     />
                 </div>
                 <div className="col-md-6 mb-3">
@@ -200,8 +159,7 @@ const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
                         name="lastName"
                         className="form-control"
                         value={profileData.lastName || ''}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
+                        disabled={true}
                     />
                 </div>
                 <div className="col-md-6 mb-3">
@@ -211,8 +169,7 @@ const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
                         name="email"
                         className="form-control"
                         value={profileData.email || ''}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
+                        disabled={true}
                     />
                 </div>
                 <div className="col-md-6 mb-3">
@@ -222,8 +179,7 @@ const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
                         name="phone"
                         className="form-control"
                         value={profileData.phone || ''}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
+                        disabled={true}
                         placeholder="07700900123"
                     />
                     <small className="text-muted">Enter UK mobile number (e.g., 07700900123)</small>
@@ -235,8 +191,7 @@ const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
                         name="dateOfBirth"
                         className="form-control"
                         value={profileData.dateOfBirth || ''}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
+                        disabled={true}
                     />
                 </div>
                 <div className="col-md-6 mb-3">
@@ -245,8 +200,7 @@ const ProfileTab = ({ onPasswordChange, handleAvatarChange }) => {
                         name="gender"
                         className="form-select"
                         value={profileData.gender || 'prefer-not-to-say'}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
+                        disabled={true}
                     >
                         <option value="male">Male</option>
                         <option value="female">Female</option>

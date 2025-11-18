@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, useCart, useWishlist } from '../../context';
 import NavLink from './NavLink';
 
 const Navigation = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { isAuthenticated, user, logout, isAdmin } = useAuth();
     const { itemCount } = useCart();
     const { getWishlistCount } = useWishlist();
@@ -12,7 +13,7 @@ const Navigation = () => {
 
     // Debug logging removed for cleaner console
 
-    const wishlistCount = getWishlistCount();
+    const wishlistCount = isAuthenticated ? getWishlistCount() : 0;
 
     const handleLogout = async () => {
         try {
@@ -63,7 +64,11 @@ const Navigation = () => {
                                             Home
                                         </NavLink>
 
-                                        <NavLink to="/category">
+                                        <NavLink to="/categories">
+                                            Categories
+                                        </NavLink>
+
+                                        <NavLink to="/products">
                                             Products
                                         </NavLink>
 
@@ -75,36 +80,26 @@ const Navigation = () => {
                                         )}
 
                                         {/* Cart with item count */}
-                                        <li className="nav-item">
-                                            <Link
-                                                to="/cart"
-                                                className="nav-link ltc-2175 position-relative"
-                                            >
-                                                Cart
-                                                {itemCount > 0 && (
-                                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                                        {itemCount > 99 ? '99+' : itemCount}
-                                                        <span className="visually-hidden">items in cart</span>
-                                                    </span>
-                                                )}
-                                            </Link>
-                                        </li>
+                                        <NavLink to="/cart" className="ltc-2175 position-relative">
+                                            Cart
+                                            {itemCount > 0 && (
+                                                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                                    {itemCount > 99 ? '99+' : itemCount}
+                                                    <span className="visually-hidden">items in cart</span>
+                                                </span>
+                                            )}
+                                        </NavLink>
 
                                         {/* Wishlist with item count */}
-                                        <li className="nav-item">
-                                            <Link
-                                                to="/wishlist"
-                                                className="nav-link ltc-2175 position-relative"
-                                            >
-                                                Wishlist
-                                                {wishlistCount > 0 && (
-                                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">
-                                                        {wishlistCount > 99 ? '99+' : wishlistCount}
-                                                        <span className="visually-hidden">items in wishlist</span>
-                                                    </span>
-                                                )}
-                                            </Link>
-                                        </li>
+                                        <NavLink to="/wishlist" className="ltc-2175 position-relative">
+                                            Wishlist
+                                            {wishlistCount > 0 && (
+                                                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">
+                                                    {wishlistCount > 99 ? '99+' : wishlistCount}
+                                                    <span className="visually-hidden">items in wishlist</span>
+                                                </span>
+                                            )}
+                                        </NavLink>
 
                                         {/* Authentication Links */}
                                         {isAuthenticated ? (
@@ -112,7 +107,7 @@ const Navigation = () => {
                                                 {/* User Profile Dropdown */}
                                                 <li className="nav-item dropdown">
                                                     <a
-                                                        className="nav-link dropdown-toggle ltc-2175"
+                                                        className={`nav-link dropdown-toggle ltc-2175 ${location.pathname.startsWith('/profile') || location.pathname.startsWith('/user') ? 'active-page-link' : ''}`}
                                                         href="#"
                                                         role="button"
                                                         data-bs-toggle="dropdown"
@@ -129,26 +124,26 @@ const Navigation = () => {
                                                                         Admin Panel
                                                                     </Link>
                                                                 </li>
+                                                                <li>
+                                                                    <Link className="dropdown-item" to="/admin/reviews" style={{ color: '#212529', padding: '0.5rem 1rem' }}>
+                                                                        <i className="fas fa-star me-2"></i>
+                                                                        Review Management
+                                                                    </Link>
+                                                                </li>
                                                                 <li><hr className="dropdown-divider" /></li>
                                                             </>
                                                         ) : (
                                                             <>
                                                                 <li>
-                                                                    <Link className="dropdown-item" to="/user" style={{ color: '#212529', padding: '0.5rem 1rem' }}>
+                                                                    <Link className="dropdown-item" to="/profile" style={{ color: '#212529', padding: '0.5rem 1rem', display: 'block' }}>
                                                                         <i className="fas fa-user me-2"></i>
                                                                         Profile
                                                                     </Link>
                                                                 </li>
                                                                 <li>
-                                                                    <Link className="dropdown-item" to="/user/orders" style={{ color: '#212529', padding: '0.5rem 1rem' }}>
+                                                                    <Link className="dropdown-item" to="/profile?tab=orders" style={{ color: '#212529', padding: '0.5rem 1rem', display: 'block' }}>
                                                                         <i className="fas fa-shopping-bag me-2"></i>
                                                                         Orders
-                                                                    </Link>
-                                                                </li>
-                                                                <li>
-                                                                    <Link className="dropdown-item" to="/user/addresses" style={{ color: '#212529', padding: '0.5rem 1rem' }}>
-                                                                        <i className="fas fa-map-marker-alt me-2"></i>
-                                                                        Addresses
                                                                     </Link>
                                                                 </li>
                                                                 <li><hr className="dropdown-divider" /></li>

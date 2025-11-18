@@ -1,71 +1,81 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth, useCart } from '../context';
+import wishlistService from '../api/services/wishlistService';
+import { LoadingSpinner, Toast } from '../components/Common';
+import { RelatedProducts } from '../components';
 
 const Wishlist = () => {
-    const [activeCategory, setActiveCategory] = useState('all');
-    const [viewMode, setViewMode] = useState('grid'); // grid or list
-    const [sortBy, setSortBy] = useState('dateAdded');
-    const [showPriceAlerts, setShowPriceAlerts] = useState(false);
-    const [selectedItems, setSelectedItems] = useState([]);
+    const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
+    const { addToCart } = useCart();
     
-    const [wishlistCategories] = useState([
-        { id: 'all', name: 'All Items', count: 3 },
-        { id: 'default', name: 'My Wishlist', count: 2 },
-        { id: 'gifts', name: 'Gift Ideas', count: 1 },
-        { id: 'price-watch', name: 'Price Watch', count: 2 }
-    ]);
+    const [wishlistItems, setWishlistItems] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [activeCategory, setActiveCategory] = useState('all');
+    const [viewMode, setViewMode] = useState('grid');
+    const [sortBy, setSortBy] = useState('dateAdded');
+    const [selectedItems, setSelectedItems] = useState([]);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [toast, setToast] = useState(null);
 
-    const [wishlistItems, setWishlistItems] = useState([
-        {
-            id: 1,
-            name: 'Ultra HD QLED TV',
-            price: 2999,
-            originalPrice: 3499,
-            discount: 15,
-            image: 'img/tv-product.jpg',
-            imageWebp: 'img/tv-product.webp',
-            inStock: true,
-            rating: 4.8,
-            reviews: 124,
-            category: 'default',
-            dateAdded: '2024-01-15',
-            priceAlert: { enabled: true, targetPrice: 2500, currentPrice: 2999 },
-            lastPriceChange: { date: '2024-01-10', oldPrice: 3200, newPrice: 2999 }
-        },
-        {
-            id: 2,
-            name: 'Phone Ultra',
-            price: 999,
-            originalPrice: 1099,
-            discount: 9,
-            image: 'img/phone-product.jpg',
-            imageWebp: 'img/phone-product.webp',
-            inStock: true,
-            rating: 4.9,
-            reviews: 89,
-            category: 'gifts',
-            dateAdded: '2024-01-12',
-            priceAlert: { enabled: false, targetPrice: null, currentPrice: 999 },
-            lastPriceChange: null
-        },
-        {
-            id: 3,
-            name: 'Laptop Pro',
-            price: 2599,
-            originalPrice: null,
-            discount: 0,
-            image: 'img/laptop-product.jpg',
-            imageWebp: 'img/laptop-product.webp',
-            inStock: false,
-            rating: 4.7,
-            reviews: 156,
-            category: 'price-watch',
-            dateAdded: '2024-01-08',
-            priceAlert: { enabled: true, targetPrice: 2400, currentPrice: 2599 },
-            lastPriceChange: null,
-            stockAlert: true
+    // Redirect to login if not authenticated
+    useEffect(() => {
+        if (!isAuthenticated) {
+            navigate('/login', { 
+                state: { 
+                    from: { pathname: '/wishlist' },
+                    message: 'Please login to view your wishlist'
+                }
+            });
         }
-    ]);
+    }, [isAuthenticated, navigate]);
+
+    // Load wishlist from API
+    const loadWishlist = useCallback(async () => {
+        if (!isAuthenticated) return;
+
+        try {
+            setIsLoading(true);
+            setError(null);
+            const response = await wishlistService.getWishlist();
+            const items = response.data?.items || [];
+            
+            // Transform API data to match UI format
+            const transformedItems = items.map(item => ({
+                id: item._id,
+                _id: item._id,
+                productId: item.product?._id,
+                name: item.product?.name || 'Unknown Product',
+                price: item.product?.finalPrice || item.product?.price || 0,
+                originalPrice: item.product?.compareAtPrice,
+                discount: item.product?.discountPercentage || 0,
+                image: item.product?.primaryImage?.url || item.product?.images?.[0]?.url || 'img/placeholder.jpg',
+                imageWebp: item.product?.primaryImage?.url || item.product?.images?.[0]?.url || 'img/placeholder.jpg',
+                inStock: item.product?.stockStatus !== 'out_of_stock',
+                rating: item.product?.rating?.average || 0,
+                reviews: item.product?.rating?.count || 0,
+                dateAdded: item.addedAt,
+                priceWhenAdded: item.priceWhenAdded,
+                notes: item.notes,
+                options: item.options || {},
+                product: item.product
+            }));
+
+            setWishlistItems(transformedItems);
+        } catch (err) {
+            console.error('Error loading wishlist:', err);
+            setError('Failed to load wishlist. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [isAuthenticated]);
+
+    // Load wishlist on mount
+    useEffect(() => {
+        loadWishlist();
+    }, [loadWishlist]);
 
     // Filter and sort items
     const getFilteredItems = () => {
@@ -96,25 +106,6 @@ const Wishlist = () => {
         return filtered;
     };
 
-    const removeFromWishlist = (id) => {
-        setWishlistItems(items => items.filter(item => item.id !== id));
-        setSelectedItems(selected => selected.filter(itemId => itemId !== id));
-    };
-
-    const addToCart = (item) => {
-        console.log('Adding to cart:', item);
-        alert(`${item.name} added to cart!`);
-    };
-
-    const moveAllToCart = () => {
-        const itemsToMove = selectedItems.length > 0 
-            ? wishlistItems.filter(item => selectedItems.includes(item.id) && item.inStock)
-            : wishlistItems.filter(item => item.inStock);
-        
-        console.log('Moving to cart:', itemsToMove);
-        alert(`${itemsToMove.length} items added to cart!`);
-    };
-
     const toggleItemSelection = (id) => {
         setSelectedItems(prev => 
             prev.includes(id) 
@@ -132,39 +123,6 @@ const Wishlist = () => {
         setSelectedItems([]);
     };
 
-    const togglePriceAlert = (id) => {
-        setWishlistItems(items => 
-            items.map(item => 
-                item.id === id 
-                    ? { 
-                        ...item, 
-                        priceAlert: { 
-                            ...item.priceAlert, 
-                            enabled: !item.priceAlert.enabled 
-                        } 
-                    }
-                    : item
-            )
-        );
-    };
-
-    const setPriceAlertTarget = (id, targetPrice) => {
-        setWishlistItems(items => 
-            items.map(item => 
-                item.id === id 
-                    ? { 
-                        ...item, 
-                        priceAlert: { 
-                            ...item.priceAlert, 
-                            targetPrice: parseFloat(targetPrice),
-                            enabled: true
-                        } 
-                    }
-                    : item
-            )
-        );
-    };
-
     const moveToCategory = (itemId, newCategory) => {
         setWishlistItems(items => 
             items.map(item => 
@@ -173,12 +131,203 @@ const Wishlist = () => {
         );
     };
 
+    // Simplified categories - just show all items for now
+    const wishlistCategories = [
+        { id: 'all', name: 'All Items', count: wishlistItems.length }
+    ];
+
+    const removeFromWishlist = useCallback(async (id) => {
+        try {
+            setIsUpdating(true);
+            const item = wishlistItems.find(i => i.id === id);
+            await wishlistService.removeFromWishlist(item.productId);
+            setWishlistItems(items => items.filter(item => item.id !== id));
+            setSelectedItems(selected => selected.filter(itemId => itemId !== id));
+            setToast({
+                message: 'Item removed from wishlist',
+                type: 'success'
+            });
+        } catch (error) {
+            console.error('Error removing from wishlist:', error);
+            setToast({
+                message: 'Failed to remove item. Please try again.',
+                type: 'error'
+            });
+        } finally {
+            setIsUpdating(false);
+        }
+    }, [wishlistItems]);
+
+    const handleAddToCart = useCallback(async (item) => {
+        if (!item.inStock) {
+            setToast({
+                message: 'This product is currently out of stock.',
+                type: 'warning'
+            });
+            return;
+        }
+
+        try {
+            setIsUpdating(true);
+            // Use stored options from wishlist item
+            const options = item.options || {};
+            await addToCart(item.productId, 1, options);
+            
+            // Remove from wishlist after successfully adding to cart
+            await wishlistService.removeFromWishlist(item.productId);
+            setWishlistItems(items => items.filter(i => i.id !== item.id));
+            setSelectedItems(selected => selected.filter(itemId => itemId !== item.id));
+            
+            // Build options display string
+            const optionsText = Object.keys(options).length > 0 
+                ? ` (${Object.entries(options).map(([key, value]) => `${key}: ${value}`).join(', ')})`
+                : '';
+            
+            setToast({
+                message: `${item.name}${optionsText} added to cart!`,
+                type: 'success',
+                action: {
+                    label: 'View Cart',
+                    path: '/cart'
+                }
+            });
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            setToast({
+                message: error.response?.data?.message || 'Failed to add to cart. Please try again.',
+                type: 'error'
+            });
+        } finally {
+            setIsUpdating(false);
+        }
+    }, [addToCart]);
+
+    const moveAllToCart = useCallback(async () => {
+        const itemsToMove = selectedItems.length > 0 
+            ? wishlistItems.filter(item => selectedItems.includes(item.id) && item.inStock)
+            : wishlistItems.filter(item => item.inStock);
+        
+        if (itemsToMove.length === 0) {
+            setToast({
+                message: 'No items available to add to cart.',
+                type: 'warning'
+            });
+            return;
+        }
+
+        try {
+            setIsUpdating(true);
+            let successCount = 0;
+            const successfullyAddedIds = [];
+            
+            for (const item of itemsToMove) {
+                try {
+                    // Use stored options from wishlist item
+                    const options = item.options || {};
+                    await addToCart(item.productId, 1, options);
+                    successCount++;
+                    successfullyAddedIds.push(item.id);
+                } catch (error) {
+                    console.error(`Failed to add ${item.name}:`, error);
+                }
+            }
+            
+            // Remove successfully added items from wishlist
+            if (successfullyAddedIds.length > 0) {
+                for (const itemId of successfullyAddedIds) {
+                    const item = wishlistItems.find(i => i.id === itemId);
+                    if (item) {
+                        try {
+                            await wishlistService.removeFromWishlist(item.productId);
+                        } catch (error) {
+                            console.error(`Failed to remove ${item.name} from wishlist:`, error);
+                        }
+                    }
+                }
+                
+                // Update local state
+                setWishlistItems(items => items.filter(item => !successfullyAddedIds.includes(item.id)));
+                setSelectedItems([]);
+            }
+            
+            if (successCount > 0) {
+                setToast({
+                    message: `${successCount} of ${itemsToMove.length} items added to cart!`,
+                    type: 'success',
+                    action: {
+                        label: 'View Cart',
+                        path: '/cart'
+                    }
+                });
+            } else {
+                setToast({
+                    message: 'Failed to add items to cart. Please try again.',
+                    type: 'error'
+                });
+            }
+        } catch (error) {
+            console.error('Error moving items to cart:', error);
+            setToast({
+                message: 'Failed to add items to cart. Please try again.',
+                type: 'error'
+            });
+        } finally {
+            setIsUpdating(false);
+        }
+    }, [wishlistItems, selectedItems, addToCart]);
+
     const filteredItems = getFilteredItems();
+
+    // Loading state
+    if (isLoading) {
+        return (
+            <div className="bloc bgc-5700 full-width-bloc l-bloc" id="wishlist-loading">
+                <div className="container bloc-md bloc-lg-md">
+                    <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                        <LoadingSpinner size="lg" />
+                        <div className="ms-3">
+                            <p className="tc-6533">Loading your wishlist...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="bloc bgc-5700 full-width-bloc l-bloc" id="wishlist-error">
+                <div className="container bloc-md bloc-lg-md">
+                    <div className="alert alert-danger mt-5">
+                        <h4>Error Loading Wishlist</h4>
+                        <p>{error}</p>
+                        <button className="btn btn-primary" onClick={loadWishlist}>
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bloc bgc-5700 full-width-bloc l-bloc" id="wishlist-bloc">
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    action={toast.action}
+                    onClose={() => setToast(null)}
+                />
+            )}
             <div className="container bloc-md bloc-lg-md">
-                <div className="row">
+                <div className="row position-relative">
+                    {isUpdating && (
+                        <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75" style={{ zIndex: 1000 }}>
+                            <LoadingSpinner size="lg" />
+                        </div>
+                    )}
                     {/* Page Header */}
                     <div className="col-12 mb-4">
                         <div className="d-flex justify-content-between align-items-center flex-wrap">
@@ -282,68 +431,6 @@ const Wishlist = () => {
                                 </div>
                             </div>
 
-                            {/* Price Alerts Summary */}
-                            <div className="col-12 mb-4">
-                                <div className="store-card fill-card">
-                                    <div className="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 className="tc-6533 mb-1">Price Alerts</h6>
-                                            <small className="text-muted">
-                                                {wishlistItems.filter(item => item.priceAlert?.enabled).length} active alerts • 
-                                                {wishlistItems.filter(item => item.lastPriceChange).length} recent price changes
-                                            </small>
-                                        </div>
-                                        <button
-                                            className="btn btn-sm btn-outline-info"
-                                            onClick={() => setShowPriceAlerts(!showPriceAlerts)}
-                                        >
-                                            {showPriceAlerts ? 'Hide' : 'Show'} Alerts
-                                        </button>
-                                    </div>
-                                    
-                                    {showPriceAlerts && (
-                                        <div className="mt-3 pt-3 border-top">
-                                            {wishlistItems.filter(item => item.priceAlert?.enabled || item.lastPriceChange).map(item => (
-                                                <div key={item.id} className="d-flex justify-content-between align-items-center mb-2">
-                                                    <div className="d-flex align-items-center">
-                                                        <img src={item.image} alt={item.name} width="40" height="40" className="rounded me-3"/>
-                                                        <div>
-                                                            <h6 className="mb-0">{item.name}</h6>
-                                                            {item.priceAlert?.enabled && (
-                                                                <small className="text-info">
-                                                                    Alert at £{item.priceAlert.targetPrice} (Current: £{item.price})
-                                                                </small>
-                                                            )}
-                                                            {item.lastPriceChange && (
-                                                                <small className="text-success d-block">
-                                                                    Price dropped from £{item.lastPriceChange.oldPrice} to £{item.lastPriceChange.newPrice}
-                                                                </small>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="d-flex gap-1">
-                                                        <button 
-                                                            className="btn btn-sm btn-outline-primary"
-                                                            onClick={() => {
-                                                                const newTarget = prompt('Set price alert target:', item.priceAlert?.targetPrice || item.price * 0.9);
-                                                                if (newTarget) setPriceAlertTarget(item.id, newTarget);
-                                                            }}
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                        <button 
-                                                            className={`btn btn-sm ${item.priceAlert?.enabled ? 'btn-warning' : 'btn-success'}`}
-                                                            onClick={() => togglePriceAlert(item.id)}
-                                                        >
-                                                            {item.priceAlert?.enabled ? 'Disable' : 'Enable'}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
                         </>
                     )}
 
@@ -425,19 +512,6 @@ const Wishlist = () => {
                                                                     -{item.discount}%
                                                                 </span>
                                                             )}
-                                                            {item.priceAlert?.enabled && (
-                                                                <span className="badge bg-info mb-1 d-block">
-                                                                    <svg width="12" height="12" viewBox="0 0 24 24" className="me-1">
-                                                                        <path fill="white" d="M16,6L18.29,8.29L13.41,13.17L9.41,9.17L2,16.59L3.41,18L9.41,12L13.41,16L19.71,9.71L22,12V6H16Z"/>
-                                                                    </svg>
-                                                                    Alert
-                                                                </span>
-                                                            )}
-                                                            {item.lastPriceChange && (
-                                                                <span className="badge bg-success mb-1 d-block">
-                                                                    Price Drop!
-                                                                </span>
-                                                            )}
                                                         </div>
 
                                                         {/* Stock Status */}
@@ -474,14 +548,18 @@ const Wishlist = () => {
                                                                     £{item.originalPrice}
                                                                 </span>
                                                             )}
-                                                            {item.priceAlert?.enabled && (
-                                                                <div className="mt-1">
-                                                                    <small className="text-info">
-                                                                        Target: £{item.priceAlert.targetPrice}
-                                                                    </small>
-                                                                </div>
-                                                            )}
                                                         </div>
+
+                                                        {/* Variant Options */}
+                                                        {item.options && Object.keys(item.options).length > 0 && (
+                                                            <div className="mb-3">
+                                                                {Object.entries(item.options).map(([key, value]) => (
+                                                                    <small key={key} className="d-block text-muted">
+                                                                        <strong>{key}:</strong> {value}
+                                                                    </small>
+                                                                ))}
+                                                            </div>
+                                                        )}
 
                                                         {/* Category & Date */}
                                                         <div className="mb-3">
@@ -497,9 +575,10 @@ const Wishlist = () => {
                                                                 {item.inStock ? (
                                                                     <button
                                                                         className="btn btn-c-2101 btn-rd flex-fill"
-                                                                        onClick={() => addToCart(item)}
+                                                                        onClick={() => handleAddToCart(item)}
+                                                                        disabled={isUpdating}
                                                                     >
-                                                                        Add to Cart
+                                                                        {isUpdating ? 'Adding...' : 'Add to Cart'}
                                                                     </button>
                                                                 ) : (
                                                                     <button className="btn btn-outline-secondary btn-rd flex-fill" disabled>
@@ -507,41 +586,13 @@ const Wishlist = () => {
                                                                     </button>
                                                                 )}
                                                                 
-                                                                <div className="dropdown">
-                                                                    <button className="btn btn-outline-secondary btn-rd" data-bs-toggle="dropdown">
-                                                                        ⋮
-                                                                    </button>
-                                                                    <ul className="dropdown-menu">
-                                                                        <li><h6 className="dropdown-header">Move to Category</h6></li>
-                                                                        {wishlistCategories.filter(cat => cat.id !== 'all' && cat.id !== item.category).map(cat => (
-                                                                            <li key={cat.id}>
-                                                                                <button 
-                                                                                    className="dropdown-item"
-                                                                                    onClick={() => moveToCategory(item.id, cat.id)}
-                                                                                >
-                                                                                    {cat.name}
-                                                                                </button>
-                                                                            </li>
-                                                                        ))}
-                                                                        <li><hr className="dropdown-divider" /></li>
-                                                                        <li>
-                                                                            <button 
-                                                                                className="dropdown-item"
-                                                                                onClick={() => togglePriceAlert(item.id)}
-                                                                            >
-                                                                                {item.priceAlert?.enabled ? 'Disable' : 'Enable'} Price Alert
-                                                                            </button>
-                                                                        </li>
-                                                                        <li>
-                                                                            <button 
-                                                                                className="dropdown-item text-danger"
-                                                                                onClick={() => removeFromWishlist(item.id)}
-                                                                            >
-                                                                                Remove from Wishlist
-                                                                            </button>
-                                                                        </li>
-                                                                    </ul>
-                                                                </div>
+                                                                <button 
+                                                                    className="btn btn-outline-danger btn-rd"
+                                                                    onClick={() => removeFromWishlist(item.id)}
+                                                                    disabled={isUpdating}
+                                                                >
+                                                                    Remove
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -595,9 +646,13 @@ const Wishlist = () => {
                                                                 </small>
                                                             </div>
                                                         )}
-                                                        {item.priceAlert?.enabled && (
-                                                            <div>
-                                                                <small className="text-info">Alert: £{item.priceAlert.targetPrice}</small>
+                                                        {item.options && Object.keys(item.options).length > 0 && (
+                                                            <div className="mt-1">
+                                                                {Object.entries(item.options).map(([key, value]) => (
+                                                                    <small key={key} className="d-block text-muted">
+                                                                        {key}: {value}
+                                                                    </small>
+                                                                ))}
                                                             </div>
                                                         )}
                                                     </div>
@@ -607,47 +662,29 @@ const Wishlist = () => {
                                                         ) : (
                                                             <span className="badge bg-success">In Stock</span>
                                                         )}
-                                                        {item.priceAlert?.enabled && (
-                                                            <span className="badge bg-info d-block mt-1">Price Alert</span>
-                                                        )}
                                                     </div>
                                                     <div className="col-md-2 col-12 mt-2 mt-md-0">
                                                         <div className="d-flex gap-1">
                                                             {item.inStock ? (
                                                                 <button
                                                                     className="btn btn-sm btn-c-2101 btn-rd"
-                                                                    onClick={() => addToCart(item)}
+                                                                    onClick={() => handleAddToCart(item)}
+                                                                    disabled={isUpdating}
                                                                 >
-                                                                    Add to Cart
+                                                                    {isUpdating ? 'Adding...' : 'Add to Cart'}
                                                                 </button>
                                                             ) : (
                                                                 <button className="btn btn-sm btn-outline-secondary btn-rd" disabled>
                                                                     Notify
                                                                 </button>
                                                             )}
-                                                            <div className="dropdown">
-                                                                <button className="btn btn-sm btn-outline-secondary btn-rd" data-bs-toggle="dropdown">
-                                                                    ⋮
-                                                                </button>
-                                                                <ul className="dropdown-menu">
-                                                                    <li>
-                                                                        <button 
-                                                                            className="dropdown-item"
-                                                                            onClick={() => togglePriceAlert(item.id)}
-                                                                        >
-                                                                            {item.priceAlert?.enabled ? 'Disable' : 'Enable'} Alert
-                                                                        </button>
-                                                                    </li>
-                                                                    <li>
-                                                                        <button 
-                                                                            className="dropdown-item text-danger"
-                                                                            onClick={() => removeFromWishlist(item.id)}
-                                                                        >
-                                                                            Remove
-                                                                        </button>
-                                                                    </li>
-                                                                </ul>
-                                                            </div>
+                                                            <button 
+                                                                className="btn btn-sm btn-outline-danger btn-rd"
+                                                                onClick={() => removeFromWishlist(item.id)}
+                                                                disabled={isUpdating}
+                                                            >
+                                                                Remove
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -657,42 +694,10 @@ const Wishlist = () => {
                                 ))}
                             </div>
 
-                            {/* Recommendations */}
+                            {/* Related Products */}
                             <div className="row mt-5">
                                 <div className="col-12">
-                                    <div className="store-card fill-card">
-                                        <h4 className="tc-6533 mb-4 bold-text">You might also like</h4>
-                                        <div className="row">
-                                            <div className="col-md-3 col-6 mb-3">
-                                                <div className="text-center">
-                                                    <img src="img/tablet-product.jpg" className="img-fluid rounded mb-2" alt="Tablet" />
-                                                    <h6 className="tc-6533">Tablet Air</h6>
-                                                    <p className="tc-2101 bold-text">£899</p>
-                                                </div>
-                                            </div>
-                                            <div className="col-md-3 col-6 mb-3">
-                                                <div className="text-center">
-                                                    <img src="img/phone-product.jpg" className="img-fluid rounded mb-2" alt="Phone" />
-                                                    <h6 className="tc-6533">Phone Pro</h6>
-                                                    <p className="tc-2101 bold-text">£999</p>
-                                                </div>
-                                            </div>
-                                            <div className="col-md-3 col-6 mb-3">
-                                                <div className="text-center">
-                                                    <img src="img/laptop-product.jpg" className="img-fluid rounded mb-2" alt="Laptop" />
-                                                    <h6 className="tc-6533">Laptop Air</h6>
-                                                    <p className="tc-2101 bold-text">£1299</p>
-                                                </div>
-                                            </div>
-                                            <div className="col-md-3 col-6 mb-3">
-                                                <div className="text-center">
-                                                    <img src="img/tv-product.jpg" className="img-fluid rounded mb-2" alt="TV" />
-                                                    <h6 className="tc-6533">HD TV</h6>
-                                                    <p className="tc-2101 bold-text">£1999</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <RelatedProducts />
                                 </div>
                             </div>
                         </div>

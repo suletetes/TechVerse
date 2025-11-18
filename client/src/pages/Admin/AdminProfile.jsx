@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, useAdmin } from '../../context';
-import { LoadingSpinner } from '../../components/Common';
+import API_BASE_URL from '../../api/config.js';
+import { LoadingSpinner, Toast } from '../../components/Common';
+import { tokenManager } from '../../utils/tokenManager.js';
 import {
     AdminSidebar,
-    AdminHeader,
+    // AdminHeader removed
     AdminDashboard,
     AdminProducts,
     AdminOrders,
@@ -16,11 +18,17 @@ import {
     AdminSettings,
     AdminNotifications,
     AdminAnalytics,
-    AdminActivityLog,
+    // AdminActivityLog,
     AdminSecurity,
     AdminProfileSettings
 } from "../../components";
-import AdminDashboardSimple from "../../components/Admin/AdminDashboardSimple";
+import AdminProductsNew from "../../components/Admin/AdminProductsNew";
+import AdminOrdersNew from "../../components/Admin/AdminOrdersNew";
+import AdminUsersNew from "../../components/Admin/AdminUsersNew";
+import AdminDashboardBright from "../../components/Admin/AdminDashboardBright";
+
+import { adminDataStore } from "../../utils/AdminDataStore";
+import { ensureCsrfToken } from "../../utils/csrfUtils";
 
 // Import admin-specific CSS
 import '../../assets/css/admin-enhancements.css';
@@ -84,10 +92,13 @@ const AdminProfile = () => {
         clearError
     } = useAdmin();
 
+    // Debug categories - REMOVED TO ELIMINATE LOG SPAM
+
     // Local state
     const [activeTab, setActiveTab] = useState('dashboard');
     const [editProductId, setEditProductId] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [localCategories, setLocalCategories] = useState([]);
     const [dateRange, setDateRange] = useState('7days');
 
     // Additional state for missing variables
@@ -108,6 +119,7 @@ const AdminProfile = () => {
         newPassword: '',
         confirmPassword: ''
     });
+    const [toast, setToast] = useState(null);
 
     // Check authentication and admin access
     useEffect(() => {
@@ -131,13 +143,62 @@ const AdminProfile = () => {
         }
     }, [isAuthenticated, isAdmin, navigate]);
 
-    // Load initial data
+    // Sync categories from context to local state
+    useEffect(() => {
+        if (categories && Array.isArray(categories) && categories.length > 0) {
+            setLocalCategories(categories);
+        }
+    }, [categories]);
+
+    // Load categories when needed for add/edit product
+    useEffect(() => {
+        if ((activeTab === 'add-product' || activeTab === 'edit-product') && 
+            !isCategoriesLoading && 
+            (!categories || categories.length === 0)) {
+            console.log('📂 Loading categories for product form...');
+            loadCategories();
+        }
+    }, [activeTab, isCategoriesLoading, categories, loadCategories]);
+
+    // Load initial data - only on mount
     useEffect(() => {
         if (isAuthenticated && isAdmin()) {
             loadDashboardStats({ period: dateRange });
             loadCategories();
+            
+            // Ensure CSRF token is available for admin operations
+            ensureCsrfToken().then(token => {
+                if (token) {
+                    console.log('✅ CSRF token ready for admin operations');
+                } else {
+                    console.warn('⚠️ Failed to get CSRF token');
+                }
+            });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAuthenticated, isAdmin, dateRange]);
+
+    // Sync categories from AdminDataStore - only update local state, don't trigger loads
+    useEffect(() => {
+        const storedCategories = adminDataStore.getData('categories');
+        
+        if (Array.isArray(storedCategories) && storedCategories.length > 0) {
+            setLocalCategories(storedCategories);
+        } else if (Array.isArray(categories) && categories.length > 0) {
+            setLocalCategories(categories);
+        } else {
+            setLocalCategories([]);
+        }
+
+        // Listen for category updates from AdminDataStore
+        const unsubscribe = adminDataStore.addListener('categories', (data) => {
+            if (data.data && data.data.length > 0) {
+                setLocalCategories(data.data);
+            }
+        });
+
+        return unsubscribe;
+    }, [categories]);
 
     // Load data based on active tab
     useEffect(() => {
@@ -145,15 +206,18 @@ const AdminProfile = () => {
 
         switch (activeTab) {
             case 'products':
+                // AdminProductsNew handles its own data loading
+                break;
             case 'add-product':
             case 'edit-product':
-                loadAdminProducts();
+                loadAdminProducts(); // Still needed for edit product
+                loadCategories(); // Load categories for product form
                 break;
             case 'orders':
-                loadAdminOrders();
+                // AdminOrdersNew handles its own data loading
                 break;
             case 'users':
-                loadAdminUsers();
+                // AdminUsersNew handles its own data loading
                 break;
             case 'analytics':
                 loadAnalytics();
@@ -184,9 +248,9 @@ const AdminProfile = () => {
 
     // Utility functions - memoized to prevent re-creation
     const formatCurrency = useMemo(() => (amount) => {
-        return new Intl.NumberFormat('en-GB', {
+        return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: 'GBP'
+            currency: 'USD'
         }).format(amount || 0);
     }, []);
 
@@ -246,6 +310,24 @@ const AdminProfile = () => {
         setActiveTab('edit-product');
     };
 
+    const handleDuplicateProduct = async (product) => {
+        try {
+            const duplicatedProduct = {
+                ...product,
+                name: `${product.name} (Copy)`,
+                sku: `${product.sku || 'SKU'}-COPY-${Date.now()}`,
+                status: 'draft'
+            };
+            delete duplicatedProduct._id;
+            delete duplicatedProduct.id;
+            
+            await createProduct(duplicatedProduct);
+            console.log('Product duplicated successfully');
+        } catch (error) {
+            console.error('Error duplicating product:', error);
+        }
+    };
+
     const handleSaveCategory = async (categoryData) => {
         try {
             if (categoryData.id) {
@@ -293,21 +375,86 @@ const AdminProfile = () => {
 
     const handleSaveAdminProfile = async () => {
         try {
-            // Here you would typically call an API to save the profile
             console.log('Saving admin profile:', adminProfileData);
-            setIsEditingProfile(false);
-            // You can add actual API call here
+            
+            // API call with proper error handling
+            const token = tokenManager.getToken();
+            if (!token) {
+                throw new Error('No authentication token found. Please log in again.');
+            }
+
+            const response = await fetch(`${API_BASE_URL}/admin/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(adminProfileData)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                // Update the admin profile data with the returned profile
+                if (result.success && result.data && result.data.profile) {
+                    setAdminProfileData(result.data.profile);
+                }
+                setIsEditingProfile(false);
+                
+                // Show success message
+                setToast({
+                    message: 'Admin profile updated successfully!',
+                    type: 'success'
+                });
+                console.log('✅ Admin profile saved successfully');
+            } else {
+                const errorData = await response.json();
+                throw new Error(`Failed to update profile: ${response.status} - ${errorData.message || 'Unknown error'}`);
+            }
         } catch (error) {
-            console.error('Error saving admin profile:', error);
+            console.error('❌ Error saving admin profile:', error);
+            
+            // For now, still allow the edit to complete (since backend might not be ready)
+            setIsEditingProfile(false);
+            setToast({
+                message: 'Profile updated locally. Note: Backend integration needed for persistence.',
+                type: 'warning'
+            });
         }
     };
 
     const handleAdminAvatarChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            // Handle avatar upload
             console.log('Avatar file selected:', file);
-            // You can add actual file upload logic here
+            
+            // Validate file type and size
+            if (!file.type.startsWith('image/')) {
+                setToast({
+                    message: 'Please select an image file',
+                    type: 'error'
+                });
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                setToast({
+                    message: 'File size must be less than 5MB',
+                    type: 'error'
+                });
+                return;
+            }
+            
+            // Create preview URL
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                setAdminProfileData(prev => ({
+                    ...prev,
+                    avatar: event.target.result
+                }));
+            };
+            reader.readAsDataURL(file);
+            
+            console.log('✅ Avatar preview updated');
         }
     };
 
@@ -319,22 +466,100 @@ const AdminProfile = () => {
         }));
     };
 
-    const handlePasswordChange = async () => {
+    const handlePasswordChange = async (e) => {
+        e.preventDefault();
+        
         try {
-            if (passwordData.newPassword !== passwordData.confirmPassword) {
-                alert('New passwords do not match');
+            // Validation
+            if (!passwordData.currentPassword) {
+                setToast({
+                    message: 'Please enter your current password',
+                    type: 'error'
+                });
                 return;
             }
-            // Here you would typically call an API to change the password
-            console.log('Changing password...');
+            
+            if (!passwordData.newPassword) {
+                setToast({
+                    message: 'Please enter a new password',
+                    type: 'error'
+                });
+                return;
+            }
+            
+            if (passwordData.newPassword.length < 6) {
+                setToast({
+                    message: 'New password must be at least 6 characters long',
+                    type: 'error'
+                });
+                return;
+            }
+            
+            if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(passwordData.newPassword)) {
+                setToast({
+                    message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+                    type: 'error'
+                });
+                return;
+            }
+            
+            if (passwordData.newPassword !== passwordData.confirmPassword) {
+                setToast({
+                    message: 'New passwords do not match',
+                    type: 'error'
+                });
+                return;
+            }
+            
+            if (passwordData.currentPassword === passwordData.newPassword) {
+                setToast({
+                    message: 'New password must be different from current password',
+                    type: 'error'
+                });
+                return;
+            }
+            
+            // Get CSRF token
+            const csrfToken = await ensureCsrfToken();
+            
+            // Call API to change password
+            const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${tokenManager.getToken()}`,
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({
+                    currentPassword: passwordData.currentPassword,
+                    newPassword: passwordData.newPassword
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to change password');
+            }
+            
+            // Clear form
             setPasswordData({
                 currentPassword: '',
                 newPassword: '',
                 confirmPassword: ''
             });
-            alert('Password changed successfully');
+            
+            setToast({
+                message: 'Password changed successfully! You will receive a confirmation email.',
+                type: 'success'
+            });
+            
         } catch (error) {
             console.error('Error changing password:', error);
+            setToast({
+                message: error.message || 'Failed to change password. Please try again.',
+                type: 'error'
+            });
         }
     };
 
@@ -346,39 +571,31 @@ const AdminProfile = () => {
     const renderActiveTab = () => {
         switch (activeTab) {
             case 'dashboard':
-                return <AdminDashboardSimple />;
+                return <AdminDashboardBright setActiveTab={handleTabChange} />;
 
             case 'products':
                 return (
-                    <AdminProducts
-                        products={adminProducts}
-                        categories={categories}
-                        pagination={productsPagination}
+                    <AdminProductsNew
                         setActiveTab={handleTabChange}
-                        getStatusColor={getStatusColor}
-                        formatCurrency={formatCurrency}
-                        onEditProduct={handleEditProduct}
-                        onDeleteProduct={handleDeleteProduct}
-                        onUpdateProduct={handleUpdateProduct}
-                        isLoading={isProductsLoading}
-                        error={productsError}
                     />
                 );
 
             case 'add-product':
                 return (
                     <AdminAddProduct
-                        categories={categories}
+                        categories={localCategories || []}
                         onSave={handleAddProduct}
                         onCancel={() => handleTabChange('products')}
                         isLoading={isProductsLoading}
                     />
                 );
 
+
+
             case 'edit-product':
                 return (
                     <AdminAddProduct
-                        categories={categories}
+                        categories={localCategories}
                         editProduct={Array.isArray(adminProducts) ? adminProducts.find(p => p._id === editProductId) : null}
                         onSave={handleUpdateProduct}
                         onCancel={() => handleTabChange('products')}
@@ -420,28 +637,12 @@ const AdminProfile = () => {
 
             case 'orders':
                 return (
-                    <AdminOrders
-                        orders={adminOrders}
-                        pagination={ordersPagination}
-                        getStatusColor={getStatusColor}
-                        formatCurrency={formatCurrency}
-                        onUpdateOrderStatus={updateOrderStatus}
-                        isLoading={isOrdersLoading}
-                        error={ordersError}
-                    />
+                    <AdminOrdersNew />
                 );
 
             case 'users':
                 return (
-                    <AdminUsers
-                        users={adminUsers}
-                        pagination={usersPagination}
-                        getStatusColor={getStatusColor}
-                        onUpdateUserStatus={updateUserStatus}
-                        onUpdateUserRole={updateUserRole}
-                        isLoading={isUsersLoading}
-                        error={usersError}
-                    />
+                    <AdminUsersNew />
                 );
 
             case 'notifications':
@@ -465,12 +666,12 @@ const AdminProfile = () => {
                     />
                 );
 
-            case 'activity':
-                return (
-                    <AdminActivityLog
-                        activityLog={activityLog}
-                    />
-                );
+            // case 'activity':
+            //     return (
+            //         <AdminActivityLog
+            //             activityLog={activityLog}
+            //         />
+            //     );
 
             case 'security':
                 return (
@@ -520,6 +721,15 @@ const AdminProfile = () => {
 
     return (
         <div className="min-vh-100 bg-light">
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
+            
             <div className="container-fluid p-0">
                 {/* Mobile Overlay */}
                 {sidebarOpen && (
@@ -547,12 +757,7 @@ const AdminProfile = () => {
 
                     {/* Main Content */}
                     <div className="col-lg-9 col-xl-10">
-                        <AdminHeader
-                            activeTab={activeTab}
-                            adminData={adminData}
-                            sidebarOpen={sidebarOpen}
-                            setSidebarOpen={setSidebarOpen}
-                        />
+                        {/* AdminHeader removed for cleaner interface */}
 
                         <div className="p-4">
                             {/* Enhanced Notifications Bar */}
@@ -586,6 +791,8 @@ const AdminProfile = () => {
                         </div>
                     </div>
                 </div>
+                
+
             </div>
         </div>
     );

@@ -218,12 +218,12 @@ export const performanceMonitoring = (req, res, next) => {
     res.setHeader('X-Response-Time', `${duration.toFixed(2)}ms`);
     
     // Log performance metrics
-    logger.debug('Request completed', {
-      method: req.method,
-      path: req.path,
-      duration: `${duration.toFixed(2)}ms`,
-      statusCode: res.statusCode
-    });
+    // logger.debug('Request completed', {
+    //   method: req.method,
+    //   path: req.path,
+    //   duration: `${duration.toFixed(2)}ms`,
+    //   statusCode: res.statusCode
+    // });
   });
   
   next();
