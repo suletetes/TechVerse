@@ -5,6 +5,7 @@ export default {
     '<rootDir>/tests/**/*.test.js'
   ],
   testTimeout: 60000, // 60 second timeout for integration tests
+  maxWorkers: 1, // Run tests sequentially to avoid MongoDB Memory Server conflicts
   collectCoverageFrom: [
     'src/**/*.js',
     '!src/server.js',
@@ -13,7 +14,7 @@ export default {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  coverageThresholds: {
+  coverageThreshold: {
     global: {
       branches: 60,
       functions: 60,
