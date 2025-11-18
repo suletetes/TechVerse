@@ -742,24 +742,22 @@ const PaymentPage = () => {
                                                 </StripeProvider>
                                             )}
                                         </div>
+                                    ) : (
+                                        <StripeProvider>
+                                            <StripeCheckout
+                                                clientSecret={clientSecret}
+                                                onSuccess={handlePaymentSuccess}
+                                                onError={handlePaymentError}
+                                                amount={total}
+                                                currency="gbp"
+                                                returnUrl={`${window.location.origin}/order-confirmation`}
+                                            />
+                                        </StripeProvider>
                                     )}
                                 </div>
 
                                 {/* Order Options 
                                 <div className="store-card fill-card mb-4">
-                                    <div className="form-check mb-3">
-                                        <input
-                                            className="form-check-input"
-                                            type="checkbox"
-                                            name="savePayment"
-                                            id="savePayment"
-                                            checked={formData.savePayment}
-                                            onChange={handleInputChange}
-                                        />
-                                        <label className="form-check-label tc-6533" htmlFor="savePayment">
-                                            Save payment information for faster checkout
-                                        </label>
-                                    </div>
                                     <div className="form-check">
                                         <input
                                             className="form-check-input"
