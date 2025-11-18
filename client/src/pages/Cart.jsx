@@ -182,11 +182,16 @@ const Cart = () => {
                                         {/* Product Image */}
                                         <div className="col-md-2 col-3 mb-3 mb-md-0">
                                             <img
-                                                src={item.product?.images?.[0] || item.product?.thumbnail || '/img/placeholder.jpg'}
+                                                src={
+                                                    item.product?.images && item.product.images.length > 0
+                                                        ? (item.product.images.find(img => img.isPrimary)?.url || item.product.images[0]?.url || item.product.images[0])
+                                                        : item.product?.image?.url || item.product?.image || item.product?.thumbnail || '/img/placeholder.jpg'
+                                                }
                                                 className="img-fluid rounded"
                                                 alt={item.product?.name || 'Product'}
                                                 width="80"
                                                 height="80"
+                                                style={{ objectFit: 'cover' }}
                                             />
                                         </div>
 
