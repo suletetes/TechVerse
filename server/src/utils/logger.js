@@ -1,9 +1,9 @@
 // Enhanced Logger Utility for TechVerse API with Winston
 // Provides structured logging with file rotation and environment-aware configuration
 
-const winston = require('winston');
-const DailyRotateFile = require('winston-daily-rotate-file');
-const path = require('path');
+import winston from 'winston';
+import DailyRotateFile from 'winston-daily-rotate-file';
+import path from 'path';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isProduction = process.env.NODE_ENV === 'production';
@@ -99,4 +99,4 @@ logger.http = (req, res, responseTime) => {
   logger.info(`${req.method} ${req.url} ${res.statusCode} - ${responseTime}ms`, meta);
 };
 
-module.exports = logger;
+export default logger;
