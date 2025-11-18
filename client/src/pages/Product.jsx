@@ -93,13 +93,14 @@ const Product = () => {
     const mediaGallery = useMemo(() => {
         if (currentProduct?.images && currentProduct.images.length > 0) {
             return currentProduct.images.map((image, index) => ({
-                id: image.id || `image-${index}`,
+                id: image._id || image.id || `image-${index}`,
                 type: 'image',
                 src: image.url,
                 webp: image.webp || image.url,
                 thumbnail: image.thumbnail || image.url,
                 alt: image.alt || `${currentProduct.name} - View ${index + 1}`,
-                title: image.title || `View ${index + 1}`
+                title: image.title || `View ${index + 1}`,
+                isPrimary: image.isPrimary || index === 0
             }));
         }
         
@@ -112,7 +113,8 @@ const Product = () => {
                 webp: 'https://picsum.photos/800/600?random=1',
                 thumbnail: 'https://picsum.photos/200/150?random=1',
                 alt: `${currentProduct?.name || 'Product'} - Main View`,
-                title: 'Main View'
+                title: 'Main View',
+                isPrimary: true
             }
         ];
     }, [currentProduct?.images, currentProduct?.name]);
@@ -355,11 +357,8 @@ const Product = () => {
 
     // Load product on mount (supports both ID and slug)
     useEffect(() => {
-        console.log('Product component mounted with identifier:', id);
         if (id) {
-            loadProduct(id).catch(error => {
-                console.error('Error loading product:', error);
-            });
+            loadProduct(id);
         }
         
         return () => {
@@ -378,8 +377,6 @@ const Product = () => {
                 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
                 const url = `${apiUrl}/products/${currentProduct._id}/reviews?page=1&limit=10&sort=newest`;
                 
-                console.log('📝 Fetching reviews from:', url);
-                
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: {
@@ -394,20 +391,15 @@ const Product = () => {
                 }
                 
                 const data = await response.json();
-                console.log('📝 Reviews API Response:', data);
                 
                 if (data?.data?.reviews) {
-                    console.log('✅ Found reviews:', data.data.reviews.length);
                     setReviews(data.data.reviews);
                 } else if (Array.isArray(data?.data)) {
-                    console.log('✅ Found reviews (array):', data.data.length);
                     setReviews(data.data);
                 } else {
-                    console.log('⚠️ No reviews found in response');
                     setReviews([]);
                 }
             } catch (error) {
-                console.error('❌ Error loading reviews:', error);
                 setReviews([]);
             } finally {
                 setReviewsLoading(false);
@@ -433,6 +425,13 @@ const Product = () => {
         }
     }, [currentProduct]);
 
+    // Initialize selected media when gallery changes
+    useEffect(() => {
+        if (mediaGallery && mediaGallery.length > 0) {
+            setSelectedMedia(mediaGallery[0].id);
+        }
+    }, [mediaGallery]);
+
     // Check if product is in wishlist
     useEffect(() => {
         const checkWishlistStatus = async () => {
@@ -453,29 +452,10 @@ const Product = () => {
         checkWishlistStatus();
     }, [currentProduct?._id, isAuthenticated]);
 
-    // Debug logging
-    console.log('Product component state:', { 
-        id, 
-        currentProduct: currentProduct ? 'exists' : 'null', 
-        isLoading, 
-        error 
-    });
-    
-    if (currentProduct) {
-        console.log('Product data structure:', {
-            name: currentProduct.name,
-            price: currentProduct.price,
-            category: currentProduct.category,
-            specifications: currentProduct.specifications?.length || 0,
-            images: currentProduct.images?.length || 0,
-            brand: currentProduct.brand,
-            stock: currentProduct.stock
-        });
-    }
+
 
     // Loading state
     if (isLoading && !currentProduct) {
-        console.log('Showing loading state');
         return (
             <div className="bloc bgc-5700 none full-width-bloc l-bloc" id="product-loading">
                 <div className="container bloc-md-sm bloc-md bloc-lg-md">

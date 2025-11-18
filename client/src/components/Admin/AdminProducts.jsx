@@ -481,12 +481,38 @@ const AdminProducts = ({
                                         <div className="d-flex align-items-center">
                                             <div className="position-relative me-3">
                                                 <img
-                                                    src={product.image || product.mediaGallery?.[0]?.src || '../img/placeholder.jpg'}
+                                                    src={(() => {
+                                                        // Try images array first
+                                                        if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+                                                            const primaryImg = product.images.find(img => img.isPrimary);
+                                                            if (primaryImg) return primaryImg.url || primaryImg;
+                                                            const firstImg = product.images[0];
+                                                            return firstImg?.url || firstImg;
+                                                        }
+                                                        // Try primaryImage field
+                                                        if (product.primaryImage) {
+                                                            return product.primaryImage.url || product.primaryImage;
+                                                        }
+                                                        // Try single image field
+                                                        if (product.image) {
+                                                            return product.image.url || product.image;
+                                                        }
+                                                        // Try mediaGallery
+                                                        if (product.mediaGallery && product.mediaGallery.length > 0) {
+                                                            return product.mediaGallery[0].src || product.mediaGallery[0].url;
+                                                        }
+                                                        // Fallback to placeholder
+                                                        return '/img/placeholder.jpg';
+                                                    })()}
                                                     alt={product.name}
                                                     className="rounded-3 shadow-sm"
                                                     width="60"
                                                     height="60"
                                                     style={{ objectFit: 'cover' }}
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src = '/img/placeholder.jpg';
+                                                    }}
                                                 />
                                                 {product.featured && (
                                                     <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning">
