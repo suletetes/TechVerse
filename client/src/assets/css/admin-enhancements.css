@@ -1,5 +1,3 @@
-/* Scoped Admin Styles - Only apply to admin pages */
-.admin-page {
 /* Admin Product Management Enhancements */
 
 /* Color dots for product options */
@@ -731,29 +729,6 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-    .store-card {
-        background-color: #2d3748;
-        color: #e2e8f0;
-    }
-    
-    .table thead th {
-        background-color: #4a5568;
-        color: #e2e8f0;
-    }
-    
-    .form-control, .form-select {
-        background-color: #4a5568;
-        border-color: #718096;
-        color: #e2e8f0;
-    }
-    
-    .input-group-text {
-        background-color: #4a5568;
-        border-color: #718096;
-        color: #a0aec0;
-    }
-}
 
 /* Animation Classes */
 .fade-in {
@@ -1436,219 +1411,34 @@ td.text-center {
 .admin-table-container .table td.text-center {
     text-align: center;
 }
-}
 
+/* ====
+========================================
+   MINIMAL FIX: Change grey backgrounds to white
+   Keep all other beautiful CSS features intact
+   ============================================ */
 
-/* White theme overrides for admin pages */
-.admin-page .form-control,
-.admin-page .form-select,
-.admin-page .form-control:disabled,
-.admin-page .form-control[readonly] {
-    background-color: #ffffff !important;
-    border: 1px solid #dee2e6;
-}
-
-.admin-page .form-control:focus,
-.admin-page .form-select:focus {
-    background-color: #ffffff !important;
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.admin-page .input-group-text {
-    background-color: #ffffff !important;
-    border: 1px solid #dee2e6;
-}
-
-.admin-page .card {
+/* Override grey table headers */
+.table thead th {
     background-color: #ffffff !important;
 }
 
-.admin-page .card-header {
-    background-color: #ffffff !important;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.admin-page .card-body {
+/* Override grey card backgrounds */
+.card.bg-light {
     background-color: #ffffff !important;
 }
 
-.admin-page .table thead th {
-    background-color: #ffffff !important;
-    border-bottom: 2px solid #dee2e6;
-}
-
-.admin-page .expanded-details {
+/* Override grey expanded table rows */
+.expanded-details {
     background-color: #ffffff !important;
 }
 
-.admin-page .expanded-details td {
+/* Override grey filter sections */
+.filter-section {
     background-color: #ffffff !important;
 }
 
-.admin-page .filter-section {
+/* Override grey spec groups */
+.spec-group {
     background-color: #ffffff !important;
-    border: 1px solid #dee2e6;
-}
-
-.admin-page .store-card {
-    background-color: #ffffff !important;
-}
-
-.admin-page .admin-table-container {
-    background-color: #ffffff !important;
-}
-
-.admin-page .dropdown-toggle {
-    background-color: #ffffff !important;
-}
-
-.admin-page .page-link {
-    background-color: #ffffff !important;
-}
-
-.admin-page .page-link:hover {
-    background-color: rgba(0, 123, 255, 0.05) !important;
-}
-
-.admin-page .list-group-item {
-    background-color: #ffffff !important;
-}
-
-.admin-page .list-group-item:hover {
-    background-color: rgba(0, 123, 255, 0.05) !important;
-}
-
-.admin-page .modal-content {
-    background-color: #ffffff !important;
-}
-
-.admin-page .modal-header,
-.admin-page .modal-footer {
-    background-color: #ffffff !important;
-    border-color: #dee2e6;
-}
-
-.admin-page .badge.bg-light {
-    background-color: #ffffff !important;
-    border: 1px solid #dee2e6;
-    color: #495057 !important;
-}
-
-.admin-page .dashboard-stats-card {
-    background-color: #ffffff !important;
-}
-
-.admin-page .empty-state {
-    background-color: #ffffff !important;
-}
-
-.admin-page .loading-overlay {
-    background-color: rgba(255, 255, 255, 0.95) !important;
-}
-
-.admin-page .alert {
-    background-color: #ffffff !important;
-    border: 1px solid #dee2e6;
-}
-
-.admin-page .progress {
-    background-color: #ffffff !important;
-    border: 1px solid #dee2e6;
-}
-
-.admin-page .breadcrumb {
-    background-color: #ffffff !important;
-}
-
-.admin-page .nav-tabs {
-    background-color: #ffffff !important;
-}
-
-.admin-page .nav-tabs .nav-link {
-    background-color: #ffffff !important;
-}
-
-.admin-page .nav-tabs .nav-link:hover {
-    background-color: rgba(0, 123, 255, 0.05) !important;
-}
-
-.admin-page .accordion-item {
-    background-color: #ffffff !important;
-}
-
-.admin-page .accordion-button {
-    background-color: #ffffff !important;
-}
-
-.admin-page .accordion-button:not(.collapsed) {
-    background-color: rgba(0, 123, 255, 0.05) !important;
-}
-
-.admin-page .spec-group {
-    background-color: #ffffff !important;
-    border: 1px solid #dee2e6;
-}
-
-.admin-page .bulk-actions {
-    background-color: #ffffff !important;
-    border: 1px solid #dee2e6;
-}
-
-.admin-page .profit-display {
-    background-color: #ffffff !important;
-    border: 1px solid #dee2e6;
-}
-
-.admin-page .step-nav {
-    background-color: #ffffff !important;
-}
-
-.admin-page .media-item {
-    background-color: #ffffff !important;
-}
-
-.admin-page .image-upload-area {
-    background-color: #ffffff !important;
-}
-
-.admin-page .chart-container {
-    background-color: #ffffff !important;
-}
-
-/* Override grey backgrounds from tables.css */
-.admin-page .data-table-container .table thead th {
-    background-color: #ffffff !important;
-    border-bottom: 2px solid #dee2e6;
-}
-
-.admin-page .data-table-container .table thead th:hover {
-    background-color: rgba(0, 123, 255, 0.05) !important;
-}
-
-.admin-page .category-badge {
-    background-color: #ffffff !important;
-    border: 1px solid #dee2e6;
-}
-
-.admin-page .data-table-container .page-link:hover {
-    background-color: rgba(0, 123, 255, 0.05) !important;
-}
-
-.admin-page .sortable-header:hover {
-    background-color: rgba(0, 123, 255, 0.05) !important;
-}
-
-/* Keep main admin background white */
-.admin-page.min-vh-100.bg-light {
-    background-color: #ffffff !important;
-}
-
-/* Table row hover - keep subtle highlight */
-.admin-page .admin-table-container .table tbody tr:hover {
-    background-color: rgba(0, 123, 255, 0.05) !important;
-}
-
-.admin-page .table-hover tbody tr:hover {
-    background-color: rgba(0, 123, 255, 0.05) !important;
 }
