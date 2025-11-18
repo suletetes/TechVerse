@@ -2,7 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 const RelatedProductCard = ({ product }) => {
-    const { id, name, price, originalPrice, image, webp, rating, reviews, badge } = product;
+    const { id, slug, name, price, originalPrice, image, webp, rating, reviews, badge } = product;
+    const productLink = slug || id;
 
     return (
         <div className="store-card outline-card fill-card h-100 position-relative overflow-hidden">
@@ -18,7 +19,7 @@ const RelatedProductCard = ({ product }) => {
                 </div>
             )}
 
-            <Link to={`/product/${id}`} className="text-decoration-none">
+            <Link to={`/product/${productLink}`} className="text-decoration-none">
                 <div className="position-relative overflow-hidden rounded-top">
                     <picture>
                         <source type="image/webp" srcSet={webp}/>
@@ -42,7 +43,7 @@ const RelatedProductCard = ({ product }) => {
             </Link>
 
             <div className="p-3">
-                <Link to={`/product/${id}`} className="text-decoration-none">
+                <Link to={`/product/${productLink}`} className="text-decoration-none">
                     <h6 className="tc-6533 fw-semibold mb-3">{name}</h6>
                 </Link>
 

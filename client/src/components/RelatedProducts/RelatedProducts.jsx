@@ -22,6 +22,7 @@ const RelatedProducts = ({ productId: propProductId, limit = 4 }) => {
                     
                     const transformedProducts = products.map(product => ({
                         id: product._id,
+                        slug: product.slug || product._id,
                         name: product.name,
                         price: `From £${product.price?.toLocaleString()}`,
                         originalPrice: product.compareAtPrice ? `£${product.compareAtPrice?.toLocaleString()}` : null,
@@ -49,6 +50,7 @@ const RelatedProducts = ({ productId: propProductId, limit = 4 }) => {
                 
                 const transformedProducts = products.map(product => ({
                     id: product._id,
+                    slug: product.slug || product._id,
                     name: product.name,
                     price: `From £${product.price?.toLocaleString()}`,
                     originalPrice: product.compareAtPrice ? `£${product.compareAtPrice?.toLocaleString()}` : null,
