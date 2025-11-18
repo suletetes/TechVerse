@@ -704,22 +704,40 @@ const AdminProductsNew = ({ setActiveTab }) => {
                                 <tr key={product._id || product.id}>
                                     <td>
                                         <div className="product-image-sm">
-                                            {product.images?.[0] ? (
-                                                <img 
-                                                    src={product.images[0]} 
-                                                    alt={product.name}
-                                                    className="rounded"
-                                                    width="50"
-                                                    height="50"
-                                                    style={{ objectFit: 'cover' }}
-                                                />
-                                            ) : (
-                                                <div className="bg-light rounded d-flex align-items-center justify-content-center" style={{width: '50px', height: '50px'}}>
-                                                    <svg width="20" height="20" viewBox="0 0 24 24" className="text-muted">
-                                                        <path fill="currentColor" d="M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19M19,19H5V5H19V19Z" />
-                                                    </svg>
-                                                </div>
-                                            )}
+                                            <img 
+                                                src={(() => {
+                                                    // Try images array first
+                                                    if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+                                                        const primaryImg = product.images.find(img => img.isPrimary);
+                                                        if (primaryImg) return primaryImg.url || primaryImg;
+                                                        const firstImg = product.images[0];
+                                                        return firstImg?.url || firstImg;
+                                                    }
+                                                    // Try primaryImage field
+                                                    if (product.primaryImage) {
+                                                        return product.primaryImage.url || product.primaryImage;
+                                                    }
+                                                    // Try single image field
+                                                    if (product.image) {
+                                                        return product.image.url || product.image;
+                                                    }
+                                                    // Try mediaGallery
+                                                    if (product.mediaGallery && product.mediaGallery.length > 0) {
+                                                        return product.mediaGallery[0].src || product.mediaGallery[0].url;
+                                                    }
+                                                    // Fallback to placeholder
+                                                    return '/img/placeholder.jpg';
+                                                })()}
+                                                alt={product.name}
+                                                className="rounded"
+                                                width="50"
+                                                height="50"
+                                                style={{ objectFit: 'cover' }}
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = '/img/placeholder.jpg';
+                                                }}
+                                            />
                                         </div>
                                     </td>
                                     <td>
@@ -765,6 +783,7 @@ const AdminProductsNew = ({ setActiveTab }) => {
                                             <button
                                                 className="btn btn-outline-primary btn-sm"
                                                 title="View Product"
+                                                onClick={() => window.open(`/product/${product._id || product.id}`, '_blank')}
                                             >
                                                 <svg width="14" height="14" viewBox="0 0 24 24">
                                                     <path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />
@@ -773,6 +792,13 @@ const AdminProductsNew = ({ setActiveTab }) => {
                                             <button
                                                 className="btn btn-outline-secondary btn-sm"
                                                 title="Edit Product"
+                                                onClick={() => {
+                                                    if (setActiveTab) {
+                                                        setActiveTab('edit-product');
+                                                        // Store product ID for editing
+                                                        sessionStorage.setItem('editProductId', product._id || product.id);
+                                                    }
+                                                }}
                                             >
                                                 <svg width="14" height="14" viewBox="0 0 24 24">
                                                     <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
@@ -781,6 +807,18 @@ const AdminProductsNew = ({ setActiveTab }) => {
                                             <button
                                                 className="btn btn-outline-danger btn-sm"
                                                 title="Delete Product"
+                                                onClick={async () => {
+                                                    if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
+                                                        try {
+                                                            await adminService.deleteProduct(product._id || product.id);
+                                                            // Refresh products list
+                                                            loadProducts();
+                                                        } catch (error) {
+                                                            console.error('Error deleting product:', error);
+                                                            alert('Failed to delete product: ' + error.message);
+                                                        }
+                                                    }
+                                                }}
                                             >
                                                 <svg width="14" height="14" viewBox="0 0 24 24">
                                                     <path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
