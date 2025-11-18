@@ -1,18 +1,128 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth, useNotification } from '../../context';
+import wishlistService from '../../api/services/wishlistService';
 
 const ProductCardList = ({ product }) => {
+    const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
+    const { showSuccess, showError, showInfo } = useNotification();
+    const [isInWishlist, setIsInWishlist] = useState(false);
+    const [wishlistLoading, setWishlistLoading] = useState(false);
+
+    // Check if product is in wishlist
+    useEffect(() => {
+        const checkWishlistStatus = async () => {
+            if (!product._id || !isAuthenticated) {
+                setIsInWishlist(false);
+                return;
+            }
+
+            try {
+                const response = await wishlistService.checkWishlistStatus(product._id);
+                setIsInWishlist(response.data?.isInWishlist || false);
+            } catch (error) {
+                setIsInWishlist(false);
+            }
+        };
+
+        checkWishlistStatus();
+    }, [product._id, isAuthenticated]);
+
+    // Handle wishlist toggle
+    const handleWishlistToggle = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!isAuthenticated) {
+            showInfo('Please login to add items to your wishlist');
+            navigate('/login', { 
+                state: { 
+                    from: { pathname: `/product/${product.slug || product._id}` },
+                    message: 'Please login to add items to your wishlist'
+                }
+            });
+            return;
+        }
+
+        try {
+            setWishlistLoading(true);
+            
+            if (isInWishlist) {
+                await wishlistService.removeFromWishlist(product._id);
+                setIsInWishlist(false);
+                showSuccess(`${product.name} removed from wishlist`);
+            } else {
+                await wishlistService.addToWishlist(product._id);
+                setIsInWishlist(true);
+                showSuccess(`${product.name} added to wishlist!`);
+            }
+        } catch (error) {
+            showError('Failed to update wishlist. Please try again.');
+        } finally {
+            setWishlistLoading(false);
+        }
+    };
+
+    // Get rating value
+    const getRating = () => {
+        if (typeof product.rating === 'object' && product.rating?.average) {
+            return product.rating.average;
+        } else if (typeof product.rating === 'number') {
+            return product.rating;
+        }
+        return 0;
+    };
+
+    const ratingValue = getRating();
+    const reviewCount = product.rating?.count || product.reviewCount || 0;
+
+    // Get stock status
+    const getStockStatus = () => {
+        if (!product.stock) {
+            return { text: 'In Stock', class: 'text-success' };
+        }
+        
+        if (product.stock.trackQuantity === false) {
+            return { text: 'In Stock', class: 'text-success' };
+        }
+        
+        const quantity = typeof product.stock.quantity === 'number' ? product.stock.quantity : 0;
+        const lowStockThreshold = product.stock.lowStockThreshold || 10;
+        
+        if (quantity === 0) return { text: 'Out of Stock', class: 'text-danger' };
+        if (quantity <= lowStockThreshold) return { text: `Low Stock (${quantity})`, class: 'text-warning' };
+        return { text: 'In Stock', class: 'text-success' };
+    };
+
+    const stockStatus = getStockStatus();
+    const inStock = product.status === 'active' && (
+        !product.stock || 
+        product.stock.trackQuantity === false || 
+        (typeof product.stock.quantity === 'number' && product.stock.quantity > 0)
+    );
+
     return (
         <div className="col-12 mb-3">
             <div className="store-card fill-card d-flex flex-row position-relative">
-                {/* Rating Badge */}
-                <div className="position-absolute top-0 end-0 m-2">
-                    <span className="badge bg-warning text-dark">
-                        <i className="fa fa-star"></i> {typeof product.rating === 'object' 
-                            ? product.rating?.average?.toFixed(1) || '0.0'
-                            : product.rating?.toFixed(1) || '0.0'}
-                    </span>
-                </div>
+                {/* Wishlist Button */}
+                <button
+                    onClick={handleWishlistToggle}
+                    disabled={wishlistLoading}
+                    className="btn btn-sm position-absolute top-0 end-0 m-2 rounded-circle"
+                    style={{ 
+                        zIndex: 11,
+                        width: '36px',
+                        height: '36px',
+                        padding: 0,
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        border: '1px solid #dee2e6',
+                        transition: 'all 0.2s ease'
+                    }}
+                    title={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+                >
+                    <i className={`fa fa-heart ${isInWishlist ? 'text-danger' : 'text-muted'}`}></i>
+                </button>
                 
                 {/* Category Badge */}
                 <div className="position-absolute top-0 start-0 m-2">
@@ -65,42 +175,51 @@ const ProductCardList = ({ product }) => {
                             <h5 className="tc-6533 mb-2 lg-sub-title">{product.name || 'Product Name'}</h5>
                         </Link>
                         <p className="text-muted mb-2">{product.brand || 'Brand'}</p>
-                        <div className="d-flex align-items-center mb-2">
-                            <span className="tc-6533 fw-bold me-3">${product.price || 'Price'}</span>
-                            <div className="d-flex align-items-center">
-                                {[...Array(5)].map((_, i) => (
-                                    <i 
-                                        key={i} 
-                                        className={`fa fa-star ${i < Math.floor(
-                                            typeof product.rating === 'object' 
-                                                ? product.rating?.average || 0
-                                                : product.rating || 0
-                                        ) ? 'text-warning' : 'text-muted'}`}
-                                        style={{fontSize: '0.8rem'}}
-                                    ></i>
-                                ))}
-                                <span className="small text-muted ms-1">({typeof product.rating === 'object' 
-                                    ? product.rating?.average?.toFixed(1) || '0.0'
-                                    : product.rating?.toFixed(1) || '0.0'})</span>
-                            </div>
+                        
+                        {/* Price and Stock */}
+                        <div className="d-flex align-items-center gap-3 mb-2">
+                            <span className="tc-6533 fw-bold fs-5">£{product.price || 'Price'}</span>
+                            <small className={`${stockStatus.class} fw-bold`}>{stockStatus.text}</small>
                         </div>
+                        
+                        {/* Rating Display */}
+                        {ratingValue > 0 && (
+                            <div className="d-flex align-items-center gap-2 mb-2">
+                                <div className="text-warning">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <i 
+                                            key={star}
+                                            className={`fa fa-star${star <= Math.round(ratingValue) ? '' : '-o'}`}
+                                            style={{ fontSize: '0.9rem' }}
+                                        ></i>
+                                    ))}
+                                </div>
+                                <small className="text-muted">
+                                    {ratingValue.toFixed(1)} {reviewCount > 0 && `(${reviewCount} reviews)`}
+                                </small>
+                            </div>
+                        )}
+                        
+                        {/* Short Description */}
+                        {product.shortDescription && (
+                            <p className="text-muted small mb-0" style={{ 
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden'
+                            }}>
+                                {product.shortDescription}
+                            </p>
+                        )}
                     </div>
                     
-                    <div className="d-flex justify-content-between align-items-end">
-                        <div className="d-flex gap-2">
-                            <button className="btn btn-sm btn-outline-primary btn-rd">
-                                <i className="fa fa-heart"></i>
-                            </button>
-                            <button className="btn btn-sm btn-outline-primary btn-rd">
-                                <i className="fa fa-eye"></i> Quick View
-                            </button>
-                        </div>
+                    <div className="d-flex justify-content-end align-items-end mt-3">
                         <Link
                             to={`/product/${product.slug || product._id || product.id}`}
-                            className="btn btn-sm btn-rd btn-c-2101 buy-btn"
-                            style={{transition: 'all 0.3s ease', minWidth: '100px'}}
+                            className={`btn btn-sm btn-rd ${!inStock ? 'btn-secondary disabled' : 'btn-c-2101'} buy-btn`}
+                            style={{transition: 'all 0.3s ease', minWidth: '120px', pointerEvents: !inStock ? 'none' : 'auto'}}
                         >
-                            View Product
+                            {inStock ? 'View Product' : 'Out of Stock'}
                         </Link>
                     </div>
                 </div>
