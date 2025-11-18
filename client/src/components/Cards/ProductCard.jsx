@@ -1,14 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context';
-import wishlistService from '../../api/services/wishlistService';
+import React from 'react';
+import { Link } from 'react-router-dom';
 
 const ProductCard = ({ product }) => {
-    const navigate = useNavigate();
-    const { isAuthenticated } = useAuth();
-    const [isInWishlist, setIsInWishlist] = useState(false);
-    const [wishlistLoading, setWishlistLoading] = useState(false);
-
     // Safety check for product prop
     if (!product) {
         return (
@@ -21,25 +14,6 @@ const ProductCard = ({ product }) => {
             </div>
         );
     }
-
-    // Check if product is in wishlist
-    useEffect(() => {
-        const checkWishlistStatus = async () => {
-            if (!product._id || !isAuthenticated) {
-                setIsInWishlist(false);
-                return;
-            }
-
-            try {
-                const response = await wishlistService.checkWishlistStatus(product._id);
-                setIsInWishlist(response.data?.isInWishlist || false);
-            } catch (error) {
-                setIsInWishlist(false);
-            }
-        };
-
-        checkWishlistStatus();
-    }, [product._id, isAuthenticated]);
 
     const getStockStatus = () => {
         // If stock object doesn't exist, assume in stock
@@ -70,38 +44,6 @@ const ProductCard = ({ product }) => {
         (typeof product.stock.quantity === 'number' && product.stock.quantity > 0)
     );
 
-    // Handle wishlist toggle
-    const handleWishlistToggle = async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (!isAuthenticated) {
-            navigate('/login', { 
-                state: { 
-                    from: { pathname: `/product/${product.slug || product._id}` },
-                    message: 'Please login to add items to your wishlist'
-                }
-            });
-            return;
-        }
-
-        try {
-            setWishlistLoading(true);
-            
-            if (isInWishlist) {
-                await wishlistService.removeFromWishlist(product._id);
-                setIsInWishlist(false);
-            } else {
-                await wishlistService.addToWishlist(product._id);
-                setIsInWishlist(true);
-            }
-        } catch (error) {
-            console.error('Error toggling wishlist:', error);
-        } finally {
-            setWishlistLoading(false);
-        }
-    };
-
     // Get rating value
     const getRating = () => {
         if (typeof product.rating === 'object' && product.rating?.average) {
@@ -115,30 +57,9 @@ const ProductCard = ({ product }) => {
     const ratingValue = getRating();
     const reviewCount = product.rating?.count || product.reviewCount || 0;
 
-
-
     return (
         <div className="text-start d-flex col-md-6 col-lg-4 mb-4">
             <div className="store-card fill-card position-relative w-100">
-                {/* Wishlist Button */}
-                <button
-                    onClick={handleWishlistToggle}
-                    disabled={wishlistLoading}
-                    className="btn btn-sm position-absolute top-0 end-0 m-2 rounded-circle"
-                    style={{ 
-                        zIndex: 11,
-                        width: '36px',
-                        height: '36px',
-                        padding: 0,
-                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                        border: '1px solid #dee2e6',
-                        transition: 'all 0.2s ease'
-                    }}
-                    title={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
-                >
-                    <i className={`fa fa-heart ${isInWishlist ? 'text-danger' : 'text-muted'}`}></i>
-                </button>
-                
                 {/* Category Badge */}
                 <div className="position-absolute top-0 start-0 m-2" style={{ zIndex: 10 }}>
                     <span className="badge bg-primary">

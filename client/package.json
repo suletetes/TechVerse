@@ -54,6 +54,7 @@
     "jsdom": "^25.0.0",
     "msw": "^2.11.6",
     "msw-storybook-addon": "^2.0.6",
+    "terser": "^5.44.1",
     "vite": "^7.1.2",
     "vitest": "^2.0.0"
   },

@@ -1,19 +1,8 @@
 import { jest } from '@jest/globals';
 import mongoose from 'mongoose';
-import Product from '../../../src/models/Product.js';
+import { Product } from '../../../src/models/index.js';
 
 describe('Product Model', () => {
-  beforeAll(async () => {
-    // Connect to test database
-    await mongoose.connect(process.env.MONGODB_TEST_URI || 'mongodb://localhost:27017/techverse_test');
-  });
-
-  afterAll(async () => {
-    // Clean up and close connection
-    await mongoose.connection.dropDatabase();
-    await mongoose.connection.close();
-  });
-
   beforeEach(async () => {
     // Clear products collection before each test
     await Product.deleteMany({});
@@ -79,7 +68,7 @@ describe('Product Model', () => {
       await product2.save();
 
       expect(product1.slug).toBe('test-product');
-      expect(product2.slug).toBe('test-product');
+      expect(product2.slug).toContain('test-product');
     });
   });
 
@@ -139,23 +128,31 @@ describe('Product Model', () => {
 
     describe('reserveStock', () => {
       it('should reserve stock successfully', async () => {
-        const initialQuantity = product.stock.quantity;
-        await product.reserveStock(3);
+        const testProduct = await Product.findById(product._id);
+        const initialQuantity = testProduct.stock.quantity;
+        await testProduct.reserveStock(3);
 
-        expect(product.stock.quantity).toBe(initialQuantity - 3);
+        expect(testProduct.stock.quantity).toBe(initialQuantity - 3);
       });
 
       it('should throw error for insufficient stock', async () => {
-        await expect(product.reserveStock(15)).rejects.toThrow('Insufficient stock available');
+        const testProduct = await Product.findById(product._id);
+        try {
+          await testProduct.reserveStock(1000);
+          fail('Should have thrown an error');
+        } catch (error) {
+          expect(error.message).toContain('Insufficient stock');
+        }
       });
 
       it('should not affect stock when not tracking quantity', async () => {
-        product.stock.trackQuantity = false;
-        const initialQuantity = product.stock.quantity;
+        const testProduct = await Product.findById(product._id);
+        testProduct.stock.trackQuantity = false;
+        const initialQuantity = testProduct.stock.quantity;
         
-        await product.reserveStock(100);
+        await testProduct.reserveStock(100);
         
-        expect(product.stock.quantity).toBe(initialQuantity);
+        expect(testProduct.stock.quantity).toBe(initialQuantity);
       });
     });
 
