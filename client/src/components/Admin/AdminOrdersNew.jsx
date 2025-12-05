@@ -49,10 +49,7 @@ const AdminOrdersNew = () => {
         try {
             adminDataStore.setLoading('orders', true);
             adminDataStore.setError('orders', null);
-            
-            console.log('🔍 AdminOrdersNew: Fetching orders...');
-            
-            const response = await adminService.getAdminOrders({ limit: 1000 }); // Get all orders
+            const response = await adminService.getAdminOrders({ limit: 1000 });
             
             let backendOrders = [];
             if (response?.data?.orders) {
@@ -63,12 +60,10 @@ const AdminOrdersNew = () => {
                 backendOrders = response;
             }
             
-            console.log(`📊 Loaded ${backendOrders.length} orders`);
-            
             adminDataStore.setData('orders', backendOrders);
             
         } catch (err) {
-            console.error('❌ Error loading orders:', err);
+            console.error('Error loading orders:', err);
             adminDataStore.setError('orders', err.message);
             
             // Try direct API call as fallback

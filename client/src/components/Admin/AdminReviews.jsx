@@ -30,9 +30,7 @@ const AdminReviews = ({
     };
 
     const handleApprove = async (reviewId) => {
-        console.log('✅ Approve review clicked:', reviewId);
-        
-        try {
+        try{
             if (onApproveReview) {
                 await onApproveReview(reviewId);
                 setToast({
@@ -41,7 +39,7 @@ const AdminReviews = ({
                 });
             }
         } catch (error) {
-            console.error('❌ Error approving review:', error);
+            console.error('Error approving review:', error);
             setToast({
                 message: error.message || 'Failed to approve review',
                 type: 'error'
@@ -50,7 +48,6 @@ const AdminReviews = ({
     };
 
     const handleReject = (reviewId) => {
-        console.log('❌ Reject review clicked:', reviewId);
         const review = reviews.find(r => r._id === reviewId);
         setRejectConfirmation({ reviewId, review });
     };
@@ -69,7 +66,7 @@ const AdminReviews = ({
                 });
             }
         } catch (error) {
-            console.error('❌ Error rejecting review:', error);
+            console.error('Error rejecting review:', error);
             setToast({
                 message: error.message || 'Failed to reject review',
                 type: 'error'
@@ -80,7 +77,6 @@ const AdminReviews = ({
     };
 
     const handleDelete = (reviewId) => {
-        console.log('🗑️ Delete review clicked:', reviewId);
         const review = reviews.find(r => r._id === reviewId);
         setDeleteConfirmation({ reviewId, review });
     };
@@ -99,7 +95,7 @@ const AdminReviews = ({
                 });
             }
         } catch (error) {
-            console.error('❌ Error deleting review:', error);
+            console.error('Error deleting review:', error);
             setToast({
                 message: error.message || 'Failed to delete review',
                 type: 'error'
@@ -350,10 +346,7 @@ const AdminReviews = ({
                                                         <div className="fw-medium">
                                                             {(() => {
                                                                 const userData = review.user || review.userInfo;
-                                                                // Debug: log the user data structure
-                                                                if (!userData?.firstName && !userData?.lastName && !userData?.name) {
-                                                                    console.log('Review user data:', { review: review._id, user: userData });
-                                                                }
+
                                                                 if (userData?.firstName && userData?.lastName) {
                                                                     return `${userData.firstName} ${userData.lastName}`;
                                                                 }

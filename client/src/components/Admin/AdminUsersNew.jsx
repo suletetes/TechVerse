@@ -49,10 +49,7 @@ const AdminUsersNew = () => {
         try {
             adminDataStore.setLoading('users', true);
             adminDataStore.setError('users', null);
-            
-            console.log('🔍 AdminUsersNew: Fetching users...');
-            
-            const response = await adminService.getAdminUsers({ limit: 1000 }); // Get all users
+            const response = await adminService.getAdminUsers({ limit: 1000 });
             
             let backendUsers = [];
             if (response?.data?.users) {
@@ -63,12 +60,10 @@ const AdminUsersNew = () => {
                 backendUsers = response;
             }
             
-            console.log(`📊 Loaded ${backendUsers.length} users`);
-            
             adminDataStore.setData('users', backendUsers);
             
         } catch (err) {
-            console.error('❌ Error loading users:', err);
+            console.error('Error loading users:', err);
             adminDataStore.setError('users', err.message);
             
             // Try direct API call as fallback
@@ -84,13 +79,12 @@ const AdminUsersNew = () => {
                 if (directResponse.ok) {
                     const directData = await directResponse.json();
                     const directUsers = directData?.data?.users || directData?.users || directData || [];
-                    console.log(`🎉 Found ${directUsers.length} users via direct API`);
                     adminDataStore.setData('users', directUsers);
                 } else {
                     throw new Error(`API returned ${directResponse.status}`);
                 }
             } catch (directErr) {
-                console.error('❌ Direct API call also failed:', directErr);
+                console.error('Failed to load users:', directErr);
                 adminDataStore.setError('users', `Failed to load users: ${err.message}`);
             }
         } finally {

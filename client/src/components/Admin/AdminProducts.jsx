@@ -107,13 +107,8 @@ const AdminProducts = ({
     const totalPages = Math.ceil((Array.isArray(filteredProducts) ? filteredProducts.length : 0) / productsPerPage);
 
     const handleView = (product) => {
-        console.log('🔍 View button clicked for product:', product);
-        
-        // Product slug or ID for viewing
         const productSlug = product.slug || product._id || product.id;
         const url = `/product/${productSlug}`;
-        
-        console.log('📍 Opening URL:', url);
         window.open(url, '_blank');
         
         setToast({
@@ -123,9 +118,6 @@ const AdminProducts = ({
     };
 
     const handleEdit = (productId) => {
-        console.log('✏️ Edit button clicked for product ID:', productId);
-        console.log('📋 setActiveTab function:', typeof setActiveTab);
-        
         if (typeof setActiveTab === 'function') {
             setActiveTab('edit-product', productId);
             setToast({
@@ -142,8 +134,6 @@ const AdminProducts = ({
     };
 
     const handleDelete = (productId) => {
-        console.log('🗑️ Delete button clicked for product ID:', productId);
-        
         const product = Array.isArray(products) ? products.find(p => p.id === productId || p._id === productId) : null;
         const productName = product?.name || 'this product';
         
@@ -161,21 +151,19 @@ const AdminProducts = ({
         
         try {
             if (onDeleteProduct) {
-                console.log('🔄 Calling onDeleteProduct...');
                 await onDeleteProduct(productId);
                 setToast({
                     message: `"${productName}" has been deleted successfully!`,
                     type: 'success'
                 });
             } else {
-                console.log('⚠️ No onDeleteProduct function provided (demo mode)');
                 setToast({
                     message: 'Product deleted successfully! (Demo mode)',
                     type: 'success'
                 });
             }
         } catch (error) {
-            console.error('❌ Error deleting product:', error);
+            console.error('Error deleting product:', error);
             setToast({
                 message: error.message || `Failed to delete "${productName}". Please try again.`,
                 type: 'error'
@@ -186,35 +174,28 @@ const AdminProducts = ({
     };
 
     const cancelDelete = () => {
-        console.log('❌ Delete cancelled by user');
         setDeleteConfirmation(null);
     };
 
     const handleDuplicate = async (productId) => {
-        console.log('📋 Duplicate button clicked for product ID:', productId);
-        
         const productToDuplicate = Array.isArray(products) ? products.find(p => p.id === productId || p._id === productId) : null;
-        console.log('🔍 Found product to duplicate:', productToDuplicate);
-        
         const productName = productToDuplicate?.name || 'Product';
         
         if (productToDuplicate && onDuplicateProduct) {
             try {
-                console.log('🔄 Calling onDuplicateProduct...');
                 await onDuplicateProduct(productToDuplicate);
                 setToast({
                     message: `"${productName}" has been duplicated successfully! The copy is saved as a draft.`,
                     type: 'success'
                 });
             } catch (error) {
-                console.error('❌ Error duplicating product:', error);
+                console.error('Error duplicating product:', error);
                 setToast({
                     message: error.message || `Failed to duplicate "${productName}". Please try again.`,
                     type: 'error'
                 });
             }
         } else {
-            console.log('⚠️ No onDuplicateProduct function provided (demo mode)');
             setToast({
                 message: 'Product duplicated successfully! (Demo mode)',
                 type: 'success'
@@ -223,25 +204,14 @@ const AdminProducts = ({
     };
 
     const handleToggleStatus = async (productId, currentStatus) => {
-        console.log('🔄 Toggle status button clicked for product ID:', productId);
-        console.log('📊 Current status:', currentStatus);
-        
         const product = Array.isArray(products) ? products.find(p => p.id === productId || p._id === productId) : null;
         const productName = product?.name || 'Product';
-        
-        // Valid statuses: 'draft', 'active', 'archived', 'out_of_stock'
-        // Toggle between 'active' and 'archived' (not 'inactive')
         const newStatus = currentStatus === 'active' ? 'archived' : 'active';
         const updatedProduct = { status: newStatus };
         
-        console.log('📝 New status:', newStatus);
-        
         try {
             if (onUpdateProduct) {
-                console.log('🔄 Calling onUpdateProduct...');
                 await onUpdateProduct(productId, updatedProduct);
-            } else {
-                console.log('⚠️ No onUpdateProduct function provided (demo mode)');
             }
             
             const statusText = newStatus === 'active' ? 'activated' : 'archived';
@@ -250,7 +220,7 @@ const AdminProducts = ({
                 type: 'success'
             });
         } catch (error) {
-            console.error('❌ Error toggling status:', error);
+            console.error('Error toggling status:', error);
             setToast({
                 message: error.message || `Failed to update "${productName}" status. Please try again.`,
                 type: 'error'

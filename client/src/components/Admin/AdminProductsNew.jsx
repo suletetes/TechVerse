@@ -124,7 +124,7 @@ const AdminProductsNew = ({ setActiveTab }) => {
             }
             
         } catch (err) {
-            console.error('❌ Error loading products:', err);
+            console.error('Error loading products:', err);
             adminDataStore.setError('products', err.message);
             
             // Try direct API call as fallback
@@ -135,8 +135,6 @@ const AdminProductsNew = ({ setActiveTab }) => {
                              localStorage.getItem('authToken') ||
                              localStorage.getItem('accessToken');
                 
-                console.log('🔑 Trying direct API call with token:', token ? 'Found' : 'Not found');
-                
                 const directResponse = await fetch(`${API_BASE_URL}/api/admin/products?limit=1000`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -144,22 +142,17 @@ const AdminProductsNew = ({ setActiveTab }) => {
                     }
                 });
                 
-                console.log('📡 Direct API response status:', directResponse.status);
-                
                 if (directResponse.ok) {
                     const directData = await directResponse.json();
-                    console.log('📦 Direct API response data:', directData);
-                    
                     const directProducts = directData?.data?.products || directData?.products || directData || [];
-                    console.log(`🎉 Found ${directProducts.length} products via direct API`);
                     adminDataStore.setData('products', directProducts);
                 } else {
                     const errorText = await directResponse.text();
-                    console.error('❌ Direct API error response:', errorText);
+                    console.error('Direct API error:', errorText);
                     throw new Error(`API returned ${directResponse.status}: ${errorText}`);
                 }
             } catch (directErr) {
-                console.error('❌ Direct API call also failed:', directErr);
+                console.error('Failed to load products:', directErr);
                 adminDataStore.setError('products', `Failed to load products: ${err.message}`);
             }
         } finally {
