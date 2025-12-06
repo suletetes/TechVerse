@@ -44,8 +44,6 @@ const AdminOrderManagement = () => {
 
     const handleUpdateOrderStatus = async (orderId, newStatus) => {
         try {
-            console.log('🔄 Updating order status:', { orderId, newStatus });
-            
             // Optimistic update - update UI immediately
             setAllOrders(prevOrders => 
                 prevOrders.map(order => 
@@ -58,16 +56,13 @@ const AdminOrderManagement = () => {
             try {
                 // Try to update on backend
                 const response = await adminService.updateOrderStatus(orderId, newStatus, '');
-                console.log('✅ Order status updated on backend:', response);
                 return response;
             } catch (backendError) {
-                console.warn('⚠️ Backend update failed (endpoint not implemented yet):', backendError.message);
                 // UI is already updated, so we can continue
                 // When backend is ready, this will work automatically
                 return { success: true, status: newStatus, note: 'UI updated (backend pending)' };
             }
         } catch (err) {
-            console.error('❌ Error updating order status:', err);
             // Reload orders to revert optimistic update
             await loadOrders();
             throw err;

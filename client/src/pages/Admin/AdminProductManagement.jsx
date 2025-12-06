@@ -64,7 +64,6 @@ const AdminProductManagement = () => {
     };
 
     const handleSetActiveTab = (tab, productId = null) => {
-        console.log('🔄 Switching tab to:', tab, 'Product ID:', productId);
         setActiveTab(tab);
         if (productId) {
             setEditingProductId(productId);

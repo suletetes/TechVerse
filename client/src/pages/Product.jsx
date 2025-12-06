@@ -686,10 +686,6 @@ const Product = () => {
                     {/* Customer Reviews Section - Full Width Below */}
                     <div
                         className="text-start offset-lg-1 col-lg-10 col-md-10 offset-md-1 col-sm-10 offset-sm-1 col-10 offset-1 mt-5">
-                        {(() => {
-                            console.log('🔍 Reviews render check:', { reviewsLoading, reviewsCount: reviews.length, reviews });
-                            return null;
-                        })()}
                         {reviewsLoading ? (
                             <div className="text-center py-5">
                                 <LoadingSpinner size="md" />

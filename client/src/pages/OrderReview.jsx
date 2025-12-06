@@ -16,7 +16,6 @@ const OrderReview = () => {
     const [isEditMode, setIsEditMode] = useState(false);
 
     useEffect(() => {
-        console.log('🔍 DEBUG: OrderReview mounted, orderId:', orderId);
         if (orderId) {
             loadOrder(orderId);
         }
@@ -24,12 +23,6 @@ const OrderReview = () => {
 
     // Load existing review after order is loaded
     useEffect(() => {
-        console.log('🔍 DEBUG: Order changed:', {
-            hasOrder: !!currentOrder,
-            reviewedAt: currentOrder?.reviewedAt,
-            orderNumber: currentOrder?.orderNumber
-        });
-        
         if (currentOrder) {
             // Always try to load existing review, regardless of reviewedAt
             loadExistingReview();
@@ -37,26 +30,20 @@ const OrderReview = () => {
     }, [currentOrder]);
 
     const loadExistingReview = async () => {
-        console.log('🔍 DEBUG: Loading existing review for order:', orderId);
         try {
             const { default: reviewService } = await import('../api/services/reviewService.js');
             const response = await reviewService.getOrderReviews(orderId);
             
-            console.log('🔍 DEBUG: Review service response:', response);
-            
             if (response.data && response.data.reviews && response.data.reviews.length > 0) {
                 // Use the first review as the template (all products get same review)
                 const review = response.data.reviews[0];
-                console.log('✅ DEBUG: Found existing review:', review);
                 setExistingReview(review);
                 setIsEditMode(true);
             } else {
-                console.log('ℹ️ DEBUG: No existing reviews found');
                 setIsEditMode(false);
                 setExistingReview(null);
             }
         } catch (error) {
-            console.error('❌ DEBUG: Error loading existing review:', error);
             setIsEditMode(false);
             setExistingReview(null);
         }
@@ -156,20 +143,11 @@ const OrderReview = () => {
                 });
             }
             
-            console.log('Review submitted for order:', order.orderNumber, reviewData);
-            
             // Redirect to order details after 3 seconds
             setTimeout(() => {
                 navigate(`/user/order/${order._id}`);
             }, 3000);
         } catch (error) {
-            console.error('❌ DEBUG: Error submitting review:', error);
-            console.error('❌ DEBUG: Error details:', {
-                message: error.message,
-                response: error.response,
-                status: error.status
-            });
-            
             // Show more detailed error message
             let errorMessage = 'Failed to submit review. Please try again.';
             if (error.message && error.message !== 'Bad request') {
@@ -236,11 +214,6 @@ const OrderReview = () => {
                                 </div>
 
                                 {/* Review Form */}
-                                {console.log('🔍 DEBUG: Rendering ReviewsSection with:', {
-                                    isEditMode,
-                                    hasExistingReview: !!existingReview,
-                                    existingReview
-                                })}
                                 <ReviewsSection
                                     showHeader={false}
                                     showDividers={false}

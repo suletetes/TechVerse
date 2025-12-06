@@ -138,9 +138,6 @@ const ProductReviews = () => {
     }, [filterRating]);
 
     // Calculate rating distribution from API data or fallback
-    console.log('Rating Breakdown:', ratingBreakdown);
-    console.log('Total Reviews:', totalReviews);
-    
     // API returns: {ratings: [{rating: 5, count: 3}], totalReviews: 5, averageRating: 4.6}
     const ratingCounts = ratingBreakdown?.ratings?.map(r => ({
         rating: r.rating, // Use r.rating, not r._id
@@ -152,15 +149,11 @@ const ProductReviews = () => {
         percentage: 0
     }));
 
-    console.log('Rating Counts:', ratingCounts);
-
     // Ensure all ratings 1-5 are present
     const allRatingCounts = [5, 4, 3, 2, 1].map(rating => {
         const existing = ratingCounts.find(r => r.rating === rating);
         return existing || { rating, count: 0, percentage: 0 };
     });
-
-    console.log('All Rating Counts:', allRatingCounts);
 
     // Calculate average rating from API data or reviews
     const averageRating = ratingBreakdown?.averageRating?.toFixed(1) || 

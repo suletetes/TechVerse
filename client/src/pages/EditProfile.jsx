@@ -36,10 +36,7 @@ const COUNTRIES = [
 
 // Simple debugger for development
 const debugLog = (action, data, error) => {
-    if (import.meta.env.DEV) {
-        const emoji = error ? '❌' : '✅';
-        console.log(`${emoji} EDIT_PROFILE - ${action}:`, data, error || '');
-    }
+    // Debug logging disabled in production
 };
 
 const EditProfile = () => {
@@ -238,7 +235,6 @@ const EditProfile = () => {
         
         // Prevent multiple submissions
         if (isSubmitting) {
-            console.log('Already submitting, ignoring duplicate submission');
             return;
         }
         
