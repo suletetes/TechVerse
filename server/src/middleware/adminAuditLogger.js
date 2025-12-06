@@ -1,5 +1,5 @@
 import enhancedLogger from '../utils/enhancedLogger.js';
-import { AuditLog } from '../models/AuditLog.js';
+import AuditLog from '../models/AuditLog.js';
 
 /**
  * Enhanced Admin Action Audit Logger

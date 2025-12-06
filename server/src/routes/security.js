@@ -7,7 +7,7 @@ import { handleValidationErrors } from '../middleware/enhancedValidation.js';
 import { body } from 'express-validator';
 import enhancedLogger from '../utils/enhancedLogger.js';
 import securityMonitor from '../utils/securityMonitor.js';
-import { AuditLog } from '../models/AuditLog.js';
+import AuditLog from '../models/AuditLog.js';
 
 const router = express.Router();
 
