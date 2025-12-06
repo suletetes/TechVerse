@@ -20,23 +20,9 @@ const AdminUsersNew = () => {
     const [sortBy, setSortBy] = useState('firstName');
     const [sortOrder, setSortOrder] = useState('asc');
 
-    // Load users only once on mount or when data is stale
+    // Load users on mount
     useEffect(() => {
-        if (!adminDataStore.isDataFresh('users')) {
-            loadUsers();
-        } else {
-            setAllUsers(adminDataStore.getData('users'));
-            setLoading(false);
-        }
-
-        // Listen for data updates
-        const unsubscribe = adminDataStore.addListener('users', (data) => {
-            setAllUsers(data.data || []);
-            setLoading(data.loading || false);
-            setError(data.error);
-        });
-
-        return unsubscribe;
+        loadUsers();
     }, []);
     
     // Reset to page 1 when filters change
@@ -46,8 +32,8 @@ const AdminUsersNew = () => {
 
     const loadUsers = async () => {
         try {
-            adminDataStore.setLoading('users', true);
-            adminDataStore.setError('users', null);
+            setLoading(true);
+            setError(null);
             const response = await adminService.getAdminUsers({ limit: 1000 });
             
             let backendUsers = [];
@@ -59,11 +45,11 @@ const AdminUsersNew = () => {
                 backendUsers = response;
             }
             
-            adminDataStore.setData('users', backendUsers);
+            setAllUsers(backendUsers);
             
         } catch (err) {
             console.error('Error loading users:', err);
-            adminDataStore.setError('users', err.message);
+            setError(err.message);
             
             // Try direct API call as fallback
             try {
@@ -78,16 +64,16 @@ const AdminUsersNew = () => {
                 if (directResponse.ok) {
                     const directData = await directResponse.json();
                     const directUsers = directData?.data?.users || directData?.users || directData || [];
-                    adminDataStore.setData('users', directUsers);
+                    setAllUsers(directUsers);
                 } else {
                     throw new Error(`API returned ${directResponse.status}`);
                 }
             } catch (directErr) {
                 console.error('Failed to load users:', directErr);
-                adminDataStore.setError('users', `Failed to load users: ${err.message}`);
+                setError(`Failed to load users: ${err.message}`);
             }
         } finally {
-            adminDataStore.setLoading('users', false);
+            setLoading(false);
         }
     };
 

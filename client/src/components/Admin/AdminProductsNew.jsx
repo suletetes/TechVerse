@@ -26,50 +26,22 @@ const AdminProductsNew = ({ setActiveTab }) => {
     const [sortBy, setSortBy] = useState('name');
     const [sortOrder, setSortOrder] = useState('asc');
 
-    // Load products and categories only once on mount or when data is stale
+    // Load products and categories on mount
     useEffect(() => {
-        if (!adminDataStore.isDataFresh('products')) {
-            loadProducts();
-        } else {
-            setAllProducts(adminDataStore.getData('products'));
-            setLoading(false);
-        }
+        loadProducts();
 
         // Try to use categories from AdminContext first
         if (adminCategories && adminCategories.length > 0) {
             setAllCategories(adminCategories);
-            adminDataStore.setData('categories', adminCategories);
         } else {
-            const storedCategories = adminDataStore.getData('categories');
-            if (Array.isArray(storedCategories) && storedCategories.length > 0) {
-                setAllCategories(storedCategories);
-            } else {
-                loadCategories();
-            }
+            loadCategories();
         }
-
-        // Listen for data updates
-        const unsubscribeProducts = adminDataStore.addListener('products', (data) => {
-            setAllProducts(data.data || []);
-            setLoading(data.loading || false);
-            setError(data.error);
-        });
-
-        const unsubscribeCategories = adminDataStore.addListener('categories', (data) => {
-            setAllCategories(data.data || []);
-        });
-
-        return () => {
-            unsubscribeProducts();
-            unsubscribeCategories();
-        };
     }, []);
     
     // Sync categories from AdminContext (only if we don't have any)
     useEffect(() => {
         if (adminCategories && adminCategories.length > 0 && allCategories.length === 0) {
             setAllCategories(adminCategories);
-            adminDataStore.setData('categories', adminCategories);
         }
     }, [adminCategories, allCategories.length]);
     
@@ -80,10 +52,8 @@ const AdminProductsNew = ({ setActiveTab }) => {
 
     const loadProducts = async () => {
         try {
-            adminDataStore.setLoading('products', true);
-            adminDataStore.setError('products', null);
-            
-            // Fetching products...
+            setLoading(true);
+            setError(null);
             
             if (!isAuthenticated) {
                 throw new Error('User not authenticated');
@@ -93,9 +63,7 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 throw new Error('User does not have admin privileges');
             }
             
-            const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
-            
-            const response = await adminService.getAdminProducts({ limit: 1000 }); // Get all products
+            const response = await adminService.getAdminProducts({ limit: 1000 });
             
             let backendProducts = [];
             if (response?.data?.products) {
@@ -108,11 +76,8 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 backendProducts = response;
             }
             
-            if (backendProducts.length > 0) {
-                adminDataStore.setData('products', backendProducts);
-            } else {
-                adminDataStore.setData('products', []);
-                setAllProducts([]);
+            setAllProducts(backendProducts);
+            if (backendProducts.length === 0) {
                 setPagination({
                     page: 1,
                     limit: 20,
@@ -124,11 +89,10 @@ const AdminProductsNew = ({ setActiveTab }) => {
             
         } catch (err) {
             console.error('Error loading products:', err);
-            adminDataStore.setError('products', err.message);
+            setError(err.message);
             
             // Try direct API call as fallback
             try {
-                // Try multiple token storage keys
                 const token = localStorage.getItem('token') || 
                              localStorage.getItem('techverse_token_v2') ||
                              localStorage.getItem('authToken') ||
@@ -144,7 +108,7 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 if (directResponse.ok) {
                     const directData = await directResponse.json();
                     const directProducts = directData?.data?.products || directData?.products || directData || [];
-                    adminDataStore.setData('products', directProducts);
+                    setAllProducts(directProducts);
                 } else {
                     const errorText = await directResponse.text();
                     console.error('Direct API error:', errorText);
@@ -152,10 +116,10 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 }
             } catch (directErr) {
                 console.error('Failed to load products:', directErr);
-                adminDataStore.setError('products', `Failed to load products: ${err.message}`);
+                setError(`Failed to load products: ${err.message}`);
             }
         } finally {
-            adminDataStore.setLoading('products', false);
+            setLoading(false);
         }
     };
 
@@ -191,7 +155,6 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 
                 if (categories.length > 0) {
                     setAllCategories(categories);
-                    adminDataStore.setData('categories', categories);
                     return;
                 }
             }
@@ -210,7 +173,6 @@ const AdminProductsNew = ({ setActiveTab }) => {
             
             if (categories.length > 0) {
                 setAllCategories(categories);
-                adminDataStore.setData('categories', categories);
                 return;
             }
             
@@ -233,7 +195,6 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 { _id: '6907c4cd76b828091bdb970e', name: 'Fitness & Health', slug: 'fitness-health' }
             ];
             setAllCategories(defaultCategories);
-            adminDataStore.setData('categories', defaultCategories);
         }
     };
 

@@ -176,27 +176,7 @@ const AdminProfile = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAuthenticated, isAdmin, dateRange]);
 
-    // Sync categories from AdminDataStore - only update local state, don't trigger loads
-    useEffect(() => {
-        const storedCategories = adminDataStore.getData('categories');
-        
-        if (Array.isArray(storedCategories) && storedCategories.length > 0) {
-            setLocalCategories(storedCategories);
-        } else if (Array.isArray(categories) && categories.length > 0) {
-            setLocalCategories(categories);
-        } else {
-            setLocalCategories([]);
-        }
 
-        // Listen for category updates from AdminDataStore
-        const unsubscribe = adminDataStore.addListener('categories', (data) => {
-            if (data.data && data.data.length > 0) {
-                setLocalCategories(data.data);
-            }
-        });
-
-        return unsubscribe;
-    }, [categories]);
 
     // Load data based on active tab
     useEffect(() => {
