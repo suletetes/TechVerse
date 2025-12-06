@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import Role from '../models/Role.js';
 import AuditLog from '../models/AuditLog.js';
 import { isValidPermission, matchesPermissionPattern } from '../config/permissions.js';
+import { DEFAULT_ROLES } from '../config/defaultRoles.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -125,22 +126,36 @@ class PermissionService {
       }
 
       // Otherwise, fetch from role
+      let rolePermissions = [];
       const role = await Role.findOne({ name: user.role });
 
-      if (!role) {
-        logger.warn('Role not found for user', {
-          userId,
-          roleName: user.role
-        });
-        return [];
+      if (role) {
+        rolePermissions = role.permissions;
+      } else {
+        // Fallback to default roles configuration if Role document doesn't exist
+        const defaultRole = DEFAULT_ROLES[user.role];
+        if (defaultRole) {
+          rolePermissions = defaultRole.permissions;
+          logger.info('Using default role permissions', {
+            userId,
+            roleName: user.role,
+            permissionsCount: rolePermissions.length
+          });
+        } else {
+          logger.warn('Role not found for user', {
+            userId,
+            roleName: user.role
+          });
+          return [];
+        }
       }
 
       // Update user's cached permissions
-      user.permissions = role.permissions;
+      user.permissions = rolePermissions;
       await user.save();
 
-      this.setCachedPermissions(cacheKey, role.permissions);
-      return role.permissions;
+      this.setCachedPermissions(cacheKey, rolePermissions);
+      return rolePermissions;
     } catch (error) {
       logger.error('Error getting user permissions', {
         error: error.message,
