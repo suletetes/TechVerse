@@ -20,6 +20,7 @@ import {
   getCategories
 } from '../controllers/productController.js';
 import { authenticate, requireAdmin, optionalAuth, apiRateLimit } from '../middleware/passportAuth.js';
+import { requirePermission, requireAnyPermission } from '../middleware/permissions.js';
 import { validate, commonValidations } from '../middleware/validation.js';
 import { Product } from '../models/index.js';
 import {
@@ -325,14 +326,14 @@ router.get('/:id/related', productIdOrSlugValidation, validate, async (req, res,
 router.post('/:id/reviews', reviewValidation, validate, authenticate, addProductReview);
 
 // Admin only routes
-router.post('/', productValidation, validate, authenticate, requireAdmin, createProduct);
+router.post('/', productValidation, validate, authenticate, requirePermission('products.create'), createProduct);
 router.put('/:id', 
   [commonValidations.mongoId('id'), ...productValidation], 
   validate, 
   authenticate, 
-  requireAdmin, 
+  requirePermission('products.update'), 
   updateProduct
 );
-router.delete('/:id', commonValidations.mongoId('id'), validate, authenticate, requireAdmin, deleteProduct);
+router.delete('/:id', commonValidations.mongoId('id'), validate, authenticate, requirePermission('products.delete'), deleteProduct);
 
 export default router;

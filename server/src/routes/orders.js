@@ -12,6 +12,7 @@ import {
   refundOrder
 } from '../controllers/orderController.js';
 import { authenticate, requireAdmin, requireOwnershipOrAdmin } from '../middleware/passportAuth.js';
+import { requirePermission } from '../middleware/permissions.js';
 import { validate, commonValidations } from '../middleware/validation.js';
 
 const router = express.Router();
@@ -102,7 +103,7 @@ router.get('/:id/tracking', commonValidations.mongoId('id'), validate, authentic
 router.post('/:id/payment', paymentValidation, validate, authenticate, processPayment);
 
 // Admin only routes
-router.put('/:id/status', orderStatusValidation, validate, authenticate, requireAdmin, updateOrderStatus);
-router.post('/:id/refund', refundValidation, validate, authenticate, requireAdmin, refundOrder);
+router.put('/:id/status', orderStatusValidation, validate, authenticate, requirePermission('orders.update'), updateOrderStatus);
+router.post('/:id/refund', refundValidation, validate, authenticate, requirePermission('orders.refund'), refundOrder);
 
 export default router;

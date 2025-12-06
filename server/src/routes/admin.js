@@ -71,6 +71,7 @@ import {
   clearSecurityEvents
 } from '../controllers/securityController.js';
 import { authenticate, requireAdmin } from '../middleware/passportAuth.js';
+import { requirePermission, requireAnyPermission } from '../middleware/permissions.js';
 import { validate, commonValidations } from '../middleware/validation.js';
 
 const router = express.Router();
@@ -151,18 +152,18 @@ router.get('/dashboard', getDashboardStats);
 router.get('/analytics', getAnalytics);
 
 // User management routes - Enhanced
-router.get('/users', getAllUsers);
-router.get('/users/analytics', getUserAnalytics);
-router.get('/users/export', exportUsers);
-router.get('/users/:id', commonValidations.mongoId('id'), validate, getUserById);
-router.put('/users/:id/status', userStatusValidation, validate, updateUserStatus);
+router.get('/users', requirePermission('users.view'), getAllUsers);
+router.get('/users/analytics', requirePermission('analytics.view'), getUserAnalytics);
+router.get('/users/export', requirePermission('analytics.export'), exportUsers);
+router.get('/users/:id', commonValidations.mongoId('id'), validate, requirePermission('users.view'), getUserById);
+router.put('/users/:id/status', userStatusValidation, validate, requirePermission('users.update'), updateUserStatus);
 router.put('/users/bulk-status', [
   body('userIds').isArray({ min: 1, max: 50 }).withMessage('User IDs array is required (max 50 items)'),
   body('userIds.*').isMongoId().withMessage('Each user ID must be valid'),
   body('accountStatus').optional().isIn(['active', 'inactive', 'suspended', 'pending']).withMessage('Invalid account status'),
   body('isActive').optional().isBoolean().withMessage('isActive must be boolean'),
   body('suspensionReason').optional().trim().isLength({ max: 200 }).withMessage('Suspension reason must be less than 200 characters')
-], validate, bulkUpdateUserStatus);
+], validate, requirePermission('users.update'), bulkUpdateUserStatus);
 router.post('/users/notify', [
   body('userIds').isArray({ min: 1, max: 100 }).withMessage('User IDs array is required (max 100 items)'),
   body('userIds.*').isMongoId().withMessage('Each user ID must be valid'),
@@ -170,8 +171,8 @@ router.post('/users/notify', [
   body('message').trim().isLength({ min: 1, max: 500 }).withMessage('Message is required (max 500 characters)'),
   body('type').optional().isIn(['info', 'warning', 'success', 'error']).withMessage('Invalid notification type'),
   body('sendEmail').optional().isBoolean().withMessage('sendEmail must be boolean')
-], validate, sendUserNotification);
-router.delete('/users/:id', commonValidations.mongoId('id'), validate, deleteUser);
+], validate, requirePermission('users.update'), sendUserNotification);
+router.delete('/users/:id', commonValidations.mongoId('id'), validate, requirePermission('users.delete'), deleteUser);
 
 // Review management routes
 router.get('/reviews', authenticate, requireAdmin, getAllReviews);
