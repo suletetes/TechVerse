@@ -1,441 +1,213 @@
 import mongoose from 'mongoose';
 
-/**
- * Audit Log Model
- * Stores comprehensive audit trail for all administrative actions
- */
-
 const auditLogSchema = new mongoose.Schema({
-  // Admin user information
-  adminUserId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true
-  },
-  adminEmail: {
-    type: String,
-    required: true,
-    index: true
-  },
-  adminRole: {
-    type: String,
-    required: true,
-    enum: ['admin', 'super_admin', 'moderator']
-  },
-  
-  // Action details
   action: {
     type: String,
-    required: true,
-    index: true,
+    required: [true, 'Action is required'],
     enum: [
-      // User management actions
-      'CREATE_USER',
-      'UPDATE_USER',
-      'DELETE_USER',
-      'CHANGE_USER_ROLE',
-      'CHANGE_USER_STATUS',
-      'RESET_USER_PASSWORD',
-      'VIEW_USER_DETAILS',
-      'EXPORT_USER_DATA',
-      
-      // Product management actions
-      'CREATE_PRODUCT',
-      'UPDATE_PRODUCT',
-      'DELETE_PRODUCT',
-      'BULK_UPDATE_PRODUCTS',
-      'BULK_DELETE_PRODUCTS',
-      'UPDATE_PRODUCT_STOCK',
-      'UPDATE_PRODUCT_PRICING',
-      'PUBLISH_PRODUCT',
-      'UNPUBLISH_PRODUCT',
-      
-      // Order management actions
-      'VIEW_ORDER',
-      'UPDATE_ORDER_STATUS',
-      'CANCEL_ORDER',
-      'REFUND_ORDER',
-      'EXPORT_ORDER_DATA',
-      'BULK_UPDATE_ORDERS',
-      
-      // Category management actions
-      'CREATE_CATEGORY',
-      'UPDATE_CATEGORY',
-      'DELETE_CATEGORY',
-      'REORDER_CATEGORIES',
-      
-      // System configuration actions
-      'UPDATE_SYSTEM_SETTINGS',
-      'UPDATE_SECURITY_SETTINGS',
-      'UPDATE_EMAIL_SETTINGS',
-      'UPDATE_PAYMENT_SETTINGS',
-      'BACKUP_DATABASE',
-      'RESTORE_DATABASE',
-      
-      // Security actions
-      'LOGIN_ADMIN',
-      'LOGOUT_ADMIN',
-      'FAILED_LOGIN_ATTEMPT',
-      'PASSWORD_CHANGE',
-      'SECURITY_ALERT_TRIGGERED',
-      'IP_BLOCKED',
-      'IP_UNBLOCKED',
-      
-      // Data operations
-      'EXPORT_DATA',
-      'IMPORT_DATA',
-      'BULK_OPERATION',
-      'DATABASE_QUERY',
-      
-      // General actions
-      'VIEW_DASHBOARD',
-      'VIEW_ANALYTICS',
-      'GENERATE_REPORT',
-      'SYSTEM_MAINTENANCE'
+      'role_created',
+      'role_updated',
+      'role_deleted',
+      'role_assigned',
+      'role_revoked',
+      'permission_added',
+      'permission_removed',
+      'user_created',
+      'user_updated',
+      'user_deleted',
+      'login_success',
+      'login_failed',
+      'logout',
+      'password_changed',
+      'password_reset',
+      'unauthorized_access'
     ]
   },
-  
-  // Resource information
-  resourceType: {
-    type: String,
-    index: true,
-    enum: ['user', 'product', 'order', 'category', 'system', 'security', 'data', 'bulk', null]
+  performedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'Performer is required']
   },
-  resourceId: {
-    type: String, // Can be ObjectId or other identifier
-    index: true
-  },
-  
-  // Request details
-  endpoint: {
-    type: String,
-    required: true
-  },
-  method: {
-    type: String,
-    required: true,
-    enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
-  },
-  
-  // Client information
-  ip: {
-    type: String,
-    required: true,
-    index: true
-  },
-  userAgent: {
-    type: String,
-    required: true
-  },
-  
-  // Request/Response data
-  requestBody: {
-    type: mongoose.Schema.Types.Mixed,
-    default: null
-  },
-  queryParams: {
-    type: mongoose.Schema.Types.Mixed,
-    default: null
-  },
-  responseData: {
-    type: mongoose.Schema.Types.Mixed,
-    default: null
-  },
-  
-  // Response details
-  statusCode: {
-    type: Number,
-    required: true,
-    index: true
-  },
-  success: {
-    type: Boolean,
-    required: true,
-    index: true
-  },
-  responseTime: {
-    type: Number, // in milliseconds
-    required: true
-  },
-  errorMessage: {
-    type: String,
-    default: null
-  },
-  
-  // Metadata
-  timestamp: {
-    type: Date,
-    default: Date.now,
-    required: true,
-    index: true
-  },
-  requestId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  
-  // Additional context
-  sessionId: {
-    type: String,
-    index: true
-  },
-  correlationId: {
-    type: String,
-    index: true
-  },
-  
-  // Risk assessment
-  riskLevel: {
-    type: String,
-    enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
-    default: 'LOW',
-    index: true
-  },
-  
-  // Compliance and retention
-  retentionDate: {
-    type: Date,
-    index: true
-  },
-  complianceFlags: [{
-    type: String,
-    enum: ['GDPR', 'PCI_DSS', 'SOX', 'HIPAA', 'SOC2']
-  }],
-  
-  // Review status
-  reviewed: {
-    type: Boolean,
-    default: false,
-    index: true
-  },
-  reviewedBy: {
+  targetUser: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
-  reviewedAt: {
-    type: Date
+  targetRole: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Role'
   },
-  reviewNotes: {
-    type: String
+  changes: {
+    before: mongoose.Schema.Types.Mixed,
+    after: mongoose.Schema.Types.Mixed
+  },
+  metadata: {
+    ip: String,
+    userAgent: String,
+    reason: String,
+    endpoint: String,
+    method: String,
+    statusCode: Number,
+    errorMessage: String
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now,
+    required: true
   }
 }, {
-  timestamps: true,
-  collection: 'audit_logs'
+  timestamps: false // Using custom timestamp field
 });
 
-// Indexes for efficient querying
-auditLogSchema.index({ timestamp: -1 }); // Most recent first
-auditLogSchema.index({ adminUserId: 1, timestamp: -1 }); // Admin activity timeline
-auditLogSchema.index({ action: 1, timestamp: -1 }); // Action-based queries
-auditLogSchema.index({ resourceType: 1, resourceId: 1, timestamp: -1 }); // Resource audit trail
-auditLogSchema.index({ ip: 1, timestamp: -1 }); // IP-based analysis
-auditLogSchema.index({ success: 1, timestamp: -1 }); // Success/failure analysis
-auditLogSchema.index({ riskLevel: 1, timestamp: -1 }); // Risk-based queries
-auditLogSchema.index({ reviewed: 1, timestamp: -1 }); // Review status
+// Indexes for performance
+auditLogSchema.index({ timestamp: -1 });
+auditLogSchema.index({ performedBy: 1, timestamp: -1 });
+auditLogSchema.index({ targetUser: 1, timestamp: -1 });
+auditLogSchema.index({ targetRole: 1, timestamp: -1 });
+auditLogSchema.index({ action: 1, timestamp: -1 });
+auditLogSchema.index({ 'metadata.ip': 1 });
 
-// Compound indexes for common query patterns
-auditLogSchema.index({ 
-  adminUserId: 1, 
-  action: 1, 
-  timestamp: -1 
-}); // Admin action history
+// Compound indexes for common queries
+auditLogSchema.index({ action: 1, performedBy: 1, timestamp: -1 });
+auditLogSchema.index({ targetUser: 1, action: 1, timestamp: -1 });
 
-auditLogSchema.index({ 
-  resourceType: 1, 
-  success: 1, 
-  timestamp: -1 
-}); // Resource operation success rates
+// Static method to log role creation
+auditLogSchema.statics.logRoleCreation = function(roleId, performedBy, metadata = {}) {
+  return this.create({
+    action: 'role_created',
+    performedBy,
+    targetRole: roleId,
+    metadata,
+    timestamp: new Date()
+  });
+};
 
-auditLogSchema.index({ 
-  riskLevel: 1, 
-  reviewed: 1, 
-  timestamp: -1 
-}); // High-risk unreviewed actions
+// Static method to log role update
+auditLogSchema.statics.logRoleUpdate = function(roleId, performedBy, changes, metadata = {}) {
+  return this.create({
+    action: 'role_updated',
+    performedBy,
+    targetRole: roleId,
+    changes,
+    metadata,
+    timestamp: new Date()
+  });
+};
 
-// TTL index for automatic cleanup (configurable retention period)
-auditLogSchema.index({ 
-  retentionDate: 1 
-}, { 
-  expireAfterSeconds: 0 
-});
+// Static method to log role deletion
+auditLogSchema.statics.logRoleDeletion = function(roleId, performedBy, metadata = {}) {
+  return this.create({
+    action: 'role_deleted',
+    performedBy,
+    targetRole: roleId,
+    metadata,
+    timestamp: new Date()
+  });
+};
 
-// Virtual for formatted timestamp
-auditLogSchema.virtual('formattedTimestamp').get(function() {
-  return this.timestamp.toISOString();
-});
+// Static method to log role assignment
+auditLogSchema.statics.logRoleAssignment = function(userId, roleId, performedBy, changes, metadata = {}) {
+  return this.create({
+    action: 'role_assigned',
+    performedBy,
+    targetUser: userId,
+    targetRole: roleId,
+    changes,
+    metadata,
+    timestamp: new Date()
+  });
+};
 
-// Virtual for duration in human-readable format
-auditLogSchema.virtual('formattedResponseTime').get(function() {
-  if (this.responseTime < 1000) {
-    return `${this.responseTime}ms`;
-  } else if (this.responseTime < 60000) {
-    return `${(this.responseTime / 1000).toFixed(2)}s`;
-  } else {
-    return `${(this.responseTime / 60000).toFixed(2)}m`;
-  }
-});
+// Static method to log unauthorized access
+auditLogSchema.statics.logUnauthorizedAccess = function(userId, metadata = {}) {
+  return this.create({
+    action: 'unauthorized_access',
+    performedBy: userId,
+    metadata,
+    timestamp: new Date()
+  });
+};
 
-// Static methods for common queries
-auditLogSchema.statics.findByAdmin = function(adminUserId, options = {}) {
-  const { limit = 50, skip = 0, startDate, endDate } = options;
+// Static method to get logs with filtering
+auditLogSchema.statics.getFilteredLogs = function(filters = {}) {
+  const query = {};
   
-  const query = { adminUserId };
-  if (startDate || endDate) {
+  if (filters.action) {
+    query.action = filters.action;
+  }
+  
+  if (filters.performedBy) {
+    query.performedBy = filters.performedBy;
+  }
+  
+  if (filters.targetUser) {
+    query.targetUser = filters.targetUser;
+  }
+  
+  if (filters.targetRole) {
+    query.targetRole = filters.targetRole;
+  }
+  
+  if (filters.startDate || filters.endDate) {
     query.timestamp = {};
-    if (startDate) query.timestamp.$gte = new Date(startDate);
-    if (endDate) query.timestamp.$lte = new Date(endDate);
+    if (filters.startDate) {
+      query.timestamp.$gte = new Date(filters.startDate);
+    }
+    if (filters.endDate) {
+      query.timestamp.$lte = new Date(filters.endDate);
+    }
   }
   
   return this.find(query)
+    .populate('performedBy', 'firstName lastName email')
+    .populate('targetUser', 'firstName lastName email')
+    .populate('targetRole', 'name displayName')
     .sort({ timestamp: -1 })
-    .limit(limit)
-    .skip(skip)
-    .populate('adminUserId', 'firstName lastName email')
-    .lean();
+    .limit(filters.limit || 100);
 };
 
-auditLogSchema.statics.findByResource = function(resourceType, resourceId, options = {}) {
-  const { limit = 50, skip = 0 } = options;
+// Static method to export logs to CSV format
+auditLogSchema.statics.exportToCSV = async function(filters = {}) {
+  const logs = await this.getFilteredLogs(filters);
   
-  return this.find({ resourceType, resourceId })
-    .sort({ timestamp: -1 })
-    .limit(limit)
-    .skip(skip)
-    .populate('adminUserId', 'firstName lastName email')
-    .lean();
-};
-
-auditLogSchema.statics.findHighRiskActions = function(options = {}) {
-  const { limit = 100, skip = 0, reviewed = false } = options;
-  
-  return this.find({ 
-    riskLevel: { $in: ['HIGH', 'CRITICAL'] },
-    reviewed 
-  })
-    .sort({ timestamp: -1 })
-    .limit(limit)
-    .skip(skip)
-    .populate('adminUserId', 'firstName lastName email')
-    .lean();
-};
-
-auditLogSchema.statics.getActionSummary = function(startDate, endDate) {
-  const matchStage = {};
-  if (startDate || endDate) {
-    matchStage.timestamp = {};
-    if (startDate) matchStage.timestamp.$gte = new Date(startDate);
-    if (endDate) matchStage.timestamp.$lte = new Date(endDate);
-  }
-  
-  return this.aggregate([
-    { $match: matchStage },
-    {
-      $group: {
-        _id: '$action',
-        count: { $sum: 1 },
-        successCount: {
-          $sum: { $cond: ['$success', 1, 0] }
-        },
-        failureCount: {
-          $sum: { $cond: ['$success', 0, 1] }
-        },
-        avgResponseTime: { $avg: '$responseTime' },
-        lastOccurrence: { $max: '$timestamp' }
-      }
-    },
-    { $sort: { count: -1 } }
-  ]);
-};
-
-auditLogSchema.statics.getAdminActivity = function(startDate, endDate) {
-  const matchStage = {};
-  if (startDate || endDate) {
-    matchStage.timestamp = {};
-    if (startDate) matchStage.timestamp.$gte = new Date(startDate);
-    if (endDate) matchStage.timestamp.$lte = new Date(endDate);
-  }
-  
-  return this.aggregate([
-    { $match: matchStage },
-    {
-      $group: {
-        _id: '$adminUserId',
-        actionCount: { $sum: 1 },
-        uniqueActions: { $addToSet: '$action' },
-        lastActivity: { $max: '$timestamp' },
-        successRate: {
-          $avg: { $cond: ['$success', 1, 0] }
-        }
-      }
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: '_id',
-        foreignField: '_id',
-        as: 'adminInfo'
-      }
-    },
-    {
-      $project: {
-        actionCount: 1,
-        uniqueActionCount: { $size: '$uniqueActions' },
-        lastActivity: 1,
-        successRate: 1,
-        adminEmail: { $arrayElemAt: ['$adminInfo.email', 0] },
-        adminName: {
-          $concat: [
-            { $arrayElemAt: ['$adminInfo.firstName', 0] },
-            ' ',
-            { $arrayElemAt: ['$adminInfo.lastName', 0] }
-          ]
-        }
-      }
-    },
-    { $sort: { actionCount: -1 } }
-  ]);
-};
-
-// Pre-save middleware to set risk level and retention date
-auditLogSchema.pre('save', function(next) {
-  // Set risk level based on action
-  const highRiskActions = [
-    'DELETE_USER', 'DELETE_PRODUCT', 'DELETE_ORDER', 'BULK_DELETE_PRODUCTS',
-    'BULK_DELETE_ORDERS', 'UPDATE_SECURITY_SETTINGS', 'BACKUP_DATABASE',
-    'RESTORE_DATABASE', 'EXPORT_USER_DATA'
+  const headers = [
+    'Timestamp',
+    'Action',
+    'Performed By',
+    'Target User',
+    'Target Role',
+    'IP Address',
+    'Reason'
   ];
   
-  const criticalActions = [
-    'UPDATE_SYSTEM_SETTINGS', 'CHANGE_USER_ROLE', 'RESET_USER_PASSWORD',
-    'IP_BLOCKED', 'SECURITY_ALERT_TRIGGERED'
-  ];
+  const rows = logs.map(log => [
+    log.timestamp.toISOString(),
+    log.action,
+    log.performedBy ? `${log.performedBy.firstName} ${log.performedBy.lastName} (${log.performedBy.email})` : 'N/A',
+    log.targetUser ? `${log.targetUser.firstName} ${log.targetUser.lastName} (${log.targetUser.email})` : 'N/A',
+    log.targetRole ? log.targetRole.displayName : 'N/A',
+    log.metadata?.ip || 'N/A',
+    log.metadata?.reason || 'N/A'
+  ]);
   
-  if (criticalActions.includes(this.action)) {
-    this.riskLevel = 'CRITICAL';
-  } else if (highRiskActions.includes(this.action)) {
-    this.riskLevel = 'HIGH';
-  } else if (this.action.includes('DELETE') || this.action.includes('BULK')) {
-    this.riskLevel = 'MEDIUM';
-  } else {
-    this.riskLevel = 'LOW';
-  }
-  
-  // Set retention date based on risk level and compliance requirements
-  const retentionPeriods = {
-    'LOW': 365, // 1 year
-    'MEDIUM': 1095, // 3 years
-    'HIGH': 2555, // 7 years
-    'CRITICAL': 3650 // 10 years
+  return [headers, ...rows];
+};
+
+// Method to get human-readable description
+auditLogSchema.methods.getDescription = function() {
+  const actionDescriptions = {
+    role_created: 'created a new role',
+    role_updated: 'updated role',
+    role_deleted: 'deleted role',
+    role_assigned: 'assigned role to user',
+    role_revoked: 'revoked role from user',
+    permission_added: 'added permission',
+    permission_removed: 'removed permission',
+    unauthorized_access: 'attempted unauthorized access'
   };
   
-  const retentionDays = retentionPeriods[this.riskLevel] || 365;
-  this.retentionDate = new Date(Date.now() + (retentionDays * 24 * 60 * 60 * 1000));
-  
-  next();
-});
+  return actionDescriptions[this.action] || this.action;
+};
 
-// Export the model
-export const AuditLog = mongoose.model('AuditLog', auditLogSchema);
+const AuditLog = mongoose.model('AuditLog', auditLogSchema);
+
 export default AuditLog;
