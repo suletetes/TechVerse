@@ -24,9 +24,6 @@ const ReviewsSection = ({
     submitButtonText = 'Submit Review',
     initialDisplayLimit = 3 // Show only 3 reviews initially
 }) => {
-    console.log('🔍 DEBUG ReviewsSection: Initial values:', writeReviewInitialValues);
-    console.log('🔍 DEBUG ReviewsSection: Submit button text:', submitButtonText);
-    
     const navigate = useNavigate();
     // Handle backend review data structure
     const processedReviews = (Array.isArray(reviews) ? reviews : []).filter(review => review && review.rating).map(review => ({

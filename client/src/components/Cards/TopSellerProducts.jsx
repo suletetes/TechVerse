@@ -40,15 +40,6 @@ const TopSellerProducts = ({
 
     // Transform API data to component format
     const transformedProducts = safeProducts.map(product => {
-        // Debug logging
-        console.log('🔍 [TOP_SELLERS] Transforming product:', {
-            name: product.name,
-            stock: product.stock,
-            status: product.status,
-            rating: product.rating,
-            _id: product._id
-        });
-        
         return {
             id: product._id,
             _id: product._id,

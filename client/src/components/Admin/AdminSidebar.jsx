@@ -135,6 +135,26 @@ const AdminSidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, ad
                         <small className="text-muted">Customer Management</small>
                     </div>
                 </button>
+                {/* Roles */}
+                <button
+                    className={`nav-link d-flex align-items-center px-4 py-3 border-0 text-start position-relative ${activeTab === 'roles' ? 'active bg-purple bg-opacity-10 text-purple' : 'text-dark'}`}
+                    onClick={() => {
+                        setActiveTab('roles');
+                        setSidebarOpen(false);
+                    }}
+                    style={activeTab === 'roles' ? { backgroundColor: 'rgba(111, 66, 193, 0.1)', color: '#6f42c1' } : {}}
+                >
+                    {activeTab === 'roles' && <div className="position-absolute start-0 top-0 bottom-0" style={{ width: '3px', backgroundColor: '#6f42c1' }}></div>}
+                    <div className={`rounded-2 p-2 me-3`} style={{ backgroundColor: activeTab === 'roles' ? '#6f42c1' : '#f8f9fa' }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" className="flex-shrink-0" style={{ color: activeTab === 'roles' ? 'white' : '#6c757d' }}>
+                            <path fill="currentColor" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M17.13,17C15.92,18.85 14.11,20.24 12,20.92C9.89,20.24 8.08,18.85 6.87,17C6.53,16.5 6.24,16 6,15.47C6,13.82 8.71,12.47 12,12.47C15.29,12.47 18,13.79 18,15.47C17.76,16 17.47,16.5 17.13,17Z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div className="fw-semibold">Roles</div>
+                        <small className="text-muted">Permissions & Access</small>
+                    </div>
+                </button>
                 {/* Catalog Management */}
                 <button
                     className={`nav-link d-flex align-items-center px-4 py-3 border-0 text-start position-relative ${activeTab === 'catalog' ? 'active bg-secondary bg-opacity-10 text-secondary' : 'text-dark'}`}
@@ -229,6 +249,25 @@ const AdminSidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, ad
                     <div>
                         <div className="fw-semibold">Settings</div>
                         <small className="text-muted">System Configuration</small>
+                    </div>
+                </button>
+                {/* Debug Roles */}
+                <button
+                    className={`nav-link d-flex align-items-center px-4 py-3 border-0 text-start position-relative ${activeTab === 'debug-roles' ? 'active bg-danger bg-opacity-10 text-danger' : 'text-dark'}`}
+                    onClick={() => {
+                        setActiveTab('debug-roles');
+                        setSidebarOpen(false);
+                    }}
+                >
+                    {activeTab === 'debug-roles' && <div className="position-absolute start-0 top-0 bottom-0 bg-danger" style={{ width: '3px' }}></div>}
+                    <div className={`rounded-2 p-2 me-3 ${activeTab === 'debug-roles' ? 'bg-danger' : 'bg-light'}`}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" className={`flex-shrink-0 ${activeTab === 'debug-roles' ? 'text-white' : 'text-muted'}`}>
+                            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div className="fw-semibold">Debug Roles</div>
+                        <small className="text-muted">Troubleshoot Permissions</small>
                     </div>
                 </button>
             </nav>

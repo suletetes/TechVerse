@@ -79,25 +79,21 @@ const AdminUsersNew = () => {
 
     const handleRoleChange = async (userId, newRole) => {
         try {
-            console.log(`Updating user ${userId} to role: ${newRole}`);
             // Update user role via API
             // await adminService.updateUserRole(userId, newRole);
-            // Reload users after update
             await loadUsers();
         } catch (error) {
-            console.error('Error updating user role:', error);
+            // Role update failed
         }
     };
 
     const handleStatusChange = async (userId, newStatus) => {
         try {
-            console.log(`Updating user ${userId} to status: ${newStatus}`);
             // Update user status via API
             // await adminService.updateUserStatus(userId, newStatus);
-            // Reload users after update
             await loadUsers();
         } catch (error) {
-            console.error('Error updating user status:', error);
+            // Status update failed
         }
     };
 

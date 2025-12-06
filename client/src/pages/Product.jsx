@@ -197,18 +197,10 @@ const Product = () => {
                 storage: selectedStorage
             };
 
-            console.log('Adding to cart:', {
-                productId: currentProduct._id,
-                quantity,
-                options
-            });
-            
             const result = await addToCart(currentProduct._id, quantity, options);
-            console.log('Cart add result:', result);
             
             // Show success toast with action
             const toastMessage = `${currentProduct.name} added to cart!`;
-            console.log('Setting toast:', toastMessage);
             setToast({
                 message: toastMessage,
                 type: 'success',
@@ -226,7 +218,6 @@ const Product = () => {
                 });
             }
         } catch (error) {
-            console.error('Error adding to cart:', error);
             setToast({
                 message: 'Failed to add product to cart. Please try again.',
                 type: 'error'
@@ -269,7 +260,6 @@ const Product = () => {
             // Redirect to checkout
             navigate('/payment');
         } catch (error) {
-            console.error('Error processing buy now:', error);
             setToast({
                 message: 'Failed to process your request. Please try again.',
                 type: 'error'
@@ -320,7 +310,6 @@ const Product = () => {
                 });
             }
         } catch (error) {
-            console.error('Error toggling wishlist:', error);
             // Handle 409 conflict (already in wishlist)
             if (error.response?.status === 409) {
                 setIsInWishlist(true);
@@ -337,7 +326,7 @@ const Product = () => {
         } finally {
             setWishlistLoading(false);
         }
-    }, [currentProduct, isInWishlist, isAuthenticated, navigate, id]);
+    }, [currentProduct, isInWishlist, isAuthenticated, navigate, id, selectedColor, selectedStorage]);
 
     const handleMediaSelect = useCallback((mediaId) => {
         setSelectedMedia(mediaId);
@@ -371,17 +360,14 @@ const Product = () => {
     useEffect(() => {
         const fetchReviews = async () => {
             if (!currentProduct?._id) {
-                console.log('⭕ No product ID, skipping reviews fetch');
                 return;
             }
             
-            console.log('🔵 Fetching reviews for product:', currentProduct._id);
             setReviewsLoading(true);
             try {
                 // Direct fetch to bypass caching issues
                 // API_BASE_URL already includes /api from .env
                 const url = `${API_BASE_URL}/products/${currentProduct._id}/reviews?page=1&limit=10&sort=newest`;
-                console.log('🔵 Reviews URL:', url);
                 
                 const response = await fetch(url, {
                     method: 'GET',
@@ -392,27 +378,20 @@ const Product = () => {
                     credentials: 'include'
                 });
                 
-                console.log('🔵 Reviews response status:', response.status);
-                
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 const data = await response.json();
-                console.log('🟢 Reviews data received:', data);
                 
                 if (data?.data?.reviews) {
-                    console.log('✅ Setting reviews from data.data.reviews:', data.data.reviews.length);
                     setReviews(data.data.reviews);
                 } else if (Array.isArray(data?.data)) {
-                    console.log('✅ Setting reviews from data.data:', data.data.length);
                     setReviews(data.data);
                 } else {
-                    console.log('⚠️ No reviews found in response');
                     setReviews([]);
                 }
             } catch (error) {
-                console.error('❌ Error fetching reviews:', error);
                 setReviews([]);
             } finally {
                 setReviewsLoading(false);
@@ -457,7 +436,6 @@ const Product = () => {
                 const response = await wishlistService.checkWishlistStatus(currentProduct._id);
                 setIsInWishlist(response.data?.isInWishlist || false);
             } catch (error) {
-                console.error('Error checking wishlist status:', error);
                 setIsInWishlist(false);
             }
         };
@@ -539,20 +517,9 @@ const Product = () => {
     const product = currentProduct;
 
     const handleSubmitReview = (reviewData) => {
-        console.log('Review submitted for Tablet Air:', reviewData);
         // Handle review submission logic here
-        // You could send this to your backend API
-        const reviewWithProduct = {
-            ...reviewData,
-            productId: 'tablet-air-001',
-            productName: 'Tablet Air',
-            selectedColor,
-            selectedStorage,
-            submittedAt: new Date().toISOString()
-        };
-        console.log('Complete review data:', reviewWithProduct);
         setToast({
-            message: `Thank you for your ${reviewData.rating}-star review of the Tablet Air!`,
+            message: `Thank you for your ${reviewData.rating}-star review!`,
             type: 'success'
         });
     };

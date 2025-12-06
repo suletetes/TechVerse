@@ -61,12 +61,9 @@ const AdminOrders = ({
     };
 
     const handleViewOrder = (order) => {
-        console.log('👁️ View order clicked:', order);
-        
         if (onViewOrder) {
             onViewOrder(order);
         } else {
-            // Open order details in new tab - use correct route
             const orderId = order._id || order.id;
             window.open(`/user/order/${orderId}`, '_blank');
         }
@@ -78,8 +75,6 @@ const AdminOrders = ({
     };
 
     const handleUpdateStatus = async (orderId, newStatus) => {
-        console.log('🔄 Update status clicked:', orderId, newStatus);
-        
         try {
             if (onUpdateOrderStatus) {
                 await onUpdateOrderStatus(orderId, newStatus);
@@ -88,14 +83,12 @@ const AdminOrders = ({
                     type: 'success'
                 });
             } else {
-                console.log('⚠️ No onUpdateOrderStatus function provided');
                 setToast({
                     message: `Order status updated to ${newStatus}! (Demo mode)`,
                     type: 'success'
                 });
             }
         } catch (error) {
-            console.error('❌ Error updating order status:', error);
             setToast({
                 message: error.message || 'Failed to update order status',
                 type: 'error'
@@ -104,8 +97,6 @@ const AdminOrders = ({
     };
 
     const handleCancelOrder = async (orderId) => {
-        console.log('❌ Cancel order clicked:', orderId);
-        
         if (window.confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
             try {
                 if (onCancelOrder) {
@@ -115,14 +106,12 @@ const AdminOrders = ({
                         type: 'success'
                     });
                 } else {
-                    console.log('⚠️ No onCancelOrder function provided');
                     setToast({
                         message: 'Order cancelled successfully! (Demo mode)',
                         type: 'success'
                     });
                 }
             } catch (error) {
-                console.error('❌ Error cancelling order:', error);
                 setToast({
                     message: error.message || 'Failed to cancel order',
                     type: 'error'
@@ -132,8 +121,6 @@ const AdminOrders = ({
     };
 
     const handleRefundOrder = async (orderId) => {
-        console.log('💰 Refund order clicked:', orderId);
-        
         if (window.confirm('Are you sure you want to refund this order?')) {
             try {
                 if (onRefundOrder) {
@@ -143,14 +130,12 @@ const AdminOrders = ({
                         type: 'success'
                     });
                 } else {
-                    console.log('⚠️ No onRefundOrder function provided');
                     setToast({
                         message: 'Order refunded successfully! (Demo mode)',
                         type: 'success'
                     });
                 }
             } catch (error) {
-                console.error('❌ Error refunding order:', error);
                 setToast({
                     message: error.message || 'Failed to refund order',
                     type: 'error'
@@ -160,8 +145,6 @@ const AdminOrders = ({
     };
 
     const handlePrintInvoice = (order) => {
-        console.log('🖨️ Print invoice clicked:', order);
-        
         if (onPrintInvoice) {
             onPrintInvoice(order);
         } else {
@@ -252,14 +235,12 @@ const AdminOrders = ({
                     type: 'success'
                 });
             } else {
-                console.log('⚠️ No onSendEmail function provided');
                 setToast({
                     message: 'Email sent successfully! (Demo mode)',
                     type: 'success'
                 });
             }
         } catch (error) {
-            console.error('❌ Error sending email:', error);
             setToast({
                 message: error.message || 'Failed to send email',
                 type: 'error'
@@ -268,8 +249,6 @@ const AdminOrders = ({
     };
 
     const handleExportOrders = () => {
-        console.log('📥 Export orders clicked');
-        
         if (handleExport) {
             handleExport(filteredOrders);
         } else {

@@ -26,6 +26,8 @@ import AdminProductsNew from "../../components/Admin/AdminProductsNew";
 import AdminOrdersNew from "../../components/Admin/AdminOrdersNew";
 import AdminUsersNew from "../../components/Admin/AdminUsersNew";
 import AdminDashboardBright from "../../components/Admin/AdminDashboardBright";
+import DebugRoles from "./DebugRoles";
+import AdminRoles from "./AdminRoles";
 import { ensureCsrfToken } from "../../utils/csrfUtils";
 
 // Import admin-specific CSS
@@ -691,6 +693,12 @@ const AdminProfile = () => {
                         toggleTwoFactor={toggleTwoFactor}
                     />
                 );
+
+            case 'roles':
+                return <AdminRoles />;
+
+            case 'debug-roles':
+                return <DebugRoles />;
 
             default:
                 return <AdminDashboardSimple />;

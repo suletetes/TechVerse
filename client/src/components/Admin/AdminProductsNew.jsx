@@ -444,34 +444,6 @@ const AdminProductsNew = ({ setActiveTab }) => {
                         </svg>
                         Refresh
                     </button>
-                    <button
-                        className="btn btn-outline-info btn-rd"
-                        onClick={() => {
-                            console.log('🔍 Debug Info:', {
-                                isAuthenticated,
-                                isAdmin: isAdmin(),
-                                user,
-                                allCategories: allCategories,
-                                categoriesCount: allCategories.length,
-                                localStorage: {
-                                    token: localStorage.getItem('token'),
-                                    techverse_token: localStorage.getItem('techverse_token_v2'),
-                                    authToken: localStorage.getItem('authToken')
-                                }
-                            });
-                        }}
-                    >
-                        Debug
-                    </button>
-                    <button
-                        className="btn btn-outline-warning btn-rd"
-                        onClick={() => {
-                            console.log('🔄 Manual category refresh...');
-                            loadCategories();
-                        }}
-                    >
-                        Reload Categories
-                    </button>
                     <button 
                         className="btn btn-success btn-rd"
                         onClick={() => setActiveTab?.('add-product')}

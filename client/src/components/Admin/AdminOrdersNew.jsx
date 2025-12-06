@@ -64,13 +64,11 @@ const AdminOrdersNew = () => {
                 if (directResponse.ok) {
                     const directData = await directResponse.json();
                     const directOrders = directData?.data?.orders || directData?.orders || directData || [];
-                    console.log(`Found ${directOrders.length} orders via direct API`);
                     setAllOrders(directOrders);
                 } else {
                     throw new Error(`API returned ${directResponse.status}`);
                 }
             } catch (directErr) {
-                console.error('Direct API call also failed:', directErr);
                 setError(`Failed to load orders: ${err.message}`);
             }
         } finally {
