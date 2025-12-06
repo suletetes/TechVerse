@@ -18,8 +18,11 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Routes will be loaded dynamically in tests that need them
-// This avoids import issues with services that require full initialization
+// Load routes for testing
+import roleRoutes from '../src/routes/roles.js';
+
+// Mount routes
+app.use('/api/admin/roles', roleRoutes);
 
 // Basic error handler
 app.use((err, req, res, next) => {
