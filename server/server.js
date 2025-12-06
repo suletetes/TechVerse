@@ -530,6 +530,20 @@ async function startServer() {
       // Log server startup information
       healthCheck.logServerStartup(PORT, NODE_ENV);
       
+      // Auto-seed default roles if they don't exist
+      try {
+        const { seedDefaultRoles } = await import('./src/seeds/seedRoles.js');
+        const seedResult = await seedDefaultRoles();
+        if (seedResult.created > 0) {
+          logger.info(`Auto-seeded ${seedResult.created} default roles`);
+          console.log(`✅ Auto-seeded ${seedResult.created} default roles`);
+        }
+      } catch (error) {
+        logger.warn('Role seeding failed, continuing without seeding', {
+          error: error.message
+        });
+      }
+      
       // Initialize email service
       try {
         const emailService = (await import('./src/services/emailService.js')).default;

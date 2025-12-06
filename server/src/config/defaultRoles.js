@@ -116,7 +116,7 @@ export const DEFAULT_ROLES = {
   admin: {
     name: 'admin',
     displayName: 'Administrator',
-    description: 'Full system access for managing products, orders, users, and content (except role management)',
+    description: 'Full system access for managing products, orders, users, and content including role management',
     permissions: [
       'products.view',
       'products.create',
@@ -130,6 +130,8 @@ export const DEFAULT_ROLES = {
       'users.view',
       'users.create',
       'users.update',
+      'users.delete',
+      'users.assign_role',
       'content.view',
       'content.create',
       'content.update',
@@ -148,7 +150,12 @@ export const DEFAULT_ROLES = {
       'analytics.export',
       'settings.view',
       'settings.update',
-      'audit.view'
+      'audit.view',
+      'audit.export',
+      'roles.view',
+      'roles.create',
+      'roles.update',
+      'roles.delete'
     ],
     priority: 90,
     isSystemRole: true,

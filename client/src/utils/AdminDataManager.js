@@ -17,13 +17,11 @@ class AdminDataManager {
   isAdminAuthenticated() {
     const token = tokenManager.getToken();
     if (!token) {
-      console.log('❌ No authentication token found');
       return false;
     }
 
     // For development, we'll be more lenient
     if (import.meta.env?.DEV) {
-      console.log('✅ Development mode - allowing admin access');
       return true;
     }
 
@@ -35,7 +33,6 @@ class AdminDataManager {
     const cacheKey = `products_${JSON.stringify(params)}`;
     
     if (this.loading.has('products')) {
-      console.log('⏳ Products already loading, waiting...');
       return this.waitForLoad('products');
     }
 
@@ -43,15 +40,11 @@ class AdminDataManager {
       this.loading.add('products');
       this.notifyListeners('products', { loading: true, error: null });
 
-      console.log('📦 Loading products...', params);
-      
       const response = await adminService.getAdminProducts({
         limit: 20,
         page: 1,
         ...params
       });
-
-      console.log('✅ Products loaded successfully:', response);
 
       const products = response.data?.products || response.products || [];
       const pagination = response.data?.pagination || response.pagination || {};
@@ -90,13 +83,6 @@ class AdminDataManager {
         errorMessage = error.message || error.data?.message || 'Unknown error occurred';
       }
 
-      console.error('📦 Products error details:', {
-        message: error.message,
-        status: error.status,
-        code: error.code,
-        data: error.data
-      });
-
       this.notifyListeners('products', { 
         loading: false, 
         error: errorMessage, 
@@ -115,7 +101,6 @@ class AdminDataManager {
     const cacheKey = `orders_${JSON.stringify(params)}`;
     
     if (this.loading.has('orders')) {
-      console.log('⏳ Orders already loading, waiting...');
       return this.waitForLoad('orders');
     }
 
@@ -123,15 +108,11 @@ class AdminDataManager {
       this.loading.add('orders');
       this.notifyListeners('orders', { loading: true, error: null });
 
-      console.log('📋 Loading orders...', params);
-      
       const response = await adminService.getAdminOrders({
         limit: 20,
         page: 1,
         ...params
       });
-
-      console.log('✅ Orders loaded successfully:', response);
 
       const orders = response.data?.orders || response.orders || [];
       const pagination = response.data?.pagination || response.pagination || {};
@@ -170,13 +151,6 @@ class AdminDataManager {
         errorMessage = error.message || error.data?.message || 'Unknown error occurred';
       }
 
-      console.error('📋 Orders error details:', {
-        message: error.message,
-        status: error.status,
-        code: error.code,
-        data: error.data
-      });
-
       this.notifyListeners('orders', { 
         loading: false, 
         error: errorMessage, 
@@ -195,7 +169,6 @@ class AdminDataManager {
     const cacheKey = `users_${JSON.stringify(params)}`;
     
     if (this.loading.has('users')) {
-      console.log('⏳ Users already loading, waiting...');
       return this.waitForLoad('users');
     }
 
@@ -203,15 +176,11 @@ class AdminDataManager {
       this.loading.add('users');
       this.notifyListeners('users', { loading: true, error: null });
 
-      console.log('👥 Loading users...', params);
-      
       const response = await adminService.getAdminUsers({
         limit: 20,
         page: 1,
         ...params
       });
-
-      console.log('✅ Users loaded successfully:', response);
 
       const users = response.data?.users || response.users || [];
       const pagination = response.data?.pagination || response.pagination || {};
@@ -249,13 +218,6 @@ class AdminDataManager {
       } else {
         errorMessage = error.message || error.data?.message || 'Unknown error occurred';
       }
-
-      console.error('👥 Users error details:', {
-        message: error.message,
-        status: error.status,
-        code: error.code,
-        data: error.data
-      });
 
       this.notifyListeners('users', { 
         loading: false, 
@@ -346,7 +308,6 @@ export const adminDataManager = new AdminDataManager();
 // Make available globally in development
 if (import.meta.env?.DEV && typeof window !== 'undefined') {
   window.adminDataManager = adminDataManager;
-  console.log('🔧 Development helper: window.adminDataManager');
 }
 
 export default adminDataManager;
