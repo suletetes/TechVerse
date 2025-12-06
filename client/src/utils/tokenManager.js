@@ -71,7 +71,6 @@ class EnhancedTokenManager {
       const fingerprintString = JSON.stringify(fingerprint);
       return this.simpleHash(fingerprintString);
     } catch (error) {
-      console.warn('Failed to generate browser fingerprint:', error);
       // Fallback fingerprint
       return this.simpleHash(navigator.userAgent + screen.width + screen.height);
     }
@@ -303,8 +302,6 @@ class EnhancedTokenManager {
         fingerprint: browserFingerprint.substring(0, 8) + '...'
       });
       
-      console.log('Token stored securely with enhanced security features');
-      
     } catch (error) {
       this.emitSecurityEvent('TOKEN_STORAGE_ERROR', { error: error.message });
       throw new Error(`Failed to store token securely: ${error.message}`);
@@ -370,7 +367,6 @@ class EnhancedTokenManager {
       return token;
     } catch (error) {
       this.emitSecurityEvent('TOKEN_RETRIEVAL_ERROR', { error: error.message });
-      console.error('Error retrieving token:', error);
       return null;
     }
   }
@@ -443,7 +439,6 @@ class EnhancedTokenManager {
       const metadata = localStorage.getItem(STORAGE_KEYS.TOKEN_METADATA);
       return metadata ? JSON.parse(metadata) : null;
     } catch (error) {
-      console.warn('Failed to parse token metadata:', error);
       return null;
     }
   }
@@ -470,7 +465,7 @@ class EnhancedTokenManager {
       try {
         localStorage.removeItem(key);
       } catch (error) {
-        console.warn(`Failed to remove ${key}:`, error);
+        // Failed to remove key
       }
     });
     
@@ -478,7 +473,7 @@ class EnhancedTokenManager {
     try {
       sessionStorage.removeItem('techverse_temp_data');
     } catch (error) {
-      console.warn('Failed to clear session storage:', error);
+      // Failed to clear session storage
     }
     
     // Stop token validation
@@ -497,8 +492,6 @@ class EnhancedTokenManager {
         detail: { timestamp: new Date().toISOString() }
       }));
     }
-    
-    console.log('All authentication data cleared securely');
   }
 
   /**
@@ -622,8 +615,6 @@ class EnhancedTokenManager {
     
     if (oldToken && !localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)) {
       try {
-        console.log('Migrating tokens to enhanced security format...');
-        
         // Validate old token
         const validation = this.validateTokenFormat(oldToken);
         if (validation.valid) {
@@ -646,7 +637,6 @@ class EnhancedTokenManager {
         });
         
       } catch (error) {
-        console.warn('Token migration failed:', error);
         this.emitSecurityEvent('TOKEN_MIGRATION_FAILED', { error: error.message });
       }
     }
@@ -672,17 +662,12 @@ class EnhancedTokenManager {
       data
     };
     
-    // Log security events in development
-    if (import.meta.env?.DEV) {
-      console.log(`🔒 Security Event: ${type}`, data);
-    }
-    
     // Notify listeners
     this.securityEventListeners.forEach(listener => {
       try {
         listener(event);
       } catch (error) {
-        console.error('Security event listener error:', error);
+        // Security event listener error
       }
     });
   }

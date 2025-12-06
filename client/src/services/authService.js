@@ -61,7 +61,6 @@ class UnifiedAuthService {
         const user = JSON.parse(storedUser);
         this.emitAuthEvent(AuthEvents.LOGIN_SUCCESS, { user, fromStorage: true });
       } catch (error) {
-        console.warn('Failed to parse stored user data:', error);
         localStorage.removeItem('techverse_user');
       }
     }
@@ -79,8 +78,6 @@ class UnifiedAuthService {
           this.clearAuth();
         }
       } catch (error) {
-        console.warn('Token validation failed:', error.message);
-        
         if (this.isTokenExpiredError(error)) {
           const refreshToken = unifiedTokenManager.getRefreshToken();
           if (refreshToken) {
@@ -96,7 +93,7 @@ class UnifiedAuthService {
                 return;
               }
             } catch (refreshError) {
-              console.warn('Token refresh failed during initialization:', refreshError.message);
+              // Token refresh failed
             }
           }
         }
@@ -269,7 +266,7 @@ class UnifiedAuthService {
 
       await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT, logoutData);
     } catch (error) {
-      console.warn('Logout API call failed:', error.message);
+      // Logout API call failed
     } finally {
       this.clearAuth();
       this.emitAuthEvent(AuthEvents.LOGOUT, { reason });
@@ -553,29 +550,10 @@ class UnifiedAuthService {
         return null;
       }
       
-      // Debug the raw stored data
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Raw stored user data:', storedUser);
-      }
-      
       const user = JSON.parse(storedUser);
-      
-      // Debug logging for admin role checking
-      if (process.env.NODE_ENV === 'development' && user) {
-        console.log('Current user debug:', {
-          email: user.email,
-          role: user.role,
-          isAdmin: user.role === 'admin',
-          hasAdminRole: this.hasRole('admin'),
-          isAdminMethod: this.isAdmin()
-        });
-      }
       
       return user;
     } catch (error) {
-      console.error('Error parsing stored user:', error);
-      console.error('Stored user data:', localStorage.getItem('techverse_user'));
-      
       // Clear corrupted data
       localStorage.removeItem('techverse_user');
       localStorage.removeItem('techverse_permissions');
@@ -612,13 +590,11 @@ class UnifiedAuthService {
     localStorage.removeItem('session_expiry');
     unifiedTokenManager.clearToken();
     unifiedTokenManager.clearRefreshToken();
-    console.log('All authentication data cleared');
   }
 
   // Debug function to test admin login
   async debugAdminLogin() {
     try {
-      console.log('Testing admin login...');
       this.clearAllAuthData();
       
       const result = await this.login({
@@ -626,10 +602,8 @@ class UnifiedAuthService {
         password: 'Admin123!'
       });
       
-      console.log('Admin login result:', result);
       return result;
     } catch (error) {
-      console.error('Admin login failed:', error);
       throw error;
     }
   }
@@ -765,7 +739,7 @@ class UnifiedAuthService {
       try {
         listener(event);
       } catch (error) {
-        console.error('Auth event listener error:', error);
+        // Auth event listener error
       }
     });
 
