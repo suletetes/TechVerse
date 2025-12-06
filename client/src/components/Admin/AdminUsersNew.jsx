@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { adminService } from '../../api/services/index.js';
-import { adminDataStore } from '../../utils/AdminDataStore';
 import { useAuth } from '../../context/AuthContext';
 
 const AdminUsersNew = () => {

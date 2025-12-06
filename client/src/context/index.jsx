@@ -22,20 +22,6 @@ export {
   useContextPerformanceMonitor 
 } from './ContextSelector.jsx';
 
-// Import split auth contexts
-export {
-  AuthStateProvider,
-  AuthActionsProvider,
-  useAuthState,
-  useAuthActions,
-  useAuthUser,
-  useAuthStatus,
-  useAuthError,
-  useAuthPermissions,
-  useAuthSession,
-  useAuthMFA
-} from './AuthStateContext.jsx';
-
 // Context Providers Export
 export { AuthProvider, useAuth } from './AuthContext.jsx';
 export { CartProvider, useCart } from './CartContext.jsx';
