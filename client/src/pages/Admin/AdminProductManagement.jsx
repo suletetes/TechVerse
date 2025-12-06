@@ -205,7 +205,6 @@ const AdminProductManagement = () => {
             cleanProduct.visibility = product.visibility || 'public';
             cleanProduct.featured = false;
             
-            console.log('📋 Duplicating product with data:', cleanProduct);
             await adminService.createProduct(cleanProduct);
             await loadProducts();
         } catch (err) {

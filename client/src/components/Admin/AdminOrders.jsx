@@ -225,8 +225,6 @@ const AdminOrders = ({
     };
 
     const handleSendEmail = async (orderId, emailType = 'confirmation') => {
-        console.log('📧 Send email clicked:', orderId, emailType);
-        
         try {
             if (onSendEmail) {
                 await onSendEmail(orderId, emailType);
