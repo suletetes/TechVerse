@@ -1,0 +1,719 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TechVerse Product Schema",
+  "description": "Canonical product data structure for TechVerse e-commerce application",
+  "type": "object",
+  "required": ["_id", "name", "price", "category", "status"],
+  "properties": {
+    "_id": {
+      "type": "string",
+      "description": "Unique product identifier (MongoDB ObjectId)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Product name/title",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "slug": {
+      "type": "string",
+      "description": "URL-friendly product identifier",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Product description"
+    },
+    "shortDescription": {
+      "type": "string",
+      "description": "Brief product description for listings",
+      "maxLength": 500
+    },
+    "longDescription": {
+      "type": "string",
+      "description": "Detailed product description"
+    },
+    "subtitle": {
+      "type": "string",
+      "description": "Product subtitle for additional context"
+    },
+    "price": {
+      "type": "number",
+      "description": "Current selling price",
+      "minimum": 0
+    },
+    "originalPrice": {
+      "type": "number",
+      "description": "Original price before discount",
+      "minimum": 0
+    },
+    "comparePrice": {
+      "type": "number",
+      "description": "Compare at price for discount calculation",
+      "minimum": 0
+    },
+    "costPrice": {
+      "type": "number",
+      "description": "Cost price for profit margin calculation",
+      "minimum": 0
+    },
+    "discount": {
+      "type": "number",
+      "description": "Discount percentage",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "images": {
+      "type": "array",
+      "description": "Product images array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Image URL"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "Image URL"
+              },
+              "webp": {
+                "type": "string",
+                "description": "WebP format URL"
+              },
+              "alt": {
+                "type": "string",
+                "description": "Alt text for accessibility"
+              },
+              "title": {
+                "type": "string",
+                "description": "Image title"
+              }
+            },
+            "required": ["url"]
+          }
+        ]
+      }
+    },
+    "primaryImage": {
+      "type": "object",
+      "description": "Primary product image",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "Primary image URL"
+        },
+        "webp": {
+          "type": "string",
+          "description": "WebP format URL"
+        },
+        "alt": {
+          "type": "string",
+          "description": "Alt text for accessibility"
+        }
+      },
+      "required": ["url"]
+    },
+    "mediaGallery": {
+      "type": "array",
+      "description": "Complete media gallery including images and videos",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Media item identifier"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["image", "video"],
+            "description": "Media type"
+          },
+          "src": {
+            "type": "string",
+            "description": "Media source URL"
+          },
+          "thumbnail": {
+            "type": "string",
+            "description": "Thumbnail URL"
+          },
+          "poster": {
+            "type": "string",
+            "description": "Video poster image URL"
+          },
+          "alt": {
+            "type": "string",
+            "description": "Alt text for accessibility"
+          },
+          "title": {
+            "type": "string",
+            "description": "Media title"
+          }
+        },
+        "required": ["id", "type", "src"]
+      }
+    },
+    "videos": {
+      "type": "array",
+      "description": "Product videos",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Video identifier"
+          },
+          "src": {
+            "type": "string",
+            "description": "Video source URL"
+          },
+          "poster": {
+            "type": "string",
+            "description": "Video poster image"
+          },
+          "title": {
+            "type": "string",
+            "description": "Video title"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Original file name"
+          },
+          "fileSize": {
+            "type": "number",
+            "description": "File size in bytes"
+          }
+        },
+        "required": ["id", "src"]
+      }
+    },
+    "category": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Category name or slug"
+        },
+        {
+          "type": "object",
+          "description": "Category object",
+          "properties": {
+            "_id": {
+              "type": "string",
+              "description": "Category ID"
+            },
+            "name": {
+              "type": "string",
+              "description": "Category name"
+            },
+            "slug": {
+              "type": "string",
+              "description": "Category slug"
+            }
+          },
+          "required": ["name"]
+        }
+      ]
+    },
+    "subcategory": {
+      "type": "object",
+      "description": "Product subcategory",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Subcategory name"
+        },
+        "slug": {
+          "type": "string",
+          "description": "Subcategory slug"
+        }
+      }
+    },
+    "brand": {
+      "type": "string",
+      "description": "Product brand name"
+    },
+    "model": {
+      "type": "string",
+      "description": "Product model number"
+    },
+    "sku": {
+      "type": "string",
+      "description": "Stock Keeping Unit identifier"
+    },
+    "stock": {
+      "oneOf": [
+        {
+          "type": "number",
+          "description": "Simple stock quantity",
+          "minimum": 0
+        },
+        {
+          "type": "object",
+          "description": "Detailed stock information",
+          "properties": {
+            "quantity": {
+              "type": "number",
+              "description": "Available quantity",
+              "minimum": 0
+            },
+            "trackQuantity": {
+              "type": "boolean",
+              "description": "Whether to track inventory"
+            },
+            "lowStockThreshold": {
+              "type": "number",
+              "description": "Low stock warning threshold",
+              "minimum": 0
+            }
+          },
+          "required": ["quantity"]
+        }
+      ]
+    },
+    "stockCount": {
+      "type": "number",
+      "description": "Available stock count",
+      "minimum": 0
+    },
+    "inStock": {
+      "type": "boolean",
+      "description": "Whether product is in stock"
+    },
+    "minOrderQuantity": {
+      "type": "number",
+      "description": "Minimum order quantity",
+      "minimum": 1,
+      "default": 1
+    },
+    "maxOrderQuantity": {
+      "type": "number",
+      "description": "Maximum order quantity",
+      "minimum": 1
+    },
+    "sections": {
+      "type": "array",
+      "description": "Homepage sections where product appears",
+      "items": {
+        "type": "string",
+        "enum": ["latest", "topSeller", "quickPick", "weeklyDeal"]
+      },
+      "uniqueItems": true
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "inactive", "draft", "low-stock", "out-of-stock"],
+      "description": "Product status"
+    },
+    "featured": {
+      "type": "boolean",
+      "description": "Whether product is featured",
+      "default": false
+    },
+    "rating": {
+      "type": "object",
+      "description": "Product rating information",
+      "properties": {
+        "average": {
+          "type": "number",
+          "description": "Average rating",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "count": {
+          "type": "number",
+          "description": "Number of ratings",
+          "minimum": 0
+        }
+      }
+    },
+    "averageRating": {
+      "type": "number",
+      "description": "Average customer rating",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "reviewCount": {
+      "type": "number",
+      "description": "Total number of reviews",
+      "minimum": 0
+    },
+    "sales": {
+      "type": "number",
+      "description": "Number of units sold",
+      "minimum": 0,
+      "default": 0
+    },
+    "specifications": {
+      "type": "object",
+      "description": "Technical specifications",
+      "additionalProperties": true
+    },
+    "technicalSpecs": {
+      "type": "object",
+      "description": "Categorized technical specifications",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "dynamicSpecs": {
+      "type": "object",
+      "description": "Dynamic specifications based on category template",
+      "additionalProperties": true
+    },
+    "specs": {
+      "type": "object",
+      "description": "General product specifications",
+      "additionalProperties": true
+    },
+    "keyFeatures": {
+      "type": "array",
+      "description": "Key product features",
+      "items": {
+        "type": "string"
+      }
+    },
+    "highlights": {
+      "type": "array",
+      "description": "Product highlights",
+      "items": {
+        "type": "string"
+      }
+    },
+    "includes": {
+      "type": "array",
+      "description": "What's included with the product",
+      "items": {
+        "type": "string"
+      }
+    },
+    "colors": {
+      "type": "array",
+      "description": "Available color options",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Color identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Color name"
+          },
+          "value": {
+            "type": "string",
+            "description": "Color hex value or CSS class"
+          },
+          "class": {
+            "type": "string",
+            "description": "CSS class for color display"
+          }
+        },
+        "required": ["id", "name"]
+      }
+    },
+    "storageOptions": {
+      "type": "array",
+      "description": "Available storage options",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Storage option identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Storage option name"
+          },
+          "price": {
+            "type": "number",
+            "description": "Price for this storage option",
+            "minimum": 0
+          }
+        },
+        "required": ["id", "name", "price"]
+      }
+    },
+    "productOptions": {
+      "type": "object",
+      "description": "Dynamic product options based on category",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Option group identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Option group name"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["color", "select", "size", "text"],
+            "description": "Option type"
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Whether option is required"
+          },
+          "selectedValue": {
+            "description": "Currently selected value"
+          },
+          "availableOptions": {
+            "type": "array",
+            "description": "Available options",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Option identifier"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Option name"
+                },
+                "value": {
+                  "description": "Option value"
+                },
+                "available": {
+                  "type": "boolean",
+                  "description": "Whether option is available"
+                },
+                "priceDifference": {
+                  "type": "number",
+                  "description": "Price difference for this option"
+                }
+              },
+              "required": ["id", "name"]
+            }
+          }
+        },
+        "required": ["id", "name", "type"]
+      }
+    },
+    "weight": {
+      "type": "string",
+      "description": "Product weight"
+    },
+    "dimensions": {
+      "type": "object",
+      "description": "Product dimensions",
+      "properties": {
+        "length": {
+          "type": "string",
+          "description": "Product length"
+        },
+        "width": {
+          "type": "string",
+          "description": "Product width"
+        },
+        "height": {
+          "type": "string",
+          "description": "Product height"
+        }
+      }
+    },
+    "shippingRequired": {
+      "type": "boolean",
+      "description": "Whether product requires shipping",
+      "default": true
+    },
+    "shippingWeight": {
+      "type": "string",
+      "description": "Shipping weight"
+    },
+    "shippingClass": {
+      "type": "string",
+      "description": "Shipping class",
+      "default": "standard"
+    },
+    "seoTitle": {
+      "type": "string",
+      "description": "SEO optimized title",
+      "maxLength": 60
+    },
+    "seoDescription": {
+      "type": "string",
+      "description": "SEO meta description",
+      "maxLength": 160
+    },
+    "tags": {
+      "type": "array",
+      "description": "Product tags for search and categorization",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "breadcrumbs": {
+      "type": "array",
+      "description": "Navigation breadcrumbs",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Breadcrumb name"
+          },
+          "path": {
+            "type": "string",
+            "description": "Breadcrumb path"
+          }
+        },
+        "required": ["name", "path"]
+      }
+    },
+    "relatedCategories": {
+      "type": "array",
+      "description": "Related categories",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Category name"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Category slug"
+          }
+        },
+        "required": ["name"]
+      }
+    },
+    "faqs": {
+      "type": "array",
+      "description": "Frequently asked questions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "FAQ question"
+          },
+          "answer": {
+            "type": "string",
+            "description": "FAQ answer"
+          }
+        },
+        "required": ["question", "answer"]
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Product creation timestamp"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Product last update timestamp"
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "Tablet Air Pro",
+      "slug": "tablet-air-pro",
+      "description": "Premium tablet with advanced features",
+      "shortDescription": "High-performance tablet for professionals",
+      "price": 999.99,
+      "originalPrice": 1199.99,
+      "comparePrice": 1199.99,
+      "discount": 16.67,
+      "images": [
+        {
+          "url": "/img/tablet-product.jpg",
+          "webp": "/img/tablet-product.webp",
+          "alt": "Tablet Air Pro"
+        }
+      ],
+      "primaryImage": {
+        "url": "/img/tablet-product.jpg",
+        "webp": "/img/tablet-product.webp",
+        "alt": "Tablet Air Pro"
+      },
+      "category": {
+        "_id": "507f1f77bcf86cd799439012",
+        "name": "Tablets",
+        "slug": "tablets"
+      },
+      "brand": "TechVerse",
+      "model": "TAP-2024",
+      "sku": "TAB-AIR-PRO-001",
+      "stock": 25,
+      "stockCount": 25,
+      "inStock": true,
+      "sections": ["latest", "topSeller"],
+      "status": "active",
+      "featured": true,
+      "rating": {
+        "average": 4.5,
+        "count": 128
+      },
+      "averageRating": 4.5,
+      "reviewCount": 128,
+      "sales": 342,
+      "keyFeatures": [
+        "12.9-inch Liquid Retina display",
+        "M2 chip with 8-core CPU",
+        "All-day battery life",
+        "Apple Pencil support"
+      ],
+      "colors": [
+        {
+          "id": "silver",
+          "name": "Silver",
+          "value": "#C0C0C0",
+          "class": "silver-dot"
+        },
+        {
+          "id": "space-gray",
+          "name": "Space Gray",
+          "value": "#4A4A4A",
+          "class": "gray-dot"
+        }
+      ],
+      "storageOptions": [
+        {
+          "id": "128GB",
+          "name": "128GB",
+          "price": 999.99
+        },
+        {
+          "id": "256GB",
+          "name": "256GB",
+          "price": 1099.99
+        },
+        {
+          "id": "512GB",
+          "name": "512GB",
+          "price": 1299.99
+        }
+      ],
+      "specifications": {
+        "display": {
+          "size": "12.9 inches",
+          "resolution": "2732 x 2048",
+          "technology": "Liquid Retina"
+        },
+        "processor": {
+          "chip": "M2",
+          "cores": "8-core CPU"
+        }
+      },
+      "tags": ["tablet", "premium", "professional", "apple-pencil"],
+      "seoTitle": "Tablet Air Pro - Premium Professional Tablet | TechVerse",
+      "seoDescription": "Discover the Tablet Air Pro with M2 chip, 12.9-inch display, and all-day battery. Perfect for professionals and creatives.",
+      "createdAt": "2024-01-15T10:30:00Z",
+      "updatedAt": "2024-01-20T14:45:00Z"
+    }
+  ]
+}
