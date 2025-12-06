@@ -84,9 +84,8 @@ npm run preview          # Preview production build locally
 
 ### Building
 ```bash
-npm run build            # Build for production (with validation)
-npm run build:production # Build with production optimizations
-npm run build:no-validate # Build without config validation
+npm run build            # Build for production
+npm run build:prod       # Build with production optimizations
 ```
 
 ### Testing
@@ -104,16 +103,8 @@ npm run test:context     # Run context provider tests
 
 ### Code Quality
 ```bash
-npm run validate-config  # Validate environment configuration
-npm run validate-build   # Validate build configuration
-npm run detect-drift     # Detect configuration drift
-```
-
-### Storybook (Component Development)
-```bash
-npm run storybook        # Start Storybook dev server
-npm run build-storybook  # Build Storybook for deployment
-npm run test:storybook   # Run Storybook tests
+npm run lint             # Run ESLint
+npm run lint:fix         # Fix ESLint errors automatically
 ```
 
 ## Project Structure
@@ -126,6 +117,7 @@ client/
 ├── src/
 │   ├── api/               # API services
 │   │   ├── core/          # Base API classes
+│   │   ├── interceptors/  # Request/response interceptors
 │   │   └── services/      # Service modules
 │   ├── assets/            # Styles and images
 │   │   └── css/           # Global styles
@@ -134,7 +126,8 @@ client/
 │   │   ├── Auth/          # Authentication components
 │   │   ├── Cards/         # Product cards
 │   │   ├── Common/        # Shared components
-│   │   ├── QuickPicks/    # Homepage sections
+│   │   ├── tables/        # Data tables
+│   │   ├── editor/        # Rich text editor
 │   │   └── __tests__/     # Component tests
 │   ├── context/           # Context providers
 │   │   ├── AuthContext.jsx
@@ -158,7 +151,7 @@ client/
 │   ├── utils/             # Utility functions
 │   │   ├── tokenManager.js
 │   │   ├── csrfUtils.js
-│   │   └── AdminDataStore.js
+│   │   └── formatters.js
 │   ├── App.jsx            # Main app component
 │   └── main.jsx           # Entry point
 ├── .env                   # Environment variables
@@ -304,7 +297,7 @@ function ProductCard({ product }) {
   return (
     <div className={styles.card}>
       <h3 className={styles.title}>{product.name}</h3>
-      <p className={styles.price}>£{product.price}</p>
+      <p className={styles.price}>{product.price}</p>
     </div>
   );
 }
@@ -355,7 +348,7 @@ describe('ProductCard', () => {
     render(<ProductCard product={product} />);
     
     expect(screen.getByText('Test Product')).toBeInTheDocument();
-    expect(screen.getByText('£99.99')).toBeInTheDocument();
+    expect(screen.getByText('99.99')).toBeInTheDocument();
   });
 });
 ```
@@ -511,7 +504,7 @@ Deploy the `dist/` directory to:
 npm run build
 
 # Production build with optimizations
-npm run build:production
+npm run build:prod
 ```
 
 ## Troubleshooting
@@ -536,7 +529,7 @@ npm run dev
 ```bash
 # Clear build cache
 rm -rf dist
-npm run build:no-validate
+npm run build
 ```
 
 **Test Failures**
@@ -546,7 +539,27 @@ npm test -- --clearCache
 npm test
 ```
 
+## Dependencies
 
+### Core Dependencies
+- React 19+ with React DOM
+- React Router DOM v7+
+- Vite 7+ (build tool)
+- Zustand (state management)
+- TanStack React Query (server state)
+- TanStack React Table (data tables)
+- React Hook Form + Zod (forms)
+- Radix UI components
+- TipTap (rich text editor)
+- Axios (HTTP client)
+- Stripe (payments)
+- Socket.io-client (real-time)
+
+### Development Dependencies
+- Vitest (testing framework)
+- React Testing Library
+- MSW (API mocking)
+- ESLint (linting)
 
 ## Support
 
@@ -554,5 +567,3 @@ For frontend-specific issues:
 - Check the main README.md
 - Review component documentation in docs/FRONTEND.md
 - Open an issue on GitHub
-
-
