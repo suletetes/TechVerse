@@ -295,7 +295,7 @@
   - Add troubleshooting guide
   - _Requirements: All_
 
-- [ ] 40. Create user documentation
+- [x] 40. Create user documentation
 
 
 

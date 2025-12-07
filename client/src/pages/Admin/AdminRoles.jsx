@@ -117,10 +117,62 @@ const AdminRoles = () => {
     fetchRoles();
   }, [fetchRoles]);
 
+  // Form validation errors
+  const [validationErrors, setValidationErrors] = useState({});
+
   // Show toast notification
   const showToast = (message, type = 'info') => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  // Validate form
+  const validateForm = () => {
+    const errors = {};
+    
+    // Name validation
+    if (!formData.name.trim()) {
+      errors.name = 'Role name is required';
+    } else if (formData.name.length < 3) {
+      errors.name = 'Role name must be at least 3 characters';
+    } else if (formData.name.length > 50) {
+      errors.name = 'Role name must be less than 50 characters';
+    } else if (!/^[a-z_]+$/.test(formData.name)) {
+      errors.name = 'Role name must contain only lowercase letters and underscores';
+    } else if (isCreating && roles.some(r => r.name === formData.name)) {
+      errors.name = 'A role with this name already exists';
+    }
+
+    // Display name validation
+    if (!formData.displayName.trim()) {
+      errors.displayName = 'Display name is required';
+    } else if (formData.displayName.length < 3) {
+      errors.displayName = 'Display name must be at least 3 characters';
+    } else if (formData.displayName.length > 100) {
+      errors.displayName = 'Display name must be less than 100 characters';
+    }
+
+    // Description validation
+    if (!formData.description.trim()) {
+      errors.description = 'Description is required';
+    } else if (formData.description.length < 10) {
+      errors.description = 'Description must be at least 10 characters';
+    } else if (formData.description.length > 500) {
+      errors.description = 'Description must be less than 500 characters';
+    }
+
+    // Permissions validation
+    if (formData.permissions.length === 0) {
+      errors.permissions = 'At least one permission is required';
+    }
+
+    // Priority validation
+    if (formData.priority < 1 || formData.priority > 100) {
+      errors.priority = 'Priority must be between 1 and 100';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   // Handle form input changes
@@ -130,6 +182,10 @@ const AdminRoles = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+    // Clear validation error for this field
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({ ...prev, [name]: null }));
+    }
   };
 
   // Handle permission toggle
@@ -140,6 +196,10 @@ const AdminRoles = () => {
         : [...prev.permissions, permission];
       return { ...prev, permissions };
     });
+    // Clear permissions validation error
+    if (validationErrors.permissions) {
+      setValidationErrors(prev => ({ ...prev, permissions: null }));
+    }
   };
 
   // Select all permissions in a category
@@ -170,6 +230,7 @@ const AdminRoles = () => {
       isActive: true
     });
     setSelectedRole(null);
+    setValidationErrors({});
     setIsCreating(true);
     setIsEditing(false);
   };
@@ -194,6 +255,7 @@ const AdminRoles = () => {
     setIsEditing(false);
     setIsCreating(false);
     setSelectedRole(null);
+    setValidationErrors({});
     setFormData({
       name: '',
       displayName: '',
@@ -206,12 +268,12 @@ const AdminRoles = () => {
 
   // Save role (create or update)
   const handleSave = async () => {
-    try {
-      if (!formData.name.trim()) {
-        showToast('Role name is required', 'error');
-        return;
-      }
+    if (!validateForm()) {
+      showToast('Please fix the validation errors', 'error');
+      return;
+    }
 
+    try {
       const url = isCreating 
         ? `${API_HOST}/api/admin/roles`
         : `${API_HOST}/api/admin/roles/${selectedRole._id}`;
@@ -227,14 +289,18 @@ const AdminRoles = () => {
       const data = await response.json();
       
       if (response.ok && data.success) {
-        showToast(isCreating ? 'Role created successfully' : 'Role updated successfully', 'success');
+        showToast(
+          isCreating 
+            ? `Role "${formData.displayName}" created successfully` 
+            : `Role "${formData.displayName}" updated successfully`, 
+          'success'
+        );
         handleCancel();
         fetchRoles();
       } else {
         throw new Error(data.message || 'Failed to save role');
       }
     } catch (err) {
-      console.error('Error saving role:', err);
       showToast(err.message, 'error');
     }
   };
@@ -291,10 +357,35 @@ const AdminRoles = () => {
     <div className="container-fluid">
       {/* Toast */}
       {toast && (
-        <div className={`alert alert-${toast.type === 'error' ? 'danger' : toast.type} alert-dismissible fade show position-fixed`} 
-             style={{ top: '20px', right: '20px', zIndex: 9999 }}>
-          {toast.message}
-          <button type="button" className="btn-close" onClick={() => setToast(null)}></button>
+        <div 
+          className={`toast-notification position-fixed d-flex align-items-center gap-2 px-4 py-3 rounded-3 shadow-lg`}
+          style={{ 
+            top: '20px', 
+            right: '20px', 
+            zIndex: 9999,
+            backgroundColor: toast.type === 'success' ? '#198754' : toast.type === 'error' ? '#dc3545' : '#0d6efd',
+            color: 'white',
+            minWidth: '300px',
+            animation: 'slideIn 0.3s ease-out'
+          }}
+        >
+          {toast.type === 'success' && (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" />
+            </svg>
+          )}
+          {toast.type === 'error' && (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+            </svg>
+          )}
+          <span className="flex-grow-1">{toast.message}</span>
+          <button 
+            type="button" 
+            className="btn-close btn-close-white" 
+            onClick={() => setToast(null)}
+            style={{ fontSize: '0.75rem' }}
+          ></button>
         </div>
       )}
 
@@ -396,40 +487,45 @@ const AdminRoles = () => {
                 {/* Basic Info */}
                 <div className="row mb-3">
                   <div className="col-md-6">
-                    <label className="form-label">Role Name (slug)</label>
+                    <label className="form-label">Role Name (slug) <span className="text-danger">*</span></label>
                     <input
                       type="text"
-                      className="form-control"
+                      className={`form-control ${validationErrors.name ? 'is-invalid' : ''}`}
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
                       placeholder="e.g., content_editor"
                       disabled={isEditing && selectedRole?.isSystemRole}
                     />
+                    {validationErrors.name && <div className="invalid-feedback">{validationErrors.name}</div>}
+                    <small className="text-muted">Lowercase letters and underscores only</small>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label">Display Name</label>
+                    <label className="form-label">Display Name <span className="text-danger">*</span></label>
                     <input
                       type="text"
-                      className="form-control"
+                      className={`form-control ${validationErrors.displayName ? 'is-invalid' : ''}`}
                       name="displayName"
                       value={formData.displayName}
                       onChange={handleInputChange}
                       placeholder="e.g., Content Editor"
                     />
+                    {validationErrors.displayName && <div className="invalid-feedback">{validationErrors.displayName}</div>}
                   </div>
                 </div>
                 
                 <div className="mb-3">
-                  <label className="form-label">Description</label>
+                  <label className="form-label">Description <span className="text-danger">*</span></label>
                   <textarea
-                    className="form-control"
+                    className={`form-control ${validationErrors.description ? 'is-invalid' : ''}`}
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
                     rows="2"
                     placeholder="Describe what this role can do..."
                   />
+                  {validationErrors.description && <div className="invalid-feedback">{validationErrors.description}</div>}
+                  <small className="text-muted">{formData.description.length}/500 characters</small>
                 </div>
 
                 <div className="row mb-3">
@@ -437,14 +533,15 @@ const AdminRoles = () => {
                     <label className="form-label">Priority</label>
                     <input
                       type="number"
-                      className="form-control"
+                      className={`form-control ${validationErrors.priority ? 'is-invalid' : ''}`}
                       name="priority"
                       value={formData.priority}
                       onChange={handleInputChange}
                       min="1"
                       max="100"
                     />
-                    <small className="text-muted">Higher = more authority</small>
+                    {validationErrors.priority && <div className="invalid-feedback">{validationErrors.priority}</div>}
+                    <small className="text-muted">Higher = more authority (1-100)</small>
                   </div>
                   <div className="col-md-6 d-flex align-items-center">
                     <div className="form-check mt-4">
@@ -466,8 +563,11 @@ const AdminRoles = () => {
                 {/* Permissions */}
                 <div className="mb-3">
                   <label className="form-label">
-                    Permissions ({formData.permissions.length} selected)
+                    Permissions ({formData.permissions.length} selected) <span className="text-danger">*</span>
                   </label>
+                  {validationErrors.permissions && (
+                    <div className="text-danger small mb-2">{validationErrors.permissions}</div>
+                  )}
                   <div className="border rounded p-3" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                     {Object.entries(permissionsByCategory).map(([category, perms]) => {
                       const selectedInCategory = perms.filter(p => formData.permissions.includes(p.key)).length;

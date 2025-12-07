@@ -139,7 +139,7 @@ const AdminUsersNew = () => {
             const data = await response.json();
 
             if (response.ok && data.success) {
-                showToast(`Role updated to ${newRole} successfully`, 'success');
+                showToast(`Role updated to ${formatRoleName(newRole)} successfully`, 'success');
                 await loadUsers();
             } else {
                 throw new Error(data.message || 'Failed to update role');
@@ -301,6 +301,19 @@ const AdminUsersNew = () => {
         return colors[role?.toLowerCase()] || 'secondary';
     };
 
+    // Format role name: 'content_moderator' -> 'Content Moderator'
+    const formatRoleName = (roleName) => {
+        if (!roleName) return 'Customer';
+        // Check if we have a displayName from availableRoles
+        const roleData = availableRoles.find(r => r.name === roleName);
+        if (roleData?.displayName) return roleData.displayName;
+        // Fallback: convert snake_case to Title Case
+        return roleName
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+    };
+
     if (loading) {
         return (
             <div className="store-card fill-card">
@@ -364,7 +377,7 @@ const AdminUsersNew = () => {
                             </div>
                             <div className="modal-body">
                                 <p>
-                                    Change role for <strong>{roleChangeModal.user?.firstName} {roleChangeModal.user?.lastName || roleChangeModal.user?.email}</strong> to <strong>{roleChangeModal.newRole}</strong>?
+                                    Change role for <strong>{roleChangeModal.user?.firstName} {roleChangeModal.user?.lastName || roleChangeModal.user?.email}</strong> to <strong>{formatRoleName(roleChangeModal.newRole)}</strong>?
                                 </p>
                                 <div className="mb-3">
                                     <label className="form-label">Reason (optional)</label>
@@ -474,7 +487,7 @@ const AdminUsersNew = () => {
                 <div className="col-lg-3 col-md-6">
                     <div className="card bg-primary bg-opacity-10 border-primary border-opacity-25">
                         <div className="card-body text-center">
-                            <h3 className="text-primary mb-1">{allUsers.length}</h3>
+                            <h3 className="text-primary mb-2">{allUsers.length}</h3>
                             <p className="text-muted mb-0">Total Users</p>
                         </div>
                     </div>
@@ -482,7 +495,7 @@ const AdminUsersNew = () => {
                 <div className="col-lg-3 col-md-6">
                     <div className="card bg-success bg-opacity-10 border-success border-opacity-25">
                         <div className="card-body text-center">
-                            <h3 className="text-success mb-1">
+                            <h3 className="text-success mb-2">
                                 {allUsers.filter(u => (u.status || 'active') === 'active').length}
                             </h3>
                             <p className="text-muted mb-0">Active</p>
@@ -492,7 +505,7 @@ const AdminUsersNew = () => {
                 <div className="col-lg-3 col-md-6">
                     <div className="card bg-info bg-opacity-10 border-info border-opacity-25">
                         <div className="card-body text-center">
-                            <h3 className="text-info mb-1">
+                            <h3 className="text-info mb-2">
                                 {allUsers.filter(u => (u.role || 'customer') === 'customer').length}
                             </h3>
                             <p className="text-muted mb-0">Customers</p>
@@ -502,7 +515,7 @@ const AdminUsersNew = () => {
                 <div className="col-lg-3 col-md-6">
                     <div className="card bg-warning bg-opacity-10 border-warning border-opacity-25">
                         <div className="card-body text-center">
-                            <h3 className="text-warning mb-1">
+                            <h3 className="text-warning mb-2">
                                 {allUsers.filter(u => ['admin', 'super_admin', 'moderator'].includes(u.role || 'customer')).length}
                             </h3>
                             <p className="text-muted mb-0">Staff</p>
@@ -594,7 +607,7 @@ const AdminUsersNew = () => {
                                 </td>
                                 <td>
                                     <span className={`badge bg-${getRoleColor(user.role)} bg-opacity-15 text-${getRoleColor(user.role)} border border-${getRoleColor(user.role)} border-opacity-25 px-3 py-2 rounded-pill`}>
-                                        {user.role || 'customer'}
+                                        {formatRoleName(user.role)}
                                     </span>
                                 </td>
                                 <td>
