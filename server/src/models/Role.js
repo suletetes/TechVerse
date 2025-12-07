@@ -118,20 +118,10 @@ roleSchema.methods.hasPermission = function(permission) {
   return this.permissions.includes(permission);
 };
 
-// Pre-save middleware to prevent modification of system roles
+// Pre-save middleware to prevent renaming system roles
 roleSchema.pre('save', function(next) {
-  if (this.isSystemRole && !this.isNew) {
-    // Allow only certain fields to be updated for system roles
-    const modifiedPaths = this.modifiedPaths();
-    const allowedPaths = ['isActive', 'updatedBy', 'metadata'];
-    
-    const hasDisallowedChanges = modifiedPaths.some(path => 
-      !allowedPaths.some(allowed => path.startsWith(allowed))
-    );
-    
-    if (hasDisallowedChanges) {
-      return next(new Error('System roles cannot be modified'));
-    }
+  if (this.isSystemRole && !this.isNew && this.isModified('name')) {
+    return next(new Error('System roles cannot be renamed'));
   }
   next();
 });

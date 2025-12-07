@@ -80,15 +80,9 @@ class RoleService {
         throw new Error('Role not found');
       }
 
-      // Prevent modification of system roles (except isActive)
-      if (role.isSystemRole) {
-        const allowedFields = ['isActive'];
-        const attemptedFields = Object.keys(updateData);
-        const disallowedFields = attemptedFields.filter(f => !allowedFields.includes(f));
-
-        if (disallowedFields.length > 0) {
-          throw new Error(`Cannot modify system role. Only 'isActive' can be updated for system roles.`);
-        }
+      // Prevent renaming system roles but allow other modifications
+      if (role.isSystemRole && updateData.name && updateData.name !== role.name) {
+        throw new Error('Cannot rename system roles');
       }
 
       // Store old values for audit log
@@ -329,9 +323,11 @@ class RoleService {
 
       await user.save();
 
-      // Update role metadata
-      role.metadata.lastAssigned = new Date();
-      await role.save();
+      // Update role metadata (use updateOne to bypass pre-save middleware for system roles)
+      await Role.updateOne(
+        { _id: role._id },
+        { $set: { 'metadata.lastAssigned': new Date() } }
+      );
 
       // Log role assignment
       await AuditLog.logRoleAssignment(userId, role._id, performedBy, {

@@ -3,8 +3,7 @@
  * Full CRUD for roles with permission management
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useState, useEffect, useCallback } from 'react';
 import { tokenManager } from '../../utils/tokenManager';
 
 const API_HOST = 'http://localhost:5000';
@@ -63,7 +62,6 @@ const ALL_PERMISSIONS = [
 ];
 
 const AdminRoles = () => {
-  const { user, isAdmin } = useAuth();
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
