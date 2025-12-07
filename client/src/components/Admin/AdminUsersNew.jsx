@@ -496,7 +496,7 @@ const AdminUsersNew = () => {
                     <div className="card bg-success bg-opacity-10 border-success border-opacity-25">
                         <div className="card-body text-center">
                             <h3 className="text-success mb-2">
-                                {allUsers.filter(u => (u.status || 'active') === 'active').length}
+                                {allUsers.filter(u => (u.status || u.accountStatus || 'active') === 'active').length}
                             </h3>
                             <p className="text-muted mb-0">Active</p>
                         </div>
@@ -506,7 +506,7 @@ const AdminUsersNew = () => {
                     <div className="card bg-info bg-opacity-10 border-info border-opacity-25">
                         <div className="card-body text-center">
                             <h3 className="text-info mb-2">
-                                {allUsers.filter(u => (u.role || 'customer') === 'customer').length}
+                                {allUsers.filter(u => !u.role || u.role === 'customer' || u.role === 'user').length}
                             </h3>
                             <p className="text-muted mb-0">Customers</p>
                         </div>
@@ -516,7 +516,7 @@ const AdminUsersNew = () => {
                     <div className="card bg-warning bg-opacity-10 border-warning border-opacity-25">
                         <div className="card-body text-center">
                             <h3 className="text-warning mb-2">
-                                {allUsers.filter(u => ['admin', 'super_admin', 'moderator'].includes(u.role || 'customer')).length}
+                                {allUsers.filter(u => u.role && !['customer', 'user'].includes(u.role)).length}
                             </h3>
                             <p className="text-muted mb-0">Staff</p>
                         </div>
