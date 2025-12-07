@@ -20,7 +20,6 @@ const Contact = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log("Form submitted:", formData);
 
         // In real-world apps, send this to backend API
         setToast({

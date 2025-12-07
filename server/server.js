@@ -98,6 +98,7 @@ import adminRoutes from './src/routes/admin.js';
 import uploadRoutes from './src/routes/upload.js';
 import emailRoutes from './src/routes/email.js';
 import notificationRoutes from './src/routes/notifications.js';
+import roleRoutes from './src/routes/roles.js';
 import paymentRoutes from './src/routes/payments.js';
 import userProfileRoutes from './src/routes/userProfile.js';
 import searchRoutes from './src/routes/search.js';
@@ -250,6 +251,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/roles', roleRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/notifications', notificationRoutes);
@@ -527,6 +529,20 @@ async function startServer() {
     const server = app.listen(PORT, async () => {
       // Log server startup information
       healthCheck.logServerStartup(PORT, NODE_ENV);
+      
+      // Auto-seed default roles if they don't exist
+      try {
+        const { seedDefaultRoles } = await import('./src/seeds/seedRoles.js');
+        const seedResult = await seedDefaultRoles();
+        if (seedResult.created > 0) {
+          logger.info(`Auto-seeded ${seedResult.created} default roles`);
+          console.log(`✅ Auto-seeded ${seedResult.created} default roles`);
+        }
+      } catch (error) {
+        logger.warn('Role seeding failed, continuing without seeding', {
+          error: error.message
+        });
+      }
       
       // Initialize email service
       try {

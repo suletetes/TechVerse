@@ -26,10 +26,6 @@ const WriteReview = ({ productId, onSubmit, initialValues = {}, context, product
         }
     }, [initialValues, productId, productInfo, context]);
 
-    console.log('🔍 DEBUG WriteReview: Initial values:', initialValues);
-    console.log('🔍 DEBUG WriteReview: Form data:', formData);
-    console.log('🔍 DEBUG WriteReview: Submit button text:', submitButtonText);
-
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState(null);
 

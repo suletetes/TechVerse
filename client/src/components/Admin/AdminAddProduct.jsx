@@ -240,7 +240,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     const loadSampleData = () => {
         // Check if we have categories
         if (!validCategories || validCategories.length === 0) {
-            alert('❌ No categories available. Please create categories first or wait for them to load.');
+            alert('No categories available. Please create categories first or wait for them to load.');
             return;
         }
         
@@ -266,7 +266,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         }
         
         if (!categoryId) {
-            alert('❌ Could not find a valid category ID. Please check categories.');
+            alert('Could not find a valid category ID. Please check categories.');
             return;
         }
 
@@ -365,7 +365,7 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
         slugGeneratedRef.current = false;
         setCurrentCategoryId(categoryId);
         
-        alert(`✅ Sample MacBook Pro data loaded!\nCategory: ${selectedCategoryName}`);
+        alert(`Sample MacBook Pro data loaded!\nCategory: ${selectedCategoryName}`);
     };
 
     // Initialize currentCategoryId when formData.category changes
@@ -449,13 +449,13 @@ const AdminAddProduct = ({ onSave, onCancel, editProduct = null, categories = []
     }, [currentCategoryId, validCategories.length, editProduct, isInitialized]);
 
     const steps = [
-        { id: 1, title: 'Basic Info', icon: '📝' },
-        { id: 2, title: 'Pricing', icon: '💰' },
-        { id: 3, title: 'Options', icon: '🎨' },
-        { id: 4, title: 'Media', icon: '📸' },
-        { id: 5, title: 'Specs', icon: '⚙️' },
-        { id: 6, title: 'SEO', icon: '🔍' },
-        { id: 7, title: 'Review', icon: '✅' }
+        { id: 1, title: 'Basic Info', icon: 'fa-file-text' },
+        { id: 2, title: 'Pricing', icon: 'fa-dollar-sign' },
+        { id: 3, title: 'Options', icon: 'fa-palette' },
+        { id: 4, title: 'Media', icon: 'fa-image' },
+        { id: 5, title: 'Specs', icon: 'fa-cog' },
+        { id: 6, title: 'SEO', icon: 'fa-search' },
+        { id: 7, title: 'Review', icon: 'fa-check-circle' }
     ];    
 // Validation function matching backend requirements
     const validateForm = () => {
@@ -1847,7 +1847,9 @@ const validateStep = (step) => {
                                         onClick={() => setCurrentStep(step.id)}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        <span className="step-icon">{step.icon}</span>
+                                        <span className="step-icon">
+                                            <i className={`fa ${step.icon}`}></i>
+                                        </span>
                                         <span className="step-title">{step.title}</span>
                                     </div>
                                     {index < steps.length - 1 && (

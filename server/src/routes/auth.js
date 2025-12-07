@@ -12,7 +12,8 @@ import {
   changePassword,
   getMe,
   getProfile,
-  updateProfile
+  updateProfile,
+  refreshPermissions
 } from '../controllers/authController.js';
 import {
   googleCallback,
@@ -162,6 +163,7 @@ router.get('/github/callback', authenticateGitHubCallback, githubCallback);
 
 // Protected routes
 router.get('/me', authenticate, getMe);
+router.post('/refresh-permissions', authenticate, refreshPermissions);
 router.get('/profile', authenticate, getProfile);
 router.put('/profile', authenticate, updateProfileValidation, validate, updateProfile);
 router.post('/change-password', authenticate, changePasswordValidation, validate, sensitiveOperationLimit, changePassword);

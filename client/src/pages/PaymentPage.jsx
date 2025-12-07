@@ -78,16 +78,7 @@ const PaymentPage = () => {
     // Load user data from database
     useEffect(() => {
         const loadUserData = async () => {
-            console.log('🔐 PaymentPage Auth Check:', {
-                isAuthenticated,
-                user,
-                hasUser: !!user,
-                userId: user?._id
-            });
-            
             if (!isAuthenticated) {
-                console.error('❌ Not authenticated - REDIRECT DISABLED FOR DEBUGGING');
-                console.error('Auth state:', { isAuthenticated, user });
                 navigate('/login', {
                     state: {
                         from: { pathname: '/payment' },
@@ -100,17 +91,13 @@ const PaymentPage = () => {
             // Check if cart is empty (but not if order was just completed)
             if (!cartItems || cartItems.length === 0) {
                 if (orderCompleted) {
-                    console.log('✅ Order completed, skipping cart empty check');
                     return;
                 }
-                console.log('⚠️ Cart is empty, redirecting to /cart');
-                console.log('Cart items:', cartItems);
                 setToast({
                     message: 'Your cart is empty',
                     type: 'warning'
                 });
                 setTimeout(() => {
-                    console.log('🔄 Executing redirect to /cart');
                     navigate('/cart');
                 }, 2000);
                 return;
@@ -125,17 +112,11 @@ const PaymentPage = () => {
                     userService.getAddresses()
                 ]);
 
-                console.log('Profile response:', profileResponse);
-                console.log('Addresses response:', addressesResponse);
-
                 // Extract data from responses (handle nested data structure)
                 // Profile: {success: true, data: {user: {...}}}
                 // Addresses: {success: true, data: {addresses: [...]}}
                 const profile = profileResponse?.data?.user || profileResponse?.data;
                 const addresses = addressesResponse?.data?.addresses || [];
-
-                console.log('Extracted profile:', profile);
-                console.log('Extracted addresses:', addresses);
 
                 setUserData({
                     profile: profile,
@@ -147,17 +128,7 @@ const PaymentPage = () => {
                     setShowImportOptions(true);
                 }
 
-                // Don't auto-fill - let user click import button
-                console.log('User data loaded. Click import to fill fields.');
-
             } catch (error) {
-                console.error('❌ Error loading user data:', error);
-                console.error('Error details:', {
-                    message: error.message,
-                    response: error.response,
-                    status: error.response?.status,
-                    data: error.response?.data
-                });
                 setToast({
                     message: 'Failed to load user data. Please try again.',
                     type: 'error'
@@ -287,7 +258,6 @@ const PaymentPage = () => {
                 });
             }
         } catch (error) {
-            console.error('Error creating payment intent:', error);
             setToast({
                 message: error.message || 'Failed to initialize payment. Please try again.',
                 type: 'error'
@@ -298,12 +268,8 @@ const PaymentPage = () => {
     };
 
     const handlePaymentSuccess = async (paymentIntent) => {
-        console.log('🎉 ===== PAYMENT SUCCESS HANDLER STARTED =====');
-        console.log('💳 Payment Intent:', paymentIntent);
-        
         try {
             setIsProcessing(true);
-            console.log('⏳ Processing set to true');
 
             // Prepare order data
             const orderData = {
@@ -339,77 +305,44 @@ const PaymentPage = () => {
                 total
             };
 
-            console.log('📦 Order Data Prepared:', orderData);
-            console.log('🚀 Calling orderService.createOrder...');
-
             // Create order
             const response = await orderService.createOrder(orderData);
-            console.log('✅ Order Service Response:', response);
-            console.log('📊 Response Structure:', {
-                success: response.success,
-                hasData: !!response.data,
-                hasOrder: !!response.data?.order,
-                orderNumber: response.data?.order?.orderNumber
-            });
 
             if (response.success && response.data?.order) {
                 const orderNumber = response.data.order.orderNumber;
-                console.log('🎫 Order Number Extracted:', orderNumber);
 
                 if (!orderNumber) {
-                    console.error('❌ No order number in response:', response);
                     throw new Error('Order created but no order number received');
                 }
 
-                console.log('🧹 Clearing cart...');
-                
                 // Mark order as completed BEFORE clearing cart to prevent redirect
                 setOrderCompleted(true);
-                console.log('✅ Order marked as completed');
                 
                 await clearCart();
-                console.log('✅ Cart cleared successfully');
 
                 setToast({
                     message: 'Order placed successfully!',
                     type: 'success'
                 });
-                console.log('📢 Success toast displayed');
 
-                console.log(`🔄 Redirecting to: /order-confirmation/${orderNumber}`);
-                console.log('⏱️ Redirect will happen in 1.5 seconds...');
-                
                 // Redirect to order confirmation
                 setTimeout(() => {
-                    console.log('🚀 EXECUTING NAVIGATION NOW');
-                    console.log('Target URL:', `/order-confirmation/${orderNumber}`);
                     navigate(`/order-confirmation/${orderNumber}`);
-                    console.log('✅ Navigate function called');
                 }, 1500);
             } else {
-                console.error('❌ Order creation failed - Invalid response structure');
-                console.error('Response:', response);
                 throw new Error('Order creation failed');
             }
         } catch (error) {
-            console.error('💥 ===== ERROR IN PAYMENT SUCCESS HANDLER =====');
-            console.error('Error object:', error);
-            console.error('Error message:', error.message);
-            console.error('Error stack:', error.stack);
-            
             setToast({
                 message: error.message || 'Payment successful but order creation failed. Please contact support.',
                 type: 'error'
             });
         } finally {
-            console.log('🏁 Payment success handler finished, setting processing to false');
             setIsProcessing(false);
         }
     };
 
     const handlePaymentError = (error) => {
-        console.error('Payment error:', error);
-        
         // Redirect to payment failed page with error details
         setTimeout(() => {
             navigate('/payment-failed', {

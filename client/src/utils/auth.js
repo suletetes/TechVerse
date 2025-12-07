@@ -33,7 +33,6 @@ class AuthManager {
         const user = JSON.parse(storedUser);
         this.setUser(user);
       } catch (error) {
-        console.warn('Failed to parse stored user data:', error);
         localStorage.removeItem('techverse_user');
       }
     }
@@ -49,18 +48,15 @@ class AuthManager {
           // Update stored user data
           localStorage.setItem('techverse_user', JSON.stringify(data.data.user));
         } else {
-          console.warn('Token validation failed - invalid response');
           this.clearAuth();
         }
       } catch (error) {
-        console.warn('Token validation failed:', error.message);
         
         // If token is expired, try to refresh it
         if (error.message.includes('expired') || error.message.includes('401')) {
           const refreshToken = tokenManager.getRefreshToken();
           if (refreshToken) {
             try {
-              console.log('Attempting to refresh expired token...');
               const refreshResponse = await apiClient.post('/auth/refresh-token', {
                 refreshToken
               });
@@ -83,7 +79,7 @@ class AuthManager {
                 }
               }
             } catch (refreshError) {
-              console.warn('Token refresh failed during initialization:', refreshError.message);
+              // Token refresh failed
             }
           }
         }
@@ -121,14 +117,6 @@ class AuthManager {
         // Store user data in localStorage for persistence
         localStorage.setItem('techverse_user', JSON.stringify(data.data.user));
         
-        // Log successful login
-        console.log('Login successful:', {
-          userId: data.data.user._id,
-          email: data.data.user.email,
-          role: data.data.user.role,
-          timestamp: new Date().toISOString()
-        });
-        
         return {
           success: true,
           user: data.data.user,
@@ -138,8 +126,6 @@ class AuthManager {
         throw new Error(data.message || 'Login failed');
       }
     } catch (error) {
-      console.error('Login error:', error);
-      
       // Clear any partial auth state
       this.clearAuth();
       
@@ -175,7 +161,6 @@ class AuthManager {
         throw new Error(data.message || 'Registration failed');
       }
     } catch (error) {
-      console.error('Registration error:', error);
       return {
         success: false,
         message: error.message || 'Registration failed'
@@ -191,7 +176,7 @@ class AuthManager {
       // Call logout endpoint
       await apiClient.post('/auth/logout');
     } catch (error) {
-      console.warn('Logout API call failed:', error.message);
+      // Logout API call failed
     } finally {
       // Always clear local auth state
       this.clearAuth();
@@ -213,7 +198,6 @@ class AuthManager {
         throw new Error(data.message || 'Failed to get profile');
       }
     } catch (error) {
-      console.error('Get profile error:', error);
       throw error;
     }
   }
@@ -237,7 +221,6 @@ class AuthManager {
         throw new Error(data.message || 'Profile update failed');
       }
     } catch (error) {
-      console.error('Profile update error:', error);
       return {
         success: false,
         message: error.message || 'Profile update failed'
@@ -266,7 +249,6 @@ class AuthManager {
         throw new Error(data.message || 'Password change failed');
       }
     } catch (error) {
-      console.error('Password change error:', error);
       return {
         success: false,
         message: error.message || 'Password change failed'
@@ -287,7 +269,6 @@ class AuthManager {
         message: data.message
       };
     } catch (error) {
-      console.error('Forgot password error:', error);
       return {
         success: false,
         message: error.message || 'Password reset request failed'
@@ -321,7 +302,6 @@ class AuthManager {
         message: data.message
       };
     } catch (error) {
-      console.error('Password reset error:', error);
       return {
         success: false,
         message: error.message || 'Password reset failed'
@@ -353,8 +333,6 @@ class AuthManager {
     localStorage.removeItem('techverse_remember_me');
     
     this.notifyListeners();
-    
-    console.log('Authentication state cleared');
   }
 
   /**
@@ -411,7 +389,7 @@ class AuthManager {
           isEmailVerified: this.isEmailVerified()
         });
       } catch (error) {
-        console.error('Auth listener error:', error);
+        // Auth listener error
       }
     });
   }

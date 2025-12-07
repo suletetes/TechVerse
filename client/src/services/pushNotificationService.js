@@ -12,14 +12,12 @@ class PushNotificationService {
   // Initialize the service
   async initialize() {
     if (!this.isSupported) {
-      console.warn('Push notifications are not supported in this browser');
       return false;
     }
 
     try {
       // Register service worker
       this.registration = await navigator.serviceWorker.register('/sw.js');
-      console.log('Service Worker registered successfully');
 
       // Wait for service worker to be ready
       await navigator.serviceWorker.ready;
@@ -29,7 +27,6 @@ class PushNotificationService {
 
       return true;
     } catch (error) {
-      console.error('Failed to initialize push notifications:', error);
       return false;
     }
   }
@@ -43,14 +40,12 @@ class PushNotificationService {
       this.isSubscribed = !!this.subscription;
 
       if (this.isSubscribed) {
-        console.log('User is already subscribed to push notifications');
         // Optionally sync with server
         await this.syncSubscriptionWithServer();
       }
 
       return this.isSubscribed;
     } catch (error) {
-      console.error('Error checking existing subscription:', error);
       return false;
     }
   }
@@ -74,7 +69,6 @@ class PushNotificationService {
       
       return true;
     } catch (error) {
-      console.error('Failed to request notification permission:', error);
       throw error;
     }
   }
@@ -100,10 +94,8 @@ class PushNotificationService {
       // Send subscription to server
       await this.sendSubscriptionToServer();
 
-      console.log('Successfully subscribed to push notifications');
       return this.subscription;
     } catch (error) {
-      console.error('Failed to subscribe to push notifications:', error);
       throw error;
     }
   }
@@ -112,7 +104,6 @@ class PushNotificationService {
   async unsubscribe() {
     try {
       if (!this.subscription) {
-        console.log('No active subscription to unsubscribe from');
         return true;
       }
 
@@ -125,13 +116,10 @@ class PushNotificationService {
 
         // Notify server
         await this.removeSubscriptionFromServer();
-
-        console.log('Successfully unsubscribed from push notifications');
       }
 
       return successful;
     } catch (error) {
-      console.error('Failed to unsubscribe from push notifications:', error);
       throw error;
     }
   }
@@ -161,10 +149,8 @@ class PushNotificationService {
       }
 
       const result = await response.json();
-      console.log('Subscription sent to server successfully:', result);
       return result;
     } catch (error) {
-      console.error('Failed to send subscription to server:', error);
       throw error;
     }
   }
@@ -191,10 +177,8 @@ class PushNotificationService {
       }
 
       const result = await response.json();
-      console.log('Subscription removed from server successfully:', result);
       return result;
     } catch (error) {
-      console.error('Failed to remove subscription from server:', error);
       throw error;
     }
   }
@@ -205,7 +189,7 @@ class PushNotificationService {
       try {
         await this.sendSubscriptionToServer();
       } catch (error) {
-        console.warn('Failed to sync subscription with server:', error);
+        // Sync failed silently
       }
     }
   }
@@ -232,10 +216,8 @@ class PushNotificationService {
       }
 
       const result = await response.json();
-      console.log('Test notification sent successfully:', result);
       return result;
     } catch (error) {
-      console.error('Failed to send test notification:', error);
       throw error;
     }
   }
@@ -261,7 +243,6 @@ class PushNotificationService {
 
       return await response.json();
     } catch (error) {
-      console.error('Failed to get notification preferences:', error);
       throw error;
     }
   }
@@ -290,7 +271,6 @@ class PushNotificationService {
 
       return await response.json();
     } catch (error) {
-      console.error('Failed to update notification preferences:', error);
       throw error;
     }
   }
@@ -338,7 +318,6 @@ class PushNotificationService {
         ...options
       });
     } else {
-      console.warn('Notification permission not granted');
       return null;
     }
   }

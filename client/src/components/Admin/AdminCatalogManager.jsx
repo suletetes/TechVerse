@@ -24,7 +24,6 @@ const AdminCatalogManager = ({
 
     const loadCatalogData = async () => {
         try {
-            console.log('📥 Loading catalog data...');
             setIsLoading(true);
             setError(null);
 
@@ -34,9 +33,6 @@ const AdminCatalogManager = ({
                 adminService.getCategories(), // This calls /admin/categories which includes productCount
                 productService.getProducts({ limit: 1000 }) // Get all products for accurate counts
             ]);
-
-            console.log('📦 Categories response:', categoriesResponse);
-            console.log('📦 Products response:', productsResponse);
 
             // Process categories - handle different response structures
             let backendCategories = [];
@@ -50,11 +46,7 @@ const AdminCatalogManager = ({
                 backendCategories = categoriesResponse;
             }
             
-            console.log('📋 Backend categories count:', backendCategories.length);
-            console.log('📋 First category raw data:', JSON.stringify(backendCategories[0], null, 2));
-            
             if (!Array.isArray(backendCategories)) {
-                console.error('❌ backendCategories is not an array:', typeof backendCategories, backendCategories);
                 throw new Error('Categories data is not in expected format');
             }
             
@@ -79,14 +71,6 @@ const AdminCatalogManager = ({
                     returnPolicy: '30-day return policy'
                 }
             }));
-            
-            console.log('📊 Processed categories summary:');
-            processedCategories.forEach(c => {
-                console.log(`  - ${c.name}: ${c.productCount} products, featured: ${c.isFeatured}`);
-            });
-            
-            const featuredCount = processedCategories.filter(c => c.isFeatured).length;
-            console.log(`📊 Total featured categories: ${featuredCount}`);
 
             // Process products
             const backendProducts = productsResponse.data?.products || productsResponse.products || [];
@@ -103,9 +87,6 @@ const AdminCatalogManager = ({
                 updatedAt: product.updatedAt
             }));
 
-            console.log('✅ Processed categories:', processedCategories.length);
-            console.log('✅ Processed products:', processedProducts.length);
-            
             setCategories(processedCategories);
             setProducts(processedProducts);
             setLastUpdated(new Date());
@@ -134,17 +115,12 @@ const AdminCatalogManager = ({
     // Wrapper functions to handle real-time updates
     const handleSaveCategoryWrapper = async (categoryData) => {
         try {
-            console.log('💾 Saving category:', categoryData);
             if (onSaveCategory) {
-                const result = await onSaveCategory(categoryData);
-                console.log('✅ Category saved:', result);
+                await onSaveCategory(categoryData);
             }
             // Refresh data to reflect changes
-            console.log('🔄 Refreshing category list...');
             await loadCatalogData();
-            console.log('✅ Category list refreshed');
         } catch (error) {
-            console.error('❌ Failed to save category:', error);
             alert(`Failed to save category: ${error.message}`);
         }
     };

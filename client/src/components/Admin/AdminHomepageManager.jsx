@@ -304,14 +304,11 @@ const AdminHomepageManager = () => {
     };
 
     const openProductSelector = (sectionKey) => {
-        console.log('🔵 Opening product selector for section:', sectionKey);
-        console.log('🔵 Available products:', availableProducts.length);
         setCurrentEditingSection(sectionKey);
         setShowProductSelector(true);
         setSearchTerm('');
         setCategoryFilter('');
         setCurrentPage(1);
-        console.log('🔵 Modal state set to true');
     };
 
     const handleEditLimit = (sectionKey) => {
@@ -476,9 +473,6 @@ const AdminHomepageManager = () => {
 
             {/* Product Selector Modal */}
             {showProductSelector && (() => {
-                console.log('🟢 Rendering modal, showProductSelector:', showProductSelector);
-                console.log('🟢 Current section:', currentEditingSection);
-                console.log('🟢 Filtered products:', filteredProducts.length);
                 return (
                 <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999 }}>
                     <div className="modal-dialog modal-xl modal-dialog-scrollable">

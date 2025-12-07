@@ -22,9 +22,7 @@ export function registerSW() {
       if (isLocalhost) {
         checkValidServiceWorker(swUrl);
         navigator.serviceWorker.ready.then(() => {
-          console.log(
-            'This web app is being served cache-first by a service worker.'
-          );
+          // Service worker ready
         });
       } else {
         registerValidSW(swUrl);
@@ -37,8 +35,6 @@ function registerValidSW(swUrl) {
   navigator.serviceWorker
     .register(swUrl)
     .then((registration) => {
-      console.log('SW registered: ', registration);
-      
       // Handle updates
       registration.addEventListener('updatefound', () => {
         const installingWorker = registration.installing;
@@ -49,14 +45,9 @@ function registerValidSW(swUrl) {
         installingWorker.addEventListener('statechange', () => {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
-              console.log(
-                'New content is available and will be used when all tabs for this page are closed.'
-              );
-              
               // Notify user about update
               showUpdateNotification();
             } else {
-              console.log('Content is cached for offline use.');
               showOfflineReadyNotification();
             }
           }
@@ -64,7 +55,7 @@ function registerValidSW(swUrl) {
       });
     })
     .catch((error) => {
-      console.error('SW registration failed: ', error);
+      // SW registration failed
     });
 }
 
@@ -88,7 +79,7 @@ function checkValidServiceWorker(swUrl) {
       }
     })
     .catch(() => {
-      console.log('No internet connection found. App is running in offline mode.');
+      // No internet connection - offline mode
     });
 }
 
@@ -129,11 +120,10 @@ export async function requestBackgroundSync(tag = 'offline-sync') {
     const registration = await getServiceWorkerRegistration();
     if (registration && 'sync' in registration) {
       await registration.sync.register(tag);
-      console.log('Background sync registered:', tag);
       return true;
     }
   } catch (error) {
-    console.error('Background sync registration failed:', error);
+    // Background sync registration failed
   }
   return false;
 }
@@ -181,16 +171,17 @@ export function setupServiceWorkerMessaging() {
       
       switch (type) {
         case 'CACHE_UPDATED':
-          console.log('Cache updated:', payload);
+          // Cache updated
           break;
         case 'OFFLINE_FALLBACK':
-          console.log('Serving offline fallback:', payload);
+          // Serving offline fallback
           break;
         case 'SYNC_COMPLETE':
-          console.log('Background sync complete:', payload);
+          // Background sync complete
           break;
         default:
-          console.log('Unknown service worker message:', event.data);
+          // Unknown service worker message
+          break;
       }
     });
   }
@@ -219,7 +210,6 @@ export const cacheManager = {
       await Promise.all(
         cacheNames.map(cacheName => caches.delete(cacheName))
       );
-      console.log('All caches cleared');
     }
   },
 
@@ -273,9 +263,6 @@ export function initServiceWorker() {
   }
   
   setupServiceWorkerMessaging();
-  
-  // Log service worker support
-  console.log('Service Worker supported:', isServiceWorkerSupported());
 }
 
 export default {

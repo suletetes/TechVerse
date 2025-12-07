@@ -89,8 +89,6 @@ const Home = () => {
             <QuickPicks
                 limit={8}
                 autoLoad={true}
-                onSuccess={(data) => console.log('Quick picks loaded:', data.length)}
-                onError={(error) => console.error('Quick picks error:', error)}
             />
             {/* quick-picks END */}
 
@@ -98,8 +96,6 @@ const Home = () => {
             <WeeklyDeals
                 limit={10}
                 autoLoad={true}
-                onSuccess={(data) => console.log('Weekly deals loaded:', data.length)}
-                onError={(error) => console.error('Weekly deals error:', error)}
             />
             {/* weekly-deals END */}
 

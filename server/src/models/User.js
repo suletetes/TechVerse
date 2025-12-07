@@ -120,6 +120,25 @@ const userSchema = new mongoose.Schema({
     ],
     default: 'user'
   },
+  permissions: [{
+    type: String,
+    trim: true
+  }],
+  roleHistory: [{
+    role: {
+      type: String,
+      required: true
+    },
+    assignedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    assignedAt: {
+      type: Date,
+      default: Date.now
+    },
+    reason: String
+  }],
   isActive: {
     type: Boolean,
     default: true

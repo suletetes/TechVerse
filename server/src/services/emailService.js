@@ -57,20 +57,20 @@ class EmailService {
 
         await Promise.race([verifyPromise, timeoutPromise]);
         this.isInitialized = true;
-        logger.info('✅ Email service initialized successfully');
-        logger.info(`📧 Emails will be sent from: ${process.env.EMAIL_FROM}`);
+        logger.info(' Email service initialized successfully');
+        logger.info(` Emails will be sent from: ${process.env.EMAIL_FROM}`);
       } catch (verifyError) {
         // Log detailed error but continue without email
-        logger.warn('⚠️  Email verification failed, but service will attempt to send emails anyway', {
+        logger.warn('  Email verification failed, but service will attempt to send emails anyway', {
           error: verifyError.message,
           code: verifyError.code
         });
         // Set as initialized anyway - some networks block SMTP verify but allow sending
         this.isInitialized = true;
-        logger.info('📧 Email service running in fallback mode (verification skipped)');
+        logger.info(' Email service running in fallback mode (verification skipped)');
       }
     } catch (error) {
-      logger.warn('⚠️  Failed to initialize email service, continuing without email functionality', {
+      logger.warn('  Failed to initialize email service, continuing without email functionality', {
         error: error.message
       });
       this.transporter = null;

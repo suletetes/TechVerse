@@ -1163,9 +1163,9 @@ export const getProductsBySection = asyncHandler(async (req, res, next) => {
   const { section } = req.params;
   const { limit = 10 } = req.query;
 
-  console.log(`\n🔍 [BACKEND_SECTION] ========== Get Products By Section ==========`);
-  console.log(`   Section: ${section}`);
-  console.log(`   Limit: ${limit}`);
+  // console.log(`\n🔍 [BACKEND_SECTION] ========== Get Products By Section ==========`);
+  // console.log(`   Section: ${section}`);
+  // console.log(`   Limit: ${limit}`);
 
   // Validate section
   const validSections = ['latest', 'topSeller', 'quickPick', 'weeklyDeal', 'featured'];
@@ -1174,18 +1174,18 @@ export const getProductsBySection = asyncHandler(async (req, res, next) => {
     return next(new AppError('Invalid section', 400, 'INVALID_SECTION'));
   }
 
-  console.log(`📊 [BACKEND_SECTION] Querying database...`);
+  // console.log(`📊 [BACKEND_SECTION] Querying database...`);
   const products = await Product.findBySection(section, parseInt(limit));
   
-  console.log(`📦 [BACKEND_SECTION] Found ${products.length} products`);
+  // console.log(`📦 [BACKEND_SECTION] Found ${products.length} products`);
   
   // Verify each product actually has the section
   products.forEach((product, index) => {
     const hasSections = product.sections || [];
     const hasSection = hasSections.includes(section);
-    console.log(`   ${index + 1}. ${product.name} (${product._id})`);
-    console.log(`      Sections: [${hasSections.join(', ')}]`);
-    console.log(`      Has "${section}": ${hasSection ? '✅' : '❌'}`);
+    // console.log(`   ${index + 1}. ${product.name} (${product._id})`);
+    // console.log(`      Sections: [${hasSections.join(', ')}]`);
+    // console.log(`      Has "${section}": ${hasSection ? '✅' : '❌'}`);
     
     if (!hasSection) {
       console.error(`      ⚠️ WARNING: Product returned but doesn't have section "${section}"!`);
@@ -1199,8 +1199,8 @@ export const getProductsBySection = asyncHandler(async (req, res, next) => {
     images: formatProductImages(product.images, baseUrl)
   }));
 
-  console.log(`✅ [BACKEND_SECTION] Returning ${formattedProducts.length} products`);
-  console.log(`========================================\n`);
+  // console.log(`✅ [BACKEND_SECTION] Returning ${formattedProducts.length} products`);
+  // console.log(`========================================\n`);
 
   res.status(200).json({
     success: true,

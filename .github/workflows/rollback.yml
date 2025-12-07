@@ -1,0 +1,67 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      version:
+        description: 'Version/commit to rollback to'
+        required: true
+        type: string
+
+jobs:
+  rollback:
+    name: Rollback to Previous Version
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+
+      - name: Verify version
+        run: |
+          echo "Rolling back to version: ${{ github.event.inputs.version }}"
+          echo "Environment: ${{ github.event.inputs.environment }}"
+          git log -1 --oneline
+
+      - name: Download artifacts from version
+        run: |
+          echo "Downloading artifacts for version ${{ github.event.inputs.version }}"
+          # Add logic to download specific version artifacts
+
+      - name: Backup current version
+        run: |
+          echo "Creating backup of current deployment"
+          # Add backup logic here
+
+      - name: Perform rollback
+        run: |
+          echo "Performing rollback to ${{ github.event.inputs.version }}"
+          # Add rollback deployment commands here
+
+      - name: Verify rollback
+        run: |
+          echo "Verifying rollback was successful"
+          # Add verification smoke tests here
+
+      - name: Send rollback notification
+        if: always()
+        run: |
+          echo "Rollback completed for ${{ github.event.inputs.environment }}"
+          echo "Version: ${{ github.event.inputs.version }}"
+          # Add notification webhook here

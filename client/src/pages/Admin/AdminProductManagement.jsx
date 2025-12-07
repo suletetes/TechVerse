@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AdminProducts, AdminAddProduct } from '../../components/Admin';
 import { adminService } from '../../api/services/index.js';
-import { adminDataStore } from '../../utils/AdminDataStore';
 import { useAuth } from '../../context/AuthContext';
 import { useAdmin } from '../../context/AdminContext';
 
@@ -65,7 +64,6 @@ const AdminProductManagement = () => {
     };
 
     const handleSetActiveTab = (tab, productId = null) => {
-        console.log('🔄 Switching tab to:', tab, 'Product ID:', productId);
         setActiveTab(tab);
         if (productId) {
             setEditingProductId(productId);
@@ -207,7 +205,6 @@ const AdminProductManagement = () => {
             cleanProduct.visibility = product.visibility || 'public';
             cleanProduct.featured = false;
             
-            console.log('📋 Duplicating product with data:', cleanProduct);
             await adminService.createProduct(cleanProduct);
             await loadProducts();
         } catch (err) {

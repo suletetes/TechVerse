@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { adminService } from '../../api/services/index.js';
-import { adminDataStore } from '../../utils/AdminDataStore';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL } from '../../config/api.js';
 
@@ -21,23 +20,9 @@ const AdminOrdersNew = () => {
     const [sortBy, setSortBy] = useState('createdAt');
     const [sortOrder, setSortOrder] = useState('desc');
 
-    // Load orders only once on mount or when data is stale
+    // Load orders on mount
     useEffect(() => {
-        if (!adminDataStore.isDataFresh('orders')) {
-            loadOrders();
-        } else {
-            setAllOrders(adminDataStore.getData('orders'));
-            setLoading(false);
-        }
-
-        // Listen for data updates
-        const unsubscribe = adminDataStore.addListener('orders', (data) => {
-            setAllOrders(data.data || []);
-            setLoading(data.loading || false);
-            setError(data.error);
-        });
-
-        return unsubscribe;
+        loadOrders();
     }, []);
     
     // Reset to page 1 when filters change
@@ -47,12 +32,9 @@ const AdminOrdersNew = () => {
 
     const loadOrders = async () => {
         try {
-            adminDataStore.setLoading('orders', true);
-            adminDataStore.setError('orders', null);
-            
-            console.log('🔍 AdminOrdersNew: Fetching orders...');
-            
-            const response = await adminService.getAdminOrders({ limit: 1000 }); // Get all orders
+            setLoading(true);
+            setError(null);
+            const response = await adminService.getAdminOrders({ limit: 1000 });
             
             let backendOrders = [];
             if (response?.data?.orders) {
@@ -63,13 +45,11 @@ const AdminOrdersNew = () => {
                 backendOrders = response;
             }
             
-            console.log(`📊 Loaded ${backendOrders.length} orders`);
-            
-            adminDataStore.setData('orders', backendOrders);
+            setAllOrders(backendOrders);
             
         } catch (err) {
-            console.error('❌ Error loading orders:', err);
-            adminDataStore.setError('orders', err.message);
+            console.error('Error loading orders:', err);
+            setError(err.message);
             
             // Try direct API call as fallback
             try {
@@ -84,17 +64,15 @@ const AdminOrdersNew = () => {
                 if (directResponse.ok) {
                     const directData = await directResponse.json();
                     const directOrders = directData?.data?.orders || directData?.orders || directData || [];
-                    console.log(`🎉 Found ${directOrders.length} orders via direct API`);
-                    adminDataStore.setData('orders', directOrders);
+                    setAllOrders(directOrders);
                 } else {
                     throw new Error(`API returned ${directResponse.status}`);
                 }
             } catch (directErr) {
-                console.error('❌ Direct API call also failed:', directErr);
-                adminDataStore.setError('orders', `Failed to load orders: ${err.message}`);
+                setError(`Failed to load orders: ${err.message}`);
             }
         } finally {
-            adminDataStore.setLoading('orders', false);
+            setLoading(false);
         }
     };
 

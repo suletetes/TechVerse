@@ -13,7 +13,6 @@ import RouteGuard from '../components/auth/RouteGuard.jsx';
 import HomeLayout from '../pages/HomeLayout.jsx';
 import { AdminLayout } from '../components/Admin';
 import { UserProfileLayout } from '../components/UserProfile';
-import UserLayout from '../layouts/UserLayout.jsx';
 
 // Import pages
 import {
@@ -98,7 +97,7 @@ export const RouteMetaTypes = {
 export const Layouts = {
   HOME: HomeLayout,
   ADMIN: AdminLayout,
-  USER: UserLayout,
+  USER: HomeLayout, // Using HomeLayout for user routes
   USER_PROFILE: UserProfileLayout,
   DEFAULT: HomeLayout
 };

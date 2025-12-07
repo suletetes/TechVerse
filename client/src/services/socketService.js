@@ -44,7 +44,6 @@ class SocketService {
         this.setupEventHandlers();
         
         this.socket.on('connect', () => {
-          console.log('✅ Socket.io connected');
           this.isConnected = true;
           this.reconnectAttempts = 0;
           this.connectionPromise = null;
@@ -52,14 +51,12 @@ class SocketService {
         });
 
         this.socket.on('connect_error', (error) => {
-          console.error('❌ Socket.io connection error:', error);
           this.isConnected = false;
           this.connectionPromise = null;
           reject(error);
         });
 
       } catch (error) {
-        console.error('❌ Socket.io initialization error:', error);
         this.connectionPromise = null;
         reject(error);
       }
@@ -73,7 +70,6 @@ class SocketService {
 
     // Connection events
     this.socket.on('disconnect', (reason) => {
-      console.log('🔌 Socket.io disconnected:', reason);
       this.isConnected = false;
       
       if (reason === 'io server disconnect') {
@@ -83,28 +79,25 @@ class SocketService {
     });
 
     this.socket.on('reconnect', (attemptNumber) => {
-      console.log(`🔄 Socket.io reconnected after ${attemptNumber} attempts`);
       this.isConnected = true;
       this.reconnectAttempts = 0;
     });
 
     this.socket.on('reconnect_attempt', (attemptNumber) => {
-      console.log(`🔄 Socket.io reconnection attempt ${attemptNumber}`);
       this.reconnectAttempts = attemptNumber;
     });
 
     this.socket.on('reconnect_failed', () => {
-      console.error('❌ Socket.io reconnection failed');
       this.isConnected = false;
     });
 
     // Application events
     this.socket.on('connected', (data) => {
-      console.log('✅ Socket.io application connected:', data);
+      // Connection established
     });
 
     this.socket.on('error', (error) => {
-      console.error('❌ Socket.io application error:', error);
+      // Socket error occurred
     });
 
     // Real-time update events
@@ -161,7 +154,6 @@ class SocketService {
       this.socket = null;
       this.isConnected = false;
       this.connectionPromise = null;
-      console.log('🔌 Socket.io manually disconnected');
     }
   }
 
@@ -263,7 +255,7 @@ class SocketService {
         try {
           callback(data);
         } catch (error) {
-          console.error(`Error in socket event listener for ${event}:`, error);
+          // Event listener error
         }
       });
     }

@@ -7,18 +7,7 @@ const StripeProvider = ({ children, clientSecret }) => {
 
   useEffect(() => {
     // Load Stripe dynamically to ensure env vars are loaded
-    const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY 
-           
-    console.log('🔑 Stripe Key Loading:', {
-      fromEnv: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? 'YES' : 'NO',
-      keyPreview: stripeKey.substring(0, 25) + '...',
-      fullKey: stripeKey
-    });
-
-    if (!stripeKey || stripeKey === 'pk_test_your-development-key') {
-      console.error('❌ Invalid Stripe key detected!');
-    }
-
+    const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
     setStripePromise(loadStripe(stripeKey));
   }, []);
 

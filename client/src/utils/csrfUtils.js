@@ -42,18 +42,14 @@ export const fetchCsrfToken = async () => {
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ CSRF token fetched successfully (authenticated)');
       return data.csrfToken;
-    } else {
-      console.warn('❌ Failed to fetch CSRF token:', response.status, response.statusText);
     }
   } catch (error) {
-    console.warn('❌ Failed to fetch CSRF token:', error.message);
+    // Failed to fetch CSRF token
   }
 
   // Fallback to simple endpoint
   try {
-    console.log('🔄 Trying simple CSRF endpoint...');
     const response = await fetch(`${baseURL}/security/csrf-token-simple`, {
       method: 'GET',
       credentials: 'include',
@@ -64,13 +60,10 @@ export const fetchCsrfToken = async () => {
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ CSRF token fetched successfully (simple)');
       return data.csrfToken;
-    } else {
-      console.error('❌ Failed to fetch CSRF token (simple):', response.status, response.statusText);
     }
   } catch (error) {
-    console.error('❌ Failed to fetch CSRF token (simple):', error.message);
+    // Failed to fetch CSRF token
   }
 
   return null;
@@ -84,7 +77,6 @@ export const ensureCsrfToken = async () => {
   let token = getCsrfTokenFromCookie();
   
   if (!token) {
-    console.log('🔄 No CSRF token found, fetching from server...');
     token = await fetchCsrfToken();
   }
   

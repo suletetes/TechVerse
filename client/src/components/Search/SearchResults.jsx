@@ -17,13 +17,6 @@ const SearchResults = ({
   viewMode = 'grid',
   onViewModeChange 
 }) => {
-  console.log('📊 SearchResults - Received props:', {
-    results,
-    resultsKeys: Object.keys(results),
-    productsInResults: results?.products?.length || 0,
-    isLoading
-  });
-  
   const { 
     products = [], 
     pagination = {}, 
@@ -31,12 +24,6 @@ const SearchResults = ({
     suggestions = [],
     searchQuery = {} 
   } = results;
-  
-  console.log('📊 SearchResults - Extracted:', {
-    productsCount: products.length,
-    pagination,
-    firstProduct: products[0]?.name
-  });
 
   const [sortBy, setSortBy] = useState(searchQuery.sortBy || 'relevance');
 

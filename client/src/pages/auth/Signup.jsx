@@ -131,12 +131,10 @@ const Signup = () => {
 
     const handleGoogleSignup = () => {
         // TODO: Implement Google OAuth
-        console.log('Google signup clicked');
     };
 
     const handleAppleSignup = () => {
         // TODO: Implement Apple OAuth
-        console.log('Apple signup clicked');
     };
 
     return (

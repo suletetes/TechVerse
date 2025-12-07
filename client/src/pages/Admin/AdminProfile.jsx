@@ -26,8 +26,8 @@ import AdminProductsNew from "../../components/Admin/AdminProductsNew";
 import AdminOrdersNew from "../../components/Admin/AdminOrdersNew";
 import AdminUsersNew from "../../components/Admin/AdminUsersNew";
 import AdminDashboardBright from "../../components/Admin/AdminDashboardBright";
-
-import { adminDataStore } from "../../utils/AdminDataStore";
+import DebugRoles from "./DebugRoles";
+import AdminRoles from "./AdminRoles";
 import { ensureCsrfToken } from "../../utils/csrfUtils";
 
 // Import admin-specific CSS
@@ -155,7 +155,6 @@ const AdminProfile = () => {
         if ((activeTab === 'add-product' || activeTab === 'edit-product') && 
             !isCategoriesLoading && 
             (!categories || categories.length === 0)) {
-            console.log('📂 Loading categories for product form...');
             loadCategories();
         }
     }, [activeTab, isCategoriesLoading, categories, loadCategories]);
@@ -168,37 +167,15 @@ const AdminProfile = () => {
             
             // Ensure CSRF token is available for admin operations
             ensureCsrfToken().then(token => {
-                if (token) {
-                    console.log('✅ CSRF token ready for admin operations');
-                } else {
-                    console.warn('⚠️ Failed to get CSRF token');
+                if (!token) {
+                    // CSRF token not available
                 }
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAuthenticated, isAdmin, dateRange]);
 
-    // Sync categories from AdminDataStore - only update local state, don't trigger loads
-    useEffect(() => {
-        const storedCategories = adminDataStore.getData('categories');
-        
-        if (Array.isArray(storedCategories) && storedCategories.length > 0) {
-            setLocalCategories(storedCategories);
-        } else if (Array.isArray(categories) && categories.length > 0) {
-            setLocalCategories(categories);
-        } else {
-            setLocalCategories([]);
-        }
 
-        // Listen for category updates from AdminDataStore
-        const unsubscribe = adminDataStore.addListener('categories', (data) => {
-            if (data.data && data.data.length > 0) {
-                setLocalCategories(data.data);
-            }
-        });
-
-        return unsubscribe;
-    }, [categories]);
 
     // Load data based on active tab
     useEffect(() => {
@@ -322,7 +299,6 @@ const AdminProfile = () => {
             delete duplicatedProduct.id;
             
             await createProduct(duplicatedProduct);
-            console.log('Product duplicated successfully');
         } catch (error) {
             console.error('Error duplicating product:', error);
         }
@@ -375,8 +351,6 @@ const AdminProfile = () => {
 
     const handleSaveAdminProfile = async () => {
         try {
-            console.log('Saving admin profile:', adminProfileData);
-            
             // API call with proper error handling
             const token = tokenManager.getToken();
             if (!token) {
@@ -405,7 +379,6 @@ const AdminProfile = () => {
                     message: 'Admin profile updated successfully!',
                     type: 'success'
                 });
-                console.log('✅ Admin profile saved successfully');
             } else {
                 const errorData = await response.json();
                 throw new Error(`Failed to update profile: ${response.status} - ${errorData.message || 'Unknown error'}`);
@@ -425,8 +398,6 @@ const AdminProfile = () => {
     const handleAdminAvatarChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            console.log('Avatar file selected:', file);
-            
             // Validate file type and size
             if (!file.type.startsWith('image/')) {
                 setToast({
@@ -453,8 +424,6 @@ const AdminProfile = () => {
                 }));
             };
             reader.readAsDataURL(file);
-            
-            console.log('✅ Avatar preview updated');
         }
     };
 
@@ -565,7 +534,6 @@ const AdminProfile = () => {
 
     const toggleTwoFactor = () => {
         // Handle two-factor authentication toggle
-        console.log('Toggling two-factor authentication');
     };
 
     const renderActiveTab = () => {
@@ -624,7 +592,6 @@ const AdminProfile = () => {
                         onSaveCategory={handleSaveCategory}
                         onDeleteCategory={handleDeleteCategory}
                         onSaveSpecifications={(categoryName, specs) => {
-                            console.log('Saving specifications for', categoryName, specs);
                             alert(`Specifications saved for ${categoryName}!`);
                         }}
                     />
@@ -713,6 +680,12 @@ const AdminProfile = () => {
                         toggleTwoFactor={toggleTwoFactor}
                     />
                 );
+
+            case 'roles':
+                return <AdminRoles />;
+
+            case 'debug-roles':
+                return <DebugRoles />;
 
             default:
                 return <AdminDashboardSimple />;

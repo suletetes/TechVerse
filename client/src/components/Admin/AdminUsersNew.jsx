@@ -1,13 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { adminService } from '../../api/services/index.js';
-import { adminDataStore } from '../../utils/AdminDataStore';
 import { useAuth } from '../../context/AuthContext';
+import { tokenManager } from '../../utils/tokenManager';
+
+const API_HOST = 'http://localhost:5000';
 
 const AdminUsersNew = () => {
-    const { user, isAuthenticated, isAdmin } = useAuth();
+    const { isAdmin } = useAuth();
     const [allUsers, setAllUsers] = useState([]);
+    const [availableRoles, setAvailableRoles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [toast, setToast] = useState(null);
+    const [roleChangeModal, setRoleChangeModal] = useState({ show: false, user: null, newRole: '' });
     const [filters, setFilters] = useState({
         role: '',
         status: '',
@@ -21,24 +26,45 @@ const AdminUsersNew = () => {
     const [sortBy, setSortBy] = useState('firstName');
     const [sortOrder, setSortOrder] = useState('asc');
 
-    // Load users only once on mount or when data is stale
-    useEffect(() => {
-        if (!adminDataStore.isDataFresh('users')) {
-            loadUsers();
-        } else {
-            setAllUsers(adminDataStore.getData('users'));
-            setLoading(false);
-        }
-
-        // Listen for data updates
-        const unsubscribe = adminDataStore.addListener('users', (data) => {
-            setAllUsers(data.data || []);
-            setLoading(data.loading || false);
-            setError(data.error);
-        });
-
-        return unsubscribe;
+    const getAuthHeaders = useCallback(() => {
+        const token = tokenManager.getToken();
+        return {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
     }, []);
+
+    const showToast = (message, type = 'info') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3000);
+    };
+
+    // Fetch available roles
+    const fetchRoles = useCallback(async () => {
+        try {
+            const response = await fetch(`${API_HOST}/api/admin/roles`, {
+                headers: getAuthHeaders()
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                setAvailableRoles(data.data || []);
+            }
+        } catch (err) {
+            // Fallback to default roles if fetch fails
+            setAvailableRoles([
+                { name: 'customer', displayName: 'Customer' },
+                { name: 'moderator', displayName: 'Moderator' },
+                { name: 'admin', displayName: 'Admin' },
+                { name: 'super_admin', displayName: 'Super Admin' }
+            ]);
+        }
+    }, [getAuthHeaders]);
+
+    // Load users and roles on mount
+    useEffect(() => {
+        loadUsers();
+        fetchRoles();
+    }, [fetchRoles]);
     
     // Reset to page 1 when filters change
     useEffect(() => {
@@ -47,12 +73,9 @@ const AdminUsersNew = () => {
 
     const loadUsers = async () => {
         try {
-            adminDataStore.setLoading('users', true);
-            adminDataStore.setError('users', null);
-            
-            console.log('🔍 AdminUsersNew: Fetching users...');
-            
-            const response = await adminService.getAdminUsers({ limit: 1000 }); // Get all users
+            setLoading(true);
+            setError(null);
+            const response = await adminService.getAdminUsers({ limit: 1000 });
             
             let backendUsers = [];
             if (response?.data?.users) {
@@ -63,13 +86,11 @@ const AdminUsersNew = () => {
                 backendUsers = response;
             }
             
-            console.log(`📊 Loaded ${backendUsers.length} users`);
-            
-            adminDataStore.setData('users', backendUsers);
+            setAllUsers(backendUsers);
             
         } catch (err) {
-            console.error('❌ Error loading users:', err);
-            adminDataStore.setError('users', err.message);
+            console.error('Error loading users:', err);
+            setError(err.message);
             
             // Try direct API call as fallback
             try {
@@ -84,41 +105,59 @@ const AdminUsersNew = () => {
                 if (directResponse.ok) {
                     const directData = await directResponse.json();
                     const directUsers = directData?.data?.users || directData?.users || directData || [];
-                    console.log(`🎉 Found ${directUsers.length} users via direct API`);
-                    adminDataStore.setData('users', directUsers);
+                    setAllUsers(directUsers);
                 } else {
                     throw new Error(`API returned ${directResponse.status}`);
                 }
             } catch (directErr) {
-                console.error('❌ Direct API call also failed:', directErr);
-                adminDataStore.setError('users', `Failed to load users: ${err.message}`);
+                console.error('Failed to load users:', directErr);
+                setError(`Failed to load users: ${err.message}`);
             }
         } finally {
-            adminDataStore.setLoading('users', false);
+            setLoading(false);
         }
     };
 
-    const handleRoleChange = async (userId, newRole) => {
+    const handleRoleChange = (userId, newRole) => {
+        const targetUser = allUsers.find(u => (u._id || u.id) === userId);
+        if (targetUser) {
+            setRoleChangeModal({ show: true, user: targetUser, newRole });
+        }
+    };
+
+    const confirmRoleChange = async (reason = '') => {
+        const { user: targetUser, newRole } = roleChangeModal;
+        if (!targetUser || !newRole) return;
+
         try {
-            console.log(`Updating user ${userId} to role: ${newRole}`);
-            // Update user role via API
-            // await adminService.updateUserRole(userId, newRole);
-            // Reload users after update
-            await loadUsers();
-        } catch (error) {
-            console.error('Error updating user role:', error);
+            const response = await fetch(`${API_HOST}/api/admin/roles/users/${targetUser._id || targetUser.id}/assign`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ roleName: newRole, reason })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showToast(`Role updated to ${formatRoleName(newRole)} successfully`, 'success');
+                await loadUsers();
+            } else {
+                throw new Error(data.message || 'Failed to update role');
+            }
+        } catch (err) {
+            showToast(err.message || 'Failed to update role', 'error');
+        } finally {
+            setRoleChangeModal({ show: false, user: null, newRole: '' });
         }
     };
 
     const handleStatusChange = async (userId, newStatus) => {
         try {
-            console.log(`Updating user ${userId} to status: ${newStatus}`);
             // Update user status via API
             // await adminService.updateUserStatus(userId, newStatus);
-            // Reload users after update
             await loadUsers();
         } catch (error) {
-            console.error('Error updating user status:', error);
+            // Status update failed
         }
     };
 
@@ -262,6 +301,19 @@ const AdminUsersNew = () => {
         return colors[role?.toLowerCase()] || 'secondary';
     };
 
+    // Format role name: 'content_moderator' -> 'Content Moderator'
+    const formatRoleName = (roleName) => {
+        if (!roleName) return 'Customer';
+        // Check if we have a displayName from availableRoles
+        const roleData = availableRoles.find(r => r.name === roleName);
+        if (roleData?.displayName) return roleData.displayName;
+        // Fallback: convert snake_case to Title Case
+        return roleName
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+    };
+
     if (loading) {
         return (
             <div className="store-card fill-card">
@@ -305,6 +357,54 @@ const AdminUsersNew = () => {
 
     return (
         <div className="store-card fill-card">
+            {/* Toast */}
+            {toast && (
+                <div className={`alert alert-${toast.type === 'error' ? 'danger' : toast.type} alert-dismissible fade show position-fixed`}
+                     style={{ top: '20px', right: '20px', zIndex: 9999 }}>
+                    {toast.message}
+                    <button type="button" className="btn-close" onClick={() => setToast(null)}></button>
+                </div>
+            )}
+
+            {/* Role Change Modal */}
+            {roleChangeModal.show && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Confirm Role Change</h5>
+                                <button type="button" className="btn-close" onClick={() => setRoleChangeModal({ show: false, user: null, newRole: '' })}></button>
+                            </div>
+                            <div className="modal-body">
+                                <p>
+                                    Change role for <strong>{roleChangeModal.user?.firstName} {roleChangeModal.user?.lastName || roleChangeModal.user?.email}</strong> to <strong>{formatRoleName(roleChangeModal.newRole)}</strong>?
+                                </p>
+                                <div className="mb-3">
+                                    <label className="form-label">Reason (optional)</label>
+                                    <textarea
+                                        className="form-control"
+                                        id="roleChangeReason"
+                                        rows="2"
+                                        placeholder="Enter reason for role change..."
+                                    />
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setRoleChangeModal({ show: false, user: null, newRole: '' })}>
+                                    Cancel
+                                </button>
+                                <button type="button" className="btn btn-primary" onClick={() => {
+                                    const reason = document.getElementById('roleChangeReason')?.value || '';
+                                    confirmRoleChange(reason);
+                                }}>
+                                    Confirm Change
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
                 <div>
@@ -340,10 +440,11 @@ const AdminUsersNew = () => {
                         onChange={(e) => handleFilterChange('role', e.target.value)}
                     >
                         <option value="">All Roles</option>
-                        <option value="customer">Customer</option>
-                        <option value="admin">Admin</option>
-                        <option value="moderator">Moderator</option>
-                        <option value="super_admin">Super Admin</option>
+                        {availableRoles.map(role => (
+                            <option key={role.name || role._id} value={role.name}>
+                                {role.displayName || role.name}
+                            </option>
+                        ))}
                     </select>
                 </div>
                 <div className="col-md-3">
@@ -386,7 +487,7 @@ const AdminUsersNew = () => {
                 <div className="col-lg-3 col-md-6">
                     <div className="card bg-primary bg-opacity-10 border-primary border-opacity-25">
                         <div className="card-body text-center">
-                            <h3 className="text-primary mb-1">{allUsers.length}</h3>
+                            <h3 className="text-primary mb-2">{allUsers.length}</h3>
                             <p className="text-muted mb-0">Total Users</p>
                         </div>
                     </div>
@@ -394,8 +495,8 @@ const AdminUsersNew = () => {
                 <div className="col-lg-3 col-md-6">
                     <div className="card bg-success bg-opacity-10 border-success border-opacity-25">
                         <div className="card-body text-center">
-                            <h3 className="text-success mb-1">
-                                {allUsers.filter(u => (u.status || 'active') === 'active').length}
+                            <h3 className="text-success mb-2">
+                                {allUsers.filter(u => (u.status || u.accountStatus || 'active') === 'active').length}
                             </h3>
                             <p className="text-muted mb-0">Active</p>
                         </div>
@@ -404,8 +505,8 @@ const AdminUsersNew = () => {
                 <div className="col-lg-3 col-md-6">
                     <div className="card bg-info bg-opacity-10 border-info border-opacity-25">
                         <div className="card-body text-center">
-                            <h3 className="text-info mb-1">
-                                {allUsers.filter(u => (u.role || 'customer') === 'customer').length}
+                            <h3 className="text-info mb-2">
+                                {allUsers.filter(u => !u.role || u.role === 'customer' || u.role === 'user').length}
                             </h3>
                             <p className="text-muted mb-0">Customers</p>
                         </div>
@@ -414,8 +515,8 @@ const AdminUsersNew = () => {
                 <div className="col-lg-3 col-md-6">
                     <div className="card bg-warning bg-opacity-10 border-warning border-opacity-25">
                         <div className="card-body text-center">
-                            <h3 className="text-warning mb-1">
-                                {allUsers.filter(u => ['admin', 'super_admin', 'moderator'].includes(u.role || 'customer')).length}
+                            <h3 className="text-warning mb-2">
+                                {allUsers.filter(u => u.role && !['customer', 'user'].includes(u.role)).length}
                             </h3>
                             <p className="text-muted mb-0">Staff</p>
                         </div>
@@ -506,7 +607,7 @@ const AdminUsersNew = () => {
                                 </td>
                                 <td>
                                     <span className={`badge bg-${getRoleColor(user.role)} bg-opacity-15 text-${getRoleColor(user.role)} border border-${getRoleColor(user.role)} border-opacity-25 px-3 py-2 rounded-pill`}>
-                                        {user.role || 'customer'}
+                                        {formatRoleName(user.role)}
                                     </span>
                                 </td>
                                 <td>
@@ -535,10 +636,11 @@ const AdminUsersNew = () => {
                                             onChange={(e) => handleRoleChange(user._id || user.id, e.target.value)}
                                             style={{ minWidth: '100px' }}
                                         >
-                                            <option value="customer">Customer</option>
-                                            <option value="moderator">Moderator</option>
-                                            <option value="admin">Admin</option>
-                                            <option value="super_admin">Super Admin</option>
+                                            {availableRoles.map(role => (
+                                                <option key={role.name || role._id} value={role.name}>
+                                                    {role.displayName || role.name}
+                                                </option>
+                                            ))}
                                         </select>
                                         <select
                                             className="form-select form-select-sm"

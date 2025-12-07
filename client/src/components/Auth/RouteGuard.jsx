@@ -77,19 +77,7 @@ const RouteGuard = ({
   const location = useLocation();
   const { isAuthenticated, user, isLoading, hasRole, hasPermission, isAdmin } = useAuth();
 
-  // Debug logging for admin access
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && user) {
-      console.log('RouteGuard debug:', {
-        isAuthenticated,
-        user: user,
-        userRole: user.role,
-        isAdmin: isAdmin(),
-        hasAdminRole: hasRole('admin'),
-        hasSuperAdminRole: hasRole('super_admin')
-      });
-    }
-  }, [isAuthenticated, user, isAdmin, hasRole]);
+
 
   // Show loading state
   if (isLoading) {
@@ -132,16 +120,6 @@ const RouteGuard = ({
 
     if (!hasRequiredRole) {
       const accessDeniedReason = `Access denied. Required role: ${requireRole.join(' or ')}. Your role: ${user?.role || 'none'}`;
-
-      // Debug logging for role check failure
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Role check failed:', {
-          requiredRoles: requireRole,
-          userRole: user?.role,
-          hasRequiredRole,
-          roleChecks: requireRole.map(role => ({ role, hasRole: hasRole(role) }))
-        });
-      }
 
       if (onAccessDenied) {
         onAccessDenied('insufficient_role', {

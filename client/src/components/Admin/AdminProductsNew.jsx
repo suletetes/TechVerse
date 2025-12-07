@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { adminService } from '../../api/services/index.js';
-import { adminDataStore } from '../../utils/AdminDataStore';
 import { useAuth } from '../../context/AuthContext';
 import { useAdmin } from '../../context/AdminContext';
 import { API_BASE_URL } from '../../config/api.js';
@@ -27,50 +26,22 @@ const AdminProductsNew = ({ setActiveTab }) => {
     const [sortBy, setSortBy] = useState('name');
     const [sortOrder, setSortOrder] = useState('asc');
 
-    // Load products and categories only once on mount or when data is stale
+    // Load products and categories on mount
     useEffect(() => {
-        if (!adminDataStore.isDataFresh('products')) {
-            loadProducts();
-        } else {
-            setAllProducts(adminDataStore.getData('products'));
-            setLoading(false);
-        }
+        loadProducts();
 
         // Try to use categories from AdminContext first
         if (adminCategories && adminCategories.length > 0) {
             setAllCategories(adminCategories);
-            adminDataStore.setData('categories', adminCategories);
         } else {
-            const storedCategories = adminDataStore.getData('categories');
-            if (Array.isArray(storedCategories) && storedCategories.length > 0) {
-                setAllCategories(storedCategories);
-            } else {
-                loadCategories();
-            }
+            loadCategories();
         }
-
-        // Listen for data updates
-        const unsubscribeProducts = adminDataStore.addListener('products', (data) => {
-            setAllProducts(data.data || []);
-            setLoading(data.loading || false);
-            setError(data.error);
-        });
-
-        const unsubscribeCategories = adminDataStore.addListener('categories', (data) => {
-            setAllCategories(data.data || []);
-        });
-
-        return () => {
-            unsubscribeProducts();
-            unsubscribeCategories();
-        };
     }, []);
     
     // Sync categories from AdminContext (only if we don't have any)
     useEffect(() => {
         if (adminCategories && adminCategories.length > 0 && allCategories.length === 0) {
             setAllCategories(adminCategories);
-            adminDataStore.setData('categories', adminCategories);
         }
     }, [adminCategories, allCategories.length]);
     
@@ -81,10 +52,8 @@ const AdminProductsNew = ({ setActiveTab }) => {
 
     const loadProducts = async () => {
         try {
-            adminDataStore.setLoading('products', true);
-            adminDataStore.setError('products', null);
-            
-            // Fetching products...
+            setLoading(true);
+            setError(null);
             
             if (!isAuthenticated) {
                 throw new Error('User not authenticated');
@@ -94,9 +63,7 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 throw new Error('User does not have admin privileges');
             }
             
-            const token = localStorage.getItem('token') || localStorage.getItem('techverse_token_v2');
-            
-            const response = await adminService.getAdminProducts({ limit: 1000 }); // Get all products
+            const response = await adminService.getAdminProducts({ limit: 1000 });
             
             let backendProducts = [];
             if (response?.data?.products) {
@@ -109,11 +76,8 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 backendProducts = response;
             }
             
-            if (backendProducts.length > 0) {
-                adminDataStore.setData('products', backendProducts);
-            } else {
-                adminDataStore.setData('products', []);
-                setAllProducts([]);
+            setAllProducts(backendProducts);
+            if (backendProducts.length === 0) {
                 setPagination({
                     page: 1,
                     limit: 20,
@@ -124,18 +88,15 @@ const AdminProductsNew = ({ setActiveTab }) => {
             }
             
         } catch (err) {
-            console.error('❌ Error loading products:', err);
-            adminDataStore.setError('products', err.message);
+            console.error('Error loading products:', err);
+            setError(err.message);
             
             // Try direct API call as fallback
             try {
-                // Try multiple token storage keys
                 const token = localStorage.getItem('token') || 
                              localStorage.getItem('techverse_token_v2') ||
                              localStorage.getItem('authToken') ||
                              localStorage.getItem('accessToken');
-                
-                console.log('🔑 Trying direct API call with token:', token ? 'Found' : 'Not found');
                 
                 const directResponse = await fetch(`${API_BASE_URL}/api/admin/products?limit=1000`, {
                     headers: {
@@ -144,26 +105,21 @@ const AdminProductsNew = ({ setActiveTab }) => {
                     }
                 });
                 
-                console.log('📡 Direct API response status:', directResponse.status);
-                
                 if (directResponse.ok) {
                     const directData = await directResponse.json();
-                    console.log('📦 Direct API response data:', directData);
-                    
                     const directProducts = directData?.data?.products || directData?.products || directData || [];
-                    console.log(`🎉 Found ${directProducts.length} products via direct API`);
-                    adminDataStore.setData('products', directProducts);
+                    setAllProducts(directProducts);
                 } else {
                     const errorText = await directResponse.text();
-                    console.error('❌ Direct API error response:', errorText);
+                    console.error('Direct API error:', errorText);
                     throw new Error(`API returned ${directResponse.status}: ${errorText}`);
                 }
             } catch (directErr) {
-                console.error('❌ Direct API call also failed:', directErr);
-                adminDataStore.setError('products', `Failed to load products: ${err.message}`);
+                console.error('Failed to load products:', directErr);
+                setError(`Failed to load products: ${err.message}`);
             }
         } finally {
-            adminDataStore.setLoading('products', false);
+            setLoading(false);
         }
     };
 
@@ -199,7 +155,6 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 
                 if (categories.length > 0) {
                     setAllCategories(categories);
-                    adminDataStore.setData('categories', categories);
                     return;
                 }
             }
@@ -218,7 +173,6 @@ const AdminProductsNew = ({ setActiveTab }) => {
             
             if (categories.length > 0) {
                 setAllCategories(categories);
-                adminDataStore.setData('categories', categories);
                 return;
             }
             
@@ -241,7 +195,6 @@ const AdminProductsNew = ({ setActiveTab }) => {
                 { _id: '6907c4cd76b828091bdb970e', name: 'Fitness & Health', slug: 'fitness-health' }
             ];
             setAllCategories(defaultCategories);
-            adminDataStore.setData('categories', defaultCategories);
         }
     };
 
@@ -490,34 +443,6 @@ const AdminProductsNew = ({ setActiveTab }) => {
                             <path fill="currentColor" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" />
                         </svg>
                         Refresh
-                    </button>
-                    <button
-                        className="btn btn-outline-info btn-rd"
-                        onClick={() => {
-                            console.log('🔍 Debug Info:', {
-                                isAuthenticated,
-                                isAdmin: isAdmin(),
-                                user,
-                                allCategories: allCategories,
-                                categoriesCount: allCategories.length,
-                                localStorage: {
-                                    token: localStorage.getItem('token'),
-                                    techverse_token: localStorage.getItem('techverse_token_v2'),
-                                    authToken: localStorage.getItem('authToken')
-                                }
-                            });
-                        }}
-                    >
-                        Debug
-                    </button>
-                    <button
-                        className="btn btn-outline-warning btn-rd"
-                        onClick={() => {
-                            console.log('🔄 Manual category refresh...');
-                            loadCategories();
-                        }}
-                    >
-                        Reload Categories
                     </button>
                     <button 
                         className="btn btn-success btn-rd"

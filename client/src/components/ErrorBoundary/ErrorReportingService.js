@@ -120,7 +120,6 @@ class ErrorReportingService {
     // Handle coming back online
     async handleOnline() {
         this.isOnline = true;
-        console.log('Back online, processing queued errors...');
 
         // Load queued errors from localStorage
         try {
@@ -137,7 +136,6 @@ class ErrorReportingService {
     // Handle going offline
     handleOffline() {
         this.isOnline = false;
-        console.log('Gone offline, errors will be queued');
     }
 
     // Process queued errors

@@ -45,25 +45,20 @@ const Login = () => {
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const validateForm = () => {
-        console.log('Validating form with data:', formData);
         const errors = {};
 
         // Email validation
         if (!formData.email.trim()) {
             errors.email = 'Email is required';
-            console.log('Email validation failed: empty');
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
             errors.email = 'Please enter a valid email address';
-            console.log('Email validation failed: invalid format');
         }
 
         // Password validation
         if (!formData.password) {
             errors.password = 'Password is required';
-            console.log('Password validation failed: empty');
         }
 
-        console.log('Validation errors:', errors);
         setValidationErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -83,16 +78,11 @@ const Login = () => {
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
-        console.log('Input change:', { name, value, type, checked });
 
-        setFormData(prev => {
-            const newData = {
-                ...prev,
-                [name]: type === 'checkbox' ? checked : value
-            };
-            console.log('Updated formData:', newData);
-            return newData;
-        });
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
 
         // Clear validation error for this field
         if (validationErrors[name]) {
@@ -119,12 +109,7 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Debug: Log form data
-        console.log('Form submission - formData:', formData);
-        console.log('Form validation result:', validateForm());
-
         if (!validateForm()) {
-            console.log('Form validation failed, not submitting');
             return;
         }
 
@@ -134,7 +119,6 @@ const Login = () => {
                 password: formData.password
             };
 
-            console.log('Sending credentials:', credentials);
             const result = await login(credentials, { rememberMe: formData.rememberMe });
 
             if (result.mfaRequired) {
@@ -167,12 +151,10 @@ const Login = () => {
 
     const handleGoogleLogin = () => {
         // TODO: Implement Google OAuth
-        console.log('Google login clicked');
     };
 
     const handleAppleLogin = () => {
         // TODO: Implement Apple OAuth
-        console.log('Apple login clicked');
     };
 
     return (

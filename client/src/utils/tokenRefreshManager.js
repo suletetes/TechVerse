@@ -98,9 +98,8 @@ class TokenRefreshManager {
 
     // If token expires soon, trigger refresh
     if (timeUntilExpiry <= REFRESH_CONFIG.REFRESH_BUFFER_TIME && timeUntilExpiry > 0) {
-      // Token expiring soon, triggering automatic refresh
       this.refreshToken().catch(error => {
-        console.error('Automatic token refresh failed:', error);
+        // Automatic token refresh failed
       });
     }
   }
@@ -116,7 +115,6 @@ class TokenRefreshManager {
 
     // If already refreshing, return existing promise
     if (this.isRefreshing && this.refreshPromise) {
-      console.log('Token refresh already in progress, waiting...');
       return this.refreshPromise;
     }
 
@@ -164,8 +162,6 @@ class TokenRefreshManager {
    */
   async executeRefresh(refreshToken) {
     const requestId = `refresh_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    console.log('Executing token refresh...', { requestId, attempt: this.refreshAttempts });
 
     const response = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
       method: 'POST',
@@ -240,14 +236,7 @@ class TokenRefreshManager {
       // Notify listeners
       this.notifyRefreshListeners('success', { tokens, user });
 
-      console.log('Token refresh successful', {
-        sessionId: tokens.sessionId?.substring(0, 8) + '...',
-        expiresAt: tokens.expiresAt,
-        queueSize: this.failedQueue.length
-      });
-
     } catch (error) {
-      console.error('Error processing refresh success:', error);
       this.handleRefreshFailure(error);
     }
   }
@@ -256,13 +245,6 @@ class TokenRefreshManager {
    * Handle token refresh failure
    */
   handleRefreshFailure(error, isFatal = false) {
-    console.error('Token refresh failed:', {
-      message: error.message,
-      status: error.status,
-      attempt: this.refreshAttempts,
-      isFatal
-    });
-
     // Check if we should retry
     const shouldRetry = !isFatal &&
       this.refreshAttempts < REFRESH_CONFIG.MAX_RETRY_ATTEMPTS &&
@@ -272,11 +254,9 @@ class TokenRefreshManager {
       const delay = REFRESH_CONFIG.RETRY_DELAY_BASE *
         Math.pow(REFRESH_CONFIG.RETRY_DELAY_MULTIPLIER, this.refreshAttempts - 1);
 
-      console.log(`Retrying token refresh in ${delay}ms (attempt ${this.refreshAttempts})`);
-
       setTimeout(() => {
         this.refreshToken().catch(retryError => {
-          console.error('Token refresh retry failed:', retryError);
+          // Token refresh retry failed
         });
       }, delay);
 
@@ -375,13 +355,11 @@ class TokenRefreshManager {
     const queue = [...this.failedQueue];
     this.failedQueue = [];
 
-    console.log(`Processing ${queue.length} queued requests after token refresh`);
-
     queue.forEach(({ resolve, request }) => {
       try {
         resolve(request());
       } catch (error) {
-        console.error('Error processing queued request:', error);
+        // Error processing queued request
       }
     });
   }
@@ -416,7 +394,7 @@ class TokenRefreshManager {
       try {
         listener({ type, data, timestamp: new Date().toISOString() });
       } catch (error) {
-        console.error('Refresh listener error:', error);
+        // Refresh listener error
       }
     });
   }
@@ -468,7 +446,6 @@ class TokenRefreshManager {
    */
   resetSecurityState() {
     if (import.meta.env?.DEV) {
-      console.log('🔧 Resetting security state (development mode)');
       this.securityBreach = false;
       this.securityBreachTime = null;
       this.isRefreshing = false;
@@ -481,10 +458,8 @@ class TokenRefreshManager {
         tokenManager.clearTokens();
       }
       
-      console.log('✅ Security state reset complete');
       return true;
     } else {
-      console.warn('⚠️ Security state reset is only available in development mode');
       return false;
     }
   }
@@ -496,18 +471,14 @@ export const tokenRefreshManager = new TokenRefreshManager();
 // Make reset method available globally in development
 if (import.meta.env?.DEV && typeof window !== 'undefined') {
   window.resetTechVerseAuth = () => {
-    console.log('🔧 Resetting TechVerse authentication state...');
     const result = tokenRefreshManager.resetSecurityState();
     if (result) {
-      console.log('🎉 Authentication reset complete! Please refresh the page.');
       if (confirm('Authentication state has been reset. Refresh the page now?')) {
         window.location.reload();
       }
     }
     return result;
   };
-  
-  console.log('🔧 Development helper available: window.resetTechVerseAuth()');
 }
 
 export default tokenRefreshManager;

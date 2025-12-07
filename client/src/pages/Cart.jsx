@@ -21,16 +21,6 @@ const Cart = () => {
     const [promoCode, setPromoCode] = useState('');
     const [isUpdating, setIsUpdating] = useState(false);
 
-    // Debug logging
-    console.log('🛒 Cart Page State:', {
-        items,
-        itemsLength: items?.length,
-        total,
-        itemCount,
-        isLoading,
-        error
-    });
-
     // Redirect to login if not authenticated
     useEffect(() => {
         if (!isAuthenticated) {
@@ -84,7 +74,6 @@ const Cart = () => {
 
     const handlePromoCode = useCallback(() => {
         // TODO: Implement promo code functionality
-        console.log('Applying promo code:', promoCode);
     }, [promoCode]);
 
     // Show loading state only on initial load

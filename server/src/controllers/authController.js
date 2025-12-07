@@ -226,6 +226,27 @@ export const login = asyncHandler(async (req, res, next) => {
     return next(new AppError('Authentication failed', 401, 'AUTH_FAILED'));
   }
 
+  // Sync user permissions from role if not set
+  if (!user.permissions || user.permissions.length === 0) {
+    try {
+      const permissionService = (await import('../services/permissionService.js')).default;
+      const permissions = await permissionService.getUserPermissions(user._id);
+      if (permissions && permissions.length > 0) {
+        user.permissions = permissions;
+        await user.save();
+        logger.info('Synced user permissions from role', {
+          userId: user._id,
+          permissionsCount: permissions.length
+        });
+      }
+    } catch (error) {
+      logger.warn('Failed to sync user permissions', {
+        userId: user._id,
+        error: error.message
+      });
+    }
+  }
+
   // Add session tracking
   const sessionId = crypto.randomBytes(32).toString('hex');
   
@@ -643,6 +664,60 @@ export const getMe = asyncHandler(async (req, res, next) => {
       user
     }
   });
+});
+
+// @desc    Refresh user permissions from role
+// @route   POST /api/auth/refresh-permissions
+// @access  Private
+export const refreshPermissions = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    return next(new AppError('User not found', 404, 'USER_NOT_FOUND'));
+  }
+
+  try {
+    // Import default roles and permission service
+    const { DEFAULT_ROLES } = await import('../config/defaultRoles.js');
+    const permissionService = (await import('../services/permissionService.js')).default;
+    
+    // Clear permission cache for this user
+    permissionService.invalidateUserCache(user._id);
+    
+    // Get permissions from default roles config
+    const roleConfig = DEFAULT_ROLES[user.role];
+    if (roleConfig) {
+      user.permissions = roleConfig.permissions;
+      await user.save();
+      
+      logger.info('User permissions refreshed from default roles', {
+        userId: user._id,
+        role: user.role,
+        permissionsCount: user.permissions.length
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Permissions refreshed successfully',
+        data: {
+          role: user.role,
+          permissions: user.permissions,
+          permissionsCount: user.permissions.length
+        }
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: `No default configuration found for role: ${user.role}`
+      });
+    }
+  } catch (error) {
+    logger.error('Error refreshing permissions', {
+      userId: user._id,
+      error: error.message
+    });
+    return next(new AppError('Failed to refresh permissions', 500, 'PERMISSION_REFRESH_FAILED'));
+  }
 });
 
 // @desc    Get user profile

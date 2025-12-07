@@ -11,7 +11,6 @@ const StripeCheckoutForm = ({ amount, currency = 'usd', onSuccess, onError }) =>
     e.preventDefault();
 
     if (!stripe || !elements) {
-      console.log('⚠️ Stripe or Elements not ready');
       return;
     }
 
