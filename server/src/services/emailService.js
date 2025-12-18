@@ -43,9 +43,9 @@ class EmailService {
         connectionTimeout: 15000,
         greetingTimeout: 15000,
         socketTimeout: 15000,
-        // Add debug logging
-        debug: process.env.NODE_ENV === 'development',
-        logger: process.env.NODE_ENV === 'development'
+        // Disable debug logging
+        debug: false,
+        logger: false
       });
 
       // Try to verify connection with better error handling
