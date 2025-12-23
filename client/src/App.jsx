@@ -32,7 +32,7 @@ const AdminOrderManagement = lazy(() => import('./pages/Admin/AdminOrderManageme
 const AdminProductManagement = lazy(() => import('./pages/Admin/AdminProductManagement'));
 const ProductReviews = lazy(() => import('./pages/ProductReviews'));
 const AdminReviewManagement = lazy(() => import('./pages/Admin/AdminReviewManagement'));
-const CategoryManagement = lazy(() => import('./pages/admin/CategoryManagement'));
+const CategoryManagement = lazy(() => import('./pages/Admin/CategoryManagement'));
 const EditProfile = lazy(() => import('./pages/EditProfile'));
 
 // Lazy load info pages
