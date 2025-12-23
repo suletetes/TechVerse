@@ -207,14 +207,11 @@ jobs:
         working-directory: ./server
         run: npm ci
 
-      - name: Install netcat for service checks
-        run: sudo apt-get update && sudo apt-get install -y netcat
-
       - name: Wait for MongoDB
         run: |
           echo "Waiting for MongoDB to be ready..."
           for i in {1..30}; do
-            if nc -z localhost 27017; then
+            if timeout 5 bash -c "</dev/tcp/localhost/27017"; then
               echo "MongoDB is ready!"
               break
             fi
@@ -227,7 +224,7 @@ jobs:
         run: |
           echo "Waiting for Redis to be ready..."
           for i in {1..30}; do
-            if nc -z localhost 6379; then
+            if timeout 5 bash -c "</dev/tcp/localhost/6379"; then
               echo "Redis is ready!"
               break
             fi
@@ -239,14 +236,14 @@ jobs:
       - name: Verify services are running
         run: |
           echo "Verifying MongoDB connection..."
-          if nc -z localhost 27017; then
+          if timeout 5 bash -c "</dev/tcp/localhost/27017" 2>/dev/null; then
             echo "✅ MongoDB is accessible on port 27017"
           else
             echo "❌ MongoDB is not accessible on port 27017"
           fi
           
           echo "Verifying Redis connection..."
-          if nc -z localhost 6379; then
+          if timeout 5 bash -c "</dev/tcp/localhost/6379" 2>/dev/null; then
             echo "✅ Redis is accessible on port 6379"
           else
             echo "❌ Redis is not accessible on port 6379"
