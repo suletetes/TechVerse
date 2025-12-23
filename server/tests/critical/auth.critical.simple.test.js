@@ -88,9 +88,51 @@ jest.mock('bcryptjs', () => ({
   compare: jest.fn().mockResolvedValue(true)
 }));
 
+// Mock mongoose to prevent actual database connections
+jest.mock('mongoose', () => ({
+  connect: jest.fn().mockResolvedValue({}),
+  disconnect: jest.fn().mockResolvedValue({}),
+  connection: {
+    readyState: 0,
+    close: jest.fn().mockResolvedValue({}),
+    collections: {}
+  },
+  Schema: jest.fn(),
+  model: jest.fn()
+}));
+
 describe('CRITICAL: Authentication (Simplified)', () => {
+  let server;
+
+  beforeAll(() => {
+    // Ensure no actual server is started
+    jest.clearAllTimers();
+  });
+
+  afterAll(async () => {
+    // Clean up any remaining handles
+    if (server && server.close) {
+      await new Promise((resolve) => {
+        server.close(resolve);
+      });
+    }
+    
+    // Clear all timers and intervals
+    jest.clearAllTimers();
+    jest.useRealTimers();
+    
+    // Force garbage collection if available
+    if (global.gc) {
+      global.gc();
+    }
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
   });
 
   describe('User Registration', () => {
