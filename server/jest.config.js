@@ -4,8 +4,10 @@ export default {
   testMatch: [
     '<rootDir>/tests/**/*.test.js'
   ],
-  testTimeout: 60000, // 60 second timeout for integration tests
-  maxWorkers: 1, // Run tests sequentially to avoid MongoDB Memory Server conflicts
+  testTimeout: 30000, // Reduced timeout
+  maxWorkers: 1, // Run tests sequentially to avoid conflicts
+  forceExit: true, // Force Jest to exit after tests complete
+  detectOpenHandles: true, // Detect open handles for debugging
   collectCoverageFrom: [
     'src/**/*.js',
     '!src/server.js',
@@ -39,5 +41,9 @@ export default {
   },
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1'
-  }
+  },
+  // Additional configuration to handle open handles
+  clearMocks: true,
+  resetMocks: true,
+  restoreMocks: true
 };

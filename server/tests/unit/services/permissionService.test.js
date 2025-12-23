@@ -255,7 +255,7 @@ describe('PermissionService', () => {
     });
 
     test('should return empty array if role not found', async () => {
-      const userWithoutPerms = { ...mockUser, permissions: [] };
+      const userWithoutPerms = { ...mockUser, permissions: [], role: 'nonexistent_role' };
       User.findById.mockReturnValue({
         select: jest.fn().mockResolvedValue(userWithoutPerms)
       });

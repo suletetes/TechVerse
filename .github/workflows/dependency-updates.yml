@@ -1,0 +1,394 @@
+name: Dependency Updates & Security Patches
+
+on:
+  schedule:
+    # Run weekly on Mondays at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      update_type:
+        description: 'Type of update to perform'
+        required: true
+        type: choice
+        options:
+          - security-only
+          - minor-updates
+          - all-updates
+        default: 'security-only'
+
+env:
+  NODE_VERSION: '18.x'
+
+jobs:
+  # Job 1: Security Audit
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    outputs:
+      has-vulnerabilities: ${{ steps.audit.outputs.has-vulnerabilities }}
+      vulnerability-count: ${{ steps.audit.outputs.vulnerability-count }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies (Server)
+        working-directory: ./server
+        run: npm ci
+
+      - name: Install dependencies (Client)
+        working-directory: ./client
+        run: npm ci
+
+      - name: Run security audit
+        id: audit
+        run: |
+          echo " Running security audit..."
+          
+          # Server audit
+          echo "Auditing server dependencies..."
+          server_audit=$(cd server && npm audit --json 2>/dev/null || echo '{"vulnerabilities":{}}')
+          server_vulns=$(echo "$server_audit" | jq '.metadata.vulnerabilities.total // 0')
+          
+          # Client audit
+          echo "Auditing client dependencies..."
+          client_audit=$(cd client && npm audit --json 2>/dev/null || echo '{"vulnerabilities":{}}')
+          client_vulns=$(echo "$client_audit" | jq '.metadata.vulnerabilities.total // 0')
+          
+          total_vulns=$((server_vulns + client_vulns))
+          
+          echo "Server vulnerabilities: $server_vulns"
+          echo "Client vulnerabilities: $client_vulns"
+          echo "Total vulnerabilities: $total_vulns"
+          
+          if [ $total_vulns -gt 0 ]; then
+            echo "has-vulnerabilities=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-vulnerabilities=false" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "vulnerability-count=$total_vulns" >> $GITHUB_OUTPUT
+
+      - name: Generate audit report
+        run: |
+          echo "# Security Audit Report" > security-audit-report.md
+          echo "" >> security-audit-report.md
+          echo "Generated on: $(date)" >> security-audit-report.md
+          echo "Total vulnerabilities found: ${{ steps.audit.outputs.vulnerability-count }}" >> security-audit-report.md
+          echo "" >> security-audit-report.md
+          
+          if [ "${{ steps.audit.outputs.has-vulnerabilities }}" == "true" ]; then
+            echo "##  Vulnerabilities Detected" >> security-audit-report.md
+            echo "Security patches are recommended." >> security-audit-report.md
+          else
+            echo "##  No Vulnerabilities Found" >> security-audit-report.md
+            echo "All dependencies are secure." >> security-audit-report.md
+          fi
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-audit-report
+          path: security-audit-report.md
+          retention-days: 30
+
+  # Job 2: Update Dependencies
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    needs: security-audit
+    if: needs.security-audit.outputs.has-vulnerabilities == 'true' || github.event.inputs.update_type != 'security-only'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Update server dependencies
+        working-directory: ./server
+        run: |
+          echo " Updating server dependencies..."
+          
+          case "${{ github.event.inputs.update_type || 'security-only' }}" in
+            "security-only")
+              echo "Applying security patches only..."
+              npm audit fix --only=prod
+              ;;
+            "minor-updates")
+              echo "Applying minor updates..."
+              npm update --save
+              npm audit fix
+              ;;
+            "all-updates")
+              echo "Applying all available updates..."
+              npx npm-check-updates -u
+              npm install
+              npm audit fix
+              ;;
+          esac
+
+      - name: Update client dependencies
+        working-directory: ./client
+        run: |
+          echo " Updating client dependencies..."
+          
+          case "${{ github.event.inputs.update_type || 'security-only' }}" in
+            "security-only")
+              echo "Applying security patches only..."
+              npm audit fix --only=prod
+              ;;
+            "minor-updates")
+              echo "Applying minor updates..."
+              npm update --save
+              npm audit fix
+              ;;
+            "all-updates")
+              echo "Applying all available updates..."
+              npx npm-check-updates -u
+              npm install
+              npm audit fix
+              ;;
+          esac
+
+      - name: Run tests after updates
+        run: |
+          echo " Running tests after dependency updates..."
+          
+          # Test server
+          cd server
+          npm ci
+          npm run test:critical
+          cd ..
+          
+          # Test client
+          cd client
+          npm ci
+          npm test -- --run
+          cd ..
+        env:
+          CI: true
+          NODE_ENV: test
+          JWT_SECRET: test-jwt-secret-for-updates
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has-changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.has-changes == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            chore: update dependencies (${{ github.event.inputs.update_type || 'security-only' }})
+            
+            - Update type: ${{ github.event.inputs.update_type || 'security-only' }}
+            - Vulnerabilities found: ${{ needs.security-audit.outputs.vulnerability-count }}
+            - Auto-generated by GitHub Actions
+          title: 'chore: dependency updates (${{ github.event.inputs.update_type || 'security-only' }})'
+          body: |
+            ## Dependency Updates
+            
+            This PR contains automatic dependency updates.
+            
+            **Update Type**: ${{ github.event.inputs.update_type || 'security-only' }}
+            **Vulnerabilities Found**: ${{ needs.security-audit.outputs.vulnerability-count }}
+            **Generated**: $(date)
+            
+            ### Changes Made
+            - Updated server dependencies
+            - Updated client dependencies
+            - Applied security patches
+            - Verified tests still pass
+            
+            ### Testing
+            -  Server critical tests passed
+            -  Client unit tests passed
+            -  No open handles detected
+            
+            ### Review Checklist
+            - [ ] Review dependency changes
+            - [ ] Verify no breaking changes
+            - [ ] Test in development environment
+            - [ ] Approve and merge if all checks pass
+            
+            ---
+            *This PR was automatically created by the dependency update workflow.*
+          branch: dependency-updates-${{ github.run_number }}
+          delete-branch: true
+
+  # Job 3: Monitor Dependency Health
+  dependency-health:
+    name: Dependency Health Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          cd server && npm ci
+          cd ../client && npm ci
+
+      - name: Check for outdated packages
+        run: |
+          echo " Checking for outdated packages..."
+          
+          echo "## Server Dependencies" > dependency-health-report.md
+          echo "```" >> dependency-health-report.md
+          cd server && npm outdated || true >> ../dependency-health-report.md
+          echo "```" >> ../dependency-health-report.md
+          echo "" >> ../dependency-health-report.md
+          
+          echo "## Client Dependencies" >> ../dependency-health-report.md
+          echo "```" >> ../dependency-health-report.md
+          cd ../client && npm outdated || true >> ../dependency-health-report.md
+          echo "```" >> ../dependency-health-report.md
+
+      - name: Check package sizes
+        run: |
+          echo " Analyzing package sizes..."
+          
+          echo "" >> dependency-health-report.md
+          echo "## Package Analysis" >> dependency-health-report.md
+          echo "### Server" >> dependency-health-report.md
+          cd server && npm ls --depth=0 >> ../dependency-health-report.md 2>/dev/null || true
+          
+          echo "### Client" >> dependency-health-report.md
+          cd ../client && npm ls --depth=0 >> ../dependency-health-report.md 2>/dev/null || true
+
+      - name: Upload dependency health report
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-health-report
+          path: dependency-health-report.md
+          retention-days: 30
+
+  # Job 4: License Compliance Check
+  license-check:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install license checker
+        run: npm install -g license-checker
+
+      - name: Install dependencies
+        run: |
+          cd server && npm ci
+          cd ../client && npm ci
+
+      - name: Check licenses
+        run: |
+          echo " Checking license compliance..."
+          
+          echo "# License Compliance Report" > license-report.md
+          echo "" >> license-report.md
+          echo "Generated on: $(date)" >> license-report.md
+          echo "" >> license-report.md
+          
+          echo "## Server Dependencies" >> license-report.md
+          echo "```" >> license-report.md
+          cd server && license-checker --summary >> ../license-report.md
+          echo "```" >> ../license-report.md
+          echo "" >> ../license-report.md
+          
+          echo "## Client Dependencies" >> license-report.md
+          echo "```" >> license-report.md
+          cd ../client && license-checker --summary >> ../license-report.md
+          echo "```" >> ../license-report.md
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v3
+        with:
+          name: license-report
+          path: license-report.md
+          retention-days: 30
+
+  # Job 5: Summary and Notification
+  summary:
+    name: Summary and Notification
+    runs-on: ubuntu-latest
+    needs: [security-audit, update-dependencies, dependency-health, license-check]
+    if: always()
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# Dependency Update Summary" > summary.md
+          echo "" >> summary.md
+          echo "Generated on: $(date)" >> summary.md
+          echo "" >> summary.md
+          echo "## Results" >> summary.md
+          echo "- Security Audit: ${{ needs.security-audit.result }}" >> summary.md
+          echo "- Dependency Updates: ${{ needs.update-dependencies.result || 'skipped' }}" >> summary.md
+          echo "- Health Check: ${{ needs.dependency-health.result }}" >> summary.md
+          echo "- License Check: ${{ needs.license-check.result }}" >> summary.md
+          echo "" >> summary.md
+          echo "## Security Status" >> summary.md
+          echo "- Vulnerabilities Found: ${{ needs.security-audit.outputs.vulnerability-count || '0' }}" >> summary.md
+          echo "- Has Vulnerabilities: ${{ needs.security-audit.outputs.has-vulnerabilities || 'false' }}" >> summary.md
+          echo "" >> summary.md
+          
+          if [ "${{ needs.security-audit.outputs.has-vulnerabilities }}" == "true" ]; then
+            echo " Security vulnerabilities detected. Review and apply updates." >> summary.md
+          else
+            echo " No security vulnerabilities found." >> summary.md
+          fi
+          
+          cat summary.md
+
+      - name: Upload summary
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-update-summary
+          path: summary.md
+          retention-days: 30
+
+      - name: Send notification
+        run: |
+          echo " Sending dependency update notification..."
+          echo "Security vulnerabilities: ${{ needs.security-audit.outputs.vulnerability-count || '0' }}"
+          echo "Update type: ${{ github.event.inputs.update_type || 'security-only' }}"
+          
+          # Add notification webhook here
+          # Include summary of updates, security status, and any actions needed

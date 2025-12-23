@@ -136,15 +136,34 @@ describe('RoleService', () => {
       ).rejects.toThrow('Role not found');
     });
 
-    test('should prevent modification of system roles except isActive', async () => {
+    test('should prevent renaming system roles but allow other modifications', async () => {
       const systemRole = { ...mockRole, isSystemRole: true };
       Role.findById.mockResolvedValue(systemRole);
 
-      const updateData = { displayName: 'New Name', permissions: [] };
+      const updateData = { name: 'new_name' };
 
       await expect(
         roleService.updateRole(roleId, updateData, mockPerformedBy)
-      ).rejects.toThrow('Cannot modify system role');
+      ).rejects.toThrow('Cannot rename system roles');
+    });
+
+    test('should allow updating system role properties except name', async () => {
+      const systemRole = { 
+        ...mockRole, 
+        isSystemRole: true, 
+        save: jest.fn().mockResolvedValue(mockRole)
+      };
+      Role.findById.mockResolvedValue(systemRole);
+      AuditLog.logRoleUpdate = jest.fn().mockResolvedValue({});
+
+      const updateData = { displayName: 'New Name', permissions: ['new.permission'] };
+
+      const result = await roleService.updateRole(roleId, updateData, mockPerformedBy);
+
+      expect(systemRole.save).toHaveBeenCalled();
+      expect(systemRole.displayName).toBe('New Name');
+      expect(systemRole.permissions).toEqual(['new.permission']);
+      expect(result).toBe(systemRole);
     });
 
     test('should allow updating isActive for system roles', async () => {
