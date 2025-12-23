@@ -270,7 +270,7 @@ jobs:
           cat rollback-report.md
 
       - name: Upload rollback report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: rollback-report-${{ github.event.inputs.environment }}-$(date +%Y%m%d_%H%M%S)
           path: rollback-report.md

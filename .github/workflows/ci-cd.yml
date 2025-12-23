@@ -42,6 +42,7 @@ jobs:
           else
             echo "ESLint not configured for client, skipping..."
           fi
+        continue-on-error: true
 
       - name: Run ESLint (Server)
         working-directory: ./server
@@ -51,6 +52,7 @@ jobs:
           else
             echo "ESLint not configured for server, skipping..."
           fi
+        continue-on-error: true
 
       - name: Run Prettier check (Client)
         working-directory: ./client

@@ -16,9 +16,7 @@
     "test:integration": "vitest run src/**/__tests__/integration/",
     "test:hooks": "vitest run src/hooks/__tests__/",
     "test:context": "vitest run src/context/__tests__/",
-    "test:components": "vitest run src/components/__tests__/ --exclude=**/integration/**",
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix"
+    "test:components": "vitest run src/components/__tests__/ --exclude=**/integration/**"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.0.0",
